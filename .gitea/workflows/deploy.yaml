@@ -1,0 +1,81 @@
+on: [push]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-aos
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: wasm32-unknown-unknown
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 8
+          run_install: true
+      - uses: cargo-bins/cargo-binstall@main
+
+      - name: Leptos build
+        run: |
+          rustc --version
+          lsb_release -a
+          uname -a
+          export GIT_HASH=$(git rev-parse --short HEAD)
+          export AOS_HOST=${{ secrets.UI_HOST }}
+          export AOS_LEMMY_HOST=${{ secrets.APP_HOST }}
+          export AOS_LEMMY_HTTPS=${{ secrets.APP_SSL }}
+          export LEPTOS_TAILWIND_VERSION=v3.4.14
+          cargo-binstall -y cargo-leptos
+          cargo leptos build --release
+          ls -la .
+          ls -la target
+
+      - uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-aos
+      - uses: tiyee/action-ssh@v1.0.1
+        with:
+          host: ${{ secrets.SSH_HOST }} 
+          port: ${{ secrets.SSH_PORT }} 
+          username: ${{ secrets.SSH_USER }} 
+          privateKey: ${{ secrets.SSH_KEY }} 
+          command: rm -rf ${{ secrets.WORK_DIR }}/*
+      - uses: moonpathbg/scp_uploader@latest
+        with:
+            host: ${{ secrets.SSH_HOST }}
+            port: ${{ secrets.SSH_PORT }}
+            username: ${{ secrets.SSH_USER }}
+            key : ${{ secrets.SSH_KEY }}
+            source: "target/release/aos"
+            target: ${{ secrets.WORK_DIR }}
+      - uses: moonpathbg/scp_uploader@latest
+        with:
+            host: ${{ secrets.SSH_HOST }}
+            port: ${{ secrets.SSH_PORT }}
+            username: ${{ secrets.SSH_USER }}
+            key : ${{ secrets.SSH_KEY }}
+            source: "target/site"
+            target: ${{ secrets.WORK_DIR }}
+      - uses: tiyee/action-ssh@v1.0.1
+        with:
+          host: ${{ secrets.SSH_HOST }} 
+          port: ${{ secrets.SSH_PORT }} 
+          username: ${{ secrets.SSH_USER }} 
+          privateKey: ${{ secrets.SSH_KEY }} 
+          command: ${{ secrets.SSH_CMD }}

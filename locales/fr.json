@@ -1,0 +1,29 @@
+{
+  "communities" : "Communautés",
+  "create_post" : "Créer une publication",
+  "create_community" : "Créer une communauté",
+  "donate" : "Soutenir",
+  "search" : "Rechercher",
+  "login" : "Connexion",
+  "signup" : "S'inscrire",
+  "unread_messages" : "messages non lus",
+  "profile" : "Profil",
+  "settings" : "Paramètres",
+  "logout" : "Déconnexion",
+  "modlog" : "Modlog",
+  "instances" : "Instances",
+  "docs" : "Documentation",
+  "code" : "Code",
+
+  "unknown" : "Désolé, une erreur inconnue s'est produite. L'erreur a été enregistrée et un administrateur a été informé. Veuillez réessayer dans quelques instants si vous le souhaitez",
+  "internal" : "Désolé, une erreur interne au serveur s'est produite. L'erreur a été enregistrée et un administrateur en a été informé. Veuillez réessayer dans quelques instants si vous le souhaitez",
+
+  "invalid_login" : "Le nom d'utilisateur ou le mot de passe de votre connexion ne correspond pas à un compte dans ce cas.",
+  "empty_username" : "Un nom d'utilisateur est requis pour se connecter",
+  "empty_password" : "Un mot de passe doit être donné pour se connecter",
+
+  "empty_reason" : "Une raison doit être spécifiée pour signaler un message",
+  "active" : "Actif",
+  "hot" : "Tendances",
+  "new" : "Nouveaux"
+}

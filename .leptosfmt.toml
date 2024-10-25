@@ -1,0 +1,7 @@
+max_width = 150
+tab_spaces = 2
+attr_value_brace_style = "AlwaysUnlessLit"
+closing_tag_style = "SelfClosing"
+
+[attr_values]
+class = "Tailwind"
