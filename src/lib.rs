@@ -112,21 +112,21 @@ pub fn App() -> impl IntoView {
     },
   );
 
-  // #[cfg(feature = "ssr")]
-  // let (get_theme_cookie, set_theme_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
-  //   "theme",
-  //   UseCookieOptions::default()
-  //     .expires((chrono::offset::Utc::now() + chrono::Duration::milliseconds(604800000)).timestamp())
-  //     // .expires(1i64)
-  //     // .max_age(604800000)
-  //     .path("/")
-  //     .same_site(SameSite::Lax),
-  // );
-  // #[cfg(feature = "ssr")]
-  // if let Some(t) = get_theme_cookie.get() {
-  //   set_theme_cookie.set(Some("Poop".into()));
-  //   // logging::log!("SET");
-  // }
+  #[cfg(feature = "ssr")]
+  let (get_theme_cookie, set_theme_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+    "theme",
+    UseCookieOptions::default()
+      // .expires((chrono::offset::Utc::now() + chrono::Duration::milliseconds(604800000)).timestamp())
+      // .expires(1i64)
+      .max_age(604800000)
+      .path("/")
+      .same_site(SameSite::Lax),
+  );
+  #[cfg(feature = "ssr")]
+  if let Some(t) = get_theme_cookie.get() {
+    set_theme_cookie.set(Some(t));
+    // logging::log!("SET");
+  }
 
   // let title = expect_context::<RwSignal<Option<TitleSetter>>>();
   // let formatter = move || match ssr_site.get() {

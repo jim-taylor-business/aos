@@ -23,9 +23,13 @@ leptos_actix = { version = "0", optional = true }
 leptos_meta = "0"
 leptos_router = "0"
 
-leptos_i18n = "0"
+# leptos_i18n = "0"
+# leptos_i18n = { path = "../leptos_i18n/leptos_i18n", optional = true }
+leptos_i18n = { branch = "ssr_cookie_bugs", git = "https://github.com/jim-taylor-business/leptos_i18n.git", optional = true }
+
 # leptos-use = { version = "0", optional = true }
-leptos-use = { path = "../leptos-use", optional = true }
+# leptos-use = { path = "../leptos-use", optional = true }
+leptos-use = { branch = "ssr_cookie_bugs", git = "https://github.com/jim-taylor-business/leptos-use.git", optional = true }
 
 codee = "0"
 
@@ -104,9 +108,10 @@ ssr = [
   "leptos/ssr",
   "leptos_meta/ssr",
   "leptos_router/ssr",
+  "leptos_i18n/ssr",
   "leptos_i18n/actix",
-  "leptos-use/actix",
   "leptos-use/ssr",
+  "leptos-use/actix",
   "leptos_actix",
   "dep:actix-http",
   "dep:actix-web",
