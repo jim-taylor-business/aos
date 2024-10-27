@@ -59,9 +59,12 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
       if SortType::Active == s {
         query_params.remove("sort".into());
       }
+      query_params.remove("from".into());
+      query_params.remove("prev".into());
       let navigate = leptos_router::use_navigate();
       navigate(
         &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+        // &format!("{}/?{}", use_location().pathname.get(), ),
         Default::default(),
       );
     }
@@ -349,6 +352,8 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
           href={move || {
             let mut query_params = query.get();
             query_params.insert("list".into(), serde_json::to_string(&ListingType::Subscribed).ok().unwrap());
+            query_params.remove("from".into());
+            query_params.remove("prev".into());
             format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
           }}
           class={move || {
@@ -365,6 +370,8 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
           href={move || {
             let mut query_params = query.get();
             query_params.insert("list".into(), serde_json::to_string(&ListingType::Local).ok().unwrap());
+            query_params.remove("from".into());
+            query_params.remove("prev".into());
             format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
           }}
           class={move || format!("btn join-item{}", if ListingType::Local == ssr_list() { " btn-active" } else { "" })}
@@ -375,6 +382,8 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
           href={move || {
             let mut query_params = query.get();
             query_params.remove("list".into());
+            query_params.remove("from".into());
+            query_params.remove("prev".into());      
             format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
           }}
           class={move || format!("btn join-item{}", if ListingType::All == ssr_list() { " btn-active" } else { "" })}
