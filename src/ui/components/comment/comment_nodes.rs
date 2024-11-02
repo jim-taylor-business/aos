@@ -32,9 +32,9 @@ pub fn CommentNodes(
     move || (),
     move |()| async move {
       if let Some(p) = _post_id.get() {
-        if let Ok(d) = build_comment_database().await {
-          if let Ok(Some(CommentRquest { comment_id, .. })) = get_array(&d, p).await {
-            hidden_comments.set(comment_id);
+        if let Ok(d) = build_post_meta_database().await {
+          if let Ok(comment_ids) = get_comment_array(&d, p).await {
+            hidden_comments.set(comment_ids);
           }
         }
       }
@@ -52,8 +52,8 @@ pub fn CommentNodes(
       move |()| async move {
         #[cfg(not(feature = "ssr"))]
         if let Some(p) = _post_id.get() {
-          if let Ok(d) = build_comment_database().await {
-            if let Ok(_) = add_array(&d, p, hidden_comments.get()).await {}
+          if let Ok(d) = build_post_meta_database().await {
+            if let Ok(_) = add_comment_array(&d, p, hidden_comments.get()).await {}
           }
         }
       },
@@ -67,7 +67,7 @@ pub fn CommentNodes(
         parent_comment_id=0
         hidden_comments
         on_toggle={on_hide_show}
-        comment_view={cv.into()}
+        comment={cv.into()}
         comments={comments.get().into()}
         level=1
         now_in_millis

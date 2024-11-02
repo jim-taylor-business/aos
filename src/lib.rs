@@ -2,7 +2,6 @@
 #![allow(warnings)]
 
 mod config;
-mod cookie;
 mod errors;
 mod host;
 mod indexed_db;
@@ -33,8 +32,6 @@ use ui::components::notifications::notifications_activity::NotificationsActivity
 
 leptos_i18n::load_locales!();
 
-// #[derive(Clone)]
-// pub struct TitleSetter(String);
 #[derive(Clone)]
 pub struct UriSetter(String);
 #[derive(Clone)]
@@ -56,8 +53,6 @@ pub fn App() -> impl IntoView {
   provide_context(error);
   let authenticated: RwSignal<Option<bool>> = RwSignal::new(None);
   provide_context(authenticated);
-  // let title_signal: RwSignal<Option<TitleSetter>> = RwSignal::new(None);
-  // provide_context(title_signal);
   let online = RwSignal::new(OnlineSetter(true));
   provide_context(online);
   let notifications_refresh = RwSignal::new(NotificationsRefresh(true));
@@ -116,8 +111,6 @@ pub fn App() -> impl IntoView {
   let (get_theme_cookie, set_theme_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
     "theme",
     UseCookieOptions::default()
-      // .expires((chrono::offset::Utc::now() + chrono::Duration::milliseconds(604800000)).timestamp())
-      // .expires(1i64)
       .max_age(604800000)
       .path("/")
       .same_site(SameSite::Lax),
@@ -125,31 +118,9 @@ pub fn App() -> impl IntoView {
   #[cfg(feature = "ssr")]
   if let Some(t) = get_theme_cookie.get() {
     set_theme_cookie.set(Some(t));
-    // logging::log!("SET");
   }
 
-  // let title = expect_context::<RwSignal<Option<TitleSetter>>>();
-  // let formatter = move || match ssr_site.get() {
-  //   Some(Ok(site)) => {
-  //     if let Some(TitleSetter(t)) = title.get() {
-  //       if let Some(d) = site.site_view.site.description {
-  //         format!("{} - Tech Demo UI for {} - {}", t, site.site_view.site.name, d)
-  //       } else {
-  //         format!("{} - Tech Demo UI for {}", t, site.site_view.site.name)
-  //       }
-  //     } else {
-  //       if let Some(d) = site.site_view.site.description {
-  //         format!("Tech Demo UI for {} - {}", site.site_view.site.name, d)
-  //       } else {
-  //         format!("Tech Demo UI for {}", site.site_view.site.name)
-  //       }
-  //     }
-  //   }
-  //   _ => "Lemmy".to_string(),
-  // };
-
-  let formatter = move |text: String| // format!("{}", text);
-  match ssr_site.get() {
+  let formatter = move |text: String| match ssr_site.get() {
     Some(Ok(site)) => {
       if text.len() > 0 {
         if let Some(d) = site.site_view.site.description {
@@ -180,12 +151,9 @@ pub fn App() -> impl IntoView {
     </Transition>
     <Stylesheet id="leptos" href="/pkg/aos.css" />
     <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico" />
-    // <Title text={move || formatter()} />
-    // <Meta name="description" content={move || formatter()} />
     <Title formatter />
     <Meta name="description" content={formatter("".into())} />
-    <I18nContextProvider cookie_options={leptos_i18n::context::CookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax)}> //::<Locale, String, FromToStringCodec>().max_age(604800000).path("/").same_site(SameSite::Lax)}>
-    // <I18nContextProvider cookie_options={UseCookieOptions::d { max_age: 604800000, path: "/", same_site: SameSite::Lax }}>
+    <I18nContextProvider cookie_options={leptos_i18n::context::CookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax)}>
       <Router>
         <Routes>
           <Route path="/" view={move || view! { <Layout ssr_site /> }} ssr={SsrMode::Async}>

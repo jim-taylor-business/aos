@@ -5,7 +5,8 @@ use crate::{
 };
 use ev::{MouseEvent, SubmitEvent, TouchEvent};
 use lemmy_api_common::{
-  comment::{CreateComment, CreateCommentLike, SaveComment},
+  comment::{CreateComment, CreateCommentLike, EditComment, SaveComment},
+  lemmy_db_schema::source::person::Person,
   lemmy_db_views::structs::{CommentView, LocalUserView},
   site::{GetSiteResponse, MyUserInfo},
 };
@@ -17,7 +18,7 @@ use web_sys::{wasm_bindgen::JsCast, HtmlAnchorElement, HtmlImageElement};
 #[component]
 pub fn CommentNode(
   ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>,
-  comment_view: MaybeSignal<CommentView>,
+  comment: MaybeSignal<CommentView>,
   comments: MaybeSignal<Vec<CommentView>>,
   level: usize,
   parent_comment_id: i32,
@@ -33,23 +34,23 @@ pub fn CommentNode(
     }
   });
 
-  // let current_person = Signal::derive(move || {
-  //   if let Some(Ok(GetSiteResponse {
-  //     my_user: Some(MyUserInfo {
-  //       local_user_view: LocalUserView { person, .. },
-  //       ..
-  //     }),
-  //     ..
-  //   })) = ssr_site.get()
-  //   {
-  //     Some(person)
-  //   } else {
-  //     None
-  //   }
-  // });
+  let current_person = Signal::derive(move || {
+    if let Some(Ok(GetSiteResponse {
+      my_user: Some(MyUserInfo {
+        local_user_view: LocalUserView { person, .. },
+        ..
+      }),
+      ..
+    })) = ssr_site.get()
+    {
+      Some(person)
+    } else {
+      None
+    }
+  });
 
   let mut comments_descendants = comments.get().clone();
-  let id = comment_view.get().comment.id.to_string();
+  let id = comment.get().comment.id.to_string();
 
   let mut comments_children: Vec<CommentView> = vec![];
 
@@ -67,38 +68,45 @@ pub fn CommentNode(
     }
   });
 
-  let com_sig = RwSignal::new(comments_children);
-  let des_sig = RwSignal::new(comments_descendants);
+  let children = RwSignal::new(comments_children);
+  let descendants = RwSignal::new(comments_descendants);
 
-  let content = &comment_view.get().comment.content;
+  let comment_view = RwSignal::new(comment.get());
+  let comment_copy = RwSignal::new(comment.get());
 
-  let mut options = pulldown_cmark::Options::empty();
-  options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
-  options.insert(pulldown_cmark::Options::ENABLE_TABLES);
-  let parser = pulldown_cmark::Parser::new_ext(content, options);
+  let safe_html = Signal::derive(move || {
+    let content = comment_view.get().comment.content;
 
-  let custom = parser.map(|event| match event {
-    pulldown_cmark::Event::Html(text) => {
-      let er = format!("<p>{}</p>", html_escape::encode_safe(&text).to_string());
-      pulldown_cmark::Event::Html(er.into())
-    }
-    pulldown_cmark::Event::InlineHtml(text) => {
-      let er = html_escape::encode_safe(&text).to_string();
-      pulldown_cmark::Event::InlineHtml(er.into())
-    }
-    _ => event,
+    let mut options = pulldown_cmark::Options::empty();
+    options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
+    options.insert(pulldown_cmark::Options::ENABLE_TABLES);
+    options.insert(pulldown_cmark::Options::ENABLE_SUPER_SUB);
+    let parser = pulldown_cmark::Parser::new_ext(&content, options);
+
+    let custom = parser.map(|event| match event {
+      pulldown_cmark::Event::Html(text) => {
+        let er = format!("<p>{}</p>", html_escape::encode_safe(&text).to_string());
+        pulldown_cmark::Event::Html(er.into())
+      }
+      pulldown_cmark::Event::InlineHtml(text) => {
+        let er = html_escape::encode_safe(&text).to_string();
+        pulldown_cmark::Event::InlineHtml(er.into())
+      }
+      _ => event,
+    });
+    let mut safe_html = String::new();
+    pulldown_cmark::html::push_html(&mut safe_html, custom);
+    safe_html
   });
-  let mut safe_html = String::new();
-  pulldown_cmark::html::push_html(&mut safe_html, custom);
 
   let highlight_show = RwSignal::new(false);
   let still_down = RwSignal::new(false);
   let vote_show = RwSignal::new(false);
   let reply_show = RwSignal::new(false);
+  let edit_show = RwSignal::new(false);
   let still_handle: RwSignal<Option<TimeoutHandle>> = RwSignal::new(None);
 
-  let comment_view = RwSignal::new(comment_view.get());
-  let content = RwSignal::new(String::default());
+  let reply_content = RwSignal::new(String::default());
 
   let duration_in_text = pretty_duration::pretty_duration(
     &std::time::Duration::from_millis(now_in_millis - comment_view.get().post.published.timestamp_millis() as u64),
@@ -182,7 +190,7 @@ pub fn CommentNode(
       move || (),
       move |()| async move {
         let form = CreateComment {
-          content: content.get(),
+          content: reply_content.get(),
           post_id: comment_view.get().comment.post_id,
           parent_id: Some(comment_view.get().comment.id),
           language_id: None,
@@ -190,7 +198,7 @@ pub fn CommentNode(
         let result = LemmyClient.reply_comment(form).await;
         match result {
           Ok(o) => {
-            com_sig.update(|cs| cs.push(o.comment_view));
+            children.update(|cs| cs.push(o.comment_view));
             reply_show.update(|b| *b = !*b);
           }
           Err(e) => {
@@ -199,6 +207,33 @@ pub fn CommentNode(
         }
       },
     );
+  };
+
+  let on_edit_click = move |ev: MouseEvent| {
+    ev.prevent_default();
+    create_local_resource(
+      move || (),
+      move |()| async move {
+        let form = EditComment {
+          content: Some(comment_view.get().comment.content),
+          comment_id: comment_view.get().comment.id,
+          language_id: None,
+        };
+        let result = LemmyClient.edit_comment(form).await;
+        match result {
+          Ok(o) => {}
+          Err(e) => {
+            error.update(|es| es.push(Some((e, None))));
+          }
+        }
+      },
+    );
+  };
+
+  let on_cancel_click = move |ev: MouseEvent| {
+    ev.prevent_default();
+    comment_view.update(|cv| cv.comment.content = comment_copy.get().comment.content);
+    edit_show.set(false);
   };
 
   view! {
@@ -345,10 +380,10 @@ pub fn CommentNode(
                 <Icon icon={Save} />
               </button>
             </Form>
-            <span on:click={move |_| reply_show.update(|b| *b = !*b)} title="Reply">
+            <span on:click={move |_| { edit_show.set(false); reply_show.update(|b| *b = !*b); }} title="Reply">
               <Icon icon={Reply} />
             </span>
-            <span class="pointer-events-none text-base-content/50" title="Edit">
+            <span on:click={move |_| { reply_show.set(false); edit_show.update(|b| *b = !*b); }} class=move || format!("{}", if current_person.get().eq(&Some(comment_view.get().creator)) { "" } else { "pointer-events-none text-base-content/50" }) title="Edit">
               <Icon icon={Pencil} />
             </span>
             <span class="overflow-hidden break-words">
@@ -363,35 +398,68 @@ pub fn CommentNode(
         <span class={move || {
           format!(
             "badge badge-neutral inline-block whitespace-nowrap{}",
-            if hidden_comments.get().contains(&comment_view.get().comment.id.0) && com_sig.get().len() > 0 { "" } else { " hidden" },
+            if hidden_comments.get().contains(&comment_view.get().comment.id.0) && children.get().len() > 0 { "" } else { " hidden" },
           )
-        }}>{com_sig.get().len() + des_sig.get().len()} " replies"</span>
+        }}>{children.get().len() + descendants.get().len()} " replies"</span>
       </div>
-      <Show when={move || reply_show.get()} fallback={|| {}}>
+      <Show when={move || reply_show.get() || edit_show.get()} fallback={|| {}}>
         <div class="mb-3 space-y-3">
-          <label class="form-control">
-            <textarea
-              class="h-24 text-base textarea textarea-bordered"
-              placeholder="Comment text"
-              prop:value={move || content.get()}
-              on:input={move |ev| content.set(event_target_value(&ev))}
-            >
-              {content.get_untracked()}
-            </textarea>
-          </label>
-          <button on:click={on_reply_click} type="button" class="btn btn-neutral">
-            "Comment"
-          </button>
-        </div>
+          // <label class="form-control">
+          //   <textarea
+          //     class="h-24 text-base textarea textarea-bordered"
+          //     placeholder="Comment text"
+          //     prop:value={move || content.get()}
+          //     on:input={move |ev| content.set(event_target_value(&ev))}
+          //   >
+          //     {content.get_untracked()}
+          //   </textarea>
+          // </label>
+          <Show when={move || reply_show.get()} fallback={|| {}}>
+            <label class="form-control">
+              <textarea
+                class="h-24 text-base textarea textarea-bordered"
+                placeholder="Comment text"
+                prop:value={move || reply_content.get()}
+                on:input={move |ev| reply_content.set(event_target_value(&ev))}
+              >
+                {reply_content.get_untracked()}
+              </textarea>
+            </label>
+            <button on:click={on_reply_click} type="button" class="btn btn-neutral">
+              "Reply"
+            </button>
+            <button on:click={move |_| reply_show.set(false)} type="button" class="btn btn-neutral">
+              "Cancel"
+            </button>
+          </Show>
+          <Show when={move || edit_show.get()} fallback={|| {}}>
+            <label class="form-control">
+              <textarea
+                class="h-24 text-base textarea textarea-bordered"
+                placeholder="Comment text"
+                prop:value={move || comment_view.get_untracked().comment.content}
+                on:input={move |ev| comment_view.update(|cv| cv.comment.content = event_target_value(&ev))}
+              >
+                {comment_view.get_untracked().comment.content}
+              </textarea>
+            </label>
+            <button on:click={on_edit_click} type="button" class="btn btn-neutral">
+              "Edit"
+            </button>
+            <button on:click={on_cancel_click} type="button" class="btn btn-neutral">
+              "Cancel"
+            </button>
+          </Show>
+      </div>
       </Show>
-      <For each={move || com_sig.get()} key={|cv| cv.comment.id} let:cv>
+      <For each={move || children.get()} key={|cv| cv.comment.id} let:cv>
         <CommentNode
           ssr_site
           parent_comment_id={comment_view.get().comment.id.0}
           hidden_comments={hidden_comments}
           on_toggle
-          comment_view={cv.into()}
-          comments={des_sig.get().into()}
+          comment={cv.into()}
+          comments={descendants.get().into()}
           level={level + 1}
           now_in_millis
         />

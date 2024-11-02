@@ -10,29 +10,11 @@ module.exports = {
         "7xl": "8640px",
       },
       keyframes: {
-        // popin: {
-        //   from: { opacity: 0, display: "none" },
-        //   to: { opacity: 1, display: "block" },
-        // },
-        // wiggle: {
-        //   "0%, 100%": { transform: "rotate(-3deg)", opacity: 0 },
-        //   "50%": { transform: "rotate(3deg)", opacity: 1 },
-        // },
-        // popout: {
-        //   from: {
-        //     display: "none",
-        //   },
-        //   to: {
-        //     display: "block",
-        //   },
-        // },
         popdown: {
           from: {
-            // opacity: 0,
             height: "0rem",
           },
           to: {
-            // opacity: 1,
             height: "3rem",
           },
         },

@@ -16,7 +16,7 @@ crate-type = ["cdylib", "rlib"]
 # for testing potential lemmy changes
 # lemmy_api_common = { path = "../lemmy/crates/api_common", default-features = false }
 lemmy_api_common = { branch = "deploy_demo", git = "https://github.com/jim-taylor-business/lemmy.git", default-features = false }
-lemmy_api_common_latest = { tag = "0.19.5", git = "https://github.com/jim-taylor-business/lemmy.git", default-features = false, package = "lemmy_api_common" }
+# lemmy_api_common_latest = { tag = "0.19.5", git = "https://github.com/jim-taylor-business/lemmy.git", default-features = false, package = "lemmy_api_common" }
 
 leptos = "0"
 leptos_actix = { version = "0", optional = true }
@@ -75,7 +75,7 @@ default = "en"
 locales = ["en", "fr"]
 
 [features]
-default = ["ssr"]
+default = ["ssr", "hydrate", "csr"]
 hydrate = [
   "leptos/hydrate",
   "leptos_meta/hydrate",

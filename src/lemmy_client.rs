@@ -1,6 +1,5 @@
 use crate::lemmy_error::LemmyErrorType;
 use crate::{
-  // cookie::get_cookie,
   errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult},
   host::{get_host, get_https},
 };
@@ -108,6 +107,10 @@ pub trait LemmyApi: Fetch {
 
   async fn reply_comment(&self, form: CreateComment) -> LemmyAppResult<CommentResponse> {
     self.make_request(HttpType::Post, "comment", form).await
+  }
+
+  async fn edit_comment(&self, form: EditComment) -> LemmyAppResult<CommentResponse> {
+    self.make_request(HttpType::Put, "comment", form).await
   }
 }
 

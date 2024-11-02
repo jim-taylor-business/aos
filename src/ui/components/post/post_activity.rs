@@ -2,7 +2,6 @@ use crate::{
   errors::{message_from_error, LemmyAppError, LemmyAppErrorType},
   lemmy_client::*,
   ui::components::{comment::comment_nodes::CommentNodes, post::post_listing::PostListing},
-  // TitleSetter,
 };
 use ev::MouseEvent;
 use lemmy_api_common::{
@@ -24,7 +23,6 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
   let params = use_params_map();
   let post_id = move || params.get().get("id").cloned().unwrap_or_default().parse::<i32>().ok();
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
-  // let title = expect_context::<RwSignal<Option<TitleSetter>>>();
 
   let reply_show = RwSignal::new(false);
   let refresh_comments = RwSignal::new(false);
@@ -120,44 +118,7 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
     );
   };
 
-  // #[cfg(not(feature = "ssr"))]
-  // {
-  //   window().history().map(|h| h.replace_state(&JsValue::default(), "bell end"));
-  // }
-
-  // let rez = create_local_resource(
-  //   move || (),
-  //   move |()| async move {
-  //     std::thread::sleep(std::time::Duration::from_millis(100));
-  //   },
-  // );
-  //
-  // let rez = RwSignal::new(None);
-
-  // #[cfg(not(feature = "ssr"))]
-  // {
-  //   set_timeout(move || rez.set(Some(())), std::time::Duration::from_millis(100));
-  // }
-
   view! {
-    // <Transition fallback={|| {}}>
-      // {move || {
-      //   match rez.get() {
-      //     Some(()) => {
-      //       Some(view! {
-      //         <Title text="Fuck" />
-      //       })
-      //     },
-      //     None => {
-      //       Some(view! {
-      //         <Title text="" />
-      //       })
-      //     }
-      //   }
-      // }}
-    // </Transition>
-
-    // <Title text={move || { post_resource.get().map(|r| r.ok().map(|p| p.post_view.post.name).unwrap_or("Post".into())).unwrap_or("Post".into()) }} />
     <main role="main" class="flex flex-col flex-grow w-full">
       <div class="flex flex-col">
         <div>
@@ -192,7 +153,6 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                   )
                 }
                 Some(Ok(res)) => {
-                  // title.set(Some(TitleSetter(res.post_view.post.name.clone())));
                   let text = if let Some(b) = res.post_view.post.body.clone() {
                     if b.len() > 0 { Some(b) } else { res.post_view.post.embed_description.clone() }
                   } else {
@@ -223,6 +183,7 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                         let mut options = pulldown_cmark::Options::empty();
                         options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
                         options.insert(pulldown_cmark::Options::ENABLE_TABLES);
+                        options.insert(pulldown_cmark::Options::ENABLE_SUPER_SUB);
                         let parser = pulldown_cmark::Parser::new_ext(content, options);
                         let custom = parser
                           .map(|event| match event {

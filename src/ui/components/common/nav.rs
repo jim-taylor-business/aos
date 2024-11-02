@@ -1,5 +1,4 @@
 use crate::{
-  // cookie::{remove_cookie, set_cookie},
   errors::{message_from_error, LemmyAppError},
   i18n::*,
   lemmy_client::*,
@@ -30,17 +29,7 @@ pub async fn logout() -> Result<(), ServerFnError> {
         UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
       );
       set_auth_cookie.set(None);
-      // let r = remove_cookie("jwt").await;
-      // match r {
-      //   Ok(_o) => {
-      //     redirect("/");
       Ok(())
-      //   }
-      //   Err(e) => {
-      //     redirect(&format!("/login?error={}", serde_json::to_string(&e)?)[..]);
-      //     Ok(())
-      //   }
-      // }
     }
     Err(e) => {
       redirect(&format!("/login?error={}", serde_json::to_string(&e)?)[..]);
@@ -56,7 +45,6 @@ pub async fn change_lang(lang: String) -> Result<(), ServerFnError> {
     UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
   );
   set_locale_cookie.set(Some(lang.to_lowercase()));
-  // let _ = set_cookie("i18n_pref_locale", &lang.to_lowercase(), &core::time::Duration::from_secs(604800)).await;
   Ok(())
 }
 
@@ -226,29 +214,13 @@ pub fn TopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppE
     use_navigate()("/login", NavigateOptions::default());
   };
 
-  // #[cfg(not(feature = "ssr"))]
-  // let (get_theme_cookie, set_theme_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
-  //   "theme",
-  //   UseCookieOptions::default()
-  //     .expires((chrono::offset::Utc::now() + chrono::Duration::milliseconds(604800000)).timestamp())
-  //     // .max_age(604800000)
-  //     .path("/")
-  //     .same_site(SameSite::Lax),
-  // );
-  // #[cfg(not(feature = "ssr"))]
-  // if let Some(t) = get_theme_cookie.get() {
-  //   set_theme_cookie.set(Some(t));
-  // }
-
   view! {
     <nav class="container flex sticky top-0 mx-auto navbar bg-base-100 z-[1]">
       <div class="navbar-start">
-        // <div class="dropdown"><div tabindex="0" role="button" class="btn btn-ghost lg:hidden"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h8m-8 6h16"></path></svg></div> <ul tabindex="0" class="mt-3 z-[1] p-2 shadow menu menu-sm dropdown-content bg-base-100 rounded-box w-52"><li><button>Item 1</button></li> <li><button>Parent</button> <ul class="p-2 bg-base-100 w-40"><li><button>Submenu 1</button></li> <li><button>Submenu 2</button></li></ul></li> <li><button>Item 3</button></li></ul></div>
         <ul class="flex-nowrap items-center menu menu-horizontal">
           <li>
             <A
               href="/"
-              // href={move || format!("/{}", if let Some(l) = query.get().get("limit") { format!("?limit={}", l) } else { "".into() })}
               class="text-xl whitespace-nowrap"
             >
               {move || {
@@ -399,7 +371,6 @@ pub fn TopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppE
             fallback={move || {
               view! {
                 // let l = use_location();
-
                 <li>
                   // <ActionForm action="/login" on:submit=|_| {}>
                   // <input type="hidden" name="uri" value=move || format!("{}{}", l.pathname.get(), l.query.get().to_query_string())/>

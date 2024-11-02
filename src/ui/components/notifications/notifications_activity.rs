@@ -3,7 +3,7 @@ use crate::{
   ui::components::{comment::comment_node::CommentNode, common::about::About, post::post_listing::PostListing},
   LemmyApi,
   LemmyClient,
-  NotificationsRefresh, // TitleSetter,
+  NotificationsRefresh,
 };
 use ev::MouseEvent;
 use lemmy_api_common::{
@@ -25,10 +25,6 @@ use leptos_meta::*;
 pub fn NotificationsActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
   let errors = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
   let notifications_refresh = expect_context::<RwSignal<NotificationsRefresh>>();
-  // let title = expect_context::<RwSignal<Option<TitleSetter>>>();
-
-  // title.set(Some(TitleSetter("Notifications".into())));
-
   let replies_refresh = RwSignal::new(true);
 
   let replies = Resource::new(
@@ -209,7 +205,7 @@ pub fn NotificationsActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResp
                             parent_comment_id=0
                             hidden_comments={RwSignal::new(vec![])}
                             on_toggle={on_hide_show}
-                            comment_view={c.into()}
+                            comment={c.into()}
                             comments={vec![].into()}
                             level=1
                             now_in_millis

@@ -65,21 +65,12 @@ pub async fn login(username_or_email: String, password: String, uri: String) -> 
         UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
       );
       set_auth_cookie.set(Some(jwt.unwrap_or_default().into_inner()));
-      // let r = set_cookie("jwt", &jwt.unwrap_or_default().into_inner(), &core::time::Duration::from_secs(604800)).await;
-      // match r {
-      //   Ok(_o) => {
       if uri.len() > 0 {
         redirect(&uri);
       } else {
         redirect("/");
       }
       Ok(())
-      //   }
-      //   Err(e) => {
-      //     redirect(&format!("/login?error={}", serde_json::to_string(&e)?)[..]);
-      //     Ok(())
-      //   }
-      // }
     }
     Err(e) => {
       redirect(&format!("/login?error={}", serde_json::to_string(&e)?)[..]);
@@ -135,26 +126,8 @@ pub fn LoginForm() -> impl IntoView {
         let result = try_login(req.clone()).await;
         match result {
           Ok(LoginResponse { jwt: Some(jwt), .. }) => {
-            // let expires_in_seconds = {
-            //   #[cfg(not(feature = "ssr"))]
-            //   {
-            //     (chrono::offset::Utc::now() + chrono::Days::new(7)).timestamp_millis()
-            //   }
-            //   #[cfg(feature = "ssr")]
-            //   {
-            //     std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64
-            //   }
-            // };
-
-            // logging::log!("{}", expires_in_seconds);
-
             let (_, set_auth_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
               "jwt",
-              // UseCookieOptions::default()
-              //   .expires(expires_in_seconds)
-              //   // .max_age(2147483647)
-              //   .path("/")
-              //   .same_site(SameSite::Lax),
               UseCookieOptions::default()
                 .max_age(604800000)
                 .path("/")
@@ -162,7 +135,6 @@ pub fn LoginForm() -> impl IntoView {
                 .same_site(SameSite::Lax),
             );
             set_auth_cookie.set(Some(jwt.clone().into_inner()));
-            // let _ = set_cookie("jwt", &jwt.clone().into_inner(), &core::time::Duration::from_secs(604800)).await;
             authenticated.set(Some(true));
             // leptos_router::use_navigate()("/", Default::default());
             // leptos_router::use_navigate()(&query.get().get("uri").cloned().unwrap_or("/".into()), Default::default());

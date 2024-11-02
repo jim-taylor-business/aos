@@ -1,7 +1,6 @@
 use crate::{
   errors::LemmyAppError,
   ui::components::common::nav::{BottomNav, TopNav},
-  // TitleSetter,
 };
 use codee::string::FromToStringCodec;
 use lemmy_api_common::site::GetSiteResponse;
@@ -12,17 +11,8 @@ use leptos_use::{use_cookie_with_options, SameSite, UseCookieOptions};
 
 #[component]
 pub fn Layout(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
-  // let (theme_cookie, _) =
-  //   use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax));
-
-  // // #[cfg(feature = "ssr")]
-  let (get_theme_cookie, set_theme_cookie) =
+  let (get_theme_cookie, _) =
     use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax));
-  // // #[cfg(feature = "ssr")]
-  // if let Some(t) = get_theme_cookie.get() {
-  //   set_theme_cookie.set(Some(t));
-  //   // logging::log!("SET");
-  // }
 
   view! {
     <Transition fallback={|| {}}>

@@ -8,7 +8,7 @@ use crate::{
     post::post_listings::PostListings,
   },
   OnlineSetter,
-  ResourceStatus, // TitleSetter,
+  ResourceStatus,
 };
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SortType},
@@ -27,7 +27,6 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
   let i18n = use_i18n();
 
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
-  // let title = expect_context::<RwSignal<Option<TitleSetter>>>();
   let online = expect_context::<RwSignal<OnlineSetter>>();
 
   let param = use_params_map();
@@ -64,7 +63,6 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
       let navigate = leptos_router::use_navigate();
       navigate(
         &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-        // &format!("{}/?{}", use_location().pathname.get(), ),
         Default::default(),
       );
     }
@@ -80,8 +78,6 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
       Some(false)
     }
   });
-
-  // title.set(None);
 
   let posts_resource = Resource::new(
     move || {
@@ -115,7 +111,6 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
       if online.get().0 {
         let result = LemmyClient.list_posts(form.clone()).await;
         loading.set(false);
-        // title.set(None);
         match result {
           Ok(o) => {
             #[cfg(not(feature = "ssr"))]
@@ -476,46 +471,47 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                       </div>
                     </div>
                   </div>
-                  <div class="hidden sm:block join">
-                    {
-                      let mut st = ssr_prev();
-                      let p = st.pop();
-                      let mut query_params = query.get();
-                      if st.len() > 0 {
-                        query_params.insert("prev".into(), serde_json::to_string(&st).unwrap_or("[]".into()));
-                      } else {
-                        query_params.remove("prev".into());
-                      }
-                      if p.ne(&Some((0, None))) {
-                        query_params.insert("from".into(), serde_json::to_string(&p).unwrap_or("[0,None]".into()));
-                      } else {
-                        query_params.remove("from".into());
-                      }
-                      view! {
-                        <A
-                          on:click={move |_| {
-                            loading.set(true);
-                          }}
-                          href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())}
-                          class={move || format!("btn join-item{}", if !ssr_prev().is_empty() { "" } else { " btn-disabled" })}
-                        >
-                          "Prev"
-                        </A>
-                      }
-                    }
-                    {
-                      let query_params = query.get();
-                      view! {
-                        <A
-                          href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())}
-                          // class=move || format!("btn join-item{}{}", if next_page.is_some() && !loading.get() { "" } else { " btn-disabled" }, if loading.get() { " btn-disabled" } else { "" } )
-                          class="btn join-item btn-disabled"
-                        >
-                          "Next"
-                        </A>
-                      }
-                    }
-                  </div>
+                  // <div class="hidden sm:block join">
+                  // <div class="hidden">
+                    // {
+                    //   let mut st = ssr_prev();
+                    //   let p = st.pop();
+                    //   let mut query_params = query.get();
+                    //   if st.len() > 0 {
+                    //     query_params.insert("prev".into(), serde_json::to_string(&st).unwrap_or("[]".into()));
+                    //   } else {
+                    //     query_params.remove("prev".into());
+                    //   }
+                    //   if p.ne(&Some((0, None))) {
+                    //     query_params.insert("from".into(), serde_json::to_string(&p).unwrap_or("[0,None]".into()));
+                    //   } else {
+                    //     query_params.remove("from".into());
+                    //   }
+                    //   view! {
+                    //     <A
+                    //       on:click={move |_| {
+                    //         loading.set(true);
+                    //       }}
+                    //       href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())}
+                    //       class={move || format!("btn join-item{}", if !ssr_prev().is_empty() { "" } else { " btn-disabled" })}
+                    //     >
+                    //       "Prev"
+                    //     </A>
+                    //   }
+                    // }
+                    // {
+                    //   let query_params = query.get();
+                    //   view! {
+                    //     <A
+                    //       href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())}
+                    //       // class=move || format!("btn join-item{}{}", if next_page.is_some() && !loading.get() { "" } else { " btn-disabled" }, if loading.get() { " btn-disabled" } else { "" } )
+                    //       class="btn join-item btn-disabled"
+                    //     >
+                    //       "Next"
+                    //     </A>
+                    //   }
+                    // }
+                  // </div>
                 }
               }
               Some(Ok(posts)) => {

@@ -504,9 +504,6 @@ pub fn PostListing(
             class="text-base-content/50"
             title="Cross post"
             on:click={move |e: MouseEvent| {
-              // logging::log!("wdwd");
-              // window().history().map(|h| h.replace_state(&web_sys::wasm_bindgen::JsValue::default(), "bell end"));
-
               if e.ctrl_key() && e.shift_key() {
                 let _ = window().location().set_href(&format!("//lemmy.world/post/{}", post_view.get().post.id));
               }
