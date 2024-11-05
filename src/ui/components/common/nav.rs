@@ -3,9 +3,7 @@ use crate::{
   i18n::*,
   lemmy_client::*,
   ui::components::common::icon::{Icon, IconType::*},
-  NotificationsRefresh,
-  OnlineSetter,
-  UriSetter,
+  NotificationsRefresh, OnlineSetter, UriSetter,
 };
 use codee::string::FromToStringCodec;
 use ev::MouseEvent;
@@ -63,6 +61,8 @@ pub fn TopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppE
   let (_, set_theme_cookie) =
     use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax));
 
+  let online = expect_context::<RwSignal<OnlineSetter>>();
+
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
   // let ssr_error = RwSignal::new::<Option<(LemmyAppError, Option<RwSignal<bool>>)>>(None);
 
@@ -111,7 +111,7 @@ pub fn TopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppE
   let visibility = expect_context::<Signal<VisibilityState>>();
 
   #[cfg(not(feature = "ssr"))]
-  let _e = Effect::new(move |_| match visibility.get() {
+  let _visibility_effect = Effect::new(move |_| match visibility.get() {
     VisibilityState::Visible => {
       refresh.update(|b| *b = !*b);
     }
@@ -120,7 +120,7 @@ pub fn TopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppE
   });
 
   #[cfg(not(feature = "ssr"))]
-  let h = set_interval_with_handle(
+  let unread_interval_handle = set_interval_with_handle(
     move || match visibility.get() {
       VisibilityState::Visible => {
         refresh.update(|b| *b = !*b);
@@ -165,25 +165,32 @@ pub fn TopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppE
     }
   });
 
-  let ssr_unread = Resource::new(
+  let unread_resource = Resource::new(
     move || (refresh.get(), logged_in.get(), notifications_refresh.get()),
     move |(_refresh, logged_in, _notifications_refresh)| async move {
-      let result = if logged_in == Some(true) {
-        LemmyClient.unread_count().await
+      if online.get().0 {
+        let result = if logged_in == Some(true) {
+          LemmyClient.unread_count().await
+        } else {
+          Ok(GetUnreadCountResponse {
+            replies: 0,
+            mentions: 0,
+            private_messages: 0,
+          })
+        };
+        match result {
+          Ok(o) => Ok(o),
+          Err(e) => {
+            error.update(|es| es.push(Some((e.clone(), None))));
+            Err(e)
+          }
+        }
       } else {
         Ok(GetUnreadCountResponse {
           replies: 0,
           mentions: 0,
           private_messages: 0,
         })
-      };
-
-      match result {
-        Ok(o) => Ok(o),
-        Err(e) => {
-          error.update(|es| es.push(Some((e.clone(), None))));
-          Err(e)
-        }
       }
     },
   );
@@ -326,7 +333,7 @@ pub fn TopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppE
           </li>
           <Transition fallback={|| {}}>
             {move || {
-              ssr_unread
+              unread_resource
                 .get()
                 .map(|u| {
                   let unread = if let Ok(c) = u.clone() { format!(", {} unread", c.replies + c.mentions + c.private_messages) } else { "".into() };

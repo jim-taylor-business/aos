@@ -199,7 +199,7 @@ pub fn CommentNode(
         match result {
           Ok(o) => {
             children.update(|cs| cs.push(o.comment_view));
-            reply_show.update(|b| *b = !*b);
+            reply_show.set(false);
           }
           Err(e) => {
             error.update(|es| es.push(Some((e, None))));
@@ -221,7 +221,9 @@ pub fn CommentNode(
         };
         let result = LemmyClient.edit_comment(form).await;
         match result {
-          Ok(o) => {}
+          Ok(o) => {
+            edit_show.set(false);
+          }
           Err(e) => {
             error.update(|es| es.push(Some((e, None))));
           }

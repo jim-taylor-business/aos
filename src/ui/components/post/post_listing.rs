@@ -269,7 +269,27 @@ pub fn PostListing(
   };
 
   let title = post_view.get().post.name.clone();
-  let title_encoded = html_escape::encode_safe(&title).to_string();
+  // let title_encoded = html_escape::encode_safe(&title).to_string();
+  let mut options = pulldown_cmark::Options::empty();
+  options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
+  options.insert(pulldown_cmark::Options::ENABLE_TABLES);
+  options.insert(pulldown_cmark::Options::ENABLE_SUPER_SUB);
+  let parser = pulldown_cmark::Parser::new_ext(&title, options);
+
+  let custom = parser.map(|event| match event {
+    pulldown_cmark::Event::Html(text) => {
+      let er = format!("<p>{}</p>", html_escape::encode_safe(&text).to_string());
+      pulldown_cmark::Event::Html(er.into())
+    }
+    pulldown_cmark::Event::InlineHtml(text) => {
+      let er = html_escape::encode_safe(&text).to_string();
+      pulldown_cmark::Event::InlineHtml(er.into())
+    }
+    _ => event,
+  });
+  let mut title_encoded = String::new();
+  pulldown_cmark::html::push_html(&mut title_encoded, custom);
+
   let community_title = post_view.get().community.title.clone();
   let community_title_encoded = html_escape::encode_safe(&community_title).to_string();
   let creator_name = post_view.get().creator.name.clone();
