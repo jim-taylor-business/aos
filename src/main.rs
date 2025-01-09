@@ -1,84 +1,211 @@
-// useful in development to only have errors in compiler output
 #![allow(warnings)]
+#![recursion_limit = "256"]
 
-use cfg_if::cfg_if;
-use aos::*;
+// #[cfg(feature = "ssr")]
+// mod ssr_imports {
+//   pub use actix_files::Files;
+//   pub use actix_web::*;
+//   pub use aos::App;
 
-cfg_if! {
-  if #[cfg(feature = "ssr")] {
-    use actix_files::Files;
-    use actix_web::*;
+//   #[get("/style.css")]
+//   pub async fn css() -> impl Responder {
+//     actix_files::NamedFile::open_async("./style.css").await
+//   }
+//   #[get("/favicon.ico")]
+//   pub async fn favicon() -> impl Responder {
+//     actix_files::NamedFile::open_async("./target/site//favicon.ico").await
+//   }
+// }
 
-    use awc::Client;
-    use leptos::*;
-    use leptos_actix::{generate_route_list, LeptosRoutes};
+#[cfg(feature = "ssr")]
+#[actix_web::main]
+async fn main() -> std::io::Result<()> {
+  use actix_files::Files;
+  use actix_web::*;
+  use leptos::prelude::*;
+  use leptos_actix::{generate_route_list, handle_server_fns, LeptosRoutes};
+  use leptos_meta::{Link, MetaTags, Stylesheet};
+  // use awc::Client;
+  use leptos::prelude::*;
+  // use ssr_services::*;
 
-    #[actix_web::get("lemmy.svg")]
-    async fn lemmy(leptos_options: web::Data<leptos::LeptosOptions>) -> actix_web::Result<actix_files::NamedFile> {
-      let leptos_options = leptos_options.into_inner();
-      let site_root = &leptos_options.site_root;
-      Ok(actix_files::NamedFile::open(format!("{site_root}/lemmy.svg"))?)
-    }
+  let conf = get_configuration(None).unwrap();
+  let addr = conf.leptos_options.site_addr;
 
-    #[actix_web::get("favicon.ico")]
-    async fn favicon(leptos_options: web::Data<leptos::LeptosOptions>) -> actix_web::Result<actix_files::NamedFile> {
-      let leptos_options = leptos_options.into_inner();
-      let site_root = &leptos_options.site_root;
-      Ok(actix_files::NamedFile::open(format!("{site_root}/favicon.ico"))?)
-    }
+  HttpServer::new(move || {
+    let routes = generate_route_list(aos::App);
+    let leptos_options = conf.leptos_options.clone();
+    let site_root = conf.leptos_options.site_root.clone();
 
-    #[actix_web::get("icons.svg")]
-    async fn icons(leptos_options: web::Data<leptos::LeptosOptions>) -> actix_web::Result<actix_files::NamedFile> {
-      let leptos_options = leptos_options.into_inner();
-      let site_root = &leptos_options.site_root;
-      Ok(actix_files::NamedFile::open(format!("{site_root}/icons.svg"))?)
-    }
-
-    #[actix_web::main]
-    async fn main() -> std::io::Result<()> {
-      let conf = get_configuration(None).await.unwrap();
-      let addr = conf.leptos_options.site_addr;
-      let routes = generate_route_list(App);
-
-      HttpServer::new(move || {
-        let leptos_options = &conf.leptos_options;
-        let site_root = &leptos_options.site_root;
-        let routes = &routes;
-
-        let client = web::Data::new(Client::new());
-
-        App::new()
-          .route("/serverfn/{tail:.*}", leptos_actix::handle_server_fns())
-          .service(Files::new("/pkg", format!("{site_root}/pkg")))
-          .service(Files::new("/assets", site_root))
-          .service(favicon)
-          .service(icons)
-          .service(lemmy)
-          .leptos_routes(leptos_options.to_owned(), routes.to_owned(), App)
-          .app_data(web::Data::new(leptos_options.to_owned()))
-          .app_data(client)
+    App::new()
+      // .service(favicon)
+      // .service(icons)
+      // .service(lemmy)
+      .route("/serverfn/{tail:.*}", handle_server_fns())
+      // .leptos_routes(routes, move || aos::App)
+      .leptos_routes(routes, {
+        // let leptos_options = leptos_options.clone();
+        move || {
+          use leptos::prelude::*;
+          view! {
+              <!DOCTYPE html>
+              <html>
+                  <head>
+                      // <meta charset="utf-8"/>
+                      // <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                      <Stylesheet id="leptos" href="/pkg/aos.css" />
+                      <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico" />
+                      <AutoReload options=leptos_options.clone() />
+                      <HydrationScripts options=leptos_options.clone() />
+                      <MetaTags />
+                  </head>
+                  <body>
+                      <aos::App/>
+                  </body>
+              </html>
+          }
+        }
       })
-      .bind(&addr)?
-      .run()
-      .await
-    }
-  }
+      .service(Files::new("/", site_root.as_ref()))
+    //.wrap(middleware::Compress::default())
+  })
+  .bind(&addr)?
+  .run()
+  .await
 }
 
-#[cfg(not(any(feature = "ssr", feature = "csr")))]
-pub fn main() {
-  // for pure client-side testing
-  // see lib.rs for hydration function
-  // a client-side main function is required for using `trunk serve`
-  // to run: `trunk serve --open --features hydrate`
-}
+// // CSR-only setup
+// #[cfg(not(feature = "ssr"))]
+// fn main() {
+//   use aos::App;
+//   console_error_panic_hook::set_once();
+//   leptos::mount::mount_to_body(App)
+// }
 
-#[cfg(all(not(feature = "ssr"), feature = "csr"))]
+// // use aos::*;
+
+// #[cfg(feature = "ssr")]
+// #[actix_web::main]
+// async fn main() -> std::io::Result<()> {
+//   use actix_files::Files;
+//   use actix_web::*;
+//   // use awc::Client;
+//   use leptos::prelude::*;
+//   use leptos_actix::{generate_route_list, LeptosRoutes};
+//   use leptos_meta::{Link, Stylesheet};
+//   use ssr_services::*;
+
+//   let conf = get_configuration(None).unwrap();
+//   let addr = conf.leptos_options.site_addr;
+
+//   HttpServer::new(move || {
+//     let leptos_options = &conf.leptos_options;
+//     let site_root = &leptos_options.site_root;
+//     let routes = generate_route_list(aos::App);
+
+//     // let client = web::Data::new(Client::new());
+
+//     App::new()
+//       // .route("/serverfn/{tail:.*}", leptos_actix::handle_server_fns())
+//       // .service(Files::new("/assets", site_root.as_ref()))
+//       // .service(favicon)
+//       // .service(icons)
+//       // .service(lemmy)
+//       .leptos_routes(routes, {
+//         let leptos_options = leptos_options.clone();
+//         move || {
+//           use leptos::prelude::*;
+
+//           view! {
+//               <!DOCTYPE html>
+//               <html lang="en">
+//                   <head>
+//                       // <meta charset="utf-8"/>
+//                       // <meta name="viewport" content="width=device-width, initial-scale=1"/>
+//                       // <Stylesheet id="leptos" href="/pkg/aos.css" />
+//                       // <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico" />
+//                       // <AutoReload options=leptos_options.clone() />
+//                       <HydrationScripts options=leptos_options.clone()/>
+//                       // <MetaTags/>
+//                   </head>
+//                   <body>
+//                       <aos::App/>
+//                   </body>
+//               </html>
+//           }
+//         }
+//       })
+//       // .service(Files::new("/pkg", format!("{}/pkg", site_root.as_ref())))
+//       // .leptos_routes(/*leptos_options.to_owned(), */ routes, move || aos::App)
+//       // .app_data(web::Data::new(leptos_options.to_owned()))
+//       // .app_data(client)
+//       // App::new()
+//       //   // .service(css)
+//       // .service(favicon)
+//       // .leptos_routes(routes, {
+//       //   let leptos_options = leptos_options.clone();
+//       //   move || {
+//       //     use leptos::prelude::*;
+//       //     view! {
+//       //         // <!DOCTYPE html>
+//       //         // <html lang="en">
+//       //         //     <head>
+//       //         // //         <meta charset="utf-8"/>
+//       //         // //         <meta name="viewport" content="width=device-width, initial-scale=1"/>
+//       //         // //         <AutoReload options=leptos_options.clone() />
+//       //         // //         <HydrationScripts options=leptos_options.clone()/>
+//       //         //     </head>
+//       //         //     <body>
+//       //                 <aos::App/>
+//       //         //     </body>
+//       //         // </html>
+//       //     }
+//       //   }
+//       // })
+//       .service(Files::new("/", site_root.as_ref()))
+//   })
+//   .bind(&addr)?
+//   .run()
+//   .await
+// }
+
+#[cfg(feature = "csr")]
 pub fn main() {
-  // a client-side main function is required for using `trunk serve`
-  // to run: `trunk serve --open --features csr`
   use wasm_bindgen::prelude::wasm_bindgen;
-  // required for better debug messages
   console_error_panic_hook::set_once();
-  leptos::mount_to_body(App);
+  leptos::prelude::mount_to_body(aos::App);
 }
+
+// #[cfg(feature = "ssr")]
+// mod ssr_services {
+//   use actix_files::*;
+//   use actix_web::*;
+//   // pub use actix_files::Files;
+//   // pub use actix_web::*;
+//   // pub use aos::App;
+
+//   // use awc::Client;
+//   use leptos::prelude::*;
+//   // use leptos_actix::{generate_route_list, LeptosRoutes};
+
+//   #[get("/lemmy.svg")]
+//   async fn lemmy(leptos_options: web::Data<LeptosOptions>) -> actix_web::Result<NamedFile> {
+//     let leptos_options = leptos_options.into_inner();
+//     let site_root = &leptos_options.site_root;
+//     Ok(actix_files::NamedFile::open(format!("{site_root}/lemmy.svg"))?)
+//   }
+
+//   #[get("/favicon.ico")]
+//   async fn favicon(leptos_options: web::Data<LeptosOptions>) -> actix_web::Result<NamedFile> {
+//     let leptos_options = leptos_options.into_inner();
+//     let site_root = &leptos_options.site_root;
+//     Ok(actix_files::NamedFile::open(format!("{site_root}/favicon.ico"))?)
+//   }
+
+//   #[get("/icons.svg")]
+//   async fn icons(leptos_options: web::Data<LeptosOptions>) -> actix_web::Result<NamedFile> {
+//     let leptos_options = leptos_options.into_inner();
+//     let site_root = &leptos_options.site_root;
+//     Ok(actix_files::NamedFile::open(format!("{site_root}/icons.svg"))?)
+//   }
+// }

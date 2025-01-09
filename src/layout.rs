@@ -1,16 +1,19 @@
 use crate::{
-  errors::LemmyAppError,
+  errors::AosAppError,
   ui::components::common::nav::{BottomNav, TopNav},
 };
 use codee::string::FromToStringCodec;
 use lemmy_api_common::site::GetSiteResponse;
-use leptos::*;
+use leptos::prelude::*;
+// use leptos::*;
 use leptos_meta::*;
-use leptos_router::Outlet;
+use leptos_router::components::*;
 use leptos_use::{use_cookie_with_options, SameSite, UseCookieOptions};
 
 #[component]
-pub fn Layout(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
+pub fn Layout(
+  ssr_site: Resource<Result<GetSiteResponse, AosAppError>>, /*Resource<Option<bool>, Result<GetSiteResponse, AosAppError>>*/
+) -> impl IntoView {
   let (get_theme_cookie, _) =
     use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax));
 

@@ -1,5 +1,43 @@
-// useful in development to only have errors in compiler output
 #![allow(warnings)]
+#![recursion_limit = "2048"]
+
+// use leptos::prelude::*;
+// // mod api;
+// // mod routes;
+// use leptos_meta::{provide_meta_context, Link, Meta, Stylesheet};
+// use leptos_router::{
+//   components::{FlatRoutes, Route, Router, RoutingProgress},
+//   OptionalParamSegment, ParamSegment, StaticSegment,
+// };
+// // use routes::{nav::*, stories::*, story::*, users::*};
+// use std::time::Duration;
+
+// #[component]
+// pub fn App() -> impl IntoView {
+//   provide_meta_context();
+//   let (is_routing, set_is_routing) = signal(false);
+
+//   view! {
+//       <h1>"Test"</h1>
+//       <Stylesheet id="leptos" href="/pkg/aos.css"/>
+//       <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico"/>
+//       // <Meta name="description" content="Leptos implementation of a HackerNews demo."/>
+//       // <Router set_is_routing>
+//       //     // shows a progress bar while async data are loading
+//       //     <div class="routing-progress">
+//       //         <RoutingProgress is_routing max_time=Duration::from_millis(250)/>
+//       //     </div>
+//       //     <Nav />
+//       //     <main>
+//       //         <FlatRoutes fallback=|| "Not found.">
+//       //             <Route path=(StaticSegment("users"), ParamSegment("id")) view=User/>
+//       //             <Route path=(StaticSegment("stories"), ParamSegment("id")) view=Story/>
+//       //             <Route path=OptionalParamSegment("stories") view=Stories/>
+//       //         </FlatRoutes>
+//       //     </main>
+//       // </Router>
+//   }
+// }
 
 mod config;
 mod errors;
@@ -11,26 +49,37 @@ mod lemmy_error;
 mod ui;
 
 use crate::{
-  errors::LemmyAppError,
-  i18n::*,
+  errors::AosAppError,
+  // i18n::*,
   layout::Layout,
   lemmy_client::*,
   ui::components::{
-    communities::communities_activity::CommunitiesActivity, home::home_activity::HomeActivity, login::login_activity::LoginActivity,
-    post::post_activity::PostActivity,
+    communities::communities_activity::CommunitiesActivity,
+    home::home_activity::HomeActivity,
+    login::login_activity::LoginActivity,
+    //   post::post_activity::PostActivity,
   },
 };
 use chrono::Duration;
 use codee::string::FromToStringCodec;
 use lemmy_api_common::{lemmy_db_schema::SortType, lemmy_db_views::structs::PaginationCursor, post::GetPostsResponse, site::GetSiteResponse};
-use leptos::*;
+use leptos::prelude::*;
+// use leptos::*;
 use leptos_meta::*;
-use leptos_router::*;
+use leptos_router::{components::*, SsrMode, StaticSegment, WildcardSegment};
 use leptos_use::{use_cookie_with_options, use_document_visibility, SameSite, UseCookieOptions};
 use std::collections::BTreeMap;
-use ui::components::notifications::notifications_activity::NotificationsActivity;
+use ui::components::login::login_form::LoginForm;
+// use ui::components::notifications::notifications_activity::NotificationsActivity;
 
-leptos_i18n::load_locales!();
+// leptos_i18n::load_locales!();
+
+#[cfg(feature = "hydrate")]
+#[wasm_bindgen::prelude::wasm_bindgen]
+pub fn hydrate() {
+  console_error_panic_hook::set_once();
+  leptos::mount::hydrate_body(App);
+}
 
 #[derive(Clone)]
 pub struct UriSetter(String);
@@ -49,7 +98,7 @@ pub struct NotificationsRefresh(bool);
 pub fn App() -> impl IntoView {
   provide_meta_context();
 
-  let error: RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>> = RwSignal::new(Vec::new());
+  let error: RwSignal<Vec<Option<(AosAppError, Option<RwSignal<bool>>)>>> = RwSignal::new(Vec::new());
   provide_context(error);
   let authenticated: RwSignal<Option<bool>> = RwSignal::new(None);
   provide_context(authenticated);
@@ -82,7 +131,7 @@ pub fn App() -> impl IntoView {
   let csr_next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
   provide_context(csr_next_page_cursor);
 
-  let site_signal: RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>> = RwSignal::new(None);
+  let site_signal: RwSignal<Option<Result<GetSiteResponse, AosAppError>>> = RwSignal::new(None);
 
   let ssr_site = Resource::new(
     move || (authenticated.get()),
@@ -108,13 +157,8 @@ pub fn App() -> impl IntoView {
   );
 
   #[cfg(feature = "ssr")]
-  let (get_theme_cookie, set_theme_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
-    "theme",
-    UseCookieOptions::default()
-      .max_age(604800000)
-      .path("/")
-      .same_site(SameSite::Lax),
-  );
+  let (get_theme_cookie, set_theme_cookie) =
+    use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax));
   #[cfg(feature = "ssr")]
   if let Some(t) = get_theme_cookie.get() {
     set_theme_cookie.set(Some(t));
@@ -139,52 +183,87 @@ pub fn App() -> impl IntoView {
     _ => "Lemmy".to_string(),
   };
 
+  // let (is_routing, set_is_routing) = signal(false);
+
+  // let conf = get_configuration(None).unwrap();
+  // let addr = conf.leptos_options.site_addr;
+  // let leptos_options = &conf.leptos_options;
+
   view! {
-    <Transition fallback={|| {}}>
-      {move || {
-        ssr_site
-          .get()
-          .map(|m| {
-            site_signal.set(Some(m));
-          });
-      }}
-    </Transition>
-    <Stylesheet id="leptos" href="/pkg/aos.css" />
-    <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico" />
-    <Title formatter />
-    <Meta name="description" content={formatter("".into())} />
-    <I18nContextProvider cookie_options={leptos_i18n::context::CookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax)}>
-      <Router>
-        <Routes>
-          <Route path="/" view={move || view! { <Layout ssr_site /> }} ssr={SsrMode::Async}>
-            <Route path="/*any" view={NotFound} />
+      // <Transition fallback={|| {}}>
+      //   {move || {
+      //     ssr_site
+      //       .get()
+      //       .map(|m| {
+      //         site_signal.set(Some(m));
+      //       });
+      //   }}
+      // </Transition>
+      // <!DOCTYPE html>
+      // <html>
+      //   <head>
 
-            <Route path="" view={move || view! { <HomeActivity ssr_site /> }} />
+      //     <Stylesheet id="leptos" href="/pkg/aos.css" />
+      //     <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico" />
+      //     <AutoReload options=leptos_options.clone()/>
+      //     <HydrationScripts options=leptos_options.clone()/>
+      //     <MetaTags />
 
-            <Route path="create_post" view={CommunitiesActivity} />
-            <Route path="post/:id" view={move || view! { <PostActivity ssr_site /> }} />
+          // <Title formatter />
+          // <Meta name="description" content={formatter("".into())} />
+      //   </head>
+      // <body>
+  // <Router set_is_routing>
+  //   // shows a progress bar while async data are loading
+  //   <div class="routing-progress">
+  //       <RoutingProgress is_routing max_time=core::time::Duration::from_millis(250)/>
+  //   </div>
+  //   // <Nav />
+  //   <main>
+  //       <FlatRoutes fallback=|| "Not found.">
+  //           // <Route path=(StaticSegment("users"), ParamSegment("id")) view=User/>
+  //           // <Route path=(StaticSegment("stories"), ParamSegment("id")) view=Story/>
+  //           <Route path=leptos_router::OptionalParamSegment("stories") view=CommunitiesActivity/>
+  //       </FlatRoutes>
+  //   </main>
+  // </Router>
 
-            <Route path="search" view={CommunitiesActivity} />
-            <Route path="communities" view={CommunitiesActivity} />
-            <Route path="create_community" view={CommunitiesActivity} />
-            <Route path="c/:name" view={move || view! { <HomeActivity ssr_site /> }} />
+  // <h1> "Test" </h1>
+      // <I18nContextProvider cookie_options={leptos_i18n::context::CookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax)}>
+        <Router>
+          <Routes fallback=|| "NotFound">
+            <ParentRoute path=StaticSegment("") view={move || view! { <Layout ssr_site /> }} ssr={SsrMode::Async}>
 
-            <Route path="login" methods={&[Method::Get, Method::Post]} view={LoginActivity} />
-            <Route path="logout" view={CommunitiesActivity} />
-            <Route path="signup" view={CommunitiesActivity} />
+              <Route path=StaticSegment("") view={move || view! { <HomeActivity ssr_site /> }} />
 
-            <Route path="inbox" view={CommunitiesActivity} />
-            <Route path="settings" view={CommunitiesActivity} />
-            <Route path="notifications" view={move || view! { <NotificationsActivity ssr_site /> }} />
-            <Route path="u/:id" view={CommunitiesActivity} />
+              // <Route path=StaticSegment("") view={CommunitiesActivity} />
+              // <Route path=StaticSegment("create_post") view={CommunitiesActivity} />
+              // // <Route path="post/:id" view={move || view! { <PostActivity ssr_site /> }} />
 
-            <Route path="modlog" view={CommunitiesActivity} />
-            <Route path="instances" view={CommunitiesActivity} />
-          </Route>
-        </Routes>
-      </Router>
-    </I18nContextProvider>
-  }
+              // <Route path=StaticSegment("search") view={CommunitiesActivity} />
+              // <Route path=StaticSegment("communities") view={CommunitiesActivity} />
+              // <Route path=StaticSegment("create_community") view={CommunitiesActivity} />
+              // // <Route path="c/:name" view={move || view! { <HomeActivity ssr_site /> }} />
+
+              <Route path=StaticSegment("login") /*methods={&[Method::Get, Method::Post]}*/ view={LoginActivity} />
+              // <Route path=StaticSegment("logout") view={CommunitiesActivity} />
+              // <Route path=StaticSegment("signup") view={CommunitiesActivity} />
+
+              // <Route path=StaticSegment("inbox") view={CommunitiesActivity} />
+              // <Route path=StaticSegment("settings") view={CommunitiesActivity} />
+              // // <Route path="notifications" view={move || view! { <NotificationsActivity ssr_site /> }} />
+              // <Route path=StaticSegment("u/:id") view={CommunitiesActivity} />
+
+              // <Route path=StaticSegment("modlog") view={CommunitiesActivity} />
+              // <Route path=StaticSegment("instances") view={CommunitiesActivity} />
+              // <Route path=WildcardSegment("selector")  view={NotFound} />
+            </ParentRoute>
+          </Routes>
+        </Router>
+      // </I18nContextProvider>
+      // </body>
+      // </html>
+    }
 }
 
 #[component]
@@ -197,9 +276,9 @@ fn NotFound() -> impl IntoView {
   view! { <h1>"Not Found"</h1> }
 }
 
-#[cfg(feature = "hydrate")]
-#[wasm_bindgen::prelude::wasm_bindgen]
-pub fn hydrate() {
-  console_error_panic_hook::set_once();
-  mount_to_body(App);
-}
+// #[cfg(feature = "hydrate")]
+// #[wasm_bindgen::prelude::wasm_bindgen]
+// pub fn hydrate() {
+//   console_error_panic_hook::set_once();
+//   mount_to_body(App);
+// }

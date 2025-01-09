@@ -1,28 +1,28 @@
 use crate::{
-  errors::{message_from_error, LemmyAppError, LemmyAppErrorType},
+  errors::{message_from_error, AosAppError, AosAppErrorType},
   lemmy_client::*,
   ui::components::{comment::comment_nodes::CommentNodes, post::post_listing::PostListing},
 };
-use ev::MouseEvent;
+// use ev::MouseEvent;
 use lemmy_api_common::{
   comment::{CreateComment, GetComments},
   lemmy_db_schema::{newtypes::PostId, CommentSortType},
   post::GetPost,
   site::GetSiteResponse,
 };
-use leptos::*;
+use leptos::prelude::*;
 use leptos_meta::*;
-use leptos_router::use_params_map;
+use leptos_router::hooks::use_params_map;
 use web_sys::{
   wasm_bindgen::{JsCast, JsValue},
-  HtmlAnchorElement, HtmlImageElement,
+  HtmlAnchorElement, HtmlImageElement, MouseEvent,
 };
 
 #[component]
-pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
+pub fn PostActivity(ssr_site: Resource<Result<GetSiteResponse, AosAppError>>) -> impl IntoView {
   let params = use_params_map();
-  let post_id = move || params.get().get("id").cloned().unwrap_or_default().parse::<i32>().ok();
-  let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
+  let post_id = move || params.get().get("id").clone().unwrap_or_default().parse::<i32>().ok();
+  let error = expect_context::<RwSignal<Vec<Option<(AosAppError, Option<RwSignal<bool>>)>>>>();
 
   let reply_show = RwSignal::new(false);
   let refresh_comments = RwSignal::new(false);
@@ -49,9 +49,10 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
         }
       } else {
         Err((
-          LemmyAppError {
-            error_type: LemmyAppErrorType::ParamsError,
-            content: "".into(),
+          AosAppError {
+            context: "Post Id Empty error".into(),
+            error_type: AosAppErrorType::ParamsError,
+            description: "".into(),
           },
           None,
         ))
@@ -93,7 +94,7 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
 
   let on_reply_click = move |ev: MouseEvent| {
     ev.prevent_default();
-    create_local_resource(
+    Resource::new(
       move || (),
       move |()| async move {
         if let Some(id) = post_id() {
@@ -126,12 +127,12 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
             {move || {
               match post_resource.get() {
                 Some(Err(err)) => {
-                  Some(
+                  // Some(
                     view! {
                       <Title text="Error loading post" />
                       <div class="py-4 px-8">
                         <div class="flex justify-between alert alert-error">
-                          <span>{message_from_error(&err.0)} " - " {err.0.content}</span>
+                          // <span>{&err.0.context} " - " {message_from_error(&err.0)} " - " {err.0.description}</span>
                           <div>
                             <Show when={move || { if let Some(_) = err.1 { true } else { false } }} fallback={|| {}}>
                               <button
@@ -148,9 +149,8 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                           </div>
                         </div>
                       </div>
-                      <div class="hidden" />
-                    },
-                  )
+                    }.into_any()
+                  // )
                 }
                 Some(Ok(res)) => {
                   let text = if let Some(b) = res.post_view.post.body.clone() {
@@ -158,7 +158,7 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                   } else {
                     None
                   };
-                  Some(
+                  // Some(
                     view! {
                       <Title text=res.post_view.post.name.clone() />
                       // {loading
@@ -183,7 +183,8 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                         let mut options = pulldown_cmark::Options::empty();
                         options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
                         options.insert(pulldown_cmark::Options::ENABLE_TABLES);
-                        options.insert(pulldown_cmark::Options::ENABLE_SUPER_SUB);
+                        options.insert(pulldown_cmark::Options::ENABLE_SUPERSCRIPT);
+                        options.insert(pulldown_cmark::Options::ENABLE_SUBSCRIPT);
                         let parser = pulldown_cmark::Parser::new_ext(content, options);
                         let custom = parser
                           .map(|event| match event {
@@ -237,11 +238,11 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                           </button>
                         </div>
                       </Show>
-                    },
-                  )
+                    }.into_any()
+                  // )
                 }
                 None => {
-                  Some(
+                  // Some(
                     view! {
                       <Title text="Loading post" />
                       <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
@@ -251,9 +252,9 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                           </div>
                         </div>
                       </div>
-                      <div class="hidden" />
-                    },
-                  )
+                      // <div class="hidden" />
+                    }.into_any()
+                  // )
                 }
               }
             }}

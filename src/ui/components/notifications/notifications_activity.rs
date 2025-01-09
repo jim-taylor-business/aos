@@ -1,11 +1,9 @@
 use crate::{
-  errors::{message_from_error, LemmyAppError, LemmyAppErrorType},
+  errors::{message_from_error, AosAppError, AosAppErrorType},
   ui::components::{comment::comment_node::CommentNode, common::about::About, post::post_listing::PostListing},
-  LemmyApi,
-  LemmyClient,
-  NotificationsRefresh,
+  LemmyApi, LemmyClient, NotificationsRefresh,
 };
-use ev::MouseEvent;
+// use ev::MouseEvent;
 use lemmy_api_common::{
   lemmy_db_schema::{
     aggregates::structs::PostAggregates,
@@ -18,12 +16,12 @@ use lemmy_api_common::{
   private_message::GetPrivateMessages,
   site::GetSiteResponse,
 };
-use leptos::*;
+use leptos::prelude::*;
 use leptos_meta::*;
 
 #[component]
-pub fn NotificationsActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
-  let errors = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
+pub fn NotificationsActivity(ssr_site: Resource<Result<GetSiteResponse, AosAppError>>) -> impl IntoView {
+  let errors = expect_context::<RwSignal<Vec<Option<(AosAppError, Option<RwSignal<bool>>)>>>>();
   let notifications_refresh = expect_context::<RwSignal<NotificationsRefresh>>();
   let replies_refresh = RwSignal::new(true);
 
@@ -98,11 +96,11 @@ pub fn NotificationsActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResp
     }
   };
 
-  let on_hide_show = |_| {};
+  // let on_hide_show = |_| {};
 
   let on_clear_reply_click = move |id: CommentReplyId| {
-    move |_e: MouseEvent| {
-      create_local_resource(
+    move |_| {
+      Resource::new(
         move || (),
         move |()| async move {
           let form = MarkCommentReplyAsRead {
@@ -191,10 +189,11 @@ pub fn NotificationsActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResp
                             reply_show={RwSignal::new(false)}
                             ssr_site={Resource::new(
                               move || { None },
-                              move |_b| async move {
-                                Err(LemmyAppError {
-                                  error_type: LemmyAppErrorType::Unknown,
-                                  content: "".to_string(),
+                              move |_: Option<bool>| async move {
+                                Err(AosAppError {
+                                  context: "Placeholder Reply error".into(),
+                                  error_type: AosAppErrorType::Unknown,
+                                  description: "".to_string(),
                                 })
                               },
                             )}
@@ -204,7 +203,7 @@ pub fn NotificationsActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResp
                             ssr_site
                             parent_comment_id=0
                             hidden_comments={RwSignal::new(vec![])}
-                            on_toggle={on_hide_show}
+                            // on_toggle={on_hide_show}
                             comment={c.into()}
                             comments={vec![].into()}
                             level=1
@@ -277,7 +276,7 @@ pub fn NotificationsActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResp
                 view! {
                   <div class="px-8 mb-6">
                     <div class="flex justify-between alert alert-error">
-                      <span>{message_from_error(&err.0)} " - " {err.0.content}</span>
+                      // <span>{&err.0.context} " - " {message_from_error(&err.0)} " - " {err.0.description}</span>
                       <div>
                         <Show when={move || { if let Some(_) = err.1 { true } else { false } }} fallback={|| {}}>
                           <button

@@ -1,5 +1,5 @@
-use crate::ui::components::login::login_form::LoginForm;
-use leptos::*;
+use super::login_form::LoginForm;
+use leptos::prelude::*;
 use leptos_meta::Title;
 
 #[component]

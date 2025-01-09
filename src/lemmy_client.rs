@@ -1,13 +1,16 @@
 use crate::lemmy_error::LemmyErrorType;
 use crate::{
-  errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult},
+  errors::{AosAppError, AosAppErrorType, AosAppResult},
   host::{get_host, get_https},
 };
-use cfg_if::cfg_if;
+// use cfg_if::cfg_if;
 use codee::string::FromToStringCodec;
 use lemmy_api_common::private_message::PrivateMessagesResponse;
 use lemmy_api_common::{comment::*, community::*, person::*, post::*, private_message::GetPrivateMessages, site::* /* , LemmyErrorType */};
-use leptos::{Serializable, SignalGet};
+use leptos::prelude::Get;
+// use leptos::{logging, prelude::*};
+// use leptos_router::{components::*, hooks::*, *};
+// use leptos::{Serializable, SignalGet};
 use leptos_use::{use_cookie_with_options, SameSite, UseCookieOptions};
 use serde::{Deserialize, Serialize};
 
@@ -23,239 +26,314 @@ pub enum HttpType {
 
 pub struct LemmyClient;
 
+// mod fetch {
+//   use super::*;
+
 pub trait Fetch {
-  async fn make_request<Response, Form>(&self, method: HttpType, path: &str, form: Form) -> LemmyAppResult<Response>
+  async fn make_request<Response, Form>(&self, method: HttpType, path: &str, form: Form) -> AosAppResult<Response>
   where
-    Response: Serializable + for<'de> Deserialize<'de> + 'static,
+    Response: Serialize + for<'de> Deserialize<'de> + 'static,
     Form: Serialize + core::clone::Clone + 'static + core::fmt::Debug;
 }
 
 pub trait LemmyApi: Fetch {
-  async fn login(&self, form: Login) -> LemmyAppResult<LoginResponse> {
+  async fn test(&self, form: SavePost, ok: impl FnMut() -> (), err: impl FnMut() -> ()) -> AosAppResult<LoginResponse> {
+    let result = self.make_request(HttpType::Put, "post/save", form).await;
+    result
+  }
+
+  async fn login(&self, form: Login) -> AosAppResult<LoginResponse> {
+    leptos::logging::log!("B7");
     self.make_request(HttpType::Post, "user/login", form).await
   }
 
-  async fn logout(&self) -> LemmyAppResult<()> {
+  async fn logout(&self) -> AosAppResult<()> {
     let _ = self.make_request::<(), ()>(HttpType::Post, "user/logout", ()).await;
     // TODO: do not ignore error due to not being able to decode empty http response cleanly
     Ok(())
   }
 
-  async fn list_communities(&self, form: ListCommunities) -> LemmyAppResult<ListCommunitiesResponse> {
+  async fn list_communities(&self, form: ListCommunities) -> AosAppResult<ListCommunitiesResponse> {
     self.make_request(HttpType::Get, "community/list", form).await
   }
 
-  async fn get_comments(&self, form: GetComments) -> LemmyAppResult<GetCommentsResponse> {
+  async fn get_comments(&self, form: GetComments) -> AosAppResult<GetCommentsResponse> {
     self.make_request(HttpType::Get, "comment/list", form).await
   }
 
-  async fn list_posts(&self, form: GetPosts) -> LemmyAppResult<GetPostsResponse> {
+  async fn list_posts(&self, form: GetPosts) -> AosAppResult<GetPostsResponse> {
     self.make_request(HttpType::Get, "post/list", form).await
   }
 
-  async fn get_post(&self, form: GetPost) -> LemmyAppResult<GetPostResponse> {
+  async fn get_post(&self, form: GetPost) -> AosAppResult<GetPostResponse> {
     self.make_request(HttpType::Get, "post", form).await
   }
 
-  async fn get_site(&self) -> LemmyAppResult<GetSiteResponse> {
+  async fn get_site(&self) -> AosAppResult<GetSiteResponse> {
     self.make_request(HttpType::Get, "site", ()).await
   }
 
-  async fn report_post(&self, form: CreatePostReport) -> LemmyAppResult<PostReportResponse> {
+  async fn report_post(&self, form: CreatePostReport) -> AosAppResult<PostReportResponse> {
     self.make_request(HttpType::Post, "post/report", form).await
   }
 
-  async fn block_user(&self, form: BlockPerson) -> LemmyAppResult<BlockPersonResponse> {
+  async fn block_user(&self, form: BlockPerson) -> AosAppResult<BlockPersonResponse> {
     self.make_request(HttpType::Post, "user/block", form).await
   }
 
-  async fn save_post(&self, form: SavePost) -> LemmyAppResult<PostResponse> {
+  async fn save_post(&self, form: SavePost) -> AosAppResult<PostResponse> {
     self.make_request(HttpType::Put, "post/save", form).await
   }
 
-  async fn like_post(&self, form: CreatePostLike) -> LemmyAppResult<PostResponse> {
+  async fn like_post(&self, form: CreatePostLike) -> AosAppResult<PostResponse> {
     self.make_request(HttpType::Post, "post/like", form).await
   }
 
-  async fn like_comment(&self, form: CreateCommentLike) -> LemmyAppResult<CommentResponse> {
+  async fn like_comment(&self, form: CreateCommentLike) -> AosAppResult<CommentResponse> {
     self.make_request(HttpType::Post, "comment/like", form).await
   }
 
-  async fn save_comment(&self, form: SaveComment) -> LemmyAppResult<CommentResponse> {
+  async fn save_comment(&self, form: SaveComment) -> AosAppResult<CommentResponse> {
     self.make_request(HttpType::Put, "comment/save", form).await
   }
 
-  async fn unread_count(&self) -> LemmyAppResult<GetUnreadCountResponse> {
+  async fn unread_count(&self) -> AosAppResult<GetUnreadCountResponse> {
     self.make_request(HttpType::Get, "user/unread_count", ()).await
   }
 
-  async fn replies_user(&self, form: GetReplies) -> LemmyAppResult<GetRepliesResponse> {
+  async fn replies_user(&self, form: GetReplies) -> AosAppResult<GetRepliesResponse> {
     self.make_request(HttpType::Get, "user/replies", form).await
   }
 
-  async fn mention_user(&self, form: GetPersonMentions) -> LemmyAppResult<GetPersonMentionsResponse> {
+  async fn mention_user(&self, form: GetPersonMentions) -> AosAppResult<GetPersonMentionsResponse> {
     self.make_request(HttpType::Get, "user/mention", form).await
   }
 
-  async fn messages_user(&self, form: GetPrivateMessages) -> LemmyAppResult<PrivateMessagesResponse> {
+  async fn messages_user(&self, form: GetPrivateMessages) -> AosAppResult<PrivateMessagesResponse> {
     self.make_request(HttpType::Get, "private_message/list", form).await
   }
 
-  async fn mark_comment(&self, form: MarkCommentReplyAsRead) -> LemmyAppResult<CommentReplyResponse> {
+  async fn mark_comment(&self, form: MarkCommentReplyAsRead) -> AosAppResult<CommentReplyResponse> {
     self.make_request(HttpType::Post, "comment/mark_as_read", form).await
   }
 
-  async fn reply_comment(&self, form: CreateComment) -> LemmyAppResult<CommentResponse> {
+  async fn reply_comment(&self, form: CreateComment) -> AosAppResult<CommentResponse> {
     self.make_request(HttpType::Post, "comment", form).await
   }
 
-  async fn edit_comment(&self, form: EditComment) -> LemmyAppResult<CommentResponse> {
+  async fn edit_comment(&self, form: EditComment) -> AosAppResult<CommentResponse> {
     self.make_request(HttpType::Put, "comment", form).await
   }
 }
-
+// }
 impl LemmyApi for LemmyClient {}
+
+// use client::*;
 
 fn build_route(route: &str) -> String {
   format!("http{}://{}/api/v3/{}", if get_https() == "true" { "s" } else { "" }, get_host(), route)
 }
 
-cfg_if! {
-  if #[cfg(feature = "ssr")] {
+#[cfg(feature = "ssr")]
+mod client {
 
-    use actix_web::web;
-    use awc::{Client, ClientRequest};
-    use leptos_actix::extract;
+  // use super::fetch::*;
+  use super::*;
+  use actix_web::web;
+  // use awc::{Client, ClientRequest};
+  use leptos_actix::extract;
+  // use reqwest::Client;
 
-    trait MaybeBearerAuth {
-      fn maybe_bearer_auth(self, token: Option<impl core::fmt::Display>) -> Self;
-    }
+  trait MaybeBearerAuth {
+    fn maybe_bearer_auth(self, token: Option<impl core::fmt::Display>) -> Self;
+  }
 
-    impl MaybeBearerAuth for ClientRequest {
-      fn maybe_bearer_auth(self, token: Option<impl core::fmt::Display>) -> Self {
-        if let Some(token) = token {
-          self.bearer_auth(token)
-        } else {
-          self
-        }
+  // impl MaybeBearerAuth for ClientRequest {
+  //   fn maybe_bearer_auth(self, token: Option<impl core::fmt::Display>) -> Self {
+  //     if let Some(token) = token {
+  //       self.bearer_auth(token)
+  //     } else {
+  //       self
+  //     }
+  //   }
+  // }
+
+  impl MaybeBearerAuth for reqwest::RequestBuilder {
+    fn maybe_bearer_auth(self, token: Option<impl core::fmt::Display>) -> Self {
+      if let Some(token) = token {
+        self.bearer_auth(token)
+      } else {
+        self
       }
     }
+  }
 
-    impl Fetch for LemmyClient {
-      async fn make_request<Response, Form>(&self, method: HttpType, path: &str, form: Form) -> LemmyAppResult<Response>
-      where
-        Response: Serializable + for<'de> Deserialize<'de> + 'static,
-        Form: Serialize + core::clone::Clone + 'static + core::fmt::Debug,
-      {
-        let (get_auth_cookie, _) = use_cookie_with_options::<String, FromToStringCodec>(
-          "jwt",
-          UseCookieOptions::default()
-            .max_age(604800000)
-            .path("/")
-            .same_site(SameSite::Lax),
-        );
-        let jwt = get_auth_cookie.get();
-        let route = build_route(path);
+  impl Fetch for LemmyClient {
+    async fn make_request<Response, Form>(&self, method: HttpType, path: &str, form: Form) -> AosAppResult<Response>
+    where
+      Response: Serialize + for<'de> Deserialize<'de> + 'static,
+      Form: Serialize + core::clone::Clone + 'static + core::fmt::Debug,
+    {
+      let (get_auth_cookie, _) = use_cookie_with_options::<String, FromToStringCodec>(
+        "jwt",
+        UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+      );
+      let jwt = get_auth_cookie.get();
+      let route = build_route(path);
 
-        leptos::logging::log!(
-          "{}",
-          format!("{}?{}", route, serde_urlencoded::to_string(&form).unwrap_or("".to_string()))
-        );
-        let client = extract::<web::Data<Client>>().await?;
+      leptos::logging::log!("B10");
 
-        let mut r = match method {
-          HttpType::Get => client.get(&route).maybe_bearer_auth(jwt.clone()).query(&form)?.send(),
-          HttpType::Post => client.post(&route).maybe_bearer_auth(jwt.clone()).send_json(&form),
-          HttpType::Put => client.put(&route).maybe_bearer_auth(jwt.clone()).send_json(&form),
-        }
-        .await?;
+      // // send_wrapper::SendWrapper::new(async move {
+      leptos::logging::log!(
+        "{}",
+        format!("{}?{}", route, serde_urlencoded::to_string(&form).unwrap_or("".to_string()))
+      );
+      // let client = extract::<web::Data<Client>>().await?;
 
-        match r.status().as_u16() {
-          400..=599 => {
-            let api_result = r.json::<LemmyErrorType>().await;
+      // let mut r = send_wrapper::SendWrapper::new(async move {
+      //   match method {
+      //     HttpType::Get => client.get(&route).maybe_bearer_auth(jwt.clone()).query(&form).unwrap().send(),
+      //     HttpType::Post => client.post(&route).maybe_bearer_auth(jwt.clone()).send_json(&form),
+      //     HttpType::Put => client.put(&route).maybe_bearer_auth(jwt.clone()).send_json(&form),
+      //   }
+      //   .await
+      // })
+      // .await?;
 
-            match api_result {
-              Ok(le) => {
-                return Err(LemmyAppError {
-                  error_type: LemmyAppErrorType::ApiError(le.clone()),
-                  content: format!("{:#?}", le),
-                })
-              }
-              Err(e) => {
-                return Err(LemmyAppError {
-                  error_type: LemmyAppErrorType::Unknown,
-                  content: format!("{:#?}", e),
-                })
-              }
+      let client = reqwest::Client::new();
+
+      let mut r = match method {
+        HttpType::Get => client.get(&route).maybe_bearer_auth(jwt.clone()).form(&form).send(), //reqwest::get(&route), //client.get(&route).maybe_bearer_auth(jwt.clone()).query(&form).unwrap().send(),
+        HttpType::Post => client.post(&route).maybe_bearer_auth(jwt.clone()).form(&form).send(),
+        HttpType::Put => client.put(&route).maybe_bearer_auth(jwt.clone()).form(&form).send(), //client.put(&route).maybe_bearer_auth(jwt.clone()).send_json(&form),
+      }
+      .await
+      .unwrap();
+
+      match r.status().as_u16() {
+        400..=599 => {
+          let api_result = //send_wrapper::SendWrapper::new(async move {
+            r.json::<LemmyErrorType>().await;
+          // }).await;
+
+          match api_result {
+            Ok(le) => {
+              return Err(AosAppError {
+                context: "LemmyClient server error".into(),
+                error_type: AosAppErrorType::ApiError(le.clone()),
+                description: format!("{:#?}", le),
+              })
+            }
+            Err(e) => {
+              return Err(AosAppError {
+                context: "LemmyClient server error".into(),
+                error_type: AosAppErrorType::Unknown,
+                description: format!("{:#?}", e),
+              })
             }
           }
-          _ => {}
-        };
-
-        r.json::<Response>().limit(10485760).await.map_err(Into::into)
-
-      }
-    }
-
-  } else {
-
-    use gloo_net::{http, http::RequestBuilder};
-    use leptos::wasm_bindgen::UnwrapThrowExt;
-    use web_sys::AbortController;
-    use leptos::SignalSet;
-
-    trait MaybeBearerAuth {
-      fn maybe_bearer_auth(self, token: Option<&str>) -> Self;
-    }
-
-    impl MaybeBearerAuth for RequestBuilder {
-      fn maybe_bearer_auth(self, token: Option<&str>) -> Self {
-        if let Some(token) = token {
-          self.header("Authorization", format!("Bearer {token}").as_str())
-        } else {
-          self
         }
+        _ => {}
+      };
+      Ok(r.json::<Response>().await.unwrap()) //.limit(10485760).await.map_err(Into::into)
+
+      // match r.status().as_u16() {
+      //   400..=599 => {
+      //     let api_result = //send_wrapper::SendWrapper::new(async move {
+      //       r.json::<LemmyErrorType>().await;
+      //     // }).await;
+
+      //     match api_result {
+      //       Ok(le) => {
+      //         return Err(AosAppError {
+      //           context: "LemmyClient server error".into(),
+      //           error_type: AosAppErrorType::ApiError(le.clone()),
+      //           description: format!("{:#?}", le),
+      //         })
+      //       }
+      //       Err(e) => {
+      //         return Err(AosAppError {
+      //           context: "LemmyClient server error".into(),
+      //           error_type: AosAppErrorType::Unknown,
+      //           description: format!("{:#?}", e),
+      //         })
+      //       }
+      //     }
+      //   }
+      //   _ => {}
+      // };
+      // r.json::<Response>().limit(10485760).await.map_err(Into::into)
+      // })
+      // .await
+
+      // Err(AosAppError {
+      //   context: "".into(),
+      //   description: "".into(),
+      //   error_type: AosAppErrorType::Unknown,
+      // })
+    }
+  }
+}
+
+#[cfg(not(feature = "ssr"))]
+mod client {
+
+  use super::*;
+  use gloo_net::{http, http::RequestBuilder};
+  use leptos::wasm_bindgen::UnwrapThrowExt;
+  use web_sys::AbortController;
+  // use leptos::SignalSet;
+
+  trait MaybeBearerAuth {
+    fn maybe_bearer_auth(self, token: Option<&str>) -> Self;
+  }
+
+  impl MaybeBearerAuth for RequestBuilder {
+    fn maybe_bearer_auth(self, token: Option<&str>) -> Self {
+      if let Some(token) = token {
+        self.header("Authorization", format!("Bearer {token}").as_str())
+      } else {
+        self
       }
     }
+  }
 
-    impl Fetch for LemmyClient {
-      async fn make_request<Response, Form>(&self, method: HttpType, path: &str, form: Form) -> LemmyAppResult<Response>
-      where
-        Response: Serializable + for<'de> Deserialize<'de> + 'static,
-        Form: Serialize + core::clone::Clone + 'static + core::fmt::Debug,
-      {
-        let route = &build_route(path);
-        let (get_auth_cookie, _) = use_cookie_with_options::<String, FromToStringCodec>(
-          "jwt",
-          UseCookieOptions::default()
-            .max_age(604800000)
-            .path("/")
-            .same_site(SameSite::Lax),
-        );
-        let jwt = get_auth_cookie.get();
+  impl Fetch for LemmyClient {
+    async fn make_request<Response, Form>(&self, method: HttpType, path: &str, form: Form) -> AosAppResult<Response>
+    where
+      Response: Serialize + for<'de> Deserialize<'de> + 'static,
+      Form: Serialize + core::clone::Clone + 'static + core::fmt::Debug,
+    {
+      let route = &build_route(path);
+      let (get_auth_cookie, _) = use_cookie_with_options::<String, FromToStringCodec>(
+        "jwt",
+        UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+      );
+      let jwt = get_auth_cookie.get();
 
-        let abort_controller = AbortController::new().ok();
-        let abort_signal = abort_controller.as_ref().map(AbortController::signal);
-        leptos::on_cleanup(move || {
-          if let Some(abort_controller) = abort_controller {
-            abort_controller.abort()
-          }
-        });
+      send_wrapper::SendWrapper::new(async move {
+        // let abort_controller = AbortController::new().ok();
+        // let abort_signal = abort_controller.as_ref().map(AbortController::signal);
+        // leptos::prelude::on_cleanup(move || {
+        //   if let Some(abort_controller) = abort_controller {
+        //     abort_controller.abort()
+        //   }
+        // });
 
         let r = match method {
           HttpType::Get => http::Request::get(&build_fetch_query(path, form))
             .maybe_bearer_auth(jwt.as_deref())
-            .abort_signal(abort_signal.as_ref())
+            // .abort_signal(abort_signal.as_ref())
             .build()
             .expect_throw("Could not parse query params"),
           HttpType::Post => http::Request::post(route)
             .maybe_bearer_auth(jwt.as_deref())
-            .abort_signal(abort_signal.as_ref())
+            // .abort_signal(abort_signal.as_ref())
             .json(&form)
             .expect_throw("Could not parse json form"),
           HttpType::Put => http::Request::put(route)
             .maybe_bearer_auth(jwt.as_deref())
-            .abort_signal(abort_signal.as_ref())
+            // .abort_signal(abort_signal.as_ref())
             .json(&form)
             .expect_throw("Could not parse json form"),
         }
@@ -267,23 +345,27 @@ cfg_if! {
             let api_result = r.json::<LemmyErrorType>().await;
             match api_result {
               Ok(LemmyErrorType::IncorrectLogin) => {
-                let authenticated = leptos::expect_context::<leptos::RwSignal<Option<bool>>>();
+                use leptos::prelude::Set;
+                let authenticated = leptos::prelude::expect_context::<leptos::prelude::RwSignal<Option<bool>>>();
                 authenticated.set(Some(false));
-                return Err(LemmyAppError {
-                  error_type: LemmyAppErrorType::ApiError(LemmyErrorType::IncorrectLogin),
-                  content: format!("{:#?}", LemmyErrorType::IncorrectLogin),
+                return Err(AosAppError {
+                  context: "LemmyClient IncorrectLogin error".into(),
+                  error_type: AosAppErrorType::ApiError(LemmyErrorType::IncorrectLogin),
+                  description: format!("{:#?}", LemmyErrorType::IncorrectLogin),
                 });
               }
               Ok(le) => {
-                return Err(LemmyAppError {
-                  error_type: LemmyAppErrorType::ApiError(le.clone()),
-                  content: format!("{:#?}", le),
+                return Err(AosAppError {
+                  context: "LemmyClient client error".into(),
+                  error_type: AosAppErrorType::ApiError(le.clone()),
+                  description: format!("{:#?}", le),
                 })
               }
               Err(e) => {
-                return Err(LemmyAppError {
-                  error_type: LemmyAppErrorType::Unknown,
-                  content: format!("{:#?}", e),
+                return Err(AosAppError {
+                  context: "LemmyClient client error".into(),
+                  error_type: AosAppErrorType::Unknown,
+                  description: format!("{:#?}", e),
                 })
               }
             }
@@ -292,13 +374,13 @@ cfg_if! {
         };
 
         r.json::<Response>().await.map_err(Into::into)
-      }
+      })
+      .await
     }
+  }
 
-    fn build_fetch_query<T: Serialize>(path: &str, form: T) -> String {
-      let form_str = serde_urlencoded::to_string(&form).unwrap_or("".to_string());
-      format!("{}?{}", build_route(path), form_str)
-    }
-
+  fn build_fetch_query<T: Serialize>(path: &str, form: T) -> String {
+    let form_str = serde_urlencoded::to_string(&form).unwrap_or("".to_string());
+    format!("{}?{}", build_route(path), form_str)
   }
 }

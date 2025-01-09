@@ -1,10 +1,13 @@
-use crate::{errors::LemmyAppError, i18n::*};
+use crate::{
+  errors::AosAppError,
+  // i18n::*
+};
 use lemmy_api_common::site::GetSiteResponse;
-use leptos::*;
+use leptos::prelude::*;
 
 #[component]
-pub fn SiteSummary(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
-  let _i18n = use_i18n();
+pub fn SiteSummary(ssr_site: Resource<Result<GetSiteResponse, AosAppError>>) -> impl IntoView {
+  // let _i18n = use_i18n();
 
   view! {
     {move || {

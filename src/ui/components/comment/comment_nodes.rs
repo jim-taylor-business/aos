@@ -1,12 +1,12 @@
 #[cfg(not(feature = "ssr"))]
-use crate::indexed_db::*;
-use crate::{errors::LemmyAppError, ui::components::comment::comment_node::CommentNode};
+use crate::indexed_db::csr_indexed_db::*;
+use crate::{errors::AosAppError, ui::components::comment::comment_node::CommentNode};
 use lemmy_api_common::{lemmy_db_views::structs::CommentView, site::GetSiteResponse};
-use leptos::*;
+use leptos::prelude::*;
 
 #[component]
 pub fn CommentNodes(
-  ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>,
+  ssr_site: Resource<Result<GetSiteResponse, AosAppError>>,
   comments: MaybeSignal<Vec<CommentView>>,
   _post_id: MaybeSignal<Option<i32>>,
 ) -> impl IntoView {
@@ -27,16 +27,17 @@ pub fn CommentNodes(
 
   let hidden_comments: RwSignal<Vec<i32>> = RwSignal::new(vec![]);
 
-  #[cfg(not(feature = "ssr"))]
-  let _hidden_comments_resource = create_local_resource(
+  // #[cfg(not(feature = "ssr"))]
+  let _hidden_comments_resource = Resource::new(
     move || (),
     move |()| async move {
+      #[cfg(not(feature = "ssr"))]
       if let Some(p) = _post_id.get() {
-        if let Ok(d) = build_post_meta_database().await {
-          if let Ok(comment_ids) = get_comment_array(&d, p).await {
-            hidden_comments.set(comment_ids);
-          }
-        }
+        // if let Ok(d) = build_post_meta_database().await {
+        //   if let Ok(comment_ids) = get_comment_array(d, p).await {
+        //     hidden_comments.set(comment_ids);
+        //   }
+        // }
       }
     },
   );
@@ -47,14 +48,15 @@ pub fn CommentNodes(
     } else {
       hidden_comments.update(|hc| hc.push(i));
     }
-    let _hidden_comments_resource = create_local_resource(
+    // #[cfg(not(feature = "ssr"))]
+    let _add_comment_resource = Resource::new(
       move || (),
       move |()| async move {
-        #[cfg(not(feature = "ssr"))]
+        // #[cfg(not(feature = "ssr"))]
         if let Some(p) = _post_id.get() {
-          if let Ok(d) = build_post_meta_database().await {
-            if let Ok(_) = add_comment_array(&d, p, hidden_comments.get()).await {}
-          }
+          // if let Ok(d) = build_post_meta_database().await {
+          //   if let Ok(_) = add_comment_array(d, p, hidden_comments.get()).await {}
+          // }
         }
       },
     );
@@ -66,7 +68,7 @@ pub fn CommentNodes(
         ssr_site
         parent_comment_id=0
         hidden_comments
-        on_toggle={on_hide_show}
+        // on_toggle={on_hide_show}
         comment={cv.into()}
         comments={comments.get().into()}
         level=1

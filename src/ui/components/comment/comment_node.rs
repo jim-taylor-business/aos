@@ -1,30 +1,30 @@
 use crate::{
-  errors::LemmyAppError,
+  errors::AosAppError,
   lemmy_client::*,
   ui::components::common::icon::{Icon, IconType::*},
 };
-use ev::{MouseEvent, SubmitEvent, TouchEvent};
 use lemmy_api_common::{
   comment::{CreateComment, CreateCommentLike, EditComment, SaveComment},
   lemmy_db_schema::source::person::Person,
   lemmy_db_views::structs::{CommentView, LocalUserView},
   site::{GetSiteResponse, MyUserInfo},
 };
-use leptos::*;
-use leptos_dom::helpers::TimeoutHandle;
-use leptos_router::{Form, A};
+use leptos::prelude::*;
+// use leptos_dom::helpers::TimeoutHandle;
+use leptos_router::components::{Form, A};
 use web_sys::{wasm_bindgen::JsCast, HtmlAnchorElement, HtmlImageElement};
+use web_sys::{MouseEvent, SubmitEvent, TouchEvent};
 
 #[component]
 pub fn CommentNode(
-  ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>,
+  ssr_site: Resource<Result<GetSiteResponse, AosAppError>>,
   comment: MaybeSignal<CommentView>,
   comments: MaybeSignal<Vec<CommentView>>,
   level: usize,
   parent_comment_id: i32,
   now_in_millis: u64,
   hidden_comments: RwSignal<Vec<i32>>,
-  #[prop(into)] on_toggle: Callback<i32>,
+  // #[prop(into)] on_toggle: Callback<i32>,
 ) -> impl IntoView {
   let logged_in = Signal::derive(move || {
     if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() {
@@ -80,7 +80,8 @@ pub fn CommentNode(
     let mut options = pulldown_cmark::Options::empty();
     options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
     options.insert(pulldown_cmark::Options::ENABLE_TABLES);
-    options.insert(pulldown_cmark::Options::ENABLE_SUPER_SUB);
+    options.insert(pulldown_cmark::Options::ENABLE_SUPERSCRIPT);
+    options.insert(pulldown_cmark::Options::ENABLE_SUBSCRIPT);
     let parser = pulldown_cmark::Parser::new_ext(&content, options);
 
     let custom = parser.map(|event| match event {
@@ -124,7 +125,7 @@ pub fn CommentNode(
   .0
   .to_string();
 
-  let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
+  let error = expect_context::<RwSignal<Vec<Option<(AosAppError, Option<RwSignal<bool>>)>>>>();
 
   let cancel = move |ev: MouseEvent| {
     ev.stop_propagation();
@@ -132,7 +133,7 @@ pub fn CommentNode(
 
   let on_vote_submit = move |ev: SubmitEvent, score: i16| {
     ev.prevent_default();
-    create_local_resource(
+    Resource::new(
       move || (),
       move |()| async move {
         let form = CreateCommentLike {
@@ -164,7 +165,7 @@ pub fn CommentNode(
 
   let on_save_submit = move |ev: SubmitEvent| {
     ev.prevent_default();
-    create_local_resource(
+    Resource::new(
       move || (),
       move |()| async move {
         let form = SaveComment {
@@ -186,7 +187,7 @@ pub fn CommentNode(
 
   let on_reply_click = move |ev: MouseEvent| {
     ev.prevent_default();
-    create_local_resource(
+    Resource::new(
       move || (),
       move |()| async move {
         let form = CreateComment {
@@ -211,7 +212,7 @@ pub fn CommentNode(
 
   let on_edit_click = move |ev: MouseEvent| {
     ev.prevent_default();
-    create_local_resource(
+    Resource::new(
       move || (),
       move |()| async move {
         let form = EditComment {
@@ -266,7 +267,7 @@ pub fn CommentNode(
               if let Some(i) = t.dyn_ref::<HtmlImageElement>() {
                 let _ = window().location().set_href(&i.src());
               } else if let Some(_l) = t.dyn_ref::<HtmlAnchorElement>() {} else {
-                on_toggle.call(comment_view.get().comment.id.0);
+                // on_toggle.call(comment_view.get().comment.id.0);
               }
             }
           }
@@ -327,7 +328,7 @@ pub fn CommentNode(
         <div class={move || format!("max-w-none prose{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html} />
         <Show when={move || vote_show.get()} fallback={|| view! {}}>
           <div on:click={cancel} class="flex flex-wrap gap-x-2 items-center">
-            <Form on:submit={on_up_vote_submit} action="POST" class="flex items-center">
+            <Form on:submit={on_up_vote_submit} action="POST" attr:class="flex items-center">
               <input type="hidden" name="post_id" value={format!("{}", comment_view.get().post.id)} />
               <input type="hidden" name="score" value={move || if Some(1) == comment_view.get().my_vote { 0 } else { 1 }} />
               <button
@@ -346,7 +347,7 @@ pub fn CommentNode(
               </button>
             </Form>
             <span class="text-sm">{move || comment_view.get().counts.score}</span>
-            <Form on:submit={on_down_vote_submit} action="POST" class="flex items-center">
+            <Form on:submit={on_down_vote_submit} action="POST" attr:class="flex items-center">
               <input type="hidden" name="post_id" value={format!("{}", comment_view.get().post.id)} />
               <input type="hidden" name="score" value={move || if Some(-1) == comment_view.get().my_vote { 0 } else { -1 }} />
               <button
@@ -364,7 +365,7 @@ pub fn CommentNode(
                 <Icon icon={Downvote} />
               </button>
             </Form>
-            <Form action="POST" on:submit={on_save_submit} class="flex items-center">
+            <Form action="POST" on:submit={on_save_submit} attr:class="flex items-center">
               <input type="hidden" name="post_id" value={format!("{}", comment_view.get().post.id)} />
               <input type="hidden" name="save" value={move || format!("{}", !comment_view.get().saved)} />
               <button
@@ -391,7 +392,7 @@ pub fn CommentNode(
             <span class="overflow-hidden break-words">
               <span>{abbr_duration.clone()}</span>
               " ago, by "
-              <A href={move || format!("/u/{}", comment_view.get().creator.name)} class="text-sm break-words hover:text-secondary">
+              <A href={move || format!("/u/{}", comment_view.get().creator.name)} attr:class="text-sm break-words hover:text-secondary">
                 {comment_view.get().creator.name}
               </A>
             </span>
@@ -459,7 +460,7 @@ pub fn CommentNode(
           ssr_site
           parent_comment_id={comment_view.get().comment.id.0}
           hidden_comments={hidden_comments}
-          on_toggle
+          // on_toggle
           comment={cv.into()}
           comments={descendants.get().into()}
           level={level + 1}
@@ -467,5 +468,5 @@ pub fn CommentNode(
         />
       </For>
     </div>
-  }
+  }.into_any()
 }

@@ -1,4 +1,6 @@
-use leptos::*;
+use leptos::html::*;
+use leptos::{logging, prelude::*, text_prop::TextProp};
+use leptos_router::{components::*, hooks::*, *};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum IconType {
@@ -50,11 +52,11 @@ impl IconType {
 }
 
 #[component]
-pub fn Icon(#[prop(into)] icon: MaybeSignal<IconType>, #[prop(optional)] class: MaybeProp<TextProp>) -> impl IntoView {
+pub fn Icon(#[prop(into)] icon: MaybeSignal<IconType> /*, #[prop(optional)] class: MaybeProp<TextProp>*/) -> impl IntoView {
   let href = Signal::derive(move || format!("/icons.svg#{}", icon.get().as_str()));
 
   view! {
-    <svg class={class} width="1.5em" height="1.5em">
+    <svg /*class={class}*/ width="1.5em" height="1.5em">
       <use_ href={href} xlink:href={href} />
     </svg>
   }
