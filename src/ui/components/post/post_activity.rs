@@ -68,7 +68,7 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
           community_id: None,
           type_: None,
           sort: Some(CommentSortType::Top),
-          max_depth: Some(8),
+          max_depth: Some(128),
           page: None,
           limit: None,
           community_name: None,
