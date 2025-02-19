@@ -18,16 +18,16 @@ crate-type = ["cdylib", "rlib"]
 lemmy_api_common = { branch = "deploy_demo", git = "https://github.com/jim-taylor-business/lemmy.git", default-features = false }
 # lemmy_api_common_latest = { tag = "0.19.5", git = "https://github.com/jim-taylor-business/lemmy.git", default-features = false, package = "lemmy_api_common" }
 
-leptos = "0"
+leptos = "0.6"
 leptos_actix = { version = "0", optional = true }
-leptos_meta = "0"
-leptos_router = "0"
+leptos_meta = "0.6"
+leptos_router = "0.6"
 
-# leptos_i18n = "0"
+# leptos_i18n = "0.15"
 # leptos_i18n = { path = "../leptos_i18n/leptos_i18n", optional = true }
 leptos_i18n = { branch = "ssr_cookie_bugs", git = "https://github.com/jim-taylor-business/leptos_i18n.git", optional = true }
 
-# leptos-use = { version = "0", optional = true }
+# leptos-use = { version = "0.6", optional = true }
 # leptos-use = { path = "../leptos-use", optional = true }
 leptos-use = { branch = "ssr_cookie_bugs", git = "https://github.com/jim-taylor-business/leptos-use.git", optional = true }
 
@@ -54,9 +54,9 @@ wasm-cookies = { version = "0", optional = true }
 gloo-net = { version = "0", optional = true, features = ["http"] }
 # chrono = { version = "0", optional = true }
 chrono = "0"
+# specific version required for cargo leptos wasm compatibility
+wasm-bindgen = { version = "=0.2.100", optional = true }
 # required for better debug messages
-# specific version required for leptos wasm compatibility
-wasm-bindgen = { version = "=0.2.95", optional = true }
 console_error_panic_hook = { version = "0", optional = true }
 
 # dependencies for ssr feature

@@ -273,7 +273,8 @@ pub fn PostListing(
   let mut options = pulldown_cmark::Options::empty();
   options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
   options.insert(pulldown_cmark::Options::ENABLE_TABLES);
-  options.insert(pulldown_cmark::Options::ENABLE_SUPER_SUB);
+  options.insert(pulldown_cmark::Options::ENABLE_SUPERSCRIPT);
+  options.insert(pulldown_cmark::Options::ENABLE_SUBSCRIPT);
   let parser = pulldown_cmark::Parser::new_ext(&title, options);
 
   let custom = parser.map(|event| match event {
