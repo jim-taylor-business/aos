@@ -42,8 +42,13 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
     move || serde_json::from_str::<Vec<(usize, Option<PaginationCursor>)>>(&query.get().get("prev").cloned().unwrap_or("".into())).unwrap_or(vec![]);
   let ssr_limit = move || query.get().get("limit").cloned().unwrap_or("".into()).parse::<usize>().unwrap_or(10usize);
 
+  let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
+  let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
+
   let on_sort_click = move |s: SortType| {
     move |_e: MouseEvent| {
+      csr_resources.set(BTreeMap::new());
+
       let r = serde_json::to_string::<SortType>(&s);
       let mut query_params = query.get();
       match r {
@@ -146,17 +151,17 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
     },
   );
 
-  let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
-  let csr_sort = expect_context::<RwSignal<SortType>>();
-  let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
+  // let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
+  // // let csr_sort = expect_context::<RwSignal<SortType>>();
+  // let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
 
-  let on_csr_sort_click = move |s: SortType| {
-    move |_e: MouseEvent| {
-      csr_next_page_cursor.set((0, None));
-      csr_sort.set(s);
-      csr_resources.set(BTreeMap::new());
-    }
-  };
+  // let on_csr_sort_click = move |s: SortType| {
+  //   move |_e: MouseEvent| {
+  //     csr_next_page_cursor.set((0, None));
+  //     // csr_sort.set(s);
+  //     csr_resources.set(BTreeMap::new());
+  //   }
+  // };
 
   let _resize_element = create_node_ref::<Main>();
   let _scroll_element = create_node_ref::<Div>();
@@ -194,7 +199,7 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
 
       if iw >= 640f64 {
         csr_resources.set(BTreeMap::new());
-        csr_next_page_cursor.set((0, None));
+        // csr_next_page_cursor.set((0, None));
       }
 
       if prev_limit.ne(&new_limit) {
@@ -238,7 +243,8 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                 let form = GetPosts {
                   // type_: Some(list_type),
                   type_: Some(ListingType::All),
-                  sort: Some(csr_sort.get()),
+                  sort: Some(ssr_sort()),
+                  // sort: Some(csr_sort.get()),
                   community_name: None,
                   community_id: None,
                   page: None,
@@ -290,7 +296,7 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
           let form = GetPosts {
             // type_: Some(list_type),
             type_: Some(ListingType::All),
-            sort: Some(csr_sort.get()),
+            sort: Some(ssr_sort()), //csr_sort.get()),
             community_name: None,
             community_id: None,
             page: None,
@@ -385,7 +391,7 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
           "All"
         </A>
       </div>
-      <div class="hidden ml-3 sm:inline-block sm:ml-0 dropdown">
+      <div class="ml-3 sm:inline-block sm:ml-0 dropdown">
         <label tabindex="0" class="btn">
           "Sort"
         </label>
@@ -410,37 +416,37 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
           </li>
         </ul>
       </div>
-      <div class="inline-block ml-3 sm:hidden sm:ml-0 dropdown">
-        <label tabindex="0" class="btn">
-          "Sort"
-        </label>
-        <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
-          <li
-            class={move || { (if SortType::Active == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
-            on:click={on_csr_sort_click(SortType::Active)}
-          >
-            <span>{t!(i18n, active)}</span>
-          </li>
-          <li
-            class={move || { (if SortType::Hot == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
-            on:click={on_csr_sort_click(SortType::Hot)}
-          >
-            <span>{t!(i18n, hot)}</span>
-          </li>
-          <li
-            class={move || { (if SortType::Scaled == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
-            on:click={on_csr_sort_click(SortType::Scaled)}
-          >
-            <span>{"Scaled"}</span>
-          </li>
-          <li
-            class={move || { (if SortType::New == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
-            on:click={on_csr_sort_click(SortType::New)}
-          >
-            <span>{t!(i18n, new)}</span>
-          </li>
-        </ul>
-      </div>
+      // <div class="inline-block ml-3 sm:hidden sm:ml-0 dropdown">
+      //   <label tabindex="0" class="btn">
+      //     "Sort"
+      //   </label>
+      //   <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+      //     <li
+      //       class={move || { (if SortType::Active == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
+      //       on:click={on_csr_sort_click(SortType::Active)}
+      //     >
+      //       <span>{t!(i18n, active)}</span>
+      //     </li>
+      //     <li
+      //       class={move || { (if SortType::Hot == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
+      //       on:click={on_csr_sort_click(SortType::Hot)}
+      //     >
+      //       <span>{t!(i18n, hot)}</span>
+      //     </li>
+      //     <li
+      //       class={move || { (if SortType::Scaled == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
+      //       on:click={on_csr_sort_click(SortType::Scaled)}
+      //     >
+      //       <span>{"Scaled"}</span>
+      //     </li>
+      //     <li
+      //       class={move || { (if SortType::New == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
+      //       on:click={on_csr_sort_click(SortType::New)}
+      //     >
+      //       <span>{t!(i18n, new)}</span>
+      //     </li>
+      //   </ul>
+      // </div>
     </div>
     <main node_ref={_resize_element} class="flex flex-col flex-grow w-full sm:flex-row">
       <div class="relative w-full sm:pr-4 lg:w-2/3 2xl:w-3/4 3xl:w-4/5 4xl:w-5/6">
@@ -526,6 +532,7 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
               }
               Some(Ok(posts)) => {
                 let next_page = Some((posts.0.0 + ssr_limit(), posts.1.next_page.clone()));
+                csr_next_page_cursor.set(next_page.clone().unwrap());
                 view! {
                   <Title text={format!("Page {}", 1 + (ssr_from().0 / ssr_limit()))} />
                   // {loading.get().then(move || {
@@ -541,7 +548,7 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                   // })}
                   <div class={move || {
                     format!(
-                      "hidden sm:block columns-1 2xl:columns-2 3xl:columns-3 4xl:columns-4 gap-0{}",
+                      "sm:block columns-1 2xl:columns-2 3xl:columns-3 4xl:columns-4 gap-0{}",
                       if loading.get() { " opacity-25" } else { "" },
                     )
                   }}>
