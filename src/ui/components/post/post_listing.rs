@@ -5,7 +5,7 @@ use crate::{
 };
 use ev::MouseEvent;
 use lemmy_api_common::{lemmy_db_views::structs::*, person::*, post::*, site::GetSiteResponse};
-use leptos::*;
+use leptos::{html::Img, *};
 use leptos_router::*;
 use web_sys::SubmitEvent;
 
@@ -322,6 +322,9 @@ pub fn PostListing(
   .0
   .to_string();
 
+  let thumbnail_element = create_node_ref::<Img>();
+  let thumbnail = RwSignal::new(String::from(""));
+
   view! {
     <div class="grid flex-row gap-y-3 gap-x-4 py-3 px-4 grid-cols-[6rem_1fr] grid-rows-[1fr_2rem] break-inside-avoid sm:grid-cols-[2rem_6rem_1fr] sm:grid-rows-[1fr_2rem]">
       <div class="hidden items-start pt-2 sm:flex sm:flex-row sm:col-span-1 sm:row-span-2">
@@ -379,10 +382,11 @@ pub fn PostListing(
           {move || {
             if let Some(t) = post_view.get().post.thumbnail_url {
               let h = t.inner().to_string();
+              thumbnail.set(h);
               view! {
                 <div class="flex shrink grow basis-0 min-h-16">
                   <div class="shrink grow basis-0 truncate">
-                    <img class="w-24" src={h} />
+                    <img class=move || format!("w-24{}", if thumbnail.get().eq(&"/lemmy.svg".to_string()) { " h-16" } else { "" }) src={move || thumbnail.get()} node_ref={thumbnail_element} on:error={ move |_e| { thumbnail.set("/lemmy.svg".into()); } } />
                   </div>
                 </div>
               }
@@ -511,7 +515,11 @@ pub fn PostListing(
           </button>
         </ActionForm>
         <Show when={move || { post_number == 0 }} fallback={|| {}}>
-          <span class="cursor-pointer" on:click={move |_| reply_show.update(|b| *b = !*b)} title="Reply">
+          <span class="cursor-pointer" on:click={move |_| {
+            reply_show.update(|b| *b = !*b);
+            let y =  document().get_element_by_id("reply_box").unwrap().get_bounding_client_rect().top() - 200f64;
+            window().scroll_to_with_x_and_y(0f64, y);
+            }} title="Reply">
             <Icon icon={Reply} />
           </span>
         </Show>

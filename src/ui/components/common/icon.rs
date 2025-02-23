@@ -21,6 +21,7 @@ pub enum IconType {
   Translate,
   Palette,
   Pencil,
+  Highlighter,
 }
 
 impl IconType {
@@ -45,6 +46,7 @@ impl IconType {
       IconType::Translate => "translate",
       IconType::Palette => "palette",
       IconType::Pencil => "pencil",
+      IconType::Highlighter => "highlighter",
     }
   }
 }

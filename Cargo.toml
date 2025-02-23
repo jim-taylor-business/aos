@@ -54,7 +54,7 @@ wasm-cookies = { version = "0", optional = true }
 gloo-net = { version = "0", optional = true, features = ["http"] }
 # chrono = { version = "0", optional = true }
 chrono = "0"
-# specific version required for cargo leptos wasm compatibility
+# specific version required for cargo-leptos wasm compatibility
 wasm-bindgen = { version = "=0.2.100", optional = true }
 # required for better debug messages
 console_error_panic_hook = { version = "0", optional = true }
@@ -75,7 +75,7 @@ default = "en"
 locales = ["en", "fr"]
 
 [features]
-default = ["ssr", "hydrate", "csr"]
+default = ["ssr"]
 hydrate = [
   "leptos/hydrate",
   "leptos_meta/hydrate",

@@ -1,9 +1,7 @@
 use crate::{
   errors::{message_from_error, LemmyAppError, LemmyAppErrorType},
   ui::components::{comment::comment_node::CommentNode, common::about::About, post::post_listing::PostListing},
-  LemmyApi,
-  LemmyClient,
-  NotificationsRefresh,
+  LemmyApi, LemmyClient, NotificationsRefresh,
 };
 use ev::MouseEvent;
 use lemmy_api_common::{
@@ -209,6 +207,7 @@ pub fn NotificationsActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResp
                             comments={vec![].into()}
                             level=1
                             now_in_millis
+                            highlight_user_id=RwSignal::new(None)
                           />
                           <div class="ml-4">
                             <button class="btn btn-sm" on:click={on_clear_reply_click(r.comment_reply.id)}>

@@ -7,8 +7,7 @@ use crate::{
     home::{site_summary::SiteSummary, trending::Trending},
     post::post_listings::PostListings,
   },
-  OnlineSetter,
-  ResourceStatus,
+  OnlineSetter, ResourceStatus,
 };
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SortType},
@@ -378,7 +377,7 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
             let mut query_params = query.get();
             query_params.remove("list".into());
             query_params.remove("from".into());
-            query_params.remove("prev".into());      
+            query_params.remove("prev".into());
             format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
           }}
           class={move || format!("btn join-item{}", if ListingType::All == ssr_list() { " btn-active" } else { "" })}
@@ -452,6 +451,17 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
               Some(Err(err)) => {
                 view! {
                   <Title text="Error loading post list" />
+                  // {loading.get().then(move || {
+                  //   view! {
+                  //   <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
+                  //     <div class="py-4 px-8">
+                  //       <div class="alert">
+                  //         <span>"Loading"</span>
+                  //       </div>
+                  //     </div>
+                  //   </div>
+                  //   }
+                  // })}
                   <div class="py-4 px-8">
                     <div class="flex justify-between alert alert-error">
                       <span>{message_from_error(&err.0)} " - " {err.0.content}</span>
@@ -518,19 +528,16 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                 let next_page = Some((posts.0.0 + ssr_limit(), posts.1.next_page.clone()));
                 view! {
                   <Title text={format!("Page {}", 1 + (ssr_from().0 / ssr_limit()))} />
-
-                  // {loading
-                  // .get()
-                  // .then(move || {
-                  // view! {
-                  // <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
-                  // <div class="py-4 px-8">
-                  // <div class="alert">
-                  // <span>"Loading"</span>
-                  // </div>
-                  // </div>
-                  // </div>
-                  // }
+                  // {loading.get().then(move || {
+                  //   view! {
+                  //   <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
+                  //     <div class="py-4 px-8">
+                  //       <div class="alert">
+                  //         <span>"Loading"</span>
+                  //       </div>
+                  //     </div>
+                  //   </div>
+                  //   }
                   // })}
                   <div class={move || {
                     format!(
@@ -597,13 +604,17 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
               None => {
                 view! {
                   <Title text="Loading post list" />
-                  <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
-                    <div class="py-4 px-8">
-                      <div class="alert">
-                        <span>"Loading"</span>
+                  {loading.get().then(move || {
+                    view! {
+                    <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
+                      <div class="py-4 px-8">
+                        <div class="alert">
+                          <span>"Loading"</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                    }
+                  })}
                   <div class="hidden" />
                 }
               }
@@ -632,7 +643,7 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                         </div>
                       }
                     }
-                    _ => {
+                    _rs => {
                       view! {
                         <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
                           <div class="py-4 px-8">

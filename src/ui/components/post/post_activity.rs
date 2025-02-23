@@ -221,6 +221,7 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                       } else {
                         None
                       }}
+                      <div id="reply_box">
                       <Show when={move || reply_show.get()} fallback={|| {}}>
                         <div class="mb-3 space-y-3">
                           <label class="form-control">
@@ -238,6 +239,7 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                           </button>
                         </div>
                       </Show>
+                      </div>
                     },
                   )
                 }

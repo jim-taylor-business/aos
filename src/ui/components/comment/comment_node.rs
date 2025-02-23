@@ -6,7 +6,7 @@ use crate::{
 use ev::{MouseEvent, SubmitEvent, TouchEvent};
 use lemmy_api_common::{
   comment::{CreateComment, CreateCommentLike, EditComment, SaveComment},
-  lemmy_db_schema::source::person::Person,
+  lemmy_db_schema::{newtypes::PersonId, source::person::Person},
   lemmy_db_views::structs::{CommentView, LocalUserView},
   site::{GetSiteResponse, MyUserInfo},
 };
@@ -24,6 +24,7 @@ pub fn CommentNode(
   parent_comment_id: i32,
   now_in_millis: u64,
   hidden_comments: RwSignal<Vec<i32>>,
+  highlight_user_id: RwSignal<Option<PersonId>>,
   #[prop(into)] on_toggle: Callback<i32>,
 ) -> impl IntoView {
   let logged_in = Signal::derive(move || {
@@ -252,7 +253,9 @@ pub fn CommentNode(
           format!(
             "pb-2 cursor-pointer{}{}",
             if comment_view.get().creator.id.eq(&comment_view.get().post.creator_id) { " border-l-4 pl-2 border-accent" } else { "" },
-            if let Some(v) = comment_view.get().my_vote {
+            if highlight_user_id.get().is_some() && highlight_user_id.get().eq(&Some(comment_view.get().creator.id)) {
+              " border-l-4 pl-2" // border-yellow"
+            } else if let Some(v) = comment_view.get().my_vote {
               if v == 1 { " border-l-4 pl-2 border-secondary" } else if v == -1 { " border-l-4 pl-2 border-primary" } else { "" }
             } else {
               ""
@@ -389,6 +392,9 @@ pub fn CommentNode(
             <span on:click={move |_| { reply_show.set(false); edit_show.update(|b| *b = !*b); }} class=move || format!("{}", if current_person.get().eq(&Some(comment_view.get().creator)) { "" } else { "pointer-events-none text-base-content/50" }) title="Edit">
               <Icon icon={Pencil} />
             </span>
+              <span  on:click={move |_| { if highlight_user_id.get().is_some() { highlight_user_id.set(None) } else { highlight_user_id.set(Some(comment_view.get().creator.id)) } }} title="Highlight">
+              <Icon icon={Highlighter} />
+            </span>
             <span class="overflow-hidden break-words">
               <span>{abbr_duration.clone()}</span>
               " ago, by "
@@ -465,6 +471,7 @@ pub fn CommentNode(
           comments={descendants.get().into()}
           level={level + 1}
           now_in_millis
+          highlight_user_id
         />
       </For>
     </div>
