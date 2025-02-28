@@ -2607,8 +2607,7 @@ dependencies = [
 [[package]]
 name = "pretty-duration"
 version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d8868e7264af614b3634ff0abbe37b178e61000611b8a75221aea40221924aba"
+source = "git+https://github.com/jim-taylor-business/pretty-duration.git?branch=main#3c23176fa157f176be510fc437281083d8ea749a"
 
 [[package]]
 name = "prettyplease"

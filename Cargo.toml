@@ -44,7 +44,8 @@ web-sys = { version = "0", features = ["AbortController"] }
 pulldown-cmark = { branch = "deploy_demo", git = "https://github.com/jim-taylor-business/pulldown-cmark.git" }
 
 html-escape = "0"
-pretty-duration = "0"
+# pretty-duration = "0"
+pretty-duration = { branch = "main", git = "https://github.com/jim-taylor-business/pretty-duration.git" }
 
 rexie = { version = "0", optional = true }
 serde-wasm-bindgen = { version = "0", optional = true }
