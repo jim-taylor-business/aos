@@ -51,7 +51,7 @@ rexie = { version = "0", optional = true }
 serde-wasm-bindgen = { version = "0", optional = true }
 
 # dependencies for csr or hydrate features
-wasm-cookies = { version = "0", optional = true }
+# wasm-cookies = { version = "0", optional = true }
 gloo-net = { version = "0", optional = true, features = ["http"] }
 # chrono = { version = "0", optional = true }
 chrono = "0"
@@ -67,9 +67,9 @@ actix-proxy = { version = "0", optional = true }
 actix-http = { version = "3", optional = true }
 awc = { version = "3", optional = true }
 
-[package.metadata.cargo-machete]
+# [package.metadata.cargo-machete]
 # strum required for error handling, actix-proxy for awc SSL
-ignored = ["strum", "actix-proxy"]
+# ignored = ["strum", "actix-proxy"]
 
 [package.metadata.leptos-i18n]
 default = "en"
@@ -84,7 +84,7 @@ hydrate = [
   "leptos_i18n/hydrate",
   "leptos-use",
   "dep:wasm-bindgen",
-  "dep:wasm-cookies",
+  # "dep:wasm-cookies",
   "dep:console_error_panic_hook",
   "dep:gloo-net",
   # "dep:chrono",
@@ -98,7 +98,7 @@ csr = [
   "leptos_i18n/csr",
   "leptos-use",
   "dep:wasm-bindgen",
-  "dep:wasm-cookies",
+  # "dep:wasm-cookies",
   "dep:console_error_panic_hook",
   "dep:gloo-net",
   # "dep:chrono",

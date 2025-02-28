@@ -146,15 +146,15 @@ impl From<gloo_net::Error> for LemmyAppError {
   }
 }
 
-#[cfg(not(feature = "ssr"))]
-impl From<wasm_cookies::FromUrlEncodingError> for LemmyAppError {
-  fn from(value: wasm_cookies::FromUrlEncodingError) -> Self {
-    Self {
-      error_type: LemmyAppErrorType::InternalServerError,
-      content: format!("{:#?}", value),
-    }
-  }
-}
+// #[cfg(not(feature = "ssr"))]
+// impl From<wasm_cookies::FromUrlEncodingError> for LemmyAppError {
+//   fn from(value: wasm_cookies::FromUrlEncodingError) -> Self {
+//     Self {
+//       error_type: LemmyAppErrorType::InternalServerError,
+//       content: format!("{:#?}", value),
+//     }
+//   }
+// }
 
 #[cfg(feature = "ssr")]
 impl From<awc::error::JsonPayloadError> for LemmyAppError {
