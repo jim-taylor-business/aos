@@ -6,6 +6,21 @@
     .prose p {
         @apply break-words leading-6 my-0 mb-1;
     }
+    .prose h1 {
+        @apply mt-4 mb-4;
+    }
+    .prose h2 {
+        @apply mt-3 mb-3;
+    }
+    .prose h3 {
+        @apply mt-2 mb-2;
+    }
+    .prose h4 {
+        @apply my-0 mb-1;
+    }
+    .prose h5 {
+        @apply my-0 mb-1;
+    }
     .prose ol {
         @apply list-inside pl-0 mt-0 mb-1;
     }
