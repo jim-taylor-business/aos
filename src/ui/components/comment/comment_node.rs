@@ -398,8 +398,12 @@ pub fn CommentNode(
             <span class="overflow-hidden break-words">
               <span>{abbr_duration.clone()}</span>
               " ago, by "
-              <A href={move || format!("/u/{}", comment_view.get().creator.name)} class="text-sm break-words hover:text-secondary">
-                {comment_view.get().creator.name}
+              <A href={move || format!("{}", comment_view.get().creator.actor_id)} class="text-sm break-words hover:text-secondary">
+              // let creator_name = post_view.get().creator.name.clone();
+              // let creator_name_encoded = html_escape::encode_safe(&comment_view.get().creator.name).to_string();
+                <span inner_html={html_escape::encode_safe(&comment_view.get().creator.name).to_string()} />
+
+                // {comment_view.get().creator.name}
               </A>
             </span>
           </div>

@@ -412,7 +412,7 @@ pub fn PostListing(
         <span class="block mb-1">
           <span>{abbr_duration}</span>
           " ago by "
-          <A href={move || format!("/u/{}", post_view.get().creator.name)} class="inline-block text-sm break-words hover:text-secondary">
+          <A href={move || format!("{}", post_view.get().creator.actor_id)} class="inline-block text-sm break-words hover:text-secondary">
             <span inner_html={creator_name_encoded} />
           </A>
           " in "
