@@ -268,8 +268,12 @@ pub fn CommentNode(
           } else {
             if let Some(t) = e.target() {
               if let Some(i) = t.dyn_ref::<HtmlImageElement>() {
-                let _ = window().location().set_href(&i.src());
-              } else if let Some(_l) = t.dyn_ref::<HtmlAnchorElement>() {} else {
+                // let _ = window().location().set_href(&i.src());
+                let _ = window().open_with_url_and_target(&i.src(), "_blank");
+              } else if let Some(l) = t.dyn_ref::<HtmlAnchorElement>() {
+                let _ = window().open_with_url_and_target(&l.href(), "_blank");
+                e.prevent_default();
+              } else {
                 on_toggle.call(comment_view.get().comment.id.0);
               }
             }

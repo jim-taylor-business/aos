@@ -377,6 +377,7 @@ pub fn PostListing(
       }}>
         <a
           class="flex flex-col h-full"
+          target="_blank"
           href={move || { if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { format!("/post/{}", post_view.get().post.id) } }}
         >
           {move || {
@@ -519,7 +520,7 @@ pub fn PostListing(
             reply_show.update(|b| *b = !*b);
             let y =  document().get_element_by_id("reply_box").unwrap().get_bounding_client_rect().top() - 200f64;
             window().scroll_to_with_x_and_y(0f64, y);
-            }} title="Reply">
+          }} title="Reply">
             <Icon icon={Reply} />
           </span>
         </Show>
