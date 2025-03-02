@@ -37,7 +37,7 @@ jobs:
           export AOS_LEMMY_HTTPS=${{ secrets.APP_SSL }}
           export LEPTOS_TAILWIND_VERSION=v3.4.17
           export LEPTOS_WASM_OPT_VERSION=version_122
-          cargo binstall -y cargo-leptos
+          cargo binstall -y cargo-leptos@0.2.28
           cargo leptos build --release
           ls -la .
           ls -la target
