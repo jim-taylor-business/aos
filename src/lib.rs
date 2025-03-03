@@ -108,13 +108,8 @@ pub fn App() -> impl IntoView {
   );
 
   #[cfg(feature = "ssr")]
-  let (get_theme_cookie, set_theme_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
-    "theme",
-    UseCookieOptions::default()
-      .max_age(604800000)
-      .path("/")
-      .same_site(SameSite::Lax),
-  );
+  let (get_theme_cookie, set_theme_cookie) =
+    use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax));
   #[cfg(feature = "ssr")]
   if let Some(t) = get_theme_cookie.get() {
     set_theme_cookie.set(Some(t));
@@ -151,6 +146,7 @@ pub fn App() -> impl IntoView {
     </Transition>
     <Stylesheet id="leptos" href="/pkg/aos.css" />
     <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico" />
+    <Link rel="manifest" href="/manifest.json" />
     <Title formatter />
     <Meta name="description" content={formatter("".into())} />
     <I18nContextProvider cookie_options={leptos_i18n::context::CookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax)}>

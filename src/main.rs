@@ -1,8 +1,8 @@
 // useful in development to only have errors in compiler output
 #![allow(warnings)]
 
-use cfg_if::cfg_if;
 use aos::*;
+use cfg_if::cfg_if;
 
 cfg_if! {
   if #[cfg(feature = "ssr")] {
@@ -20,11 +20,27 @@ cfg_if! {
       Ok(actix_files::NamedFile::open(format!("{site_root}/lemmy.svg"))?)
     }
 
+    #[actix_web::get("manifest.json")]
+    async fn manifest(leptos_options: web::Data<leptos::LeptosOptions>) -> actix_web::Result<actix_files::NamedFile> {
+      let leptos_options = leptos_options.into_inner();
+      let site_root = &leptos_options.site_root;
+      // let mut f = actix_files::NamedFile::open(format!("{site_root}/manifest.json"))?.set_content_type(mime::Mime::from_str("application/manifest+json").unwrap());
+      // Ok(f)
+      Ok(actix_files::NamedFile::open(format!("{site_root}/manifest.json"))?)
+    }
+
     #[actix_web::get("favicon.ico")]
     async fn favicon(leptos_options: web::Data<leptos::LeptosOptions>) -> actix_web::Result<actix_files::NamedFile> {
       let leptos_options = leptos_options.into_inner();
       let site_root = &leptos_options.site_root;
       Ok(actix_files::NamedFile::open(format!("{site_root}/favicon.ico"))?)
+    }
+
+    #[actix_web::get("favicon.png")]
+    async fn large_favicon(leptos_options: web::Data<leptos::LeptosOptions>) -> actix_web::Result<actix_files::NamedFile> {
+      let leptos_options = leptos_options.into_inner();
+      let site_root = &leptos_options.site_root;
+      Ok(actix_files::NamedFile::open(format!("{site_root}/favicon.png"))?)
     }
 
     #[actix_web::get("icons.svg")]
@@ -52,8 +68,10 @@ cfg_if! {
           .service(Files::new("/pkg", format!("{site_root}/pkg")))
           .service(Files::new("/assets", site_root))
           .service(favicon)
+          .service(large_favicon)
           .service(icons)
           .service(lemmy)
+          .service(manifest)
           .leptos_routes(leptos_options.to_owned(), routes.to_owned(), App)
           .app_data(web::Data::new(leptos_options.to_owned()))
           .app_data(client)
