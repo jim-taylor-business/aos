@@ -12,17 +12,21 @@ use lemmy_api_common::{
 };
 use leptos::*;
 use leptos_meta::*;
-use leptos_router::use_params_map;
+use leptos_router::{use_params_map, use_query_map};
 use web_sys::{
   wasm_bindgen::{JsCast, JsValue},
-  HtmlAnchorElement, HtmlImageElement,
+  HtmlAnchorElement, HtmlImageElement, HtmlInputElement, HtmlTextAreaElement,
 };
 
 #[component]
 pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
   let params = use_params_map();
+  let query = use_query_map();
+
   let post_id = move || params.get().get("id").cloned().unwrap_or_default().parse::<i32>().ok();
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
+  let ssr_sort =
+    move || serde_json::from_str::<CommentSortType>(&query.get().get("sort").cloned().unwrap_or("".into())).unwrap_or(CommentSortType::Top);
 
   let reply_show = RwSignal::new(false);
   let refresh_comments = RwSignal::new(false);
@@ -30,9 +34,25 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
   let loading = RwSignal::new(true);
   let refresh = RwSignal::new(false);
 
+  #[cfg(not(feature = "ssr"))]
+  if let Some(id) = post_id() {
+    let form = CreateComment {
+      content: "".into(),
+      post_id: PostId(id),
+      parent_id: None,
+      language_id: None,
+    };
+    if let Ok(Some(s)) = window().local_storage() {
+      if let Ok(Some(c)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {
+        content.set(c);
+      }
+    }
+  }
+
   let post_resource = Resource::new(
     move || (refresh.get(), post_id()),
     move |(_refresh, id_string)| async move {
+      // logging::log!("6 {:?} {}", id_string, _refresh);
       if let Some(id) = id_string {
         let form = GetPost {
           id: Some(PostId(id)),
@@ -41,33 +61,34 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
         let result = LemmyClient.get_post(form).await;
         loading.set(false);
         match result {
-          Ok(o) => Ok(o),
+          Ok(o) => Some(Ok(o)),
           Err(e) => {
             error.update(|es| es.push(Some((e.clone(), None))));
-            Err((e, Some(refresh)))
+            Some(Err((e, Some(refresh))))
           }
         }
       } else {
-        Err((
-          LemmyAppError {
-            error_type: LemmyAppErrorType::ParamsError,
-            content: "".into(),
-          },
-          None,
-        ))
+        // Err((
+        //   LemmyAppError {
+        //     error_type: LemmyAppErrorType::ParamsError,
+        //     content: "".into(),
+        //   },
+        None //,
+             // ))
       }
     },
   );
 
   let comments = Resource::new(
-    move || (refresh.get(), post_id(), refresh_comments.get()),
-    move |(_refresh, post_id, _refresh_comments)| async move {
+    move || (refresh.get(), post_id(), ssr_sort(), refresh_comments.get()),
+    move |(_refresh, post_id, sort_type, _refresh_comments)| async move {
       if let Some(id) = post_id {
         let form = GetComments {
           post_id: Some(PostId(id)),
           community_id: None,
           type_: None,
-          sort: Some(CommentSortType::Top),
+          sort: Some(sort_type),
+          // sort: Some(CommentSortType::Top),
           max_depth: Some(128),
           page: None,
           limit: None,
@@ -91,6 +112,31 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
     },
   );
 
+  let on_sort_click = move |s: CommentSortType| {
+    move |_e: MouseEvent| {
+      let r = serde_json::to_string::<CommentSortType>(&s);
+      let mut query_params = query.get();
+      match r {
+        Ok(o) => {
+          query_params.insert("sort".into(), o);
+        }
+        Err(e) => {
+          error.update(|es| es.push(Some((e.into(), None))));
+        }
+      }
+      if CommentSortType::Top == s {
+        query_params.remove("sort".into());
+      }
+      // query_params.remove("from".into());
+      // query_params.remove("prev".into());
+      let navigate = leptos_router::use_navigate();
+      navigate(
+        &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+        Default::default(),
+      );
+    }
+  };
+
   let on_reply_click = move |ev: MouseEvent| {
     ev.prevent_default();
     create_local_resource(
@@ -108,6 +154,15 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
             Ok(_o) => {
               refresh_comments.update(|b| *b = !*b);
               reply_show.update(|b| *b = !*b);
+              let form = CreateComment {
+                content: "".into(),
+                post_id: PostId(id),
+                parent_id: None,
+                language_id: None,
+              };
+              if let Ok(Some(s)) = window().local_storage() {
+                let _ = s.delete(&serde_json::to_string(&form).ok().unwrap());
+              }
             }
             Err(e) => {
               error.update(|es| es.push(Some((e, None))));
@@ -118,6 +173,19 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
     );
   };
 
+  let _visibility_element = create_node_ref::<leptos_dom::html::Textarea>();
+
+  #[cfg(not(feature = "ssr"))]
+  {
+    leptos_use::use_intersection_observer_with_options(
+      _visibility_element,
+      move |_entries, _io| {
+        _visibility_element.get().unwrap().focus();
+      },
+      leptos_use::UseIntersectionObserverOptions::default(),
+    );
+  }
+
   view! {
     <main role="main" class="flex flex-col flex-grow w-full">
       <div class="flex flex-col">
@@ -125,7 +193,7 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
           <Transition fallback={|| {}}>
             {move || {
               match post_resource.get() {
-                Some(Err(err)) => {
+                Some(Some(Err(err))) => {
                   Some(
                     view! {
                       <Title text="Error loading post" />
@@ -152,7 +220,7 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                     },
                   )
                 }
-                Some(Ok(res)) => {
+                Some(Some(Ok(res))) => {
                   let text = if let Some(b) = res.post_view.post.body.clone() {
                     if b.len() > 0 { Some(b) } else { res.post_view.post.embed_description.clone() }
                   } else {
@@ -224,7 +292,7 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                       } else {
                         None
                       }}
-                      <div id="reply_box">
+                      // <div id="reply_box">
                       <Show when={move || reply_show.get()} fallback={|| {}}>
                         <div class="mb-3 space-y-3">
                           <label class="form-control">
@@ -232,7 +300,24 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                               class="h-24 text-base textarea textarea-bordered"
                               placeholder="Comment text"
                               prop:value={move || content.get()}
-                              on:input={move |ev| content.set(event_target_value(&ev))}
+                              node_ref={_visibility_element}
+                              // id="reply_text"
+                              // autofocus=true
+                              on:input={move |ev| {
+                                content.set(event_target_value(&ev));
+                                if let Some(id) = post_id() {
+                                  let form = CreateComment {
+                                    content: "".into(),
+                                    post_id: PostId(id),
+                                    parent_id: None,
+                                    language_id: None,
+                                  };
+                                  if let Ok(Some(s)) = window().local_storage() {
+                                    // if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {}
+                                    let _ = s.set_item(&serde_json::to_string(&form).ok().unwrap(), &event_target_value(&ev));
+                                  }
+                                }
+                              }}
                             >
                               {content.get_untracked()}
                             </textarea>
@@ -241,11 +326,18 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                             "Comment"
                           </button>
                         </div>
+                        // {
+                        //   let t = document().get_element_by_id("reply_text").unwrap().dyn_ref::<HtmlTextAreaElement>().unwrap().clone();
+                        //   // let d = document().get_element_by_id("reply_text").unwrap();
+                        //   // d.a;
+                        //   t.focus();
+                        // }
                       </Show>
-                      </div>
+                      // </div>
                     },
                   )
                 }
+                Some(None) |
                 None => {
                   Some(
                     view! {
@@ -272,6 +364,28 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                 .map(|res| {
                   view! {
                     <div class="w-full">
+                      <div class="ml-3 sm:inline-block sm:ml-0 dropdown">
+                        <label tabindex="0" class="btn">
+                          "Sort"
+                        </label>
+                        <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+                          <li class={move || { (if CommentSortType::Top == ssr_sort() { "btn-active" } else { "" }).to_string() }} on:click={on_sort_click(CommentSortType::Top)}>
+                            <span>"Top"</span>
+                          </li>
+                          <li class={move || { (if CommentSortType::Hot == ssr_sort() { "btn-active" } else { "" }).to_string() }} on:click={on_sort_click(CommentSortType::Hot)}>
+                            <span>"Hot"</span>
+                          </li>
+                          <li class={move || { (if CommentSortType::New == ssr_sort() { "btn-active" } else { "" }).to_string() }} on:click={on_sort_click(CommentSortType::New)}>
+                            <span>"New"</span>
+                          </li>
+                          <li class={move || { (if CommentSortType::Old == ssr_sort() { "btn-active" } else { "" }).to_string() }} on:click={on_sort_click(CommentSortType::Old)}>
+                            <span>"Old"</span>
+                          </li>
+                          <li class={move || { (if CommentSortType::Controversial == ssr_sort() { "btn-active" } else { "" }).to_string() }} on:click={on_sort_click(CommentSortType::Controversial)}>
+                            <span>"Contraversial"</span>
+                          </li>
+                        </ul>
+                      </div>
                       <CommentNodes ssr_site comments={res.comments.into()} _post_id={post_id().into()} />
                     </div>
                   }

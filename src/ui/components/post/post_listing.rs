@@ -518,8 +518,8 @@ pub fn PostListing(
         <Show when={move || { post_number == 0 }} fallback={|| {}}>
           <span class="cursor-pointer" on:click={move |_| {
             reply_show.update(|b| *b = !*b);
-            let y =  document().get_element_by_id("reply_box").unwrap().get_bounding_client_rect().top() - 200f64;
-            window().scroll_to_with_x_and_y(0f64, y);
+            // let y = document().get_element_by_id("reply_box").unwrap().get_bounding_client_rect().top() - 200f64;
+            // window().scroll_to_with_x_and_y(0f64, y);
           }} title="Reply">
             <Icon icon={Reply} />
           </span>

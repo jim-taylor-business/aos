@@ -15,7 +15,7 @@ pub fn CommentNodes(
   let com_sig = RwSignal::new(comments_clone);
   let highlight_user_id = RwSignal::new(None);
 
-  let now_in_millis = {
+  let now_in_millis = RwSignal::new({
     #[cfg(not(feature = "ssr"))]
     {
       chrono::offset::Utc::now().timestamp_millis() as u64
@@ -24,7 +24,7 @@ pub fn CommentNodes(
     {
       std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64
     }
-  };
+  });
 
   let hidden_comments: RwSignal<Vec<i32>> = RwSignal::new(vec![]);
 

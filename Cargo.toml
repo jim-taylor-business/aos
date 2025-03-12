@@ -76,7 +76,7 @@ default = "en"
 locales = ["en", "fr"]
 
 [features]
-default = ["ssr"]
+default = ["csr"]
 hydrate = [
   "leptos/hydrate",
   "leptos_meta/hydrate",

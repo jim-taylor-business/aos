@@ -85,7 +85,7 @@ pub fn NotificationsActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResp
     },
   );
 
-  let now_in_millis = {
+  let now_in_millis = RwSignal::new({
     #[cfg(not(feature = "ssr"))]
     {
       chrono::offset::Utc::now().timestamp_millis() as u64
@@ -94,7 +94,7 @@ pub fn NotificationsActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResp
     {
       std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64
     }
-  };
+  });
 
   let on_hide_show = |_| {};
 

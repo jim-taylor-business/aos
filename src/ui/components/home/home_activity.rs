@@ -112,42 +112,42 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
         // show_hidden: None,
       };
 
-      if online.get().0 {
-        let result = LemmyClient.list_posts(form.clone()).await;
-        loading.set(false);
-        match result {
-          Ok(o) => {
-            #[cfg(not(feature = "ssr"))]
-            if let Ok(Some(s)) = window().local_storage() {
-              if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {}
-              let _ = s.set_item(&serde_json::to_string(&form).ok().unwrap(), &serde_json::to_string(&o).ok().unwrap());
-            }
-            Ok((from, o))
+      // if online.get().0 {
+      let result = LemmyClient.list_posts(form.clone()).await;
+      loading.set(false);
+      match result {
+        Ok(o) => {
+          #[cfg(not(feature = "ssr"))]
+          if let Ok(Some(s)) = window().local_storage() {
+            if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {}
+            let _ = s.set_item(&serde_json::to_string(&form).ok().unwrap(), &serde_json::to_string(&o).ok().unwrap());
           }
-          Err(e) => {
-            error.update(|es| es.push(Some((e.clone(), None))));
-            Err((e, Some(refresh)))
-          }
+          Ok((from, o))
         }
-      } else {
-        #[cfg(not(feature = "ssr"))]
-        if let Ok(Some(s)) = window().local_storage() {
-          if let Ok(Some(c)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {
-            if let Ok(o) = serde_json::from_str::<GetPostsResponse>(&c) {
-              loading.set(false);
-              return Ok((from, o));
-            }
-          }
+        Err(e) => {
+          error.update(|es| es.push(Some((e.clone(), None))));
+          Err((e, Some(refresh)))
         }
-
-        loading.set(false);
-        let e = LemmyAppError {
-          error_type: LemmyAppErrorType::OfflineError,
-          content: String::from(""),
-        };
-        error.update(|es| es.push(Some((e.clone(), None))));
-        Err((e, Some(refresh)))
       }
+      // } else {
+      //   #[cfg(not(feature = "ssr"))]
+      //   if let Ok(Some(s)) = window().local_storage() {
+      //     if let Ok(Some(c)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {
+      //       if let Ok(o) = serde_json::from_str::<GetPostsResponse>(&c) {
+      //         loading.set(false);
+      //         return Ok((from, o));
+      //       }
+      //     }
+      //   }
+
+      //   loading.set(false);
+      //   let e = LemmyAppError {
+      //     error_type: LemmyAppErrorType::OfflineError,
+      //     content: String::from(""),
+      //   };
+      //   error.update(|es| es.push(Some((e.clone(), None))));
+      //   Err((e, Some(refresh)))
+      // }
     },
   );
 

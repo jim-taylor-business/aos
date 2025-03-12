@@ -26,7 +26,7 @@ use lemmy_api_common::{lemmy_db_schema::SortType, lemmy_db_views::structs::Pagin
 use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
-use leptos_use::{use_cookie_with_options, use_document_visibility, SameSite, UseCookieOptions};
+use leptos_use::{use_cookie_with_options, use_document_visibility, use_service_worker, SameSite, UseCookieOptions, UseServiceWorkerReturn};
 use std::collections::BTreeMap;
 use ui::components::notifications::notifications_activity::NotificationsActivity;
 
@@ -61,6 +61,15 @@ pub fn App() -> impl IntoView {
   provide_context(uri);
 
   #[cfg(not(feature = "ssr"))]
+  let UseServiceWorkerReturn {
+    registration,
+    installing,
+    waiting,
+    active,
+    skip_waiting,
+    ..
+  } = use_service_worker();
+  #[cfg(not(feature = "ssr"))]
   let visibility = use_document_visibility();
   #[cfg(not(feature = "ssr"))]
   provide_context(visibility);
@@ -77,8 +86,8 @@ pub fn App() -> impl IntoView {
   let csr_resources: RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>> =
     RwSignal::new(BTreeMap::new());
   provide_context(csr_resources);
-  let csr_sort: RwSignal<SortType> = RwSignal::new(SortType::Active);
-  provide_context(csr_sort);
+  // let csr_sort: RwSignal<SortType> = RwSignal::new(SortType::Active);
+  // provide_context(csr_sort);
   let csr_next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
   provide_context(csr_next_page_cursor);
 
