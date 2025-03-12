@@ -12,7 +12,7 @@ use lemmy_api_common::{
 };
 use leptos::*;
 use leptos_meta::*;
-use leptos_router::{use_params_map, use_query_map};
+use leptos_router::{use_location, use_params_map, use_query_map};
 use web_sys::{
   wasm_bindgen::{JsCast, JsValue},
   HtmlAnchorElement, HtmlImageElement, HtmlInputElement, HtmlTextAreaElement,
