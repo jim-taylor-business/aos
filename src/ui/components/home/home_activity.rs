@@ -109,7 +109,9 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
         disliked_only: None,
         liked_only: None,
         page_cursor: from.1.clone(),
-        // show_hidden: None,
+        show_hidden: Some(true),
+        show_nsfw: Some(true),
+        show_read: Some(true),
       };
 
       // if online.get().0 {
@@ -253,7 +255,9 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                   disliked_only: None,
                   liked_only: None,
                   page_cursor: from.1.clone(),
-                  // show_hidden: None,
+                  show_hidden: Some(true),
+                  show_nsfw: Some(true),
+                  show_read: Some(true),
                 };
 
                 let result = LemmyClient.list_posts(form).await;
@@ -306,7 +310,9 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
             disliked_only: None,
             liked_only: None,
             page_cursor: from.clone(),
-            // show_hidden: None,
+            show_hidden: Some(true),
+            show_nsfw: Some(true),
+            show_read: Some(true),
           };
 
           let from_clone = from.clone();

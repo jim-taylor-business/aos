@@ -148,6 +148,7 @@ pub fn NotificationsActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResp
                         saved: r.saved,
                         creator_blocked: r.creator_blocked,
                         my_vote: r.my_vote,
+                        banned_from_community: false,
                       };
                       let p = PostView {
                         post: r.post.clone(),
@@ -181,6 +182,9 @@ pub fn NotificationsActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResp
                         creator_blocked: false,
                         my_vote: None,
                         unread_comments: 0,
+                        banned_from_community: false,
+                        image_details: None,
+                        hidden: false,
                       };
                       view! {
                         <div class="mb-6">
