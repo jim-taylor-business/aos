@@ -10,4 +10,5 @@ pub fn LoginActivity() -> impl IntoView {
       <LoginForm />
     </main>
   }
+  .into_any()
 }

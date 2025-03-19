@@ -12,7 +12,7 @@ use lemmy_api_common::{
 };
 use leptos::prelude::*;
 use leptos_meta::*;
-use leptos_router::hooks::use_params_map;
+use leptos_router::{use_location, use_params_map, use_query_map};
 use web_sys::{
   wasm_bindgen::{JsCast, JsValue},
   HtmlAnchorElement, HtmlImageElement, MouseEvent,
@@ -69,7 +69,7 @@ pub fn PostActivity(ssr_site: Resource<Result<GetSiteResponse, AosAppError>>) ->
           community_id: None,
           type_: None,
           sort: Some(CommentSortType::Top),
-          max_depth: Some(8),
+          max_depth: Some(128),
           page: None,
           limit: None,
           community_name: None,
@@ -208,8 +208,11 @@ pub fn PostActivity(ssr_site: Resource<Result<GetSiteResponse, AosAppError>>) ->
                                 on:click={move |e: MouseEvent| {
                                   if let Some(t) = e.target() {
                                     if let Some(i) = t.dyn_ref::<HtmlImageElement>() {
-                                      let _ = window().location().set_href(&i.src());
-                                    } else if let Some(_l) = t.dyn_ref::<HtmlAnchorElement>() {}
+                                      let _ = window().open_with_url_and_target(&i.src(), "_blank");
+                                    } else if let Some(l) = t.dyn_ref::<HtmlAnchorElement>() {
+                                      e.prevent_default();
+                                      let _ = window().open_with_url_and_target(&l.href(), "_blank");
+                                    }
                                   }
                                 }}
                               >
@@ -222,20 +225,22 @@ pub fn PostActivity(ssr_site: Resource<Result<GetSiteResponse, AosAppError>>) ->
                         None
                       }}
                       <Show when={move || reply_show.get()} fallback={|| {}}>
-                        <div class="mb-3 space-y-3">
-                          <label class="form-control">
-                            <textarea
-                              class="h-24 text-base textarea textarea-bordered"
-                              placeholder="Comment text"
-                              prop:value={move || content.get()}
-                              on:input={move |ev| content.set(event_target_value(&ev))}
-                            >
-                              {content.get_untracked()}
-                            </textarea>
-                          </label>
-                          <button on:click={on_reply_click} type="button" class="btn btn-neutral">
-                            "Comment"
-                          </button>
+                        <div id="reply_box">
+                          <div class="mb-3 space-y-3">
+                            <label class="form-control">
+                              <textarea
+                                class="h-24 text-base textarea textarea-bordered"
+                                placeholder="Comment text"
+                                prop:value={move || content.get()}
+                                on:input={move |ev| content.set(event_target_value(&ev))}
+                              >
+                                {content.get_untracked()}
+                              </textarea>
+                            </label>
+                            <button on:click={on_reply_click} type="button" class="btn btn-neutral">
+                              "Comment"
+                            </button>
+                          </div>
                         </div>
                       </Show>
                     }.into_any()
@@ -277,4 +282,5 @@ pub fn PostActivity(ssr_site: Resource<Result<GetSiteResponse, AosAppError>>) ->
       </div>
     </main>
   }
+  .into_any()
 }

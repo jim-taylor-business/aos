@@ -1,21 +1,25 @@
 [package]
 name = "aos"
-version = "0.19.3-alpha.lw-demo"
+version = "0.19.9-alpha.aos-demo"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[profile.dev]
+opt-level = 1
+#incremental = true
+
 [profile.release]
 codegen-units = 1
-opt-level = "s"
+# opt-level = 3
 lto = true
 
 [profile.wasm-release]
 inherits = "release"
-codegen-units = 1
-opt-level = "s"
-lto = true
+# codegen-units = 1
+# opt-level = 3
+# lto = true
 
 [dependencies]
 # recommended - use the latest version tag and test against an instance that supports the same version
@@ -40,12 +44,13 @@ leptos_router = "0"
 # leptos_router = { branch = "main", git = "https://github.com/leptos-rs/leptos" }
 
 # leptos_i18n = { version = "0", features = ["track_locale_files"] }
+# leptos_i18n = { version = "0", features = ["track_locale_files"] }
 # leptos_i18n = { path = "../leptos_i18n/leptos_i18n", optional = true }
-# leptos_i18n = { branch = "ssr_cookie_bugs", git = "https://github.com/jim-taylor-business/leptos_i18n.git", optional = true }
+leptos_i18n = { branch = "ssr_cookie_bugs", git = "https://github.com/jim-taylor-business/leptos_i18n.git", optional = true }
 # leptos_i18n = { branch = "master", git = "https://github.com/Baptistemontan/leptos_i18n.git", optional = true }
 
-# leptos-use = { version = "0", optional = true }
-leptos-use = { path = "../leptos-use", optional = true }
+leptos-use = { version = "0", optional = true }
+# leptos-use = { path = "../leptos-use", optional = true }
 # leptos-use = { branch = "main", git = "https://github.com/Synphonyte/leptos-use.git", optional = true }
 
 send_wrapper = "0"
@@ -55,15 +60,16 @@ codee = "0"
 serde = { version = "1", features = ["derive"] }
 serde_urlencoded = "0"
 serde_json = "1"
-# cfg-if = "1"
+cfg-if = "1"
 strum = "0"
 strum_macros = "0"
 web-sys = { version = "0", features = ["AbortController"] }
 
-pulldown-cmark = { branch = "deploy_demo", git = "https://github.com/jim-taylor-business/pulldown-cmark.git" }
+# pulldown-cmark = { branch = "deploy_demo", git = "https://github.com/jim-taylor-business/pulldown-cmark.git" }
+pulldown-cmark = "0"
 
 html-escape = "0"
-pretty-duration = "0"
+pretty-duration = { branch = "main", git = "https://github.com/jim-taylor-business/pretty-duration.git" }
 
 rexie = { version = "0", optional = true }
 serde-wasm-bindgen = { version = "0", optional = true }
@@ -75,7 +81,7 @@ gloo-net = { version = "0", optional = true, features = ["http"] }
 chrono = "0"
 # required for better debug messages
 # specific version required for leptos wasm compatibility
-wasm-bindgen = { version = "=0.2.99", optional = true }
+wasm-bindgen = { version = "=0.2.100", optional = true }
 console_error_panic_hook = { version = "0", optional = true }
 
 # dependencies for ssr feature
@@ -84,13 +90,12 @@ actix-web = { version = "4", features = ["macros"], optional = true }
 actix-proxy = { version = "0", optional = true }
 actix-http = { version = "3", optional = true }
 
-awc = { version = "3", optional = true }
+# awc = { version = "3", optional = true }
 reqwest = { version = "0", features = ["json"] }
 
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+uuid = { version = "1.16.0", default-features = false, features = ["js"] }
 
-[package.metadata.cargo-machete]
-# strum required for error handling, actix-proxy for awc SSL
-ignored = ["strum", "actix-proxy"]
 
 [package.metadata.leptos-i18n]
 default = "en"
@@ -102,7 +107,7 @@ hydrate = [
   "leptos/hydrate",
   # "leptos_meta/hydrate",
   # "leptos_router/hydrate",
-  # "leptos_i18n/hydrate",
+  "leptos_i18n/hydrate",
   "leptos-use",
   "dep:wasm-bindgen",
   # "dep:wasm-cookies",
@@ -116,7 +121,7 @@ csr = [
   "leptos/csr",
   # "leptos_meta/csr",
   # "leptos_router/csr",
-  # "leptos_i18n/csr",
+  "leptos_i18n/csr",
   "leptos-use",
   "dep:wasm-bindgen",
   # "dep:wasm-cookies",
@@ -131,7 +136,7 @@ ssr = [
   # "leptos_meta/ssr",
   # "leptos_router/ssr",
   # "leptos_i18n/ssr",
-  # "leptos_i18n/actix",
+  "leptos_i18n/actix",
   "leptos-use/ssr",
   "leptos-use/actix",
   "leptos_actix",
@@ -139,7 +144,7 @@ ssr = [
   "dep:actix-web",
   "dep:actix-files",
   "dep:actix-proxy",
-  "dep:awc",
+  # "dep:awc",
 ]
 
 [package.metadata.cargo-all-features]

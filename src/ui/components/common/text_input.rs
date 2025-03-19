@@ -55,4 +55,5 @@ pub fn TextInput(
       </Show>
     </label>
   }
+  .into_any()
 }

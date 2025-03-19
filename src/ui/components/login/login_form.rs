@@ -1,6 +1,6 @@
 use crate::{
   errors::{AosAppError, AosAppErrorType},
-  // i18n::*,
+  i18n::*,
   ui::components::common::text_input::{InputType, TextInput},
   UriSetter,
 };
@@ -88,7 +88,7 @@ pub async fn login(username_or_email: String, password: String, uri: String) -> 
 
 #[component]
 pub fn LoginForm() -> impl IntoView {
-  // let _i18n = use_i18n();
+  let _i18n = use_i18n();
 
   let query = use_query_map();
 
@@ -296,4 +296,5 @@ pub fn LoginForm() -> impl IntoView {
     // </Form>
     // </form>
   }
+  .into_any()
 }

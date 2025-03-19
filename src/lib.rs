@@ -1,5 +1,5 @@
 #![allow(warnings)]
-#![recursion_limit = "2048"]
+// #![recursion_limit = "10000"]
 
 // use leptos::prelude::*;
 // // mod api;
@@ -50,7 +50,7 @@ mod ui;
 
 use crate::{
   errors::AosAppError,
-  // i18n::*,
+  i18n::*,
   layout::Layout,
   lemmy_client::*,
   ui::components::{
@@ -66,13 +66,13 @@ use lemmy_api_common::{lemmy_db_schema::SortType, lemmy_db_views::structs::Pagin
 use leptos::prelude::*;
 // use leptos::*;
 use leptos_meta::*;
-use leptos_router::{components::*, SsrMode, StaticSegment, WildcardSegment};
-use leptos_use::{use_cookie_with_options, use_document_visibility, SameSite, UseCookieOptions};
+use leptos_router::{components::*, path, ParamSegment, SsrMode, StaticSegment, WildcardSegment};
+use leptos_use::{use_cookie_with_options, use_document_visibility, use_service_worker, SameSite, UseCookieOptions, UseServiceWorkerReturn};
 use std::collections::BTreeMap;
-use ui::components::login::login_form::LoginForm;
+use ui::components::{login::login_form::LoginForm, post::post_activity::PostActivity};
 // use ui::components::notifications::notifications_activity::NotificationsActivity;
 
-// leptos_i18n::load_locales!();
+leptos_i18n::load_locales!();
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
@@ -110,6 +110,15 @@ pub fn App() -> impl IntoView {
   provide_context(uri);
 
   #[cfg(not(feature = "ssr"))]
+  let UseServiceWorkerReturn {
+    registration,
+    installing,
+    waiting,
+    active,
+    skip_waiting,
+    ..
+  } = use_service_worker();
+  #[cfg(not(feature = "ssr"))]
   let visibility = use_document_visibility();
   #[cfg(not(feature = "ssr"))]
   provide_context(visibility);
@@ -126,23 +135,23 @@ pub fn App() -> impl IntoView {
   let csr_resources: RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>> =
     RwSignal::new(BTreeMap::new());
   provide_context(csr_resources);
-  let csr_sort: RwSignal<SortType> = RwSignal::new(SortType::Active);
-  provide_context(csr_sort);
+  // let csr_sort: RwSignal<SortType> = RwSignal::new(SortType::Active);
+  // provide_context(csr_sort);
   let csr_next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
   provide_context(csr_next_page_cursor);
 
-  let site_signal: RwSignal<Option<Result<GetSiteResponse, AosAppError>>> = RwSignal::new(None);
+  // let site_signal: RwSignal<Option<Result<GetSiteResponse, AosAppError>>> = RwSignal::new(None);
 
   let ssr_site = Resource::new(
     move || (authenticated.get()),
     move |user| async move {
       let result = if user == Some(false) {
-        if let Some(Ok(mut s)) = site_signal.get() {
-          s.my_user = None;
-          Ok(s)
-        } else {
-          LemmyClient.get_site().await
-        }
+        // if let Some(Ok(mut s)) = site_signal.get() {
+        //   s.my_user = None;
+        //   Ok(s)
+        // } else {
+        LemmyClient.get_site().await
+        // }
       } else {
         LemmyClient.get_site().await
       };
@@ -229,7 +238,7 @@ pub fn App() -> impl IntoView {
   // </Router>
 
   // <h1> "Test" </h1>
-      // <I18nContextProvider cookie_options={leptos_i18n::context::CookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax)}>
+      <I18nContextProvider cookie_options={leptos_i18n::context::CookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax)}>
         <Router>
           <Routes fallback=|| "NotFound">
             <ParentRoute path=StaticSegment("") view={move || view! { <Layout ssr_site /> }} ssr={SsrMode::Async}>
@@ -237,30 +246,36 @@ pub fn App() -> impl IntoView {
               <Route path=StaticSegment("") view={move || view! { <HomeActivity ssr_site /> }} />
 
               // <Route path=StaticSegment("") view={CommunitiesActivity} />
-              // <Route path=StaticSegment("create_post") view={CommunitiesActivity} />
-              // // <Route path="post/:id" view={move || view! { <PostActivity ssr_site /> }} />
+              <Route path=StaticSegment("create_post") view={CommunitiesActivity} />
 
-              // <Route path=StaticSegment("search") view={CommunitiesActivity} />
-              // <Route path=StaticSegment("communities") view={CommunitiesActivity} />
-              // <Route path=StaticSegment("create_community") view={CommunitiesActivity} />
-              // // <Route path="c/:name" view={move || view! { <HomeActivity ssr_site /> }} />
+              // <Route path=StaticSegment("post/:id") view={move || view! { <PostActivity ssr_site /> }} />
+              // <Route path=(StaticSegment("post"), ParamSegment("id")) view={move || view! { <PostActivity ssr_site /> }} />
+              <Route path=path!("post/:id") view={move || view! { <PostActivity ssr_site /> }} />
+
+              <Route path=StaticSegment("search") view={CommunitiesActivity} />
+              <Route path=StaticSegment("communities") view={CommunitiesActivity} />
+              <Route path=StaticSegment("create_community") view={CommunitiesActivity} />
+              // <Route path=StaticSegment("c/:name") view={move || view! { <HomeActivity ssr_site /> }} />
+              // <Route path=(StaticSegment("c"), ParamSegment("name")) view={move || view! { <HomeActivity ssr_site /> }} />
+              <Route path=path!("c/:name") view={move || view! { <HomeActivity ssr_site /> }} />
 
               <Route path=StaticSegment("login") /*methods={&[Method::Get, Method::Post]}*/ view={LoginActivity} />
-              // <Route path=StaticSegment("logout") view={CommunitiesActivity} />
-              // <Route path=StaticSegment("signup") view={CommunitiesActivity} />
+              <Route path=StaticSegment("logout") view={CommunitiesActivity} />
+              <Route path=StaticSegment("signup") view={CommunitiesActivity} />
 
-              // <Route path=StaticSegment("inbox") view={CommunitiesActivity} />
-              // <Route path=StaticSegment("settings") view={CommunitiesActivity} />
-              // // <Route path="notifications" view={move || view! { <NotificationsActivity ssr_site /> }} />
-              // <Route path=StaticSegment("u/:id") view={CommunitiesActivity} />
+              <Route path=StaticSegment("inbox") view={CommunitiesActivity} />
+              <Route path=StaticSegment("settings") view={CommunitiesActivity} />
+              // <Route path="notifications" view={move || view! { <NotificationsActivity ssr_site /> }} />
+              // <Route path=(StaticSegment("u"), ParamSegment("id")) view={CommunitiesActivity} />
+              <Route path=path!("u/:id") view={CommunitiesActivity} />
 
-              // <Route path=StaticSegment("modlog") view={CommunitiesActivity} />
-              // <Route path=StaticSegment("instances") view={CommunitiesActivity} />
-              // <Route path=WildcardSegment("selector")  view={NotFound} />
+              <Route path=StaticSegment("modlog") view={CommunitiesActivity} />
+              <Route path=StaticSegment("instances") view={CommunitiesActivity} />
+              <Route path=WildcardSegment("selector")  view={NotFound} />
             </ParentRoute>
           </Routes>
         </Router>
-      // </I18nContextProvider>
+      </I18nContextProvider>
       // </body>
       // </html>
     }

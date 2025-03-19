@@ -23,6 +23,7 @@ pub enum IconType {
   Translate,
   Palette,
   Pencil,
+  Highlighter,
 }
 
 impl IconType {
@@ -47,6 +48,7 @@ impl IconType {
       IconType::Translate => "translate",
       IconType::Palette => "palette",
       IconType::Pencil => "pencil",
+      IconType::Highlighter => "highlighter",
     }
   }
 }
@@ -56,7 +58,7 @@ pub fn Icon(#[prop(into)] icon: MaybeSignal<IconType> /*, #[prop(optional)] clas
   let href = Signal::derive(move || format!("/icons.svg#{}", icon.get().as_str()));
 
   view! {
-    <svg /*class={class}*/ width="1.5em" height="1.5em">
+    <svg /*attr:class={move || class.to_owned()}*/ width="1.5em" height="1.5em">
       <use_ href={href} xlink:href={href} />
     </svg>
   }

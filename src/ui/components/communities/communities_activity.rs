@@ -9,4 +9,5 @@ pub fn CommunitiesActivity() -> impl IntoView {
       <About />
     </main>
   }
+  .into_any()
 }

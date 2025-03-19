@@ -1,4 +1,4 @@
-use crate::{/* i18n::*,  */lemmy_error::LemmyErrorType};
+use crate::{i18n::*, lemmy_error::LemmyErrorType};
 use core::num::ParseIntError;
 // use leptos::*;
 use leptos::{logging, prelude::*, text_prop::TextProp};
@@ -38,18 +38,18 @@ pub struct AosAppError {
 pub type AosAppResult<T> = Result<T, AosAppError>;
 
 pub fn message_from_error(error: &AosAppError) -> String {
-  // let i18n = use_i18n();
+  let i18n = use_i18n();
   let s = match error.error_type {
-    // AosAppErrorType::ApiError(LemmyErrorType::IncorrectLogin) => t!(i18n, invalid_login)().to_html(),
-    // AosAppErrorType::EmptyUsername => t!(i18n, empty_username)().to_html(),
-    // AosAppErrorType::EmptyPassword => t!(i18n, empty_password)().to_html(),
-    // AosAppErrorType::MissingReason => t!(i18n, empty_reason)().to_html(),
-    // AosAppErrorType::InternalServerError => t!(i18n, internal)().to_html(),
-    // AosAppErrorType::Unknown => t!(i18n, unknown)().to_html(),
+    AosAppErrorType::ApiError(LemmyErrorType::IncorrectLogin) => t!(i18n, invalid_login)().to_html(),
+    AosAppErrorType::EmptyUsername => t!(i18n, empty_username)().to_html(),
+    AosAppErrorType::EmptyPassword => t!(i18n, empty_password)().to_html(),
+    AosAppErrorType::MissingReason => t!(i18n, empty_reason)().to_html(),
+    AosAppErrorType::InternalServerError => t!(i18n, internal)().to_html(),
+    AosAppErrorType::Unknown => t!(i18n, unknown)().to_html(),
     AosAppErrorType::OfflineError => "App is offline at the moment".to_string(),
     _ => "An error without description".to_string(),
   };
-  logging::error!("{} - {}", s, error.description);
+  logging::error!("{}\n{:#?}", s, error);
   s
 }
 
@@ -164,28 +164,28 @@ impl From<gloo_net::Error> for AosAppError {
 //   }
 // }
 
-#[cfg(feature = "ssr")]
-impl From<awc::error::JsonPayloadError> for AosAppError {
-  fn from(value: awc::error::JsonPayloadError) -> Self {
-    Self {
-      context: "JsonPayloadError error".into(),
-      error_type: AosAppErrorType::InternalServerError,
-      description: format!("{:#?}", value),
-    }
-  }
-}
+// #[cfg(feature = "ssr")]
+// impl From<awc::error::JsonPayloadError> for AosAppError {
+//   fn from(value: awc::error::JsonPayloadError) -> Self {
+//     Self {
+//       context: "JsonPayloadError error".into(),
+//       error_type: AosAppErrorType::InternalServerError,
+//       description: format!("{:#?}", value),
+//     }
+//   }
+// }
 
-#[cfg(feature = "ssr")]
-impl From<awc::error::SendRequestError> for AosAppError {
-  fn from(value: awc::error::SendRequestError) -> Self {
-    use std::error::Error;
-    Self {
-      context: "SendRequestError error".into(),
-      error_type: AosAppErrorType::InternalServerError,
-      description: format!("{} - source: {:?}", value, value.source()),
-    }
-  }
-}
+// #[cfg(feature = "ssr")]
+// impl From<awc::error::SendRequestError> for AosAppError {
+//   fn from(value: awc::error::SendRequestError) -> Self {
+//     use std::error::Error;
+//     Self {
+//       context: "SendRequestError error".into(),
+//       error_type: AosAppErrorType::InternalServerError,
+//       description: format!("{} - source: {:?}", value, value.source()),
+//     }
+//   }
+// }
 
 #[cfg(feature = "ssr")]
 impl From<actix_http::error::PayloadError> for AosAppError {

@@ -17,4 +17,5 @@ pub fn PostListings(
       }
     </For>
   }
+  .into_any()
 }

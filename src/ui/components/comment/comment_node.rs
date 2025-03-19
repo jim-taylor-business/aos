@@ -5,11 +5,11 @@ use crate::{
 };
 use lemmy_api_common::{
   comment::{CreateComment, CreateCommentLike, EditComment, SaveComment},
-  lemmy_db_schema::source::person::Person,
+  lemmy_db_schema::{newtypes::PersonId, source::person::Person},
   lemmy_db_views::structs::{CommentView, LocalUserView},
   site::{GetSiteResponse, MyUserInfo},
 };
-use leptos::prelude::*;
+use leptos::{html::Textarea, prelude::*};
 // use leptos_dom::helpers::TimeoutHandle;
 use leptos_router::components::{Form, A};
 use web_sys::{wasm_bindgen::JsCast, HtmlAnchorElement, HtmlImageElement};
@@ -22,8 +22,9 @@ pub fn CommentNode(
   comments: MaybeSignal<Vec<CommentView>>,
   level: usize,
   parent_comment_id: i32,
-  now_in_millis: u64,
+  now_in_millis: RwSignal<u64>,
   hidden_comments: RwSignal<Vec<i32>>,
+  highlight_user_id: RwSignal<Option<PersonId>>,
   // #[prop(into)] on_toggle: Callback<i32>,
 ) -> impl IntoView {
   let logged_in = Signal::derive(move || {
@@ -108,15 +109,17 @@ pub fn CommentNode(
   let still_handle: RwSignal<Option<TimeoutHandle>> = RwSignal::new(None);
 
   let reply_content = RwSignal::new(String::default());
+  let edit_content = RwSignal::new(String::default());
 
   let duration_in_text = pretty_duration::pretty_duration(
-    &std::time::Duration::from_millis(now_in_millis - comment_view.get().post.published.timestamp_millis() as u64),
+    &std::time::Duration::from_millis(now_in_millis.get() - comment_view.get().comment.published.timestamp_millis() as u64),
     Some(pretty_duration::PrettyDurationOptions {
       output_format: Some(pretty_duration::PrettyDurationOutputFormat::Compact),
       singular_labels: None,
       plural_labels: None,
     }),
   );
+
   let abbr_duration = if let Some((index, _)) = duration_in_text.match_indices(' ').nth(1) {
     duration_in_text.split_at(index)
   } else {
@@ -199,8 +202,18 @@ pub fn CommentNode(
         let result = LemmyClient.reply_comment(form).await;
         match result {
           Ok(o) => {
+            now_in_millis.set(chrono::offset::Utc::now().timestamp_millis() as u64);
             children.update(|cs| cs.push(o.comment_view));
             reply_show.set(false);
+            let form = CreateComment {
+              content: "".into(),
+              post_id: comment_view.get().comment.post_id,
+              parent_id: Some(comment_view.get().comment.id),
+              language_id: None,
+            };
+            if let Ok(Some(s)) = window().local_storage() {
+              let _ = s.delete(&serde_json::to_string(&form).ok().unwrap());
+            }
           }
           Err(e) => {
             error.update(|es| es.push(Some((e, None))));
@@ -216,7 +229,7 @@ pub fn CommentNode(
       move || (),
       move |()| async move {
         let form = EditComment {
-          content: Some(comment_view.get().comment.content),
+          content: Some(edit_content.get()),
           comment_id: comment_view.get().comment.id,
           language_id: None,
         };
@@ -224,6 +237,14 @@ pub fn CommentNode(
         match result {
           Ok(o) => {
             edit_show.set(false);
+            let form = EditComment {
+              content: None,
+              comment_id: comment_view.get().comment.id,
+              language_id: None,
+            };
+            if let Ok(Some(s)) = window().local_storage() {
+              let _ = s.delete(&serde_json::to_string(&form).ok().unwrap());
+            }
           }
           Err(e) => {
             error.update(|es| es.push(Some((e, None))));
@@ -239,6 +260,19 @@ pub fn CommentNode(
     edit_show.set(false);
   };
 
+  let _visibility_element = create_node_ref::<Textarea>();
+
+  #[cfg(not(feature = "ssr"))]
+  {
+    leptos_use::use_intersection_observer_with_options(
+      _visibility_element,
+      move |_entries, _io| {
+        _visibility_element.get().unwrap().focus();
+      },
+      leptos_use::UseIntersectionObserverOptions::default(),
+    );
+  }
+
   view! {
     <div class={move || {
       format!(
@@ -252,7 +286,9 @@ pub fn CommentNode(
           format!(
             "pb-2 cursor-pointer{}{}",
             if comment_view.get().creator.id.eq(&comment_view.get().post.creator_id) { " border-l-4 pl-2 border-accent" } else { "" },
-            if let Some(v) = comment_view.get().my_vote {
+            if highlight_user_id.get().is_some() && highlight_user_id.get().eq(&Some(comment_view.get().creator.id)) {
+              " border-l-4 pl-2" // border-yellow"
+            } else if let Some(v) = comment_view.get().my_vote {
               if v == 1 { " border-l-4 pl-2 border-secondary" } else if v == -1 { " border-l-4 pl-2 border-primary" } else { "" }
             } else {
               ""
@@ -265,8 +301,12 @@ pub fn CommentNode(
           } else {
             if let Some(t) = e.target() {
               if let Some(i) = t.dyn_ref::<HtmlImageElement>() {
-                let _ = window().location().set_href(&i.src());
-              } else if let Some(_l) = t.dyn_ref::<HtmlAnchorElement>() {} else {
+                // let _ = window().location().set_href(&i.src());
+                let _ = window().open_with_url_and_target(&i.src(), "_blank");
+              } else if let Some(l) = t.dyn_ref::<HtmlAnchorElement>() {
+                let _ = window().open_with_url_and_target(&l.href(), "_blank");
+                e.prevent_default();
+              } else {
                 // on_toggle.call(comment_view.get().comment.id.0);
               }
             }
@@ -383,17 +423,53 @@ pub fn CommentNode(
                 <Icon icon={Save} />
               </button>
             </Form>
-            <span on:click={move |_| { edit_show.set(false); reply_show.update(|b| *b = !*b); }} title="Reply">
+            <span on:click={move |_| {
+              edit_show.set(false);
+              reply_show.update(|b| *b = !*b);
+              let form = CreateComment {
+                content: "".into(),
+                post_id: comment_view.get().comment.post_id,
+                parent_id: Some(comment_view.get().comment.id),
+                language_id: None,
+              };
+              if let Ok(Some(s)) = window().local_storage() {
+                if let Ok(Some(c)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {
+                  reply_content.set(c);
+                }
+              }
+            }} title="Reply">
               <Icon icon={Reply} />
             </span>
-            <span on:click={move |_| { reply_show.set(false); edit_show.update(|b| *b = !*b); }} class=move || format!("{}", if current_person.get().eq(&Some(comment_view.get().creator)) { "" } else { "pointer-events-none text-base-content/50" }) title="Edit">
+            <span on:click={move |_| {
+              reply_show.set(false);
+              edit_show.update(|b| *b = !*b);
+              let form = EditComment {
+                content: None,
+                comment_id: comment_view.get().comment.id,
+                language_id: None,
+              };
+              if let Ok(Some(s)) = window().local_storage() {
+                if let Ok(Some(c)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {
+                  edit_content.set(c);
+                } else {
+                  edit_content.set(comment_view.get_untracked().comment.content);
+                }
+              }
+            }} class=move || format!("{}", if current_person.get().eq(&Some(comment_view.get().creator)) { "" } else { "pointer-events-none text-base-content/50" }) title="Edit">
               <Icon icon={Pencil} />
+            </span>
+            <span on:click={move |_| { if highlight_user_id.get().eq(&Some(comment_view.get().creator.id)) { highlight_user_id.set(None) } else { highlight_user_id.set(Some(comment_view.get().creator.id)) } }} title="Highlight">
+              <Icon icon={Highlighter} />
             </span>
             <span class="overflow-hidden break-words">
               <span>{abbr_duration.clone()}</span>
               " ago, by "
-              <A href={move || format!("/u/{}", comment_view.get().creator.name)} attr:class="text-sm break-words hover:text-secondary">
-                {comment_view.get().creator.name}
+              <A href={move || format!("{}", comment_view.get().creator.actor_id)} attr:class="text-sm break-words hover:text-secondary">
+              // let creator_name = post_view.get().creator.name.clone();
+              // let creator_name_encoded = html_escape::encode_safe(&comment_view.get().creator.name).to_string();
+                <span inner_html={html_escape::encode_safe(&comment_view.get().creator.name).to_string()} />
+
+                // {comment_view.get().creator.name}
               </A>
             </span>
           </div>
@@ -423,7 +499,20 @@ pub fn CommentNode(
                 class="h-24 text-base textarea textarea-bordered"
                 placeholder="Comment text"
                 prop:value={move || reply_content.get()}
-                on:input={move |ev| reply_content.set(event_target_value(&ev))}
+                node_ref={_visibility_element}
+                on:input={move |ev| {
+                  reply_content.set(event_target_value(&ev));
+                  let form = CreateComment {
+                    content: "".into(),
+                    post_id: comment_view.get().comment.post_id,
+                    parent_id: Some(comment_view.get().comment.id),
+                    language_id: None,
+                  };
+                  if let Ok(Some(s)) = window().local_storage() {
+                    // if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {}
+                    let _ = s.set_item(&serde_json::to_string(&form).ok().unwrap(), &event_target_value(&ev));
+                  }
+                }}
               >
                 {reply_content.get_untracked()}
               </textarea>
@@ -440,10 +529,20 @@ pub fn CommentNode(
               <textarea
                 class="h-24 text-base textarea textarea-bordered"
                 placeholder="Comment text"
-                prop:value={move || comment_view.get_untracked().comment.content}
-                on:input={move |ev| comment_view.update(|cv| cv.comment.content = event_target_value(&ev))}
+                prop:value={move || edit_content.get()}
+                on:input={move |ev| {
+                  comment_view.update(|cv| cv.comment.content = event_target_value(&ev));
+                  let form = EditComment {
+                    content: None,
+                    comment_id: comment_view.get().comment.id,
+                    language_id: None,
+                  };
+                  if let Ok(Some(s)) = window().local_storage() {
+                    let _ = s.set_item(&serde_json::to_string(&form).ok().unwrap(), &event_target_value(&ev));
+                  }
+                }}
               >
-                {comment_view.get_untracked().comment.content}
+                {edit_content.get_untracked()}
               </textarea>
             </label>
             <button on:click={on_edit_click} type="button" class="btn btn-neutral">
@@ -465,8 +564,10 @@ pub fn CommentNode(
           comments={descendants.get().into()}
           level={level + 1}
           now_in_millis
+          highlight_user_id
         />
       </For>
     </div>
-  }.into_any()
+  }
+  .into_any()
 }

@@ -85,7 +85,7 @@ pub fn NotificationsActivity(ssr_site: Resource<Result<GetSiteResponse, AosAppEr
     },
   );
 
-  let now_in_millis = {
+  let now_in_millis = RwSignal::new({
     #[cfg(not(feature = "ssr"))]
     {
       chrono::offset::Utc::now().timestamp_millis() as u64
@@ -94,7 +94,7 @@ pub fn NotificationsActivity(ssr_site: Resource<Result<GetSiteResponse, AosAppEr
     {
       std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64
     }
-  };
+  });
 
   // let on_hide_show = |_| {};
 
@@ -148,6 +148,7 @@ pub fn NotificationsActivity(ssr_site: Resource<Result<GetSiteResponse, AosAppEr
                         saved: r.saved,
                         creator_blocked: r.creator_blocked,
                         my_vote: r.my_vote,
+                        banned_from_community: false,
                       };
                       let p = PostView {
                         post: r.post.clone(),
@@ -181,6 +182,9 @@ pub fn NotificationsActivity(ssr_site: Resource<Result<GetSiteResponse, AosAppEr
                         creator_blocked: false,
                         my_vote: None,
                         unread_comments: 0,
+                        banned_from_community: false,
+                        hidden: false,
+                        image_details: None,
                       };
                       view! {
                         <div class="mb-6">
@@ -208,6 +212,7 @@ pub fn NotificationsActivity(ssr_site: Resource<Result<GetSiteResponse, AosAppEr
                             comments={vec![].into()}
                             level=1
                             now_in_millis
+                            highlight_user_id=RwSignal::new(None)
                           />
                           <div class="ml-4">
                             <button class="btn btn-sm" on:click={on_clear_reply_click(r.comment_reply.id)}>
@@ -324,4 +329,5 @@ pub fn NotificationsActivity(ssr_site: Resource<Result<GetSiteResponse, AosAppEr
       </div>
     </main>
   }
+  .into_any()
 }
