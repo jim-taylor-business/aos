@@ -5,9 +5,12 @@ use crate::{
 };
 use ev::MouseEvent;
 use lemmy_api_common::{lemmy_db_views::structs::*, person::*, post::*, site::GetSiteResponse};
-use leptos::{html::Img, *};
+use leptos::*;
 use leptos_router::*;
 use web_sys::SubmitEvent;
+
+#[cfg(not(feature = "ssr"))]
+use leptos::html::Img;
 
 #[server(VotePostFn, "/serverfn")]
 pub async fn vote_post_fn(post_id: i32, score: i16) -> Result<Option<PostResponse>, ServerFnError> {
@@ -322,6 +325,7 @@ pub fn PostListing(
   .0
   .to_string();
 
+  #[cfg(not(feature = "ssr"))]
   let thumbnail_element = create_node_ref::<Img>();
   let thumbnail = RwSignal::new(String::from(""));
 
@@ -387,7 +391,14 @@ pub fn PostListing(
               view! {
                 <div class="flex shrink grow basis-0 min-h-16">
                   <div class="shrink grow basis-0 truncate">
-                    <img class=move || format!("w-24{}", if thumbnail.get().eq(&"/lemmy.svg".to_string()) { " h-16" } else { "" }) src={move || thumbnail.get()} node_ref={thumbnail_element} on:error={ move |_e| { thumbnail.set("/lemmy.svg".into()); } } />
+                    <img
+                      class={move || format!("w-24{}", if thumbnail.get().eq(&"/lemmy.svg".to_string()) { " h-16" } else { "" })}
+                      src={move || thumbnail.get()}
+                      node_ref={thumbnail_element}
+                      on:error={move |_e| {
+                        thumbnail.set("/lemmy.svg".into());
+                      }}
+                    />
                   </div>
                 </div>
               }
@@ -413,9 +424,13 @@ pub fn PostListing(
         <span class="block mb-1">
           <span>{abbr_duration}</span>
           " ago by "
-          <A href={move || format!("{}", post_view.get().creator.actor_id)} class="inline-block text-sm break-words hover:text-secondary">
+          <a
+            href={move || format!("{}", post_view.get().creator.actor_id)}
+            target="_blank"
+            class="inline-block text-sm break-words hover:text-secondary"
+          >
             <span inner_html={creator_name_encoded} />
-          </A>
+          </a>
           " in "
           <A
             class="inline-block text-sm break-words hover:text-secondary"
@@ -516,11 +531,13 @@ pub fn PostListing(
           </button>
         </ActionForm>
         <Show when={move || { post_number == 0 }} fallback={|| {}}>
-          <span class="cursor-pointer" on:click={move |_| {
-            reply_show.update(|b| *b = !*b);
-            // let y = document().get_element_by_id("reply_box").unwrap().get_bounding_client_rect().top() - 200f64;
-            // window().scroll_to_with_x_and_y(0f64, y);
-          }} title="Reply">
+          <span
+            class="cursor-pointer"
+            on:click={move |_| {
+              reply_show.update(|b| *b = !*b);
+            }}
+            title="Reply"
+          >
             <Icon icon={Reply} />
           </span>
         </Show>

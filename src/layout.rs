@@ -5,7 +5,6 @@ use crate::{
 use codee::string::FromToStringCodec;
 use lemmy_api_common::site::GetSiteResponse;
 use leptos::*;
-use leptos_meta::*;
 use leptos_router::Outlet;
 use leptos_use::{use_cookie_with_options, SameSite, UseCookieOptions};
 

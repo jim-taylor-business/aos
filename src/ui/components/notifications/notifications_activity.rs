@@ -8,7 +8,6 @@ use lemmy_api_common::{
   lemmy_db_schema::{
     aggregates::structs::PostAggregates,
     newtypes::{CommentReplyId, InstanceId},
-    source::{instance::Instance, person::Person},
     CommentSortType, SubscribedType,
   },
   lemmy_db_views::structs::{CommentView, PostView},
@@ -211,7 +210,7 @@ pub fn NotificationsActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResp
                             comments={vec![].into()}
                             level=1
                             now_in_millis
-                            highlight_user_id=RwSignal::new(None)
+                            highlight_user_id={RwSignal::new(None)}
                           />
                           <div class="ml-4">
                             <button class="btn btn-sm" on:click={on_clear_reply_click(r.comment_reply.id)}>

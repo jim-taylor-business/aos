@@ -77,7 +77,7 @@ default = "en"
 locales = ["en", "fr"]
 
 [features]
-default = ["csr"]
+default = ["ssr"]
 hydrate = [
   "leptos/hydrate",
   "leptos_meta/hydrate",
@@ -127,14 +127,15 @@ denylist = ["actix-files", "actix-web", "leptos_actix"]
 skip_feature_sets = [["csr", "ssr"], ["csr", "hydrate"], ["ssr", "hydrate"]]
 
 [profile.release]
-codegen-units = 1
+# codegen-units = 1
+opt-level = 3
 lto = true
 
 [profile.wasm-release]
 inherits = "release"
-opt-level = "s"
+# codegen-units = 1
+opt-level = 3
 lto = true
-codegen-units = 1
 
 [package.metadata.leptos]
 output-name = "aos"

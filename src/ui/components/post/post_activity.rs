@@ -1,5 +1,5 @@
 use crate::{
-  errors::{message_from_error, LemmyAppError, LemmyAppErrorType},
+  errors::{message_from_error, LemmyAppError},
   lemmy_client::*,
   ui::components::{comment::comment_nodes::CommentNodes, post::post_listing::PostListing},
 };
@@ -13,10 +13,7 @@ use lemmy_api_common::{
 use leptos::*;
 use leptos_meta::*;
 use leptos_router::{use_location, use_params_map, use_query_map};
-use web_sys::{
-  wasm_bindgen::{JsCast, JsValue},
-  HtmlAnchorElement, HtmlImageElement, HtmlInputElement, HtmlTextAreaElement,
-};
+use web_sys::{wasm_bindgen::JsCast, HtmlAnchorElement, HtmlImageElement};
 
 #[component]
 pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
@@ -180,7 +177,7 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
     leptos_use::use_intersection_observer_with_options(
       _visibility_element,
       move |_entries, _io| {
-        _visibility_element.get().unwrap().focus();
+        let _ = _visibility_element.get().unwrap().focus();
       },
       leptos_use::UseIntersectionObserverOptions::default(),
     );
@@ -228,7 +225,7 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                   };
                   Some(
                     view! {
-                      <Title text=res.post_view.post.name.clone() />
+                      <Title text={res.post_view.post.name.clone()} />
                       // {loading
                       // .get()
                       // .then(move || {
@@ -313,7 +310,6 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                                     language_id: None,
                                   };
                                   if let Ok(Some(s)) = window().local_storage() {
-                                    // if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {}
                                     let _ = s.set_item(&serde_json::to_string(&form).ok().unwrap(), &event_target_value(&ev));
                                   }
                                 }
@@ -326,20 +322,19 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                             "Comment"
                           </button>
                         </div>
-                        // {
-                        //   let t = document().get_element_by_id("reply_text").unwrap().dyn_ref::<HtmlTextAreaElement>().unwrap().clone();
-                        //   // let d = document().get_element_by_id("reply_text").unwrap();
-                        //   // d.a;
-                        //   t.focus();
-                        // }
+                      // {
+                      // let t = document().get_element_by_id("reply_text").unwrap().dyn_ref::<HtmlTextAreaElement>().unwrap().clone();
+                      // // let d = document().get_element_by_id("reply_text").unwrap();
+                      // // d.a;
+                      // t.focus();
+                      // }
                       </Show>
-                      // </div>
                     },
                   )
                 }
-                Some(None) |
-                None => {
+                Some(None) | None => {
                   Some(
+                    // </div>
                     view! {
                       <Title text="Loading post" />
                       <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
@@ -369,19 +364,34 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                           "Sort"
                         </label>
                         <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
-                          <li class={move || { (if CommentSortType::Top == ssr_sort() { "btn-active" } else { "" }).to_string() }} on:click={on_sort_click(CommentSortType::Top)}>
+                          <li
+                            class={move || { (if CommentSortType::Top == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                            on:click={on_sort_click(CommentSortType::Top)}
+                          >
                             <span>"Top"</span>
                           </li>
-                          <li class={move || { (if CommentSortType::Hot == ssr_sort() { "btn-active" } else { "" }).to_string() }} on:click={on_sort_click(CommentSortType::Hot)}>
+                          <li
+                            class={move || { (if CommentSortType::Hot == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                            on:click={on_sort_click(CommentSortType::Hot)}
+                          >
                             <span>"Hot"</span>
                           </li>
-                          <li class={move || { (if CommentSortType::New == ssr_sort() { "btn-active" } else { "" }).to_string() }} on:click={on_sort_click(CommentSortType::New)}>
+                          <li
+                            class={move || { (if CommentSortType::New == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                            on:click={on_sort_click(CommentSortType::New)}
+                          >
                             <span>"New"</span>
                           </li>
-                          <li class={move || { (if CommentSortType::Old == ssr_sort() { "btn-active" } else { "" }).to_string() }} on:click={on_sort_click(CommentSortType::Old)}>
+                          <li
+                            class={move || { (if CommentSortType::Old == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                            on:click={on_sort_click(CommentSortType::Old)}
+                          >
                             <span>"Old"</span>
                           </li>
-                          <li class={move || { (if CommentSortType::Controversial == ssr_sort() { "btn-active" } else { "" }).to_string() }} on:click={on_sort_click(CommentSortType::Controversial)}>
+                          <li
+                            class={move || { (if CommentSortType::Controversial == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                            on:click={on_sort_click(CommentSortType::Controversial)}
+                          >
                             <span>"Contraversial"</span>
                           </li>
                         </ul>

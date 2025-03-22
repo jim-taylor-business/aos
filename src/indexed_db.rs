@@ -58,33 +58,33 @@ cfg_if! {
     }
   }
 
-  pub async fn get_edit_draft(rexie: &Rexie, id: i32) -> Result<String> {
-    let transaction = rexie.transaction(&["comment_meta"], TransactionMode::ReadOnly)?;
-    let comments = transaction.store("comment_meta")?;
-    if let Some(comment_meta_value) = comments.get(id.into()).await? {
-      if let Ok(CommentMeta { edit_draft: Some(edit_draft), .. }) = serde_wasm_bindgen::from_value::<CommentMeta>(comment_meta_value) {
-        Ok(edit_draft)
-      } else {
-        Ok("".into())
-      }
-    } else {
-      Ok("".into())
-    }
-  }
+  // pub async fn get_edit_draft(rexie: &Rexie, id: i32) -> Result<String> {
+  //   let transaction = rexie.transaction(&["comment_meta"], TransactionMode::ReadOnly)?;
+  //   let comments = transaction.store("comment_meta")?;
+  //   if let Some(comment_meta_value) = comments.get(id.into()).await? {
+  //     if let Ok(CommentMeta { edit_draft: Some(edit_draft), .. }) = serde_wasm_bindgen::from_value::<CommentMeta>(comment_meta_value) {
+  //       Ok(edit_draft)
+  //     } else {
+  //       Ok("".into())
+  //     }
+  //   } else {
+  //     Ok("".into())
+  //   }
+  // }
 
-  pub async fn get_reply_draft(rexie: &Rexie, id: i32) -> Result<String> {
-    let transaction = rexie.transaction(&["comment_meta"], TransactionMode::ReadOnly)?;
-    let comments = transaction.store("comment_meta")?;
-    if let Some(comment_meta_value) = comments.get(id.into()).await? {
-      if let Ok(CommentMeta { reply_draft: Some(reply_draft), .. }) = serde_wasm_bindgen::from_value::<CommentMeta>(comment_meta_value) {
-        Ok(reply_draft)
-      } else {
-        Ok("".into())
-      }
-    } else {
-      Ok("".into())
-    }
-  }
+  // pub async fn get_reply_draft(rexie: &Rexie, id: i32) -> Result<String> {
+  //   let transaction = rexie.transaction(&["comment_meta"], TransactionMode::ReadOnly)?;
+  //   let comments = transaction.store("comment_meta")?;
+  //   if let Some(comment_meta_value) = comments.get(id.into()).await? {
+  //     if let Ok(CommentMeta { reply_draft: Some(reply_draft), .. }) = serde_wasm_bindgen::from_value::<CommentMeta>(comment_meta_value) {
+  //       Ok(reply_draft)
+  //     } else {
+  //       Ok("".into())
+  //     }
+  //   } else {
+  //     Ok("".into())
+  //   }
+  // }
 
 // pub async fn get_comments(rexie: &Rexie, post_id: i32) -> Result<Vec<JsValue>> {
 //   let transaction = rexie.transaction(&["comment"], TransactionMode::ReadOnly)?;

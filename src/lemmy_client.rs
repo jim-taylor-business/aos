@@ -10,10 +10,9 @@ use codee::string::FromToStringCodec;
 use lemmy_api_common::private_message::PrivateMessagesResponse;
 use lemmy_api_common::SuccessResponse;
 use lemmy_api_common::{comment::*, community::*, person::*, post::*, private_message::GetPrivateMessages, site::* /* , LemmyErrorType */};
-use leptos::{logging, Serializable, SignalGet};
+use leptos::{Serializable, SignalGet};
 use leptos_use::{use_cookie_with_options, SameSite, UseCookieOptions};
 use serde::{Deserialize, Serialize};
-use web_sys::{RequestCache, RequestMode};
 
 #[derive(Clone, PartialEq)]
 pub enum HttpType {
@@ -131,7 +130,6 @@ cfg_if! {
     use actix_web::web;
     use awc::{Client, ClientRequest};
     use leptos_actix::extract;
-    use crate::OnlineSetter;
 
     trait MaybeBearerAuth {
       fn maybe_bearer_auth(self, token: Option<impl core::fmt::Display>) -> Self;
@@ -220,7 +218,7 @@ cfg_if! {
     use leptos::wasm_bindgen::UnwrapThrowExt;
     use web_sys::AbortController;
     use leptos::{SignalSet, expect_context, RwSignal};
-    use leptos::{html::*, *};
+    use leptos::*;
     use crate::OnlineSetter;
 
     trait MaybeBearerAuth {
@@ -275,9 +273,9 @@ cfg_if! {
           //   result?
           // } else {
           // }
-          let mut r = match method {
+          let r = match method {
             HttpType::Get => http::Request::get(&build_fetch_query(path, form.clone()))
-              .cache(RequestCache::Default)
+              .cache(web_sys::RequestCache::Default)
               .maybe_bearer_auth(jwt.as_deref())
               .abort_signal(abort_signal.as_ref())
               .build()

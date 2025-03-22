@@ -3,7 +3,7 @@ use crate::{
   i18n::*,
   lemmy_client::*,
   ui::components::common::icon::{Icon, IconType::*},
-  NotificationsRefresh, OnlineSetter, UriSetter,
+  NotificationsRefresh, OnlineSetter,
 };
 use codee::string::FromToStringCodec;
 use ev::MouseEvent;
@@ -11,10 +11,12 @@ use lemmy_api_common::{
   lemmy_db_schema::source::site::Site, lemmy_db_views::structs::SiteView, person::GetUnreadCountResponse, site::GetSiteResponse,
 };
 use leptos::*;
-use leptos_dom::helpers::IntervalHandle;
 use leptos_router::*;
-use leptos_use::{use_cookie_with_options, use_document_visibility, SameSite, UseCookieOptions};
-use web_sys::{SubmitEvent, VisibilityState};
+use leptos_use::{use_cookie_with_options, SameSite, UseCookieOptions};
+use web_sys::SubmitEvent;
+
+#[cfg(not(feature = "ssr"))]
+use web_sys::VisibilityState;
 
 #[server(LogoutFn, "/serverfn")]
 pub async fn logout() -> Result<(), ServerFnError> {
@@ -97,15 +99,15 @@ pub fn TopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppE
 
   let authenticated = expect_context::<RwSignal<Option<bool>>>();
   let notifications_refresh = expect_context::<RwSignal<NotificationsRefresh>>();
-  let uri = expect_context::<RwSignal<UriSetter>>();
+  // let uri = expect_context::<RwSignal<UriSetter>>();
 
   let logout_action = create_server_action::<LogoutFn>();
 
   let refresh = RwSignal::new(true);
 
-  let unread_visibility: RwSignal<Option<Signal<VisibilityState>>> = RwSignal::new(None);
-  let unread_effect: RwSignal<Option<Effect<()>>> = RwSignal::new(None);
-  let unread_interval: RwSignal<Option<IntervalHandle>> = RwSignal::new(None);
+  // let unread_visibility: RwSignal<Option<Signal<VisibilityState>>> = RwSignal::new(None);
+  // let unread_effect: RwSignal<Option<Effect<()>>> = RwSignal::new(None);
+  // let unread_interval: RwSignal<Option<IntervalHandle>> = RwSignal::new(None);
 
   #[cfg(not(feature = "ssr"))]
   let visibility = expect_context::<Signal<VisibilityState>>();
@@ -120,7 +122,7 @@ pub fn TopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppE
   });
 
   #[cfg(not(feature = "ssr"))]
-  let unread_interval_handle = set_interval_with_handle(
+  let _unread_interval_handle = set_interval_with_handle(
     move || match visibility.get() {
       VisibilityState::Visible => {
         refresh.update(|b| *b = !*b);
@@ -216,8 +218,8 @@ pub fn TopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppE
 
   let on_navigate_login = move |ev: SubmitEvent| {
     ev.prevent_default();
-    let l = use_location();
-    uri.set(UriSetter(format!("{}{}", l.pathname.get(), l.query.get().to_query_string())));
+    // let l = use_location();
+    // uri.set(UriSetter(format!("{}{}", l.pathname.get(), l.query.get().to_query_string())));
     use_navigate()("/login", NavigateOptions::default());
   };
 
@@ -226,10 +228,7 @@ pub fn TopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppE
       <div class="navbar-start">
         <ul class="flex-nowrap items-center menu menu-horizontal">
           <li>
-            <A
-              href="/"
-              class="text-xl whitespace-nowrap"
-            >
+            <A href="/" class="text-xl whitespace-nowrap">
               {move || {
                 if let Some(Ok(GetSiteResponse { site_view: SiteView { site: Site { icon: Some(i), .. }, .. }, .. })) = ssr_site.get() {
                   view! { <img class="h-8" src={i.inner().to_string()} /> }

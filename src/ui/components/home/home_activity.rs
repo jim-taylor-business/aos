@@ -1,5 +1,5 @@
 use crate::{
-  errors::{message_from_error, LemmyAppError, LemmyAppErrorType},
+  errors::{message_from_error, LemmyAppError},
   i18n::*,
   lemmy_client::*,
   ui::components::{
@@ -7,7 +7,7 @@ use crate::{
     home::{site_summary::SiteSummary, trending::Trending},
     post::post_listings::PostListings,
   },
-  OnlineSetter, ResourceStatus,
+  ResourceStatus,
 };
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SortType},
@@ -26,7 +26,7 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
   let i18n = use_i18n();
 
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
-  let online = expect_context::<RwSignal<OnlineSetter>>();
+  // let online = expect_context::<RwSignal<OnlineSetter>>();
 
   let param = use_params_map();
   let community_name = move || param.get().get("name").cloned();
@@ -110,7 +110,7 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
         liked_only: None,
         page_cursor: from.1.clone(),
         show_hidden: Some(true),
-        show_nsfw: Some(true),
+        show_nsfw: Some(false),
         show_read: Some(true),
       };
 
@@ -256,7 +256,7 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                   liked_only: None,
                   page_cursor: from.1.clone(),
                   show_hidden: Some(true),
-                  show_nsfw: Some(true),
+                  show_nsfw: Some(false),
                   show_read: Some(true),
                 };
 
@@ -311,7 +311,7 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
             liked_only: None,
             page_cursor: from.clone(),
             show_hidden: Some(true),
-            show_nsfw: Some(true),
+            show_nsfw: Some(false),
             show_read: Some(true),
           };
 
@@ -422,37 +422,37 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
           </li>
         </ul>
       </div>
-      // <div class="inline-block ml-3 sm:hidden sm:ml-0 dropdown">
-      //   <label tabindex="0" class="btn">
-      //     "Sort"
-      //   </label>
-      //   <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
-      //     <li
-      //       class={move || { (if SortType::Active == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
-      //       on:click={on_csr_sort_click(SortType::Active)}
-      //     >
-      //       <span>{t!(i18n, active)}</span>
-      //     </li>
-      //     <li
-      //       class={move || { (if SortType::Hot == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
-      //       on:click={on_csr_sort_click(SortType::Hot)}
-      //     >
-      //       <span>{t!(i18n, hot)}</span>
-      //     </li>
-      //     <li
-      //       class={move || { (if SortType::Scaled == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
-      //       on:click={on_csr_sort_click(SortType::Scaled)}
-      //     >
-      //       <span>{"Scaled"}</span>
-      //     </li>
-      //     <li
-      //       class={move || { (if SortType::New == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
-      //       on:click={on_csr_sort_click(SortType::New)}
-      //     >
-      //       <span>{t!(i18n, new)}</span>
-      //     </li>
-      //   </ul>
-      // </div>
+    // <div class="inline-block ml-3 sm:hidden sm:ml-0 dropdown">
+    // <label tabindex="0" class="btn">
+    // "Sort"
+    // </label>
+    // <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+    // <li
+    // class={move || { (if SortType::Active == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
+    // on:click={on_csr_sort_click(SortType::Active)}
+    // >
+    // <span>{t!(i18n, active)}</span>
+    // </li>
+    // <li
+    // class={move || { (if SortType::Hot == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
+    // on:click={on_csr_sort_click(SortType::Hot)}
+    // >
+    // <span>{t!(i18n, hot)}</span>
+    // </li>
+    // <li
+    // class={move || { (if SortType::Scaled == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
+    // on:click={on_csr_sort_click(SortType::Scaled)}
+    // >
+    // <span>{"Scaled"}</span>
+    // </li>
+    // <li
+    // class={move || { (if SortType::New == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
+    // on:click={on_csr_sort_click(SortType::New)}
+    // >
+    // <span>{t!(i18n, new)}</span>
+    // </li>
+    // </ul>
+    // </div>
     </div>
     <main node_ref={_resize_element} class="flex flex-col flex-grow w-full sm:flex-row">
       <div class="relative w-full sm:pr-4 lg:w-2/3 2xl:w-3/4 3xl:w-4/5 4xl:w-5/6">
@@ -464,15 +464,15 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                 view! {
                   <Title text="Error loading post list" />
                   // {loading.get().then(move || {
-                  //   view! {
-                  //   <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
-                  //     <div class="py-4 px-8">
-                  //       <div class="alert">
-                  //         <span>"Loading"</span>
-                  //       </div>
-                  //     </div>
-                  //   </div>
-                  //   }
+                  // view! {
+                  // <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
+                  // <div class="py-4 px-8">
+                  // <div class="alert">
+                  // <span>"Loading"</span>
+                  // </div>
+                  // </div>
+                  // </div>
+                  // }
                   // })}
                   <div class="py-4 px-8">
                     <div class="flex justify-between alert alert-error">
@@ -493,70 +493,67 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                       </div>
                     </div>
                   </div>
-                  // <div class="hidden sm:block join">
-                  // <div class="hidden">
-                    // {
-                    //   let mut st = ssr_prev();
-                    //   let p = st.pop();
-                    //   let mut query_params = query.get();
-                    //   if st.len() > 0 {
-                    //     query_params.insert("prev".into(), serde_json::to_string(&st).unwrap_or("[]".into()));
-                    //   } else {
-                    //     query_params.remove("prev".into());
-                    //   }
-                    //   if p.ne(&Some((0, None))) {
-                    //     query_params.insert("from".into(), serde_json::to_string(&p).unwrap_or("[0,None]".into()));
-                    //   } else {
-                    //     query_params.remove("from".into());
-                    //   }
-                    //   view! {
-                    //     <A
-                    //       on:click={move |_| {
-                    //         loading.set(true);
-                    //       }}
-                    //       href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())}
-                    //       class={move || format!("btn join-item{}", if !ssr_prev().is_empty() { "" } else { " btn-disabled" })}
-                    //     >
-                    //       "Prev"
-                    //     </A>
-                    //   }
-                    // }
-                    // {
-                    //   let query_params = query.get();
-                    //   view! {
-                    //     <A
-                    //       href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())}
-                    //       // class=move || format!("btn join-item{}{}", if next_page.is_some() && !loading.get() { "" } else { " btn-disabled" }, if loading.get() { " btn-disabled" } else { "" } )
-                    //       class="btn join-item btn-disabled"
-                    //     >
-                    //       "Next"
-                    //     </A>
-                    //   }
-                    // }
-                  // </div>
                 }
               }
               Some(Ok(posts)) => {
                 let next_page = Some((posts.0.0 + ssr_limit(), posts.1.next_page.clone()));
                 csr_next_page_cursor.set(next_page.clone().unwrap());
+                // <div class="hidden sm:block join">
+                // <div class="hidden">
+                // {
+                // let mut st = ssr_prev();
+                // let p = st.pop();
+                // let mut query_params = query.get();
+                // if st.len() > 0 {
+                // query_params.insert("prev".into(), serde_json::to_string(&st).unwrap_or("[]".into()));
+                // } else {
+                // query_params.remove("prev".into());
+                // }
+                // if p.ne(&Some((0, None))) {
+                // query_params.insert("from".into(), serde_json::to_string(&p).unwrap_or("[0,None]".into()));
+                // } else {
+                // query_params.remove("from".into());
+                // }
+                // view! {
+                // <A
+                // on:click={move |_| {
+                // loading.set(true);
+                // }}
+                // href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())}
+                // class={move || format!("btn join-item{}", if !ssr_prev().is_empty() { "" } else { " btn-disabled" })}
+                // >
+                // "Prev"
+                // </A>
+                // }
+                // }
+                // {
+                // let query_params = query.get();
+                // view! {
+                // <A
+                // href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())}
+                // // class=move || format!("btn join-item{}{}", if next_page.is_some() && !loading.get() { "" } else { " btn-disabled" }, if loading.get() { " btn-disabled" } else { "" } )
+                // class="btn join-item btn-disabled"
+                // >
+                // "Next"
+                // </A>
+                // }
+                // }
+                // </div>
                 view! {
                   <Title text={format!("Page {}", 1 + (ssr_from().0 / ssr_limit()))} />
                   // {loading.get().then(move || {
-                  //   view! {
-                  //   <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
-                  //     <div class="py-4 px-8">
-                  //       <div class="alert">
-                  //         <span>"Loading"</span>
-                  //       </div>
-                  //     </div>
-                  //   </div>
-                  //   }
+                  // view! {
+                  // <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
+                  // <div class="py-4 px-8">
+                  // <div class="alert">
+                  // <span>"Loading"</span>
+                  // </div>
+                  // </div>
+                  // </div>
+                  // }
                   // })}
                   <div class={move || {
-                    format!(
-                      "sm:block columns-1 2xl:columns-2 3xl:columns-3 4xl:columns-4 gap-0{}",
-                      if loading.get() { " opacity-25" } else { "" },
-                    )
+                    format!("sm:block columns-1 2xl:columns-2 3xl:columns-3 4xl:columns-4 gap-0{}", if loading.get() { " opacity-25" } else { "" })
                   }}>
                     <PostListings posts={posts.1.posts.into()} ssr_site page_number={posts.0.0.into()} />
                   </div>
@@ -617,17 +614,19 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
               None => {
                 view! {
                   <Title text="Loading post list" />
-                  {loading.get().then(move || {
-                    view! {
-                    <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
-                      <div class="py-4 px-8">
-                        <div class="alert">
-                          <span>"Loading"</span>
+                  {loading
+                    .get()
+                    .then(move || {
+                      view! {
+                        <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
+                          <div class="py-4 px-8">
+                            <div class="alert">
+                              <span>"Loading"</span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                    }
-                  })}
+                      }
+                    })}
                   <div class="hidden" />
                 }
               }

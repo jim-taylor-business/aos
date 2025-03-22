@@ -1,5 +1,5 @@
 // useful in development to only have errors in compiler output
-#![allow(warnings)]
+// #![allow(warnings)]
 
 mod config;
 mod errors;
@@ -20,20 +20,26 @@ use crate::{
     post::post_activity::PostActivity,
   },
 };
-use chrono::Duration;
-use codee::string::FromToStringCodec;
-use lemmy_api_common::{lemmy_db_schema::SortType, lemmy_db_views::structs::PaginationCursor, post::GetPostsResponse, site::GetSiteResponse};
+use lemmy_api_common::{lemmy_db_views::structs::PaginationCursor, post::GetPostsResponse, site::GetSiteResponse};
 use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
-use leptos_use::{use_cookie_with_options, use_document_visibility, use_service_worker, SameSite, UseCookieOptions, UseServiceWorkerReturn};
+use leptos_use::SameSite;
 use std::collections::BTreeMap;
 use ui::components::notifications::notifications_activity::NotificationsActivity;
 
+#[cfg(feature = "ssr")]
+use codee::string::FromToStringCodec;
+#[cfg(feature = "ssr")]
+use leptos_use::{use_cookie_with_options, UseCookieOptions};
+
+#[cfg(not(feature = "ssr"))]
+use leptos_use::{use_document_visibility, use_service_worker, UseServiceWorkerReturn};
+
 leptos_i18n::load_locales!();
 
-#[derive(Clone)]
-pub struct UriSetter(String);
+// #[derive(Clone)]
+// pub struct UriSetter(String);
 #[derive(Clone)]
 pub struct OnlineSetter(bool);
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -57,16 +63,16 @@ pub fn App() -> impl IntoView {
   provide_context(online);
   let notifications_refresh = RwSignal::new(NotificationsRefresh(true));
   provide_context(notifications_refresh);
-  let uri: RwSignal<UriSetter> = RwSignal::new(UriSetter("".into()));
-  provide_context(uri);
+  // let uri: RwSignal<UriSetter> = RwSignal::new(UriSetter("".into()));
+  // provide_context(uri);
 
   #[cfg(not(feature = "ssr"))]
   let UseServiceWorkerReturn {
-    registration,
-    installing,
-    waiting,
-    active,
-    skip_waiting,
+    // registration,
+    // installing,
+    // waiting,
+    // active,
+    // skip_waiting,
     ..
   } = use_service_worker();
   #[cfg(not(feature = "ssr"))]

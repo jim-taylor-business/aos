@@ -2,12 +2,10 @@ use crate::{
   errors::{LemmyAppError, LemmyAppErrorType},
   i18n::*,
   ui::components::common::text_input::{InputType, TextInput},
-  UriSetter,
 };
 use codee::string::FromToStringCodec;
 use lemmy_api_common::person::{Login, LoginResponse};
 use leptos::*;
-use leptos_meta::*;
 use leptos_router::*;
 use leptos_use::{use_cookie_with_options, SameSite, UseCookieOptions};
 use web_sys::SubmitEvent;
@@ -87,7 +85,7 @@ pub fn LoginForm() -> impl IntoView {
 
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
   let authenticated = expect_context::<RwSignal<Option<bool>>>();
-  let uri = expect_context::<RwSignal<UriSetter>>();
+  // let uri = expect_context::<RwSignal<UriSetter>>();
 
   let name = RwSignal::new(String::new());
   let password = RwSignal::new(String::new());
@@ -140,7 +138,7 @@ pub fn LoginForm() -> impl IntoView {
             // leptos_router::use_navigate()(&query.get().get("uri").cloned().unwrap_or("/".into()), Default::default());
 
             // leptos_router::use_navigate()(&uri.get().0, Default::default());
-            window().history().map(|h| h.back());
+            let _ = window().history().map(|h| h.back());
           }
           Ok(LoginResponse { jwt: None, .. }) => {
             error.update(|es| {
@@ -180,7 +178,7 @@ pub fn LoginForm() -> impl IntoView {
   };
 
   view! {
-    <ActionForm class="space-y-3" action={login} on:submit={on_submit}>
+    <ActionForm class="space-y-3" action={login} on:submit=on_submit>
       <input type="hidden" name="uri" value={move || query.get().get("uri").cloned().unwrap_or("".into())} />
       <TextInput id="username" name="username_or_email" on_input={move |s| update!(| name | * name = s)} label="Username" />
       <TextInput

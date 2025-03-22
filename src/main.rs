@@ -1,5 +1,5 @@
 // useful in development to only have errors in compiler output
-#![allow(warnings)]
+// #![allow(warnings)]
 
 use aos::*;
 use cfg_if::cfg_if;
@@ -103,8 +103,6 @@ pub fn main() {
 pub fn main() {
   // a client-side main function is required for using `trunk serve`
   // to run: `trunk serve --open --features csr`
-  use wasm_bindgen::prelude::wasm_bindgen;
-  // required for better debug messages
   console_error_panic_hook::set_once();
   leptos::mount_to_body(App);
 }
