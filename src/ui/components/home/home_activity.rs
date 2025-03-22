@@ -157,13 +157,32 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
   // // let csr_sort = expect_context::<RwSignal<SortType>>();
   // let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
 
-  // let on_csr_sort_click = move |s: SortType| {
-  //   move |_e: MouseEvent| {
-  //     csr_next_page_cursor.set((0, None));
-  //     // csr_sort.set(s);
-  //     csr_resources.set(BTreeMap::new());
-  //   }
-  // };
+  let on_csr_filter_click = move |l: ListingType| {
+    move |_e: MouseEvent| {
+      let mut query_params = query.get();
+      // query_params.remove("sort".into());
+      query_params.remove("from".into());
+      query_params.remove("prev".into());
+      let navigate = leptos_router::use_navigate();
+      if l == ListingType::All {
+        query_params.remove("list".into());
+      } else {
+        query_params.insert("list".into(), serde_json::to_string(&l).ok().unwrap());
+      }
+      navigate(
+        &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+        Default::default(),
+      );
+    }
+  };
+
+  let highlight_csr_filter = move |l: ListingType| {
+    if l == ssr_list() {
+      "btn-active"
+    } else {
+      ""
+    }
+  };
 
   let _resize_element = create_node_ref::<Main>();
   let _scroll_element = create_node_ref::<Div>();
@@ -422,37 +441,19 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
           </li>
         </ul>
       </div>
-    // <div class="inline-block ml-3 sm:hidden sm:ml-0 dropdown">
-    // <label tabindex="0" class="btn">
-    // "Sort"
-    // </label>
-    // <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
-    // <li
-    // class={move || { (if SortType::Active == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
-    // on:click={on_csr_sort_click(SortType::Active)}
-    // >
-    // <span>{t!(i18n, active)}</span>
-    // </li>
-    // <li
-    // class={move || { (if SortType::Hot == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
-    // on:click={on_csr_sort_click(SortType::Hot)}
-    // >
-    // <span>{t!(i18n, hot)}</span>
-    // </li>
-    // <li
-    // class={move || { (if SortType::Scaled == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
-    // on:click={on_csr_sort_click(SortType::Scaled)}
-    // >
-    // <span>{"Scaled"}</span>
-    // </li>
-    // <li
-    // class={move || { (if SortType::New == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
-    // on:click={on_csr_sort_click(SortType::New)}
-    // >
-    // <span>{t!(i18n, new)}</span>
-    // </li>
-    // </ul>
-    // </div>
+      <div class="inline-block ml-3 sm:hidden sm:ml-0 dropdown">
+        <label tabindex="0" class="btn">
+          "List"
+        </label>
+        <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+          <li class={move || highlight_csr_filter(ListingType::Subscribed)} on:click={on_csr_filter_click(ListingType::Subscribed)}>
+            <span>"Subscribed"</span>
+          </li>
+          <li class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}>
+            <span>"All"</span>
+          </li>
+        </ul>
+      </div>
     </div>
     <main node_ref={_resize_element} class="flex flex-col flex-grow w-full sm:flex-row">
       <div class="relative w-full sm:pr-4 lg:w-2/3 2xl:w-3/4 3xl:w-4/5 4xl:w-5/6">
