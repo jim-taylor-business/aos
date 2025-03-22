@@ -287,7 +287,7 @@ pub fn CommentNode(
             "pb-2 cursor-pointer{}{}",
             if comment_view.get().creator.id.eq(&comment_view.get().post.creator_id) { " border-l-4 pl-2 border-accent" } else { "" },
             if highlight_user_id.get().is_some() && highlight_user_id.get().eq(&Some(comment_view.get().creator.id)) {
-              " border-l-4 pl-2" // border-yellow"
+              " border-l-4 pl-2"
             } else if let Some(v) = comment_view.get().my_vote {
               if v == 1 { " border-l-4 pl-2 border-secondary" } else if v == -1 { " border-l-4 pl-2 border-primary" } else { "" }
             } else {
@@ -301,14 +301,11 @@ pub fn CommentNode(
           } else {
             if let Some(t) = e.target() {
               if let Some(i) = t.dyn_ref::<HtmlImageElement>() {
-                // let _ = window().location().set_href(&i.src());
                 let _ = window().open_with_url_and_target(&i.src(), "_blank");
               } else if let Some(l) = t.dyn_ref::<HtmlAnchorElement>() {
                 let _ = window().open_with_url_and_target(&l.href(), "_blank");
                 e.prevent_default();
-              } else {
-                // on_toggle.call(comment_view.get().comment.id.0);
-              }
+              } else {}
             }
           }
         }}
@@ -423,53 +420,74 @@ pub fn CommentNode(
                 <Icon icon={Save} />
               </button>
             </Form>
-            <span on:click={move |_| {
-              edit_show.set(false);
-              reply_show.update(|b| *b = !*b);
-              let form = CreateComment {
-                content: "".into(),
-                post_id: comment_view.get().comment.post_id,
-                parent_id: Some(comment_view.get().comment.id),
-                language_id: None,
-              };
-              if let Ok(Some(s)) = window().local_storage() {
-                if let Ok(Some(c)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {
-                  reply_content.set(c);
+            <span
+              on:click={move |_| {
+                edit_show.set(false);
+                reply_show.update(|b| *b = !*b);
+                let form = CreateComment {
+                  content: "".into(),
+                  post_id: comment_view.get().comment.post_id,
+                  parent_id: Some(comment_view.get().comment.id),
+                  language_id: None,
+                };
+                if let Ok(Some(s)) = window().local_storage() {
+                  if let Ok(Some(c)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {
+                    reply_content.set(c);
+                  }
                 }
-              }
-            }} title="Reply">
+              }}
+              title="Reply"
+            >
               <Icon icon={Reply} />
             </span>
-            <span on:click={move |_| {
-              reply_show.set(false);
-              edit_show.update(|b| *b = !*b);
-              let form = EditComment {
-                content: None,
-                comment_id: comment_view.get().comment.id,
-                language_id: None,
-              };
-              if let Ok(Some(s)) = window().local_storage() {
-                if let Ok(Some(c)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {
-                  edit_content.set(c);
-                } else {
-                  edit_content.set(comment_view.get_untracked().comment.content);
+            <span
+              on:click={move |_| {
+                reply_show.set(false);
+                edit_show.update(|b| *b = !*b);
+                let form = EditComment {
+                  content: None,
+                  comment_id: comment_view.get().comment.id,
+                  language_id: None,
+                };
+                if let Ok(Some(s)) = window().local_storage() {
+                  if let Ok(Some(c)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {
+                    edit_content.set(c);
+                  } else {
+                    edit_content.set(comment_view.get_untracked().comment.content);
+                  }
                 }
-              }
-            }} class=move || format!("{}", if current_person.get().eq(&Some(comment_view.get().creator)) { "" } else { "pointer-events-none text-base-content/50" }) title="Edit">
+              }}
+              class={move || {
+                format!(
+                  "{}",
+                  if current_person.get().eq(&Some(comment_view.get().creator)) { "" } else { "pointer-events-none text-base-content/50" },
+                )
+              }}
+              title="Edit"
+            >
               <Icon icon={Pencil} />
             </span>
-            <span on:click={move |_| { if highlight_user_id.get().eq(&Some(comment_view.get().creator.id)) { highlight_user_id.set(None) } else { highlight_user_id.set(Some(comment_view.get().creator.id)) } }} title="Highlight">
+            <span
+              on:click={move |_| {
+                if highlight_user_id.get().eq(&Some(comment_view.get().creator.id)) {
+                  highlight_user_id.set(None)
+                } else {
+                  highlight_user_id.set(Some(comment_view.get().creator.id))
+                }
+              }}
+              title="Highlight"
+            >
               <Icon icon={Highlighter} />
             </span>
             <span class="overflow-hidden break-words">
               <span>{abbr_duration.clone()}</span>
               " ago, by "
               <A href={move || format!("{}", comment_view.get().creator.actor_id)} attr:class="text-sm break-words hover:text-secondary">
-              // let creator_name = post_view.get().creator.name.clone();
-              // let creator_name_encoded = html_escape::encode_safe(&comment_view.get().creator.name).to_string();
+                // let creator_name = post_view.get().creator.name.clone();
+                // let creator_name_encoded = html_escape::encode_safe(&comment_view.get().creator.name).to_string();
                 <span inner_html={html_escape::encode_safe(&comment_view.get().creator.name).to_string()} />
 
-                // {comment_view.get().creator.name}
+              // {comment_view.get().creator.name}
               </A>
             </span>
           </div>
@@ -484,14 +502,14 @@ pub fn CommentNode(
       <Show when={move || reply_show.get() || edit_show.get()} fallback={|| {}}>
         <div class="mb-3 space-y-3">
           // <label class="form-control">
-          //   <textarea
-          //     class="h-24 text-base textarea textarea-bordered"
-          //     placeholder="Comment text"
-          //     prop:value={move || content.get()}
-          //     on:input={move |ev| content.set(event_target_value(&ev))}
-          //   >
-          //     {content.get_untracked()}
-          //   </textarea>
+          // <textarea
+          // class="h-24 text-base textarea textarea-bordered"
+          // placeholder="Comment text"
+          // prop:value={move || content.get()}
+          // on:input={move |ev| content.set(event_target_value(&ev))}
+          // >
+          // {content.get_untracked()}
+          // </textarea>
           // </label>
           <Show when={move || reply_show.get()} fallback={|| {}}>
             <label class="form-control">
@@ -509,7 +527,6 @@ pub fn CommentNode(
                     language_id: None,
                   };
                   if let Ok(Some(s)) = window().local_storage() {
-                    // if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {}
                     let _ = s.set_item(&serde_json::to_string(&form).ok().unwrap(), &event_target_value(&ev));
                   }
                 }}
@@ -552,7 +569,7 @@ pub fn CommentNode(
               "Cancel"
             </button>
           </Show>
-      </div>
+        </div>
       </Show>
       <For each={move || children.get()} key={|cv| cv.comment.id} let:cv>
         <CommentNode

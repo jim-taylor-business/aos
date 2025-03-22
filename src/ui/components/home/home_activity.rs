@@ -359,24 +359,24 @@ pub fn HomeActivity(ssr_site: Resource<Result<GetSiteResponse, AosAppError>>) ->
       </div>
       <div class="hidden mr-3 sm:inline-block join">
         <Transition fallback={|| {}}>
-        <A
-          href={move || {
-            let mut query_params = query.get();
-            query_params.insert("list".to_string(), serde_json::to_string(&ListingType::Subscribed).ok().unwrap());
-            query_params.remove("from".into());
-            query_params.remove("prev".into());
-            format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
-          }}
-          attr:class={move || {
-            format!(
-              "btn join-item{}{}",
-              if ListingType::Subscribed == ssr_list() { " btn-active" } else { "" },
-              if Some(true) == logged_in.get() { "" } else { " btn-disabled" },
-            )
-          }}
-        >
-          "Subscribed"
-        </A>
+          <A
+            href={move || {
+              let mut query_params = query.get();
+              query_params.insert("list".to_string(), serde_json::to_string(&ListingType::Subscribed).ok().unwrap());
+              query_params.remove("from".into());
+              query_params.remove("prev".into());
+              format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
+            }}
+            attr:class={move || {
+              format!(
+                "btn join-item{}{}",
+                if ListingType::Subscribed == ssr_list() { " btn-active" } else { "" },
+                if Some(true) == logged_in.get() { "" } else { " btn-disabled" },
+              )
+            }}
+          >
+            "Subscribed"
+          </A>
         </Transition>
         <A
           href={move || {
@@ -428,37 +428,37 @@ pub fn HomeActivity(ssr_site: Resource<Result<GetSiteResponse, AosAppError>>) ->
           </li>
         </ul>
       </div>
-      // <div class="inline-block ml-3 sm:hidden sm:ml-0 dropdown">
-      //   <label tabindex="0" class="btn">
-      //     "Sort"
-      //   </label>
-      //   <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
-      //     <li
-      //       class={move || { (if SortType::Active == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
-      //       on:click={on_csr_sort_click(SortType::Active)}
-      //     >
-      //       <span>{t!(i18n, active)}</span>
-      //     </li>
-      //     <li
-      //       class={move || { (if SortType::Hot == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
-      //       on:click={on_csr_sort_click(SortType::Hot)}
-      //     >
-      //       <span>{t!(i18n, hot)}</span>
-      //     </li>
-      //     <li
-      //       class={move || { (if SortType::Scaled == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
-      //       on:click={on_csr_sort_click(SortType::Scaled)}
-      //     >
-      //       <span>{"Scaled"}</span>
-      //     </li>
-      //     <li
-      //       class={move || { (if SortType::New == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
-      //       on:click={on_csr_sort_click(SortType::New)}
-      //     >
-      //       <span>{t!(i18n, new)}</span>
-      //     </li>
-      //   </ul>
-      // </div>
+    // <div class="inline-block ml-3 sm:hidden sm:ml-0 dropdown">
+    // <label tabindex="0" class="btn">
+    // "Sort"
+    // </label>
+    // <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+    // <li
+    // class={move || { (if SortType::Active == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
+    // on:click={on_csr_sort_click(SortType::Active)}
+    // >
+    // <span>{t!(i18n, active)}</span>
+    // </li>
+    // <li
+    // class={move || { (if SortType::Hot == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
+    // on:click={on_csr_sort_click(SortType::Hot)}
+    // >
+    // <span>{t!(i18n, hot)}</span>
+    // </li>
+    // <li
+    // class={move || { (if SortType::Scaled == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
+    // on:click={on_csr_sort_click(SortType::Scaled)}
+    // >
+    // <span>{"Scaled"}</span>
+    // </li>
+    // <li
+    // class={move || { (if SortType::New == csr_sort.get() { "btn-active" } else { "" }).to_string() }}
+    // on:click={on_csr_sort_click(SortType::New)}
+    // >
+    // <span>{t!(i18n, new)}</span>
+    // </li>
+    // </ul>
+    // </div>
     </div>
     <main node_ref={_resize_element} class="flex flex-col flex-grow w-full sm:flex-row">
       <div class="relative w-full sm:pr-4 lg:w-2/3 2xl:w-3/4 3xl:w-4/5 4xl:w-5/6">
@@ -473,7 +473,6 @@ pub fn HomeActivity(ssr_site: Resource<Result<GetSiteResponse, AosAppError>>) ->
                 </div>
               </div>
             </div>
-            // <div class="hidden" />
           }
         }}>
           <div class="hidden" />
@@ -501,10 +500,11 @@ pub fn HomeActivity(ssr_site: Resource<Result<GetSiteResponse, AosAppError>>) ->
                       </div>
                     </div>
                   // </div>
-    //               // <div class="hidden sm:block join">
-    //               // <div class="hidden">
+                  // // <div class="hidden sm:block join">
+                  // // <div class="hidden">
                   </div>
-                } .into_any()
+                }
+                  .into_any()
               }
               Some(Ok(posts)) => {
                 let next_page = Some((posts.0.0 + ssr_limit(), posts.1.next_page.clone()));
@@ -513,10 +513,7 @@ pub fn HomeActivity(ssr_site: Resource<Result<GetSiteResponse, AosAppError>>) ->
                 view! {
                   <Title text={format!("Page {}", 1 + (ssr_from().0 / ssr_limit()))} />
                   <div class={move || {
-                    format!(
-                      "sm:block columns-1 2xl:columns-2 3xl:columns-3 4xl:columns-4 gap-0{}",
-                      if loading.get() { " opacity-25" } else { "" },
-                    )
+                    format!("sm:block columns-1 2xl:columns-2 3xl:columns-3 4xl:columns-4 gap-0{}", if loading.get() { " opacity-25" } else { "" })
                   }}>
                     // <br />
                     <PostListings posts={posts.1.posts.into()} ssr_site page_number={RwSignal::new(posts.0.0)} />
@@ -546,7 +543,8 @@ pub fn HomeActivity(ssr_site: Resource<Result<GetSiteResponse, AosAppError>>) ->
                         >
                           "Prev"
                         </A>
-                      }.into_any()
+                      }
+                        .into_any()
                     }
                     {
                       let mut st = ssr_prev();
@@ -570,27 +568,31 @@ pub fn HomeActivity(ssr_site: Resource<Result<GetSiteResponse, AosAppError>>) ->
                         >
                           "Next"
                         </A>
-                      }.into_any()
+                      }
+                        .into_any()
                     }
                   </div>
-                } .into_any()
+                }
+                  .into_any()
               }
               None => {
                 view! {
                   <Title text="Loading post list" />
-                  {loading.get().then(move || {
-                    view! {
-                    <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
-                      <div class="py-4 px-8">
-                        <div class="alert">
-                          <span>"Loading"</span>
+                  {loading
+                    .get()
+                    .then(move || {
+                      view! {
+                        <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
+                          <div class="py-4 px-8">
+                            <div class="alert">
+                              <span>"Loading"</span>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                    }
-                  })}
-                  // <div class="hidden" />
-                } .into_any()
+                      }
+                    })}
+                }
+                  .into_any()
               }
             }
           }}
@@ -615,7 +617,8 @@ pub fn HomeActivity(ssr_site: Resource<Result<GetSiteResponse, AosAppError>>) ->
                             </span>
                           </div>
                         </div>
-                      }.into_any()
+                      }
+                        .into_any()
                     }
                     _ => {
                       view! {
@@ -626,7 +629,8 @@ pub fn HomeActivity(ssr_site: Resource<Result<GetSiteResponse, AosAppError>>) ->
                             </div>
                           </div>
                         </div>
-                      }.into_any()
+                      }
+                        .into_any()
                     }
                   }
                 }}

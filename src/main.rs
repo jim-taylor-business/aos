@@ -83,22 +83,22 @@ async fn main() -> std::io::Result<()> {
         move || {
           use leptos::prelude::*;
           view! {
-              <!DOCTYPE html>
-              <html>
-                  <head>
-                      <meta charset="utf-8"/>
-                      <meta name="viewport" content="width=device-width, initial-scale=1"/>
-                      <Stylesheet id="leptos" href="/pkg/aos.css" />
-                      <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico" />
-                      <Link rel="manifest" href="/manifest.json" />
-                      <AutoReload options=leptos_options.clone() />
-                      <HydrationScripts options=leptos_options.clone() />
-                      <MetaTags />
-                  </head>
-                  <body>
-                      <aos::App/>
-                  </body>
-              </html>
+            <!DOCTYPE html>
+            <html>
+              <head>
+                <meta charset="utf-8" />
+                <meta name="viewport" content="width=device-width, initial-scale=1" />
+                <Stylesheet id="leptos" href="/pkg/aos.css" />
+                <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico" />
+                <Link rel="manifest" href="/manifest.json" />
+                <AutoReload options={leptos_options.clone()} />
+                <HydrationScripts options={leptos_options.clone()} />
+                <MetaTags />
+              </head>
+              <body>
+                <aos::App />
+              </body>
+            </html>
           }
           .into_any()
         }

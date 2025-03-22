@@ -5,19 +5,19 @@ use crate::{
   errors::{AosAppError, AosAppErrorType, AosAppResult},
   host::{get_host, get_https},
 };
-use cfg_if::cfg_if;
+// use cfg_if::cfg_if;
 use codee::string::FromToStringCodec;
 use lemmy_api_common::private_message::PrivateMessagesResponse;
 use lemmy_api_common::SuccessResponse;
 use lemmy_api_common::{comment::*, community::*, person::*, post::*, private_message::GetPrivateMessages, site::* /* , LemmyErrorType */};
-use leptos::prelude::Get;
-// use leptos::{logging, prelude::*};
+// use leptos::prelude::Get;
+use leptos::{logging, prelude::*};
 // use leptos_router::{components::*, hooks::*, *};
 // use leptos::{Serializable, SignalGet};
 use leptos_use::{use_cookie_with_options, SameSite, UseCookieOptions};
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum HttpType {
   #[allow(dead_code)]
   Get,
@@ -198,7 +198,7 @@ mod client {
       let jwt = get_auth_cookie.get();
       let route = build_route(path);
 
-      leptos::logging::log!(
+      logging::log!(
         "{}",
         format!("{}?{}", route, serde_urlencoded::to_string(&form).unwrap_or("".to_string()))
       );
@@ -221,6 +221,8 @@ mod client {
       }
       .await
       .unwrap();
+
+      logging::log!("1");
 
       match r.status().as_u16() {
         400..=599 => {
@@ -246,11 +248,15 @@ mod client {
         _ => {}
       };
 
+      logging::log!("2");
+
       // Ok(r.json::<Response>().await.unwrap()) //.limit(10485760).await.map_err(Into::into)
 
       // let s = r.body().limit(10485760).await?;
       let t = r.text().await.ok().unwrap_or("".to_string());
       let s = t; //.limit(10485760).await?;
+
+      logging::log!("3");
 
       if s.len() == 0 {
         serde_json::from_str::<Response>("{}").map_err(Into::into)
@@ -269,9 +275,9 @@ mod client {
   use crate::OnlineSetter;
   use gloo_net::{http, http::RequestBuilder};
   use leptos::wasm_bindgen::UnwrapThrowExt;
-  use leptos::{expect_context, RwSignal, SignalSet};
+  // use leptos::{expect_context, RwSignal, SignalSet};
   use leptos::{html::*, *};
-  use web_sys::AbortController;
+  use web_sys::{AbortController, RequestCache};
 
   trait MaybeBearerAuth {
     fn maybe_bearer_auth(self, token: Option<&str>) -> Self;
@@ -290,7 +296,7 @@ mod client {
   impl Fetch for LemmyClient {
     async fn make_request<Response, Form>(&self, method: HttpType, path: &str, form: Form) -> AosAppResult<Response>
     where
-      Response: Serializable + for<'de> Deserialize<'de> + 'static,
+      Response: Serialize + for<'de> Deserialize<'de> + 'static,
       Form: Serialize + core::clone::Clone + 'static + core::fmt::Debug,
     {
       let route = &build_route(path);
@@ -305,11 +311,11 @@ mod client {
 
         let abort_controller = AbortController::new().ok();
         let abort_signal = abort_controller.as_ref().map(AbortController::signal);
-        leptos::on_cleanup(move || {
-          if let Some(abort_controller) = abort_controller {
-            abort_controller.abort()
-          }
-        });
+        // leptos::on_cleanup(move || {
+        //   if let Some(abort_controller) = abort_controller {
+        //     abort_controller.abort()
+        //   }
+        // });
 
         if online.get().0 {
           //   let result = http::Request::get(&build_fetch_query(path, form))
@@ -349,23 +355,26 @@ mod client {
               let api_result = r.json::<LemmyErrorType>().await;
               match api_result {
                 Ok(LemmyErrorType::IncorrectLogin) => {
-                  let authenticated = leptos::expect_context::<leptos::RwSignal<Option<bool>>>();
+                  let authenticated = expect_context::<RwSignal<Option<bool>>>();
                   authenticated.set(Some(false));
-                  return Err(LemmyAppError {
-                    error_type: LemmyAppErrorType::ApiError(LemmyErrorType::IncorrectLogin),
-                    content: format!("{:#?}", LemmyErrorType::IncorrectLogin),
+                  return Err(AosAppError {
+                    error_type: AosAppErrorType::ApiError(LemmyErrorType::IncorrectLogin),
+                    context: format!("{:#?}", LemmyErrorType::IncorrectLogin),
+                    description: "".into(),
                   });
                 }
                 Ok(le) => {
-                  return Err(LemmyAppError {
-                    error_type: LemmyAppErrorType::ApiError(le.clone()),
-                    content: format!("{:#?}", le),
+                  return Err(AosAppError {
+                    error_type: AosAppErrorType::ApiError(le.clone()),
+                    context: format!("{:#?}", le),
+                    description: "".into(),
                   })
                 }
                 Err(e) => {
-                  return Err(LemmyAppError {
-                    error_type: LemmyAppErrorType::Unknown,
-                    content: format!("{:#?}", e),
+                  return Err(AosAppError {
+                    error_type: AosAppErrorType::Unknown,
+                    context: format!("{:#?}", e),
+                    description: "".into(),
                   })
                 }
               }
@@ -413,9 +422,10 @@ mod client {
               }
             }
           }
-          let e = LemmyAppError {
-            error_type: LemmyAppErrorType::OfflineError,
-            content: String::from(""),
+          let e = AosAppError {
+            error_type: AosAppErrorType::OfflineError,
+            context: String::from(""),
+            description: "".into(),
           };
           Err(e)
         }

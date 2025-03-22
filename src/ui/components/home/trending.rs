@@ -37,7 +37,9 @@ pub fn Trending() -> impl IntoView {
   );
 
   view! {
-    <Transition fallback={|| view! {}.into_any()}>
+    <Transition fallback={|| {
+      view! {}.into_any()
+    }}>
       {move || {
         trending
           .get()
@@ -46,37 +48,37 @@ pub fn Trending() -> impl IntoView {
             Some(c) => {
               let c_signal = RwSignal::new(c.communities);
               // Some(
-                view! {
-                  <div class="mb-0 w-full card bg-base-300 text-base-content">
-                    <figure>
-                      <div class="card-body bg-info">
-                        <h2 class="card-title text-info-content">"Trending Communities"</h2>
-                      </div>
-                    </figure>
-                    <div class="card-body">
-                      <p>
-                        <For
-                          each={move || c_signal.get()}
-                          key={|community| community.community.id}
-                          children={move |cv: CommunityView| {
-                            view! {
-                              <A attr:class="block mb-1 font-bold no-underline text-l link link-accent" href={format!("/c/{}", cv.community.name)}>
-                                {cv.community.title}
-                              </A>
-                            }
-                          }}
-                        />
-                      </p>
-                      <A attr:class="btn" href="/create_community">
-                        "Create a community"
-                      </A>
-                      <A attr:class="btn btn-disabled" href="/communities">
-                        "Explore communities"
-                      </A>
+              view! {
+                <div class="mb-0 w-full card bg-base-300 text-base-content">
+                  <figure>
+                    <div class="card-body bg-info">
+                      <h2 class="card-title text-info-content">"Trending Communities"</h2>
                     </div>
+                  </figure>
+                  <div class="card-body">
+                    <p>
+                      <For
+                        each={move || c_signal.get()}
+                        key={|community| community.community.id}
+                        children={move |cv: CommunityView| {
+                          view! {
+                            <A attr:class="block mb-1 font-bold no-underline text-l link link-accent" href={format!("/c/{}", cv.community.name)}>
+                              {cv.community.title}
+                            </A>
+                          }
+                        }}
+                      />
+                    </p>
+                    <A attr:class="btn" href="/create_community">
+                      "Create a community"
+                    </A>
+                    <A attr:class="btn btn-disabled" href="/communities">
+                      "Explore communities"
+                    </A>
                   </div>
-                }.into_any()
-              // )
+                </div>
+              }
+                .into_any()
             }
           })
       }}

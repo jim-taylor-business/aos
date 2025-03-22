@@ -228,15 +228,12 @@ pub fn TopNav(ssr_site: Resource<Result<GetSiteResponse, AosAppError>>) -> impl 
       <div class="navbar-start">
         <ul class="flex-nowrap items-center menu menu-horizontal">
           <li>
-            <A
-              href="/"
-              attr:class="text-xl whitespace-nowrap"
-            >
+            <A href="/" attr:class="text-xl whitespace-nowrap">
               {move || {
                 if let Some(Ok(GetSiteResponse { site_view: SiteView { site: Site { icon: Some(i), .. }, .. }, .. })) = ssr_site.get() {
                   view! { <img class="h-8" src={i.inner().to_string()} /> }
                 } else {
-                  view! { <img class="h-8" src="/lemmy.svg".to_string() /> }
+                  view! { <img class="h-8" src={"/lemmy.svg".to_string()} /> }
                 }
               }}
               <span class="hidden lg:flex">
@@ -245,20 +242,20 @@ pub fn TopNav(ssr_site: Resource<Result<GetSiteResponse, AosAppError>>) -> impl 
             </A>
           </li>
           <li class="hidden lg:flex">
-          <A href="/communities" attr:class="text-md">
-            {t!(i18n, communities)}
-          </A>
-          </li>
-          <li class="hidden lg:flex">
-          <A href="/create_post" attr:class="text-md pointer-events-none text-base-content/50">
-            {t!(i18n, create_post)}
-          </A>
-          </li>
-          <li class="hidden lg:flex">
             <A href="/communities" attr:class="text-md">
-              {t!(i18n, create_community)}
+              {t!(i18n, communities)}
             </A>
           </li>
+          // <li class="hidden lg:flex">
+          //   <A href="/create_post" attr:class="text-md pointer-events-none text-base-content/50">
+          //     {t!(i18n, create_post)}
+          //   </A>
+          // </li>
+          // <li class="hidden lg:flex">
+          //   <A href="/communities" attr:class="text-md">
+          //     {t!(i18n, create_community)}
+          //   </A>
+          // </li>
           <li class="hidden lg:flex">
             <a title="{|| t!(i18n, donate)}" href="//ko-fi.com/fhfworld">
               <Icon icon={Donate} />
@@ -282,7 +279,8 @@ pub fn TopNav(ssr_site: Resource<Result<GetSiteResponse, AosAppError>>) -> impl 
               </summary>
               <ul>
                 <li>
-                  <ActionForm attr:class="p-0" action={lang_action}> // on:submit={on_lang_submit(Locale::fr)}>
+                  // on:submit={on_lang_submit(Locale::fr)}>
+                  <ActionForm attr:class="p-0" action={lang_action}>
                     <input type="hidden" name="lang" value="FR" />
                     <button class="py-2 px-4" type="submit">
                       "FR"
@@ -290,7 +288,8 @@ pub fn TopNav(ssr_site: Resource<Result<GetSiteResponse, AosAppError>>) -> impl 
                   </ActionForm>
                 </li>
                 <li>
-                  <ActionForm attr:class="p-0" action={lang_action}> // on:submit={on_lang_submit(Locale::en)}>
+                  // on:submit={on_lang_submit(Locale::en)}>
+                  <ActionForm attr:class="p-0" action={lang_action}>
                     <input type="hidden" name="lang" value="EN" />
                     <button class="py-2 px-4" type="submit">
                       "EN"
@@ -389,11 +388,12 @@ pub fn TopNav(ssr_site: Resource<Result<GetSiteResponse, AosAppError>>) -> impl 
                   // <input type="hidden" name="theme" value="retro"/>
                   // <button type="submit">"LOGIN"</button>
                   // </Form>
-                  <form class="p-0" action="/login" method="POST" on:submit={on_navigate_login}>
-                    <button class="py-2 px-4" type="submit">
-                      {t!(i18n, login)}
-                    </button>
-                  </form>
+                  //
+                  // <form class="p-0" action="/login" method="POST" on:submit={on_navigate_login}>
+                  //   <button class="py-2 px-4" type="submit">
+                  //     {t!(i18n, login)}
+                  //   </button>
+                  // </form>
                   <A href="/login">{t!(i18n, login)}</A>
                 </li>
                 <li class="hidden lg:flex">
@@ -492,16 +492,7 @@ pub fn TopNav(ssr_site: Resource<Result<GetSiteResponse, AosAppError>>) -> impl 
         .map(|err| {
           let mut query_params = query.get();
           query_params.remove("error".into());
-          view! {
-            <div class="container mx-auto mb-8 alert alert-error">
-              // <span>{&err.0.context} " - " {message_from_error(&err.0)} " - " {err.0.description}</span>
-              // <div>
-              //   <A attr:class="btn btn-sm" href={format!("./?{}", &query_params.to_query_string())}>
-              //     "Clear"
-              //   </A>
-              // </div>
-            </div>
-          }
+          view! { <div class="container mx-auto mb-8 alert alert-error" /> }
         })
     }}
   }

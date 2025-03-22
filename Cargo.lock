@@ -317,13 +317,12 @@ dependencies = [
 
 [[package]]
 name = "aos"
-version = "0.19.9-alpha.aos-demo"
+version = "0.19.9-alpha-aos-demo"
 dependencies = [
  "actix-files",
  "actix-http",
  "actix-proxy",
  "actix-web",
- "cfg-if",
  "chrono",
  "codee",
  "console_error_panic_hook",

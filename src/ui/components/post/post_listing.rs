@@ -429,16 +429,25 @@ pub fn PostListing(
               view! {
                 <div class="flex shrink grow basis-0 min-h-16">
                   <div class="shrink grow basis-0 truncate">
-                    <img class=move || format!("w-24{}", if thumbnail.get().eq(&"/lemmy.svg".to_string()) { " h-16" } else { "" }) src={move || thumbnail.get()} node_ref={thumbnail_element} on:error={ move |_e| { thumbnail.set("/lemmy.svg".into()); } } />
+                    <img
+                      class={move || format!("w-24{}", if thumbnail.get().eq(&"/lemmy.svg".to_string()) { " h-16" } else { "" })}
+                      src={move || thumbnail.get()}
+                      node_ref={thumbnail_element}
+                      on:error={move |_e| {
+                        thumbnail.set("/lemmy.svg".into());
+                      }}
+                    />
                   </div>
                 </div>
-              }.into_any()
+              }
+                .into_any()
             } else {
               view! {
                 <div class="block w-24 truncate">
                   <img class="w-24 h-16" src="/lemmy.svg" />
                 </div>
-              }.into_any()
+              }
+                .into_any()
             }
           }}
         </a>
@@ -558,11 +567,13 @@ pub fn PostListing(
           </button>
         </ActionForm>
         <Show when={move || { post_number == 0 }} fallback={|| {}}>
-          <span class="cursor-pointer" on:click={move |_| {
-            reply_show.update(|b| *b = !*b);
-            // let y =  document().get_element_by_id("reply_box").unwrap().get_bounding_client_rect().top() - 200f64;
-            // window().scroll_to_with_x_and_y(0f64, y);
-          }} title="Reply">
+          <span
+            class="cursor-pointer"
+            on:click={move |_| {
+              reply_show.update(|b| *b = !*b);
+            }}
+            title="Reply"
+          >
             <Icon icon={Reply} />
           </span>
         </Show>
@@ -594,7 +605,7 @@ pub fn PostListing(
                   <input
                     class={move || format!("input input-bordered {}", report_validation.get())}
                     type="text"
-                    on:input={move |e| reason.update(|reason| *reason = event_target_value(& e))}
+                    on:input={move |e| reason.update(|reason| *reason = event_target_value(&e))}
                     name="reason"
                     placeholder="Reason for reporting post"
                   />

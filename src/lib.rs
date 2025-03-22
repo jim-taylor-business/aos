@@ -199,86 +199,85 @@ pub fn App() -> impl IntoView {
   // let leptos_options = &conf.leptos_options;
 
   view! {
-      // <Transition fallback={|| {}}>
-      //   {move || {
-      //     ssr_site
-      //       .get()
-      //       .map(|m| {
-      //         site_signal.set(Some(m));
-      //       });
-      //   }}
-      // </Transition>
-      // <!DOCTYPE html>
-      // <html>
-      //   <head>
+    // <Transition fallback={|| {}}>
+    // {move || {
+    // ssr_site
+    // .get()
+    // .map(|m| {
+    // site_signal.set(Some(m));
+    // });
+    // }}
+    // </Transition>
+    // <!DOCTYPE html>
+    // <html>
+    // <head>
 
-      //     <Stylesheet id="leptos" href="/pkg/aos.css" />
-      //     <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico" />
-      //     <AutoReload options=leptos_options.clone()/>
-      //     <HydrationScripts options=leptos_options.clone()/>
-      //     <MetaTags />
+    // <Stylesheet id="leptos" href="/pkg/aos.css" />
+    // <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico" />
+    // <AutoReload options=leptos_options.clone()/>
+    // <HydrationScripts options=leptos_options.clone()/>
+    // <MetaTags />
 
-          // <Title formatter />
-          // <Meta name="description" content={formatter("".into())} />
-      //   </head>
-      // <body>
-  // <Router set_is_routing>
-  //   // shows a progress bar while async data are loading
-  //   <div class="routing-progress">
-  //       <RoutingProgress is_routing max_time=core::time::Duration::from_millis(250)/>
-  //   </div>
-  //   // <Nav />
-  //   <main>
-  //       <FlatRoutes fallback=|| "Not found.">
-  //           // <Route path=(StaticSegment("users"), ParamSegment("id")) view=User/>
-  //           // <Route path=(StaticSegment("stories"), ParamSegment("id")) view=Story/>
-  //           <Route path=leptos_router::OptionalParamSegment("stories") view=CommunitiesActivity/>
-  //       </FlatRoutes>
-  //   </main>
-  // </Router>
+    // <Title formatter />
+    // <Meta name="description" content={formatter("".into())} />
+    // </head>
+    // <body>
+    // <Router set_is_routing>
+    // // shows a progress bar while async data are loading
+    // <div class="routing-progress">
+    // <RoutingProgress is_routing max_time=core::time::Duration::from_millis(250)/>
+    // </div>
+    // // <Nav />
+    // <main>
+    // <FlatRoutes fallback=|| "Not found.">
+    // // <Route path=(StaticSegment("users"), ParamSegment("id")) view=User/>
+    // // <Route path=(StaticSegment("stories"), ParamSegment("id")) view=Story/>
+    // <Route path=leptos_router::OptionalParamSegment("stories") view=CommunitiesActivity/>
+    // </FlatRoutes>
+    // </main>
+    // </Router>
 
-  // <h1> "Test" </h1>
-      <I18nContextProvider cookie_options={leptos_i18n::context::CookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax)}>
-        <Router>
-          <Routes fallback=|| "NotFound">
-            <ParentRoute path=StaticSegment("") view={move || view! { <Layout ssr_site /> }} ssr={SsrMode::Async}>
+    // <h1> "Test" </h1>
+    <I18nContextProvider cookie_options={leptos_i18n::context::CookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax)}>
+      <Router>
+        <Routes fallback={|| "NotFound"}>
+          <ParentRoute path={StaticSegment("")} view={move || view! { <Layout ssr_site /> }} ssr={SsrMode::Async}>
 
-              <Route path=StaticSegment("") view={move || view! { <HomeActivity ssr_site /> }} />
+            // <Route path={StaticSegment("")} view={move || view! { <HomeActivity ssr_site /> }} />
+            <Route path={StaticSegment("")} view={CommunitiesActivity} />
 
-              // <Route path=StaticSegment("") view={CommunitiesActivity} />
-              <Route path=StaticSegment("create_post") view={CommunitiesActivity} />
+            // <Route path=StaticSegment("") view={CommunitiesActivity} />
+            <Route path={StaticSegment("create_post")} view={CommunitiesActivity} />
 
-              // <Route path=StaticSegment("post/:id") view={move || view! { <PostActivity ssr_site /> }} />
-              // <Route path=(StaticSegment("post"), ParamSegment("id")) view={move || view! { <PostActivity ssr_site /> }} />
-              <Route path=path!("post/:id") view={move || view! { <PostActivity ssr_site /> }} />
+            // <Route path=StaticSegment("post/:id") view={move || view! { <PostActivity ssr_site /> }} />
+            // <Route path=(StaticSegment("post"), ParamSegment("id")) view={move || view! { <PostActivity ssr_site /> }} />
+            <Route path={path!("post/:id")} view={move || view! { <PostActivity ssr_site /> }} />
 
-              <Route path=StaticSegment("search") view={CommunitiesActivity} />
-              <Route path=StaticSegment("communities") view={CommunitiesActivity} />
-              <Route path=StaticSegment("create_community") view={CommunitiesActivity} />
-              // <Route path=StaticSegment("c/:name") view={move || view! { <HomeActivity ssr_site /> }} />
-              // <Route path=(StaticSegment("c"), ParamSegment("name")) view={move || view! { <HomeActivity ssr_site /> }} />
-              <Route path=path!("c/:name") view={move || view! { <HomeActivity ssr_site /> }} />
+            <Route path={StaticSegment("search")} view={CommunitiesActivity} />
+            <Route path={StaticSegment("communities")} view={CommunitiesActivity} />
+            <Route path={StaticSegment("create_community")} view={CommunitiesActivity} />
+            // <Route path=StaticSegment("c/:name") view={move || view! { <HomeActivity ssr_site /> }} />
+            // <Route path=(StaticSegment("c"), ParamSegment("name")) view={move || view! { <HomeActivity ssr_site /> }} />
+            <Route path={path!("c/:name")} view={move || view! { <HomeActivity ssr_site /> }} />
 
-              <Route path=StaticSegment("login") /*methods={&[Method::Get, Method::Post]}*/ view={LoginActivity} />
-              <Route path=StaticSegment("logout") view={CommunitiesActivity} />
-              <Route path=StaticSegment("signup") view={CommunitiesActivity} />
+            <Route path={StaticSegment("login")} view={LoginActivity} />
+            <Route path={StaticSegment("logout")} view={CommunitiesActivity} />
+            <Route path={StaticSegment("signup")} view={CommunitiesActivity} />
 
-              <Route path=StaticSegment("inbox") view={CommunitiesActivity} />
-              <Route path=StaticSegment("settings") view={CommunitiesActivity} />
-              // <Route path="notifications" view={move || view! { <NotificationsActivity ssr_site /> }} />
-              // <Route path=(StaticSegment("u"), ParamSegment("id")) view={CommunitiesActivity} />
-              <Route path=path!("u/:id") view={CommunitiesActivity} />
+            <Route path={StaticSegment("inbox")} view={CommunitiesActivity} />
+            <Route path={StaticSegment("settings")} view={CommunitiesActivity} />
+            // <Route path="notifications" view={move || view! { <NotificationsActivity ssr_site /> }} />
+            // <Route path=(StaticSegment("u"), ParamSegment("id")) view={CommunitiesActivity} />
+            <Route path={path!("u/:id")} view={CommunitiesActivity} />
 
-              <Route path=StaticSegment("modlog") view={CommunitiesActivity} />
-              <Route path=StaticSegment("instances") view={CommunitiesActivity} />
-              <Route path=WildcardSegment("selector")  view={NotFound} />
-            </ParentRoute>
-          </Routes>
-        </Router>
-      </I18nContextProvider>
-      // </body>
-      // </html>
-    }
+            <Route path={StaticSegment("modlog")} view={CommunitiesActivity} />
+            <Route path={StaticSegment("instances")} view={CommunitiesActivity} />
+            <Route path={WildcardSegment("selector")} view={NotFound} />
+          </ParentRoute>
+        </Routes>
+      </Router>
+    </I18nContextProvider>
+  }
 }
 
 #[component]

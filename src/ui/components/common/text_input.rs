@@ -36,14 +36,14 @@ pub fn TextInput(
         name={move || name.get()}
         disabled={move || disabled.get().unwrap_or(false)}
         required={move || required.get().unwrap_or(false)}
-        on:input=on_input
-        // {move |e| {
-          // on_input.();
-          // on_input(event_target_value(&e));
-          // on_input(e);
-          // on_input.call(event_target_value(&e));
-        // }}
+        on:input={on_input}
       />
+      // {move |e| {
+      // on_input.();
+      // on_input(event_target_value(&e));
+      // on_input(e);
+      // on_input.call(event_target_value(&e));
+      // }}
       <Show when={move || input_type == InputType::Password}>
         <button
           type="button"

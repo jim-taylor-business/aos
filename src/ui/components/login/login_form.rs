@@ -262,22 +262,23 @@ pub fn LoginForm() -> impl IntoView {
   view! {
     // <form action="" onsubmit={on_submit}>
     // <Form attr:class="space-y-3" action="" attr:onsubmit={on_submit}>
-    //   <input type="hidden" name="uri" /*value={move || query.get().get("uri").cloned().unwrap_or("".into())}*/ />
-    //   <TextInput id="username" name="username_or_email" /*on_input={move |s| update!(| name | * name = s)}*/ label="Username" />
-    //   <TextInput
-    //     id="password"
-    //     name="password"
-    //     validation_class={password_validation.into()}
-    //     // on_input={move |s| update!(| password | * password = s)}
-    //     input_type={InputType::Password}
-    //     label="Password"
-    //   />
-    //   <button class="btn btn-neutral" type="submit">
-    //     "Login"
-    //   </button>
+    // <input type="hidden" name="uri" /*value={move || query.get().get("uri").cloned().unwrap_or("".into())}*/ />
+    // <TextInput id="username" name="username_or_email" /*on_input={move |s| update!(| name | * name = s)}*/ label="Username" />
+    // <TextInput
+    // id="password"
+    // name="password"
+    // validation_class={password_validation.into()}
+    // // on_input={move |s| update!(| password | * password = s)}
+    // input_type={InputType::Password}
+    // label="Password"
+    // />
+    // <button class="btn btn-neutral" type="submit">
+    // "Login"
+    // </button>
 
-    <ActionForm attr:class="space-y-3" action={login}> // on:submit={on_submit}>
-      <input type="hidden" name="uri" /*value={move || query.get().get("uri").cloned().unwrap_or("".into())}*/ />
+    // on:submit={on_submit}>
+    <ActionForm attr:class="space-y-3" action={login}>
+      <input type="hidden" name="uri" />
       <TextInput id="username" name="username_or_email" on_input={move |e: Event| name.set(event_target_value(&e))} label="Username" />
       <TextInput
         id="password"
@@ -288,13 +289,12 @@ pub fn LoginForm() -> impl IntoView {
         input_type={InputType::Password}
         label="Password"
       />
-      <button class="btn btn-neutral" type="submit" on:click={on_submit}> // on:click=|ev: web_sys::MouseEvent| { ev.prevent_default(); /*ev.set_cancel_bubble(true);*/ }>
-      // <button class="btn btn-neutral" type="button" on:>
+      // on:click=|ev: web_sys::MouseEvent| { ev.prevent_default(); /*ev.set_cancel_bubble(true);*/ }>
+      <button class="btn btn-neutral" type="submit">// on:click={on_submit}>
+        // <button class="btn btn-neutral" type="button" on:>
         "Login"
       </button>
     </ActionForm>
-    // </Form>
-    // </form>
   }
   .into_any()
 }
