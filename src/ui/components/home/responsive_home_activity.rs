@@ -403,7 +403,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
       // <div class="relative w-full sm:pr-4 lg:w-2/3 2xl:w-3/4 3xl:w-4/5 4xl:w-5/6">
     <div class="flex flex-grow">
       <div class={move || {
-        format!("sm:h-[calc(100%-3rem)] min-w-full absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[50ch] gap-0{}", if loading.get() { " opacity-25" } else { "" })
+        format!("sm:h-[calc(100%-3rem)] min-w-full absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[50ch] pl-4 pt-3 gap-4{}", if loading.get() { " opacity-25" } else { "" })
         // format!("sm:container sm:h-[calc(100%-12rem)] absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[50ch] gap-0{}", if loading.get() { " opacity-25" } else { "" })
       }}>
 
