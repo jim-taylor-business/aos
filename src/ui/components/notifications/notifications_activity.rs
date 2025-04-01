@@ -200,6 +200,7 @@ pub fn NotificationsActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResp
                               },
                             )}
                             post_view={p.into()}
+                            on_community_change={move |s| {}}
                           />
                           <CommentNode
                             ssr_site

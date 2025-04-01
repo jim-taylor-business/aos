@@ -1,7 +1,10 @@
 use crate::{
   errors::{message_from_error, LemmyAppError},
   lemmy_client::*,
-  ui::components::{comment::comment_nodes::CommentNodes, post::post_listing::PostListing},
+  ui::components::{
+    comment::responsive_comment_nodes::ResponsiveCommentNodes,
+    post::{post_listing::PostListing, responsive_post_listing::ResponsivePostListing},
+  },
 };
 use ev::MouseEvent;
 use lemmy_api_common::{
@@ -16,7 +19,7 @@ use leptos_router::{use_location, use_params_map, use_query_map};
 use web_sys::{wasm_bindgen::JsCast, HtmlAnchorElement, HtmlImageElement};
 
 #[component]
-pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
+pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
   let params = use_params_map();
   let query = use_query_map();
 
@@ -28,7 +31,7 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
   let reply_show = RwSignal::new(false);
   let refresh_comments = RwSignal::new(false);
   let content = RwSignal::new(String::default());
-  let loading = RwSignal::new(false);
+  let loading = RwSignal::new(true);
   let refresh = RwSignal::new(false);
 
   #[cfg(not(feature = "ssr"))]
@@ -56,7 +59,7 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
           comment_id: None,
         };
         let result = LemmyClient.get_post(form).await;
-        // loading.set(false);
+        loading.set(false);
         match result {
           Ok(o) => Some(Ok(o)),
           Err(e) => {
@@ -140,7 +143,6 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
       move || (),
       move |()| async move {
         if let Some(id) = post_id() {
-          loading.set(true);
           let form = CreateComment {
             content: content.get(),
             post_id: PostId(id),
@@ -150,7 +152,6 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
           let result = LemmyClient.reply_comment(form).await;
           match result {
             Ok(_o) => {
-              loading.set(false);
               refresh_comments.update(|b| *b = !*b);
               reply_show.update(|b| *b = !*b);
               let form = CreateComment {
@@ -164,7 +165,6 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
               }
             }
             Err(e) => {
-              loading.set(false);
               error.update(|es| es.push(Some((e, None))));
             }
           }
@@ -187,8 +187,8 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
   }
 
   view! {
-    <main role="main" class="flex flex-col flex-grow w-full">
-      <div class="flex flex-col">
+    // <main role="main" class="flex flex-col flex-grow w-full">
+      <div class="sm:h-full w-full absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[50ch] gap-0">
         <div>
           <Transition fallback={|| {}}>
             {move || {
@@ -245,7 +245,7 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                       // }
                       // })}
                       <div>
-                        <PostListing post_view={res.post_view.into()} ssr_site post_number=0 reply_show on_community_change={move |s| {}} />
+                        <ResponsivePostListing post_view={res.post_view.into()} ssr_site post_number=0 reply_show />
                       </div>
                       {if let Some(ref content) = text {
                         let mut options = pulldown_cmark::Options::empty();
@@ -321,7 +321,7 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                               {content.get_untracked()}
                             </textarea>
                           </label>
-                          <button on:click={on_reply_click} type="button" class=move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })>
+                          <button on:click={on_reply_click} type="button" class="btn btn-neutral">
                             "Comment"
                           </button>
                         </div>
@@ -399,7 +399,7 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                           </li>
                         </ul>
                       </div>
-                      <CommentNodes ssr_site comments={res.comments.into()} _post_id={post_id().into()} />
+                      <ResponsiveCommentNodes ssr_site comments={res.comments.into()} _post_id={post_id().into()} />
                     </div>
                   }
                 })
@@ -407,6 +407,6 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
           </Transition>
         </div>
       </div>
-    </main>
+    // </main>
   }
 }

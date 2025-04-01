@@ -8,7 +8,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 # recommended - use the latest version tag and test against an instance that supports the same version
-lemmy_api_common = { tag = "0.19.9", git = "https://github.com/LemmyNet/lemmy.git", default-features = false }
+lemmy_api_common = { tag = "0.19.10", git = "https://github.com/LemmyNet/lemmy.git", default-features = false }
 
 # test against unstable main dev branch of Lemmy
 # lemmy_api_common = { branch = "main", git = "https://github.com/LemmyNet/lemmy.git", default-features = false }
@@ -77,7 +77,7 @@ default = "en"
 locales = ["en", "fr"]
 
 [features]
-default = ["ssr"]
+default = ["csr"]
 hydrate = [
   "leptos/hydrate",
   "leptos_meta/hydrate",

@@ -1,10 +1,7 @@
-use std::collections::BTreeMap;
-
 use crate::{
   errors::{LemmyAppError, LemmyAppErrorType},
   lemmy_client::*,
   ui::components::common::icon::{Icon, IconType::*},
-  ResourceStatus,
 };
 use ev::MouseEvent;
 use lemmy_api_common::{lemmy_db_views::structs::*, person::*, post::*, site::GetSiteResponse};
@@ -113,12 +110,11 @@ pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostR
 }
 
 #[component]
-pub fn PostListing(
+pub fn ResponsivePostListing(
   post_view: MaybeSignal<PostView>,
   ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>,
   post_number: usize,
   reply_show: RwSignal<bool>,
-  #[prop(into)] on_community_change: Callback<String, ()>,
 ) -> impl IntoView {
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
   let logged_in = Signal::derive(move || {
@@ -128,7 +124,6 @@ pub fn PostListing(
       Some(false)
     }
   });
-  let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
 
   let post_view = RwSignal::new(post_view.get());
   let vote_action = create_server_action::<VotePostFn>();
@@ -311,7 +306,7 @@ pub fn PostListing(
   };
   let community_title_encoded = html_escape::encode_safe(&community_title).to_string();
   let creator_name = &post_view.get().creator.actor_id.to_string()[8..];
-  let creator_name_encoded = html_escape::encode_safe(&creator_name).to_string();
+  let creator_name_encoded = html_escape::encode_safe(creator_name).to_string();
 
   let now_in_millis = {
     #[cfg(not(feature = "ssr"))]
@@ -344,7 +339,7 @@ pub fn PostListing(
   let thumbnail = RwSignal::new(String::from(""));
 
   view! {
-    <div class="grid flex-row gap-y-3 gap-x-4 py-3 px-4 grid-cols-[6rem_1fr] grid-rows-[1fr_2rem] break-inside-avoid sm:grid-cols-[2rem_6rem_1fr] sm:grid-rows-[1fr_2rem]">
+    <div class="grid gap-y-3 gap-x-4 py-3 px-4 grid-cols-[6rem_1fr] grid-rows-[1fr_2rem] break-inside-avoid sm:grid-cols-[2rem_6rem_1fr] sm:grid-rows-[1fr_2rem]">
       <div class="hidden items-start pt-2 sm:flex sm:flex-row sm:col-span-1 sm:row-span-2">
         <div class="flex flex-col items-center w-8 text-center">
           <ActionForm action={vote_action} on:submit={on_up_vote_submit}>
@@ -396,7 +391,7 @@ pub fn PostListing(
         <a
           class="flex flex-col h-full"
           target="_blank"
-          href={move || { if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { format!("/p/{}", post_view.get().post.id) } }}
+          href={move || { if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { format!("/responsive/post/{}", post_view.get().post.id) } }}
         >
           {move || {
             if let Some(t) = post_view.get().post.thumbnail_url {
@@ -432,7 +427,7 @@ pub fn PostListing(
           if post_view.get().post.thumbnail_url.is_none() && post_view.get().post.url.is_none() { " col-span-2 sm:col-span-2" } else { "" },
         )
       }}>
-        <A href={move || format!("/p/{}", post_view.get().post.id)} class="block hover:text-accent">
+        <A href={move || format!("/responsive/p/{}", post_view.get().post.id)} class="block hover:text-accent">
           <span class="text-lg break-words" inner_html={title_encoded} />
         </A>
         <span class="block mb-1">
@@ -449,21 +444,9 @@ pub fn PostListing(
           <A
             class="inline-block text-sm break-words hover:text-secondary"
             href={if post_view.get().community.local {
-              format!("/c/{}", post_view.get().community.name)
+              format!("/responsive/c/{}", post_view.get().community.name)
             } else {
-              format!("/c/{}@{}", post_view.get().community.name, post_view.get().community.actor_id.inner().host().unwrap().to_string())
-            }}
-            on:click={ move |e: MouseEvent| {
-              csr_resources.set(BTreeMap::new());
-
-              // e.prevent_default();
-            //   on_community_change.call(post_view.get().community.name);
-            //   // let navigate = leptos_router::use_navigate();
-            //   // if post_view.get().community.local {
-            //   //   navigate(&format!("/c/{}", post_view.get().community.name), Default::default());
-            //   // } else {
-            //   //   navigate(&format!("/c/{}@{}", post_view.get().community.name, post_view.get().community.actor_id.inner().host().unwrap().to_string()), Default::default());
-            //   // }
+              format!("/responsive/c/{}@{}", post_view.get().community.name, post_view.get().community.actor_id.inner().host().unwrap().to_string())
             }}
           >
             <span inner_html={community_title_encoded} />
@@ -527,7 +510,7 @@ pub fn PostListing(
             )
           }}
         >
-          <A href={move || { format!("/p/{}", post_view.get().post.id) }} class="text-sm whitespace-nowrap hover:text-accent">
+          <A href={move || { format!("/responsive/p/{}", post_view.get().post.id) }} class="text-sm whitespace-nowrap hover:text-accent">
             <Icon icon={Comments} class={"inline".into()} />
             " "
             {post_view.get().counts.comments}
@@ -578,7 +561,7 @@ pub fn PostListing(
             title="Cross post"
             on:click={move |e: MouseEvent| {
               if e.ctrl_key() && e.shift_key() {
-                let _ = window().location().set_href(&format!("//lemmy.world/post/{}", post_view.get().post.id));
+                let _ = window().location().set_href(&format!("//lemmy.world/p/{}", post_view.get().post.id));
               }
             }}
           >

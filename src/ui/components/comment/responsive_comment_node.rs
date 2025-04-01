@@ -1,7 +1,10 @@
 use crate::{
   errors::LemmyAppError,
   lemmy_client::*,
-  ui::components::common::icon::{Icon, IconType::*},
+  ui::components::{
+    comment::comment_node::CommentNode,
+    common::icon::{Icon, IconType::*},
+  },
 };
 use ev::{MouseEvent, SubmitEvent, TouchEvent};
 use lemmy_api_common::{
@@ -16,7 +19,7 @@ use leptos_router::Form;
 use web_sys::{wasm_bindgen::JsCast, HtmlAnchorElement, HtmlImageElement};
 
 #[component]
-pub fn CommentNode(
+pub fn ResponsiveCommentNode(
   ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>,
   comment: MaybeSignal<CommentView>,
   comments: MaybeSignal<Vec<CommentView>>,
@@ -370,7 +373,7 @@ pub fn CommentNode(
         // e.stop_propagation();
         // highlight_show.set(false);
         // }}
-        <div class={move || format!("max-w-none prose{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html} />
+        <div class={move || format!("prose{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html} />
         <Show when={move || vote_show.get()} fallback={|| view! {}}>
           <div on:click={cancel} class="flex flex-wrap gap-x-2 items-center">
             <Form on:submit={on_up_vote_submit} action="POST" class="flex items-center">

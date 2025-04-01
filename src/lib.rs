@@ -1,5 +1,5 @@
 // useful in development to only have errors in compiler output
-// #![allow(warnings)]
+#![allow(warnings)]
 
 mod config;
 mod errors;
@@ -8,6 +8,7 @@ mod indexed_db;
 mod layout;
 mod lemmy_client;
 mod lemmy_error;
+mod responsive_layout;
 mod ui;
 
 use crate::{
@@ -24,9 +25,13 @@ use lemmy_api_common::{lemmy_db_views::structs::PaginationCursor, post::GetPosts
 use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
-use leptos_use::SameSite;
+use leptos_use::{use_service_worker_with_options, SameSite, UseServiceWorkerOptions};
+use responsive_layout::ResponsiveLayout;
 use std::collections::BTreeMap;
-use ui::components::notifications::notifications_activity::NotificationsActivity;
+use ui::components::{
+  home::responsive_home_activity::ResponsiveHomeActivity, notifications::notifications_activity::NotificationsActivity,
+  post::responsive_post_activity::ResponsivePostActivity,
+};
 
 #[cfg(feature = "ssr")]
 use codee::string::FromToStringCodec;
@@ -74,7 +79,10 @@ pub fn App() -> impl IntoView {
     // active,
     // skip_waiting,
     ..
-  } = use_service_worker();
+  } = use_service_worker_with_options(UseServiceWorkerOptions::default()
+    .script_url("/service-worker.js")
+    .skip_waiting_message("skipWaiting"),
+  );
   #[cfg(not(feature = "ssr"))]
   let visibility = use_document_visibility();
   #[cfg(not(feature = "ssr"))]
@@ -134,19 +142,19 @@ pub fn App() -> impl IntoView {
     Some(Ok(site)) => {
       if text.len() > 0 {
         if let Some(d) = site.site_view.site.description {
-          format!("{} - Tech Demo UI for {} - {}", text, site.site_view.site.name, d)
+          format!("{} - AOS for {} - {}", text, site.site_view.site.name, d)
         } else {
-          format!("{} - Tech Demo UI for {}", text, site.site_view.site.name)
+          format!("{} - AOS for {}", text, site.site_view.site.name)
         }
       } else {
         if let Some(d) = site.site_view.site.description {
-          format!("Tech Demo UI for {} - {}", site.site_view.site.name, d)
+          format!("AOS for {} - {}", site.site_view.site.name, d)
         } else {
-          format!("Tech Demo UI for {}", site.site_view.site.name)
+          format!("AOS for {}", site.site_view.site.name)
         }
       }
     }
-    _ => "Lemmy".to_string(),
+    _ => "AOS".to_string(),
   };
 
   view! {
@@ -171,9 +179,8 @@ pub fn App() -> impl IntoView {
             <Route path="/*any" view={NotFound} />
 
             <Route path="" view={move || view! { <HomeActivity ssr_site /> }} />
-
             <Route path="create_post" view={CommunitiesActivity} />
-            <Route path="post/:id" view={move || view! { <PostActivity ssr_site /> }} />
+            <Route path="p/:id" view={move || view! { <PostActivity ssr_site /> }} />
 
             <Route path="search" view={CommunitiesActivity} />
             <Route path="communities" view={CommunitiesActivity} />
@@ -191,6 +198,11 @@ pub fn App() -> impl IntoView {
 
             <Route path="modlog" view={CommunitiesActivity} />
             <Route path="instances" view={CommunitiesActivity} />
+          </Route>
+          <Route path="/responsive" view={move || view! { <ResponsiveLayout ssr_site /> }} ssr={SsrMode::Async}>
+            <Route path="" view={move || view! { <ResponsiveHomeActivity ssr_site /> }} />
+            <Route path="p/:id" view={move || view! { <ResponsivePostActivity ssr_site /> }} />
+            <Route path="c/:name" view={move || view! { <ResponsiveHomeActivity ssr_site /> }} />
           </Route>
         </Routes>
       </Router>

@@ -1,14 +1,20 @@
+use std::collections::BTreeMap;
+
 use crate::{
   errors::{message_from_error, LemmyAppError},
   i18n::*,
   lemmy_client::*,
   ui::components::common::icon::{Icon, IconType::*},
-  NotificationsRefresh, OnlineSetter,
+  NotificationsRefresh, OnlineSetter, ResourceStatus,
 };
 use codee::string::FromToStringCodec;
 use ev::MouseEvent;
 use lemmy_api_common::{
-  lemmy_db_schema::source::site::Site, lemmy_db_views::structs::SiteView, person::GetUnreadCountResponse, site::GetSiteResponse,
+  lemmy_db_schema::source::site::Site,
+  lemmy_db_views::structs::{PaginationCursor, SiteView},
+  person::GetUnreadCountResponse,
+  post::GetPostsResponse,
+  site::GetSiteResponse,
 };
 use leptos::*;
 use leptos_router::*;
@@ -64,8 +70,9 @@ pub fn TopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppE
     use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax));
 
   let online = expect_context::<RwSignal<OnlineSetter>>();
-
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
+  let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
+
   // let ssr_error = RwSignal::new::<Option<(LemmyAppError, Option<RwSignal<bool>>)>>(None);
 
   // if let Some(Err(e)) = site_signal.get() {
@@ -228,7 +235,9 @@ pub fn TopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppE
       <div class="navbar-start">
         <ul class="flex-nowrap items-center menu menu-horizontal">
           <li>
-            <A href="/" class="text-xl whitespace-nowrap">
+            <A href="/" class="text-xl whitespace-nowrap" on:click={ move |e: MouseEvent| {
+              csr_resources.set(BTreeMap::new());
+            }}>
               {move || {
                 if let Some(Ok(GetSiteResponse { site_view: SiteView { site: Site { icon: Some(i), .. }, .. }, .. })) = ssr_site.get() {
                   view! { <img class="h-8" src={i.inner().to_string()} /> }
