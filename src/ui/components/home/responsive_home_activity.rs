@@ -3,7 +3,7 @@ use crate::{
   i18n::*,
   lemmy_client::*,
   ui::components::{
-    common::about::About,
+    common::{about::About, responsive_nav::ResponsiveTopNav},
     home::{site_summary::SiteSummary, trending::Trending},
     post::{post_listings::PostListings, responsive_post_listings::ResponsivePostListings},
   },
@@ -310,100 +310,107 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
 
   view! {
   <main class="flex flex-col">
-    <div class="flex flex-shrink">
-      <div class="hidden mr-3 sm:inline-block join">
-        <button class="btn join-item btn-active">"Posts"</button>
-        <button class="btn join-item btn-disabled">"Comments"</button>
-      </div>
-      <div class="hidden mr-3 sm:inline-block join">
-        <A
-          href={move || {
-            let mut query_params = query.get();
-            query_params.insert("list".into(), serde_json::to_string(&ListingType::Subscribed).ok().unwrap());
-            query_params.remove("from".into());
-            query_params.remove("prev".into());
-            format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
-          }}
-          class={move || {
-            format!(
-              "btn join-item{}{}",
-              if ListingType::Subscribed == ssr_list() { " btn-active" } else { "" },
-              if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { "" } else { " btn-disabled" },
-            )
-          }}
-        >
-          "Subscribed"
-        </A>
-        <A
-          href={move || {
-            let mut query_params = query.get();
-            query_params.insert("list".into(), serde_json::to_string(&ListingType::Local).ok().unwrap());
-            query_params.remove("from".into());
-            query_params.remove("prev".into());
-            format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
-          }}
-          class={move || format!("btn join-item{}", if ListingType::Local == ssr_list() { " btn-active" } else { "" })}
-        >
-          "Local"
-        </A>
-        <A
-          href={move || {
-            let mut query_params = query.get();
-            query_params.remove("list".into());
-            query_params.remove("from".into());
-            query_params.remove("prev".into());
-            format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
-          }}
-          class={move || format!("btn join-item{}", if ListingType::All == ssr_list() { " btn-active" } else { "" })}
-        >
-          "All"
-        </A>
-      </div>
-      <div class="ml-3 sm:inline-block sm:ml-0 dropdown">
-        <label tabindex="0" class="btn">
-          "Sort"
-        </label>
-        <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
-          <li
-            class={move || { (if SortType::Active == ssr_sort() { "btn-active" } else { "" }).to_string() }}
-            on:click={on_sort_click(SortType::Active)}
-          >
-            <span>{t!(i18n, active)}</span>
-          </li>
-          <li class={move || { (if SortType::Hot == ssr_sort() { "btn-active" } else { "" }).to_string() }} on:click={on_sort_click(SortType::Hot)}>
-            <span>{t!(i18n, hot)}</span>
-          </li>
-          <li
-            class={move || { (if SortType::Scaled == ssr_sort() { "btn-active" } else { "" }).to_string() }}
-            on:click={on_sort_click(SortType::Scaled)}
-          >
-            <span>{"Scaled"}</span>
-          </li>
-          <li class={move || { (if SortType::New == ssr_sort() { "btn-active" } else { "" }).to_string() }} on:click={on_sort_click(SortType::New)}>
-            <span>{t!(i18n, new)}</span>
-          </li>
-        </ul>
-      </div>
-      <div class="inline-block ml-3 sm:hidden sm:ml-0 dropdown">
-        <label tabindex="0" class="btn">
-          "List"
-        </label>
-        <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
-          <li class={move || highlight_csr_filter(ListingType::Subscribed)} on:click={on_csr_filter_click(ListingType::Subscribed)}>
-            <span>"Subscribed"</span>
-          </li>
-          <li class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}>
-            <span>"All"</span>
-          </li>
-        </ul>
-      </div>
-    </div>
+    <ResponsiveTopNav ssr_site />
+
+    // <div class="flex flex-shrink">
+    //   <div class="hidden mr-3 sm:inline-block join">
+    //     <button class="btn join-item btn-active">"Posts"</button>
+    //     <button class="btn join-item btn-disabled">"Comments"</button>
+    //   </div>
+    //   <div class="hidden mr-3 sm:inline-block join">
+    //     <A
+    //       href={move || {
+    //         let mut query_params = query.get();
+    //         query_params.insert("list".into(), serde_json::to_string(&ListingType::Subscribed).ok().unwrap());
+    //         query_params.remove("from".into());
+    //         query_params.remove("prev".into());
+    //         format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
+    //       }}
+    //       class={move || {
+    //         format!(
+    //           "btn join-item{}{}",
+    //           if ListingType::Subscribed == ssr_list() { " btn-active" } else { "" },
+    //           if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { "" } else { " btn-disabled" },
+    //         )
+    //       }}
+    //     >
+    //       "Subscribed"
+    //     </A>
+    //     <A
+    //       href={move || {
+    //         let mut query_params = query.get();
+    //         query_params.insert("list".into(), serde_json::to_string(&ListingType::Local).ok().unwrap());
+    //         query_params.remove("from".into());
+    //         query_params.remove("prev".into());
+    //         format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
+    //       }}
+    //       class={move || format!("btn join-item{}", if ListingType::Local == ssr_list() { " btn-active" } else { "" })}
+    //     >
+    //       "Local"
+    //     </A>
+    //     <A
+    //       href={move || {
+    //         let mut query_params = query.get();
+    //         query_params.remove("list".into());
+    //         query_params.remove("from".into());
+    //         query_params.remove("prev".into());
+    //         format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
+    //       }}
+    //       class={move || format!("btn join-item{}", if ListingType::All == ssr_list() { " btn-active" } else { "" })}
+    //     >
+    //       "All"
+    //     </A>
+    //   </div>
+    //   <div class="ml-3 sm:inline-block sm:ml-0 dropdown">
+    //     <label tabindex="0" class="btn">
+    //       "Sort"
+    //     </label>
+    //     <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+    //       <li
+    //         class={move || { (if SortType::Active == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+    //         on:click={on_sort_click(SortType::Active)}
+    //       >
+    //         <span>{t!(i18n, active)}</span>
+    //       </li>
+    //       <li class={move || { (if SortType::Hot == ssr_sort() { "btn-active" } else { "" }).to_string() }} on:click={on_sort_click(SortType::Hot)}>
+    //         <span>{t!(i18n, hot)}</span>
+    //       </li>
+    //       <li
+    //         class={move || { (if SortType::Scaled == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+    //         on:click={on_sort_click(SortType::Scaled)}
+    //       >
+    //         <span>{"Scaled"}</span>
+    //       </li>
+    //       <li class={move || { (if SortType::New == ssr_sort() { "btn-active" } else { "" }).to_string() }} on:click={on_sort_click(SortType::New)}>
+    //         <span>{t!(i18n, new)}</span>
+    //       </li>
+    //     </ul>
+    //   </div>
+    //   <div class="inline-block ml-3 sm:hidden sm:ml-0 dropdown">
+    //     <label tabindex="0" class="btn">
+    //       "List"
+    //     </label>
+    //     <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+    //       <li class={move || highlight_csr_filter(ListingType::Subscribed)} on:click={on_csr_filter_click(ListingType::Subscribed)}>
+    //         <span>"Subscribed"</span>
+    //       </li>
+    //       <li class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}>
+    //         <span>"All"</span>
+    //       </li>
+    //     </ul>
+    //   </div>
+    // </div>
+
+
+
+
     // <main class="flex flex-col flex-grow w-full sm:flex-row">
+
     // <main class="">
       // <div class="relative w-full sm:pr-4 lg:w-2/3 2xl:w-3/4 3xl:w-4/5 4xl:w-5/6">
     <div class="flex flex-grow">
       <div class={move || {
-        format!("sm:h-[calc(100%-3rem)] min-w-full absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[50ch] pl-4 pt-3 gap-4{}", if loading.get() { " opacity-25" } else { "" })
+        format!("sm:h-[calc(100%-6rem)] min-w-full absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[50ch] pl-4 gap-4{}", if loading.get() { " opacity-25" } else { "" })
         // format!("sm:container sm:h-[calc(100%-12rem)] absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[50ch] gap-0{}", if loading.get() { " opacity-25" } else { "" })
       }}>
 
@@ -438,8 +445,9 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                 let next_page = Some((posts.0.0 + ssr_limit(), posts.1.next_page.clone()));
                 csr_next_page_cursor.set(next_page.clone().unwrap());
                 view! {
-                  <Title text={format!("Page {}", 1 + (ssr_from().0 / ssr_limit()))} />
-                    <ResponsivePostListings posts={posts.1.posts.into()} ssr_site page_number={posts.0.0.into()} />
+                  // <Title text={format!("Page {}", 1 + (ssr_from().0 / ssr_limit()))} />
+                  <Title text="" />
+                  <ResponsivePostListings posts={posts.1.posts.into()} ssr_site page_number={posts.0.0.into()} />
                   // <div class="hidden sm:block join">
                   //   {
                   //     let mut st = ssr_prev();

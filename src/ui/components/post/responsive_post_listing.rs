@@ -1,7 +1,10 @@
+use std::collections::BTreeMap;
+
 use crate::{
   errors::{LemmyAppError, LemmyAppErrorType},
   lemmy_client::*,
   ui::components::common::icon::{Icon, IconType::*},
+  ResourceStatus,
 };
 use ev::MouseEvent;
 use lemmy_api_common::{lemmy_db_views::structs::*, person::*, post::*, site::GetSiteResponse};
@@ -124,6 +127,7 @@ pub fn ResponsivePostListing(
       Some(false)
     }
   });
+  let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
 
   let post_view = RwSignal::new(post_view.get());
   let vote_action = create_server_action::<VotePostFn>();
@@ -447,6 +451,9 @@ pub fn ResponsivePostListing(
               format!("/responsive/c/{}", post_view.get().community.name)
             } else {
               format!("/responsive/c/{}@{}", post_view.get().community.name, post_view.get().community.actor_id.inner().host().unwrap().to_string())
+            }}
+            on:click={ move |e: MouseEvent| {
+              csr_resources.set(BTreeMap::new());
             }}
           >
             <span inner_html={community_title_encoded} />
