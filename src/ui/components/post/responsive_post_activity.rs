@@ -3,6 +3,7 @@ use crate::{
   lemmy_client::*,
   ui::components::{
     comment::responsive_comment_nodes::ResponsiveCommentNodes,
+    common::responsive_nav::ResponsiveTopNav,
     post::{post_listing::PostListing, responsive_post_listing::ResponsivePostListing},
   },
 };
@@ -188,225 +189,235 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
 
   view! {
     // <main role="main" class="flex flex-col flex-grow w-full">
-      <div class="sm:h-full w-full absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[50ch] gap-0">
-        <div>
-          <Transition fallback={|| {}}>
-            {move || {
-              match post_resource.get() {
-                Some(Some(Err(err))) => {
-                  Some(
-                    view! {
-                      <Title text="Error loading post" />
-                      <div class="py-4 px-8">
-                        <div class="flex justify-between alert alert-error">
-                          <span>{message_from_error(&err.0)} " - " {err.0.content}</span>
-                          <div>
-                            <Show when={move || { if let Some(_) = err.1 { true } else { false } }} fallback={|| {}}>
-                              <button
-                                on:click={move |_| {
-                                  if let Some(r) = err.1 {
-                                    r.set(!r.get());
-                                  } else {}
-                                }}
-                                class="btn btn-sm"
-                              >
-                                "Retry"
-                              </button>
-                            </Show>
-                          </div>
+
+    <main class="flex flex-col">
+      <ResponsiveTopNav ssr_site />
+      <div class="flex flex-grow">
+        <div class="sm:h-[calc(100%-6rem)] min-w-full absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-sm pl-4 gap-4">
+
+
+    // <div class="sm:h-full w-full absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[50ch] gap-0">
+      <div>
+        <Transition fallback={|| {}}>
+          {move || {
+            match post_resource.get() {
+              Some(Some(Err(err))) => {
+                Some(
+                  view! {
+                    <Title text="Error loading post" />
+                    <div class="py-4 px-8">
+                      <div class="flex justify-between alert alert-error">
+                        <span>{message_from_error(&err.0)} " - " {err.0.content}</span>
+                        <div>
+                          <Show when={move || { if let Some(_) = err.1 { true } else { false } }} fallback={|| {}}>
+                            <button
+                              on:click={move |_| {
+                                if let Some(r) = err.1 {
+                                  r.set(!r.get());
+                                } else {}
+                              }}
+                              class="btn btn-sm"
+                            >
+                              "Retry"
+                            </button>
+                          </Show>
                         </div>
                       </div>
-                      <div class="hidden" />
-                    },
-                  )
-                }
-                Some(Some(Ok(res))) => {
-                  let text = if let Some(b) = res.post_view.post.body.clone() {
-                    if b.len() > 0 { Some(b) } else { res.post_view.post.embed_description.clone() }
-                  } else {
-                    None
-                  };
-                  Some(
-                    view! {
-                      <Title text={res.post_view.post.name.clone()} />
-                      // {loading
-                      // .get()
-                      // .then(move || {
-                      // view! {
-                      // <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
-                      // <div class="py-4 px-8">
-                      // <div class="alert">
-                      // <span>"Loading"</span>
-                      // </div>
-                      // </div>
-                      // </div>
-                      // <div class="hidden" />
+                    </div>
+                    <div class="hidden" />
+                  },
+                )
+              }
+              Some(Some(Ok(res))) => {
+                let text = if let Some(b) = res.post_view.post.body.clone() {
+                  if b.len() > 0 { Some(b) } else { res.post_view.post.embed_description.clone() }
+                } else {
+                  None
+                };
+                Some(
+                  view! {
+                    <Title text={res.post_view.post.name.clone()} />
+                    // {loading
+                    // .get()
+                    // .then(move || {
+                    // view! {
+                    // <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
+                    // <div class="py-4 px-8">
+                    // <div class="alert">
+                    // <span>"Loading"</span>
+                    // </div>
+                    // </div>
+                    // </div>
+                    // <div class="hidden" />
 
-                      // }
-                      // })}
-                      <div>
-                        <ResponsivePostListing post_view={res.post_view.into()} ssr_site post_number=0 reply_show />
-                      </div>
-                      {if let Some(ref content) = text {
-                        let mut options = pulldown_cmark::Options::empty();
-                        options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
-                        options.insert(pulldown_cmark::Options::ENABLE_TABLES);
-                        options.insert(pulldown_cmark::Options::ENABLE_SUPERSCRIPT);
-                        options.insert(pulldown_cmark::Options::ENABLE_SUBSCRIPT);
-                        let parser = pulldown_cmark::Parser::new_ext(content, options);
-                        let custom = parser
-                          .map(|event| match event {
-                            pulldown_cmark::Event::Html(text) => {
-                              let er = format!("<p>{}</p>", html_escape::encode_safe(&text).to_string());
-                              pulldown_cmark::Event::Html(er.into())
-                            }
-                            pulldown_cmark::Event::InlineHtml(text) => {
-                              let er = html_escape::encode_safe(&text).to_string();
-                              pulldown_cmark::Event::InlineHtml(er.into())
-                            }
-                            _ => event,
-                          });
-                        let mut safe_html = String::new();
-                        pulldown_cmark::html::push_html(&mut safe_html, custom);
-                        Some(
-                          view! {
-                            <div class="pr-4 pl-4">
-                              <div
-                                class="py-2"
-                                on:click={move |e: MouseEvent| {
-                                  if let Some(t) = e.target() {
-                                    if let Some(i) = t.dyn_ref::<HtmlImageElement>() {
-                                      let _ = window().open_with_url_and_target(&i.src(), "_blank");
-                                    } else if let Some(l) = t.dyn_ref::<HtmlAnchorElement>() {
-                                      e.prevent_default();
-                                      let _ = window().open_with_url_and_target(&l.href(), "_blank");
-                                    }
-                                  }
-                                }}
-                              >
-                                <div class="max-w-none prose" inner_html={safe_html} />
-                              </div>
-                            </div>
-                          },
-                        )
-                      } else {
-                        None
-                      }}
-                      // <div id="reply_box">
-                      <Show when={move || reply_show.get()} fallback={|| {}}>
-                        <div class="mb-3 space-y-3">
-                          <label class="form-control">
-                            <textarea
-                              class="h-24 text-base textarea textarea-bordered"
-                              placeholder="Comment text"
-                              prop:value={move || content.get()}
-                              node_ref={_visibility_element}
-                              // id="reply_text"
-                              // autofocus=true
-                              on:input={move |ev| {
-                                content.set(event_target_value(&ev));
-                                if let Some(id) = post_id() {
-                                  let form = CreateComment {
-                                    content: "".into(),
-                                    post_id: PostId(id),
-                                    parent_id: None,
-                                    language_id: None,
-                                  };
-                                  if let Ok(Some(s)) = window().local_storage() {
-                                    let _ = s.set_item(&serde_json::to_string(&form).ok().unwrap(), &event_target_value(&ev));
+                    // }
+                    // })}
+                    <div>
+                      <ResponsivePostListing post_view={res.post_view.into()} ssr_site post_number=0 reply_show />
+                    </div>
+                    {if let Some(ref content) = text {
+                      let mut options = pulldown_cmark::Options::empty();
+                      options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
+                      options.insert(pulldown_cmark::Options::ENABLE_TABLES);
+                      options.insert(pulldown_cmark::Options::ENABLE_SUPERSCRIPT);
+                      options.insert(pulldown_cmark::Options::ENABLE_SUBSCRIPT);
+                      let parser = pulldown_cmark::Parser::new_ext(content, options);
+                      let custom = parser
+                        .map(|event| match event {
+                          pulldown_cmark::Event::Html(text) => {
+                            let er = format!("<p>{}</p>", html_escape::encode_safe(&text).to_string());
+                            pulldown_cmark::Event::Html(er.into())
+                          }
+                          pulldown_cmark::Event::InlineHtml(text) => {
+                            let er = html_escape::encode_safe(&text).to_string();
+                            pulldown_cmark::Event::InlineHtml(er.into())
+                          }
+                          _ => event,
+                        });
+                      let mut safe_html = String::new();
+                      pulldown_cmark::html::push_html(&mut safe_html, custom);
+                      Some(
+                        view! {
+                          <div class="pr-4 pl-4">
+                            <div
+                              class="py-2"
+                              on:click={move |e: MouseEvent| {
+                                if let Some(t) = e.target() {
+                                  if let Some(i) = t.dyn_ref::<HtmlImageElement>() {
+                                    let _ = window().open_with_url_and_target(&i.src(), "_blank");
+                                  } else if let Some(l) = t.dyn_ref::<HtmlAnchorElement>() {
+                                    e.prevent_default();
+                                    let _ = window().open_with_url_and_target(&l.href(), "_blank");
                                   }
                                 }
                               }}
                             >
-                              {content.get_untracked()}
-                            </textarea>
-                          </label>
-                          <button on:click={on_reply_click} type="button" class="btn btn-neutral">
-                            "Comment"
-                          </button>
-                        </div>
-                      // {
-                      // let t = document().get_element_by_id("reply_text").unwrap().dyn_ref::<HtmlTextAreaElement>().unwrap().clone();
-                      // // let d = document().get_element_by_id("reply_text").unwrap();
-                      // // d.a;
-                      // t.focus();
-                      // }
-                      </Show>
-                    },
-                  )
-                }
-                Some(None) | None => {
-                  Some(
-                    // </div>
-                    view! {
-                      <Title text="Loading post" />
-                      <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
-                        <div class="py-4 px-8">
-                          <div class="alert">
-                            <span>"Loading"</span>
+                              <div class="max-w-none prose" inner_html={safe_html} />
+                            </div>
                           </div>
+                        },
+                      )
+                    } else {
+                      None
+                    }}
+                    // <div id="reply_box">
+                    <Show when={move || reply_show.get()} fallback={|| {}}>
+                      <div class="mb-3 space-y-3">
+                        <label class="form-control">
+                          <textarea
+                            class="h-24 text-base textarea textarea-bordered"
+                            placeholder="Comment text"
+                            prop:value={move || content.get()}
+                            node_ref={_visibility_element}
+                            // id="reply_text"
+                            // autofocus=true
+                            on:input={move |ev| {
+                              content.set(event_target_value(&ev));
+                              if let Some(id) = post_id() {
+                                let form = CreateComment {
+                                  content: "".into(),
+                                  post_id: PostId(id),
+                                  parent_id: None,
+                                  language_id: None,
+                                };
+                                if let Ok(Some(s)) = window().local_storage() {
+                                  let _ = s.set_item(&serde_json::to_string(&form).ok().unwrap(), &event_target_value(&ev));
+                                }
+                              }
+                            }}
+                          >
+                            {content.get_untracked()}
+                          </textarea>
+                        </label>
+                        <button on:click={on_reply_click} type="button" class="btn btn-neutral">
+                          "Comment"
+                        </button>
+                      </div>
+                    // {
+                    // let t = document().get_element_by_id("reply_text").unwrap().dyn_ref::<HtmlTextAreaElement>().unwrap().clone();
+                    // // let d = document().get_element_by_id("reply_text").unwrap();
+                    // // d.a;
+                    // t.focus();
+                    // }
+                    </Show>
+                  },
+                )
+              }
+              Some(None) | None => {
+                Some(
+                  // </div>
+                  view! {
+                    <Title text="Loading post" />
+                    <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
+                      <div class="py-4 px-8">
+                        <div class="alert">
+                          <span>"Loading"</span>
                         </div>
                       </div>
-                      <div class="hidden" />
-                    },
-                  )
-                }
-              }
-            }}
-          </Transition>
-          <Transition fallback={|| {}}>
-            {move || {
-              comments
-                .get()
-                .unwrap_or(None)
-                .map(|res| {
-                  view! {
-                    <div class="w-full">
-                      <div class="ml-3 sm:inline-block sm:ml-0 dropdown">
-                        <label tabindex="0" class="btn">
-                          "Sort"
-                        </label>
-                        <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
-                          <li
-                            class={move || { (if CommentSortType::Top == ssr_sort() { "btn-active" } else { "" }).to_string() }}
-                            on:click={on_sort_click(CommentSortType::Top)}
-                          >
-                            <span>"Top"</span>
-                          </li>
-                          <li
-                            class={move || { (if CommentSortType::Hot == ssr_sort() { "btn-active" } else { "" }).to_string() }}
-                            on:click={on_sort_click(CommentSortType::Hot)}
-                          >
-                            <span>"Hot"</span>
-                          </li>
-                          <li
-                            class={move || { (if CommentSortType::New == ssr_sort() { "btn-active" } else { "" }).to_string() }}
-                            on:click={on_sort_click(CommentSortType::New)}
-                          >
-                            <span>"New"</span>
-                          </li>
-                          <li
-                            class={move || { (if CommentSortType::Old == ssr_sort() { "btn-active" } else { "" }).to_string() }}
-                            on:click={on_sort_click(CommentSortType::Old)}
-                          >
-                            <span>"Old"</span>
-                          </li>
-                          <li
-                            class={move || { (if CommentSortType::Controversial == ssr_sort() { "btn-active" } else { "" }).to_string() }}
-                            on:click={on_sort_click(CommentSortType::Controversial)}
-                          >
-                            <span>"Contraversial"</span>
-                          </li>
-                        </ul>
-                      </div>
-                      <ResponsiveCommentNodes ssr_site comments={res.comments.into()} _post_id={post_id().into()} />
                     </div>
-                  }
-                })
-            }}
-          </Transition>
+                    <div class="hidden" />
+                  },
+                )
+              }
+            }
+          }}
+        </Transition>
+        <Transition fallback={|| {}}>
+          {move || {
+            comments
+              .get()
+              .unwrap_or(None)
+              .map(|res| {
+                view! {
+                  <div class="w-full">
+                    <div class="ml-3 sm:inline-block sm:ml-0 dropdown">
+                      <label tabindex="0" class="btn">
+                        "Sort"
+                      </label>
+                      <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+                        <li
+                          class={move || { (if CommentSortType::Top == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                          on:click={on_sort_click(CommentSortType::Top)}
+                        >
+                          <span>"Top"</span>
+                        </li>
+                        <li
+                          class={move || { (if CommentSortType::Hot == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                          on:click={on_sort_click(CommentSortType::Hot)}
+                        >
+                          <span>"Hot"</span>
+                        </li>
+                        <li
+                          class={move || { (if CommentSortType::New == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                          on:click={on_sort_click(CommentSortType::New)}
+                        >
+                          <span>"New"</span>
+                        </li>
+                        <li
+                          class={move || { (if CommentSortType::Old == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                          on:click={on_sort_click(CommentSortType::Old)}
+                        >
+                          <span>"Old"</span>
+                        </li>
+                        <li
+                          class={move || { (if CommentSortType::Controversial == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                          on:click={on_sort_click(CommentSortType::Controversial)}
+                        >
+                          <span>"Contraversial"</span>
+                        </li>
+                      </ul>
+                    </div>
+                    <ResponsiveCommentNodes ssr_site comments={res.comments.into()} _post_id={post_id().into()} />
+                  </div>
+                }
+              })
+          }}
+        </Transition>
+      </div>
+    // </div>
+
         </div>
       </div>
-    // </main>
+    </main>
   }
 }
