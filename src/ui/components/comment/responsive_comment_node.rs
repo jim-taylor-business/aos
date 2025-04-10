@@ -493,7 +493,7 @@ pub fn ResponsiveCommentNode(
             <span class="overflow-hidden break-words">
               <span>{abbr_duration.clone()}</span>
               " ago, by "
-              <a href={move || format!("{}", comment_view.get().creator.actor_id)} target="_blank" class="text-sm break-words hover:text-secondary">
+              <a href={move || format!("{}", comment_view.get().creator.actor_id)} target="_blank" class="text-sm hover:text-secondary">
                 // <span inner_html={html_escape::encode_safe(&comment_view.get().creator.name).to_string()} />
                 <span inner_html={html_escape::encode_safe(&comment_view.get().creator.actor_id.to_string()[8..]).to_string()} />
               </a>
