@@ -395,7 +395,7 @@ pub fn PostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
                             class={move || { (if CommentSortType::Controversial == ssr_sort() { "btn-active" } else { "" }).to_string() }}
                             on:click={on_sort_click(CommentSortType::Controversial)}
                           >
-                            <span>"Contraversial"</span>
+                            <span>"Controversial"</span>
                           </li>
                         </ul>
                       </div>

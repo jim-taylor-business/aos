@@ -63,7 +63,13 @@ pub async fn change_theme(theme: String) -> Result<(), ServerFnError> {
 }
 
 #[component]
-pub fn ResponsiveTopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
+pub fn ResponsiveTopNav(
+  ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>,
+  #[prop(optional)] default_sort: MaybeProp<SortType>,
+  #[prop(optional)] post_name: MaybeSignal<String>,
+  #[prop(optional)] user_name: MaybeSignal<String>,
+  #[prop(optional)] community_name: MaybeSignal<String>,
+) -> impl IntoView {
   let i18n = use_i18n();
 
   let (_, set_theme_cookie) =
@@ -87,7 +93,9 @@ pub fn ResponsiveTopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse,
       .map(|e| (e, None::<Option<RwSignal<bool>>>))
   };
   let ssr_list = move || serde_json::from_str::<ListingType>(&query.get().get("list").cloned().unwrap_or("".into())).unwrap_or(ListingType::All);
-  let ssr_sort = move || serde_json::from_str::<SortType>(&query.get().get("sort").cloned().unwrap_or("".into())).unwrap_or(SortType::Active);
+  let ssr_sort = move || {
+    serde_json::from_str::<SortType>(&query.get().get("sort").cloned().unwrap_or("".into())).unwrap_or(default_sort.get().unwrap_or(SortType::Active))
+  };
 
   let on_sort_click = move |s: SortType| {
     move |_e: MouseEvent| {
@@ -103,7 +111,7 @@ pub fn ResponsiveTopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse,
           error.update(|es| es.push(Some((e.into(), None))));
         }
       }
-      if SortType::Active == s {
+      if default_sort.get().unwrap_or(SortType::Active) == s {
         query_params.remove("sort".into());
       }
       query_params.remove("from".into());
@@ -287,354 +295,414 @@ pub fn ResponsiveTopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse,
   };
 
   view! {
-    <nav class="flex navbar">
-      <div class="navbar-start">
-        <ul class="flex-nowrap items-center menu menu-horizontal">
-          <li>
-            <A href="/responsive" class="text-xl whitespace-nowrap" on:click={ move |e: MouseEvent| {
-              csr_resources.set(BTreeMap::new());
-            }}>
-              {move || {
-                if let Some(Ok(GetSiteResponse { site_view: SiteView { site: Site { icon: Some(i), .. }, .. }, .. })) = ssr_site.get() {
-                  view! { <img class="h-8" src={i.inner().to_string()} /> }
-                } else {
-                  view! { <img class="h-8" src="/lemmy.svg" /> }
-                }
-              }}
-              <span class="hidden lg:flex">
-                {move || { if let Some(Ok(m)) = ssr_site.get() { m.site_view.site.name } else { "Lemmy".to_string() } }}
-              </span>
-            </A>
-          </li>
-          <li>
-            // <div class="hidden mr-3 sm:inline-block join">
-            //   <button class="btn join-item btn-active">"Posts"</button>
-            //   <button class="btn join-item btn-disabled">"Comments"</button>
-            // </div>
-            <div class="hidden sm:block join">
-              <A
-                href={move || {
-                  let mut query_params = query.get();
-                  query_params.insert("list".into(), serde_json::to_string(&ListingType::Subscribed).ok().unwrap());
-                  query_params.remove("from".into());
-                  query_params.remove("prev".into());
-                  format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
-                }}
-                class={move || {
-                  format!(
-                    "btn join-item{}{}",
-                    if ListingType::Subscribed == ssr_list() { " btn-active" } else { "" },
-                    if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { "" } else { " btn-disabled" },
-                  )
-                }}
-              >
-                "Subscribed"
-              </A>
-              <A
-                href={move || {
-                  let mut query_params = query.get();
-                  query_params.insert("list".into(), serde_json::to_string(&ListingType::Local).ok().unwrap());
-                  query_params.remove("from".into());
-                  query_params.remove("prev".into());
-                  format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
-                }}
-                class={move || format!("btn join-item{}", if ListingType::Local == ssr_list() { " btn-active" } else { "" })}
-              >
-                "Local"
-              </A>
-              <A
-                href={move || {
-                  let mut query_params = query.get();
-                  query_params.remove("list".into());
-                  query_params.remove("from".into());
-                  query_params.remove("prev".into());
-                  format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
-                }}
-                class={move || format!("btn join-item{}", if ListingType::All == ssr_list() { " btn-active" } else { "" })}
-              >
-                "All"
-              </A>
-            </div>
-          </li>
-          // <li class="flex lg:hidden">
-          // </li>
-        </ul>
-        <div class="sm:hidden dropdown">
-          <label tabindex="0" class="btn">
-            "List"
-          </label>
-          <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
-            <li class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}>
-              <span>"All"</span>
-            </li>
-            <li class={move || highlight_csr_filter(ListingType::Local)} on:click={on_csr_filter_click(ListingType::Local)}>
-              <span>"Local"</span>
-            </li>
-            <li class={move || format!("{}{}", highlight_csr_filter(ListingType::Subscribed), if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { "" } else { " btn-disabled" })} on:click={on_csr_filter_click(ListingType::Subscribed)}>
-              <span>"Subscribed"</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-      <div class="navbar-end">
-        <div class="dropdown">
-          <label tabindex="0" class="btn">
-            "Sort"
-          </label>
-          <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
-            <li
-              class={move || { (if SortType::Active == ssr_sort() { "btn-active" } else { "" }).to_string() }}
-              on:click={on_sort_click(SortType::Active)}
-            >
-              <span>{t!(i18n, active)}</span>
-            </li>
-            <li class={move || { (if SortType::Hot == ssr_sort() { "btn-active" } else { "" }).to_string() }} on:click={on_sort_click(SortType::Hot)}>
-              <span>{t!(i18n, hot)}</span>
-            </li>
-            <li
-              class={move || { (if SortType::Scaled == ssr_sort() { "btn-active" } else { "" }).to_string() }}
-              on:click={on_sort_click(SortType::Scaled)}
-            >
-              <span>{"Scaled"}</span>
-            </li>
-            <li class={move || { (if SortType::New == ssr_sort() { "btn-active" } else { "" }).to_string() }} on:click={on_sort_click(SortType::New)}>
-              <span>{t!(i18n, new)}</span>
-            </li>
-          </ul>
-        </div>
-        <ul class="flex-nowrap items-center menu menu-horizontal">
-          // <li class="flex">
-          // </li>
-          <li class="hidden lg:flex z-[1]">
-            <details>
-              <summary>
-                <Icon icon={Translate} />
-              </summary>
-              <ul>
-                <li>
-                  <ActionForm class="p-0" action={lang_action} on:submit={on_lang_submit(Locale::fr)}>
-                    <input type="hidden" name="lang" value="FR" />
-                    <button class="py-2 px-4" type="submit">
-                      "FR"
-                    </button>
-                  </ActionForm>
-                </li>
-                <li>
-                  <ActionForm class="p-0" action={lang_action} on:submit={on_lang_submit(Locale::en)}>
-                    <input type="hidden" name="lang" value="EN" />
-                    <button class="py-2 px-4" type="submit">
-                      "EN"
-                    </button>
-                  </ActionForm>
-                </li>
-              </ul>
-            </details>
-          </li>
-          <li class="hidden lg:flex z-[1]">
-            <details>
-              <summary>
-                <Icon icon={Palette} />
-              </summary>
-              <ul>
-                <li>
-                  <ActionForm class="p-0" action={theme_action} on:submit={on_theme_submit("dark")}>
-                    <input type="hidden" name="theme" value="dark" />
-                    <button class="py-2 px-4" type="submit">
-                      "Dark"
-                    </button>
-                  </ActionForm>
-                </li>
-                <li>
-                  <ActionForm class="p-0" action={theme_action} on:submit={on_theme_submit("light")}>
-                    <input type="hidden" name="theme" value="light" />
-                    <button class="py-2 px-4" type="submit">
-                      "Light"
-                    </button>
-                  </ActionForm>
-                </li>
-                <li>
-                  <ActionForm class="p-0" action={theme_action} on:submit={on_theme_submit("retro")}>
-                    <input type="hidden" name="theme" value="retro" />
-                    <button class="py-2 px-4" type="submit">
-                      "Retro"
-                    </button>
-                  </ActionForm>
-                </li>
-              </ul>
-            </details>
-          </li>
-          <Transition fallback={|| {}}>
-            {move || {
-              unread_resource
-                .get()
-                .map(|u| {
-                  let unread = if let Ok(c) = u.clone() { format!(", {} unread", c.replies + c.mentions + c.private_messages) } else { "".into() };
-                  view! {
-                    <li title={move || {
-                      format!(
-                        "{}{}{}",
-                        if error.get().len() > 0 { format!("{} errors, ", error.get().len()) } else { "".into() },
-                        if online.get().0 { "app online" } else { "app offline" },
-                        unread,
-                      )
-                    }}>
-                      <A href="/notifications">
-                        <span class="flex flex-row items-center">
-                          {move || {
-                            let v = error.get();
-                            (v.len() > 0)
-                              .then(move || {
-                                let l = v.len();
-                                view! { <div class="badge badge-error badge-xs">{l}</div> }
-                              })
-                          }}
-                          <span>
-                            {move || { (!online.get().0).then(move || view! { <div class="absolute top-0 badge badge-warning badge-xs" /> }) }}
-                            <Icon icon={Notifications} />
-                          </span>
-                          {if let Ok(c) = u {
-                            (c.replies + c.mentions + c.private_messages > 0)
-                              .then(move || view! { <div class="badge badge-primary badge-xs">{c.replies + c.mentions + c.private_messages}</div> })
-                          } else {
-                            None
-                          }}
-                        </span>
-                      </A>
-                    </li>
-                  }
-                })
-            }}
-          </Transition>
-          <Show
-            when={move || { if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { true } else { false } }}
-            fallback={move || {
-              view! {
-                // let l = use_location();
-                <li>
-                  // <ActionForm action="/login" on:submit=|_| {}>
-                  // <input type="hidden" name="uri" value=move || format!("{}{}", l.pathname.get(), l.query.get().to_query_string())/>
-                  // <button type="submit">"lowgin"</button>
-                  // </ActionForm>
-                  // <Form action="/login" method="POST" on:submit=|_| {}>
-                  // <input type="hidden" name="theme" value="retro"/>
-                  // <button type="submit">"LOGIN"</button>
-                  // </Form>
-                  <form class="p-0" action="/login" method="POST" on:submit={on_navigate_login}>
-                    <button class="py-2 px-4" type="submit">
-                      {t!(i18n, login)}
-                    </button>
-                  </form>
-                // <A href="/login">{t!(i18n, login)}</A>
-                </li>
-                <li class="hidden lg:flex">
-                  <A href="/signup" class="pointer-events-none text-base-content/50">
-                    {t!(i18n, signup)}
-                  </A>
-                </li>
-              }
-            }}
-          >
+      <nav class="flex navbar flex-row">
+        <div class="navbar-start flex-grow">
+          <ul class="flex-nowrap items-center menu menu-horizontal">
             <li>
+              <A href="/responsive" class="text-xl whitespace-nowrap" on:click={ move |e: MouseEvent| {
+                csr_resources.set(BTreeMap::new());
+              }}>
+                {move || {
+                  if let Some(Ok(GetSiteResponse { site_view: SiteView { site: Site { icon: Some(i), .. }, .. }, .. })) = ssr_site.get() {
+                    view! { <img class="h-8" src={i.inner().to_string()} /> }
+                  } else {
+                    view! { <img class="h-8" src="/lemmy.svg" /> }
+                  }
+                }}
+                <span class="hidden lg:flex">
+                  {move || { if let Some(Ok(m)) = ssr_site.get() { m.site_view.site.name } else { "Lemmy".to_string() } }}
+                </span>
+              </A>
+            </li>
+            <li>
+              // <div class="hidden mr-3 sm:inline-block join">
+              //   <button class="btn join-item btn-active">"Posts"</button>
+              //   <button class="btn join-item btn-disabled">"Comments"</button>
+              // </div>
+              <div class="hidden sm:block join">
+                <A
+                  href={move || {
+                    let mut query_params = query.get();
+                    query_params.insert("list".into(), serde_json::to_string(&ListingType::Subscribed).ok().unwrap());
+                    query_params.remove("from".into());
+                    query_params.remove("prev".into());
+                    format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
+                  }}
+                  class={move || {
+                    format!(
+                      "btn join-item{}{}",
+                      if ListingType::Subscribed == ssr_list() { " btn-active" } else { "" },
+                      if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { "" } else { " btn-disabled" },
+                    )
+                  }}
+                >
+                  "Subscribed"
+                </A>
+                <A
+                  href={move || {
+                    let mut query_params = query.get();
+                    query_params.insert("list".into(), serde_json::to_string(&ListingType::Local).ok().unwrap());
+                    query_params.remove("from".into());
+                    query_params.remove("prev".into());
+                    format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
+                  }}
+                  class={move || format!("btn join-item{}", if ListingType::Local == ssr_list() { " btn-active" } else { "" })}
+                >
+                  "Local"
+                </A>
+                <A
+                  href={move || {
+                    let mut query_params = query.get();
+                    query_params.remove("list".into());
+                    query_params.remove("from".into());
+                    query_params.remove("prev".into());
+                    format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
+                  }}
+                  class={move || format!("btn join-item{}", if ListingType::All == ssr_list() { " btn-active" } else { "" })}
+                >
+                  "All"
+                </A>
+              </div>
+            </li>
+            // <li class="flex lg:hidden">
+            // </li>
+          </ul>
+          <div class="sm:hidden dropdown">
+            <label tabindex="0" class="btn">
+              "List"
+            </label>
+            <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+              <li class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}>
+                <span>"All"</span>
+              </li>
+              <li class={move || highlight_csr_filter(ListingType::Local)} on:click={on_csr_filter_click(ListingType::Local)}>
+                <span>"Local"</span>
+              </li>
+              <li class={move || format!("{}{}", highlight_csr_filter(ListingType::Subscribed), if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { "" } else { " btn-disabled" })} on:click={on_csr_filter_click(ListingType::Subscribed)}>
+                <span>"Subscribed"</span>
+              </li>
+            </ul>
+            </div>
+          </div>
+  //         <div class="navbar-center">
+  // //        <A href={move || format!("/responsive/p/{}", post_view.get().post.id)} class=" hover:text-accent">
+  //           <span class="block text-lg break-words" inner_html={post_name.get()} />
+  //         // </A>
+  //         <span class="block mb-1">
+  //           // <span>{abbr_duration}</span>
+  //           " ago by "
+  //           <a
+  //             // href={move || format!("{}", post_view.get().creator.actor_id)}
+  //             target="_blank"
+  //             class="inline text-sm break-words hover:text-secondary"
+  //           >
+  //             <span inner_html={user_name.get()} />
+  //           </a>
+  //           " in "
+  //           <a
+  //             class="inline text-sm break-words hover:text-secondary"
+  //             // href={if post_view.get().community.local {
+  //             //   format!("/responsive/c/{}", post_view.get().community.name)
+  //             // } else {
+  //             //   format!("/responsive/c/{}@{}", post_view.get().community.name, post_view.get().community.actor_id.inner().host().unwrap().to_string())
+  //             // }}
+  //             // on:click={ move |e: MouseEvent| {
+  //             //   csr_resources.set(BTreeMap::new());
+  //             // }}
+  //           >
+  //             <span inner_html={community_name.get()} />
+  //           </a>
+  //         </span>
+  //       </div>
+        <div class="navbar-end">
+          <div class="dropdown">
+            <label tabindex="0" class="btn">
+              "Sort"
+            </label>
+            <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+              <li
+                class={move || { (if SortType::Active == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                on:click={on_sort_click(SortType::Active)}
+              >
+                <span>{t!(i18n, active)}</span>
+              </li>
+              <li
+                class={move || { (if SortType::TopAll == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                on:click={on_sort_click(SortType::TopAll)}
+              >
+                <span>"Top"</span>
+              </li>
+              <li
+                class={move || { (if SortType::Hot == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                on:click={on_sort_click(SortType::Hot)}
+              >
+                <span>"Hot"</span>
+              </li>
+              <li
+                class={move || { (if SortType::New == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                on:click={on_sort_click(SortType::New)}
+              >
+                <span>"New"</span>
+              </li>
+              <li
+                class={move || { (if SortType::Old == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                on:click={on_sort_click(SortType::Old)}
+              >
+                <span>"Old"</span>
+              </li>
+              <li
+                class={move || { (if SortType::Controversial == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                on:click={on_sort_click(SortType::Controversial)}
+              >
+                <span>"Controversial"</span>
+              </li>
+              // <li class={move || { (if SortType::Hot == ssr_sort() { "btn-active" } else { "" }).to_string() }} on:click={on_sort_click(SortType::Hot)}>
+              //   <span>{t!(i18n, hot)}</span>
+              // </li>
+              <li
+                class={move || { (if SortType::Scaled == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                on:click={on_sort_click(SortType::Scaled)}
+              >
+                <span>{"Scaled"}</span>
+              </li>
+              // <li class={move || { (if SortType::New == ssr_sort() { "btn-active" } else { "" }).to_string() }} on:click={on_sort_click(SortType::New)}>
+              //   <span>{t!(i18n, new)}</span>
+              // </li>
+            </ul>
+          </div>
+          <ul class="flex-nowrap items-center menu menu-horizontal">
+            // <li class="flex">
+            // </li>
+            <li class="hidden lg:flex z-[1]">
               <details>
                 <summary>
-                  {move || {
-                    if let Some(Ok(GetSiteResponse { my_user: Some(m), .. })) = ssr_site.get() {
-                      m.local_user_view.person.display_name.unwrap_or(m.local_user_view.person.name)
-                    } else {
-                      String::default()
-                    }
-                  }}
+                  <Icon icon={Translate} />
                 </summary>
-                <ul class="z-10">
+                <ul>
                   <li>
-                    <A
-                      on:click={move |e: MouseEvent| {
-                        if e.ctrl_key() && e.shift_key() {
-                          e.stop_propagation();
-                          if let Some(Ok(GetSiteResponse { my_user: Some(m), .. })) = ssr_site.get() {
-                            let _ = window().location().set_href(&format!("//lemmy.world/u/{}", m.local_user_view.person.name));
-                          }
-                        }
-                      }}
-                      href={move || {
-                        format!(
-                          "/u/{}",
-                          if let Some(Ok(GetSiteResponse { my_user: Some(m), .. })) = ssr_site.get() {
-                            m.local_user_view.person.name
-                          } else {
-                            String::default()
-                          },
-                        )
-                      }}
-                    >
-                      {t!(i18n, profile)}
-                    </A>
+                    <ActionForm class="p-0" action={lang_action} on:submit={on_lang_submit(Locale::fr)}>
+                      <input type="hidden" name="lang" value="FR" />
+                      <button class="py-2 px-4" type="submit">
+                        "FR"
+                      </button>
+                    </ActionForm>
                   </li>
                   <li>
-                    <A class="pointer-events-none text-base-content/50" href="/settings">
-                      {t!(i18n, settings)}
-                    </A>
-                  </li>
-                  <div class="my-0 divider" />
-                  <li>
-                    <ActionForm action={logout_action} on:submit={on_logout_submit}>
-                      <button type="submit">{t!(i18n, logout)}</button>
+                    <ActionForm class="p-0" action={lang_action} on:submit={on_lang_submit(Locale::en)}>
+                      <input type="hidden" name="lang" value="EN" />
+                      <button class="py-2 px-4" type="submit">
+                        "EN"
+                      </button>
                     </ActionForm>
                   </li>
                 </ul>
               </details>
             </li>
-          </Show>
-        </ul>
-      </div>
-    </nav>
-    // <Show
-    // when=move || error.get().is_some()
-    // fallback=move || {
-    // view! { <div class="hidden"></div> }
-    // }
-    // >
+            <li class="hidden lg:flex z-[1]">
+              <details>
+                <summary>
+                  <Icon icon={Palette} />
+                </summary>
+                <ul>
+                  <li>
+                    <ActionForm class="p-0" action={theme_action} on:submit={on_theme_submit("dark")}>
+                      <input type="hidden" name="theme" value="dark" />
+                      <button class="py-2 px-4" type="submit">
+                        "Dark"
+                      </button>
+                    </ActionForm>
+                  </li>
+                  <li>
+                    <ActionForm class="p-0" action={theme_action} on:submit={on_theme_submit("light")}>
+                      <input type="hidden" name="theme" value="light" />
+                      <button class="py-2 px-4" type="submit">
+                        "Light"
+                      </button>
+                    </ActionForm>
+                  </li>
+                  <li>
+                    <ActionForm class="p-0" action={theme_action} on:submit={on_theme_submit("retro")}>
+                      <input type="hidden" name="theme" value="retro" />
+                      <button class="py-2 px-4" type="submit">
+                        "Retro"
+                      </button>
+                    </ActionForm>
+                  </li>
+                </ul>
+              </details>
+            </li>
+            <Transition fallback={|| {}}>
+              {move || {
+                unread_resource
+                  .get()
+                  .map(|u| {
+                    let unread = if let Ok(c) = u.clone() { format!(", {} unread", c.replies + c.mentions + c.private_messages) } else { "".into() };
+                    view! {
+                      <li title={move || {
+                        format!(
+                          "{}{}{}",
+                          if error.get().len() > 0 { format!("{} errors, ", error.get().len()) } else { "".into() },
+                          if online.get().0 { "app online" } else { "app offline" },
+                          unread,
+                        )
+                      }}>
+                        <A href="/notifications">
+                          <span class="flex flex-row items-center">
+                            {move || {
+                              let v = error.get();
+                              (v.len() > 0)
+                                .then(move || {
+                                  let l = v.len();
+                                  view! { <div class="badge badge-error badge-xs">{l}</div> }
+                                })
+                            }}
+                            <span>
+                              {move || { (!online.get().0).then(move || view! { <div class="absolute top-0 badge badge-warning badge-xs" /> }) }}
+                              <Icon icon={Notifications} />
+                            </span>
+                            {if let Ok(c) = u {
+                              (c.replies + c.mentions + c.private_messages > 0)
+                                .then(move || view! { <div class="badge badge-primary badge-xs">{c.replies + c.mentions + c.private_messages}</div> })
+                            } else {
+                              None
+                            }}
+                          </span>
+                        </A>
+                      </li>
+                    }
+                  })
+              }}
+            </Transition>
+            <Show
+              when={move || { if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { true } else { false } }}
+              fallback={move || {
+                view! {
+                  // let l = use_location();
+                  <li>
+                    // <ActionForm action="/login" on:submit=|_| {}>
+                    // <input type="hidden" name="uri" value=move || format!("{}{}", l.pathname.get(), l.query.get().to_query_string())/>
+                    // <button type="submit">"lowgin"</button>
+                    // </ActionForm>
+                    // <Form action="/login" method="POST" on:submit=|_| {}>
+                    // <input type="hidden" name="theme" value="retro"/>
+                    // <button type="submit">"LOGIN"</button>
+                    // </Form>
+                    <form class="p-0" action="/login" method="POST" on:submit={on_navigate_login}>
+                      <button class="py-2 px-4" type="submit">
+                        {t!(i18n, login)}
+                      </button>
+                    </form>
+                  // <A href="/login">{t!(i18n, login)}</A>
+                  </li>
+                  <li class="hidden lg:flex">
+                    <A href="/signup" class="pointer-events-none text-base-content/50">
+                      {t!(i18n, signup)}
+                    </A>
+                  </li>
+                }
+              }}
+            >
+              <li>
+                <details>
+                  <summary>
+                    {move || {
+                      if let Some(Ok(GetSiteResponse { my_user: Some(m), .. })) = ssr_site.get() {
+                        m.local_user_view.person.display_name.unwrap_or(m.local_user_view.person.name)
+                      } else {
+                        String::default()
+                      }
+                    }}
+                  </summary>
+                  <ul class="z-10">
+                    <li>
+                      <A
+                        on:click={move |e: MouseEvent| {
+                          if e.ctrl_key() && e.shift_key() {
+                            e.stop_propagation();
+                            if let Some(Ok(GetSiteResponse { my_user: Some(m), .. })) = ssr_site.get() {
+                              let _ = window().location().set_href(&format!("//lemmy.world/u/{}", m.local_user_view.person.name));
+                            }
+                          }
+                        }}
+                        href={move || {
+                          format!(
+                            "/u/{}",
+                            if let Some(Ok(GetSiteResponse { my_user: Some(m), .. })) = ssr_site.get() {
+                              m.local_user_view.person.name
+                            } else {
+                              String::default()
+                            },
+                          )
+                        }}
+                      >
+                        {t!(i18n, profile)}
+                      </A>
+                    </li>
+                    <li>
+                      <A class="pointer-events-none text-base-content/50" href="/settings">
+                        {t!(i18n, settings)}
+                      </A>
+                    </li>
+                    <div class="my-0 divider" />
+                    <li>
+                      <ActionForm action={logout_action} on:submit={on_logout_submit}>
+                        <button type="submit">{t!(i18n, logout)}</button>
+                      </ActionForm>
+                    </li>
+                  </ul>
+                </details>
+              </li>
+            </Show>
+          </ul>
+        </div>
+      </nav>
+      // <Show
+      // when=move || error.get().is_some()
+      // fallback=move || {
+      // view! { <div class="hidden"></div> }
+      // }
+      // >
 
-    // {move || {
-    // site_signal.get()
-    // .map(|res| {
+      // {move || {
+      // site_signal.get()
+      // .map(|res| {
 
-    // if let Err(err) = res {
-    // view! {
-    // <div class="container mx-auto alert alert-error mb-8">
-    // <span>"S" {message_from_error(&err)} " - " {err.content}</span>
-    // <div>
-    // <A href=use_location().pathname.get() class="btn btn-sm"> "Retry" </A>
-    // </div>
-    // </div>
-    // }
-    // } else {
-    // view! {
-    // <div class="hidden" />
-    // }
+      // if let Err(err) = res {
+      // view! {
+      // <div class="container mx-auto alert alert-error mb-8">
+      // <span>"S" {message_from_error(&err)} " - " {err.content}</span>
+      // <div>
+      // <A href=use_location().pathname.get() class="btn btn-sm"> "Retry" </A>
+      // </div>
+      // </div>
+      // }
+      // } else {
+      // view! {
+      // <div class="hidden" />
+      // }
 
-    // }
-    // })
-    // }}
+      // }
+      // })
+      // }}
 
-    {move || {
-      ssr_query_error()
-        .map(|err| {
-          let mut query_params = query.get();
-          query_params.remove("error".into());
-          view! {
-            <div class="container mx-auto mb-8 alert alert-error">
-              <span>{message_from_error(&err.0)} " - " {err.0.content}</span>
-              <div>
-                <A class="btn btn-sm" href={format!("./?{}", &query_params.to_query_string())}>
-                  "Clear"
-                </A>
+      {move || {
+        ssr_query_error()
+          .map(|err| {
+            let mut query_params = query.get();
+            query_params.remove("error".into());
+            view! {
+              <div class="container mx-auto mb-8 alert alert-error">
+                <span>{message_from_error(&err.0)} " - " {err.0.content}</span>
+                <div>
+                  <A class="btn btn-sm" href={format!("./?{}", &query_params.to_query_string())}>
+                    "Clear"
+                  </A>
+                </div>
               </div>
-            </div>
-          }
-        })
-    }}
-  }
+            }
+          })
+      }}
+    }
 }
 
 #[component]

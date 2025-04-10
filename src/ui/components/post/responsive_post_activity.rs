@@ -10,7 +10,7 @@ use crate::{
 use ev::MouseEvent;
 use lemmy_api_common::{
   comment::{CreateComment, GetComments},
-  lemmy_db_schema::{newtypes::PostId, CommentSortType},
+  lemmy_db_schema::{newtypes::PostId, CommentSortType, SortType},
   post::GetPost,
   site::GetSiteResponse,
 };
@@ -191,7 +191,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
     // <main role="main" class="flex flex-col flex-grow w-full">
 
     <main class="flex flex-col">
-      <ResponsiveTopNav ssr_site />
+      <ResponsiveTopNav ssr_site default_sort=SortType::TopAll.into() />
       <div class="flex flex-grow">
         <div class="sm:h-[calc(100%-6rem)] min-w-full absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-sm pl-4 gap-4">
 
@@ -370,43 +370,43 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
               .map(|res| {
                 view! {
                   <div class="w-full">
-                    <div class="ml-3 sm:inline-block sm:ml-0 dropdown">
-                      <label tabindex="0" class="btn">
-                        "Sort"
-                      </label>
-                      <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
-                        <li
-                          class={move || { (if CommentSortType::Top == ssr_sort() { "btn-active" } else { "" }).to_string() }}
-                          on:click={on_sort_click(CommentSortType::Top)}
-                        >
-                          <span>"Top"</span>
-                        </li>
-                        <li
-                          class={move || { (if CommentSortType::Hot == ssr_sort() { "btn-active" } else { "" }).to_string() }}
-                          on:click={on_sort_click(CommentSortType::Hot)}
-                        >
-                          <span>"Hot"</span>
-                        </li>
-                        <li
-                          class={move || { (if CommentSortType::New == ssr_sort() { "btn-active" } else { "" }).to_string() }}
-                          on:click={on_sort_click(CommentSortType::New)}
-                        >
-                          <span>"New"</span>
-                        </li>
-                        <li
-                          class={move || { (if CommentSortType::Old == ssr_sort() { "btn-active" } else { "" }).to_string() }}
-                          on:click={on_sort_click(CommentSortType::Old)}
-                        >
-                          <span>"Old"</span>
-                        </li>
-                        <li
-                          class={move || { (if CommentSortType::Controversial == ssr_sort() { "btn-active" } else { "" }).to_string() }}
-                          on:click={on_sort_click(CommentSortType::Controversial)}
-                        >
-                          <span>"Contraversial"</span>
-                        </li>
-                      </ul>
-                    </div>
+                    // <div class="ml-3 sm:inline-block sm:ml-0 dropdown">
+                    //   <label tabindex="0" class="btn">
+                    //     "Sort"
+                    //   </label>
+                    //   <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+                    //     <li
+                    //       class={move || { (if CommentSortType::Top == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                    //       on:click={on_sort_click(CommentSortType::Top)}
+                    //     >
+                    //       <span>"Top"</span>
+                    //     </li>
+                    //     <li
+                    //       class={move || { (if CommentSortType::Hot == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                    //       on:click={on_sort_click(CommentSortType::Hot)}
+                    //     >
+                    //       <span>"Hot"</span>
+                    //     </li>
+                    //     <li
+                    //       class={move || { (if CommentSortType::New == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                    //       on:click={on_sort_click(CommentSortType::New)}
+                    //     >
+                    //       <span>"New"</span>
+                    //     </li>
+                    //     <li
+                    //       class={move || { (if CommentSortType::Old == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                    //       on:click={on_sort_click(CommentSortType::Old)}
+                    //     >
+                    //       <span>"Old"</span>
+                    //     </li>
+                    //     <li
+                    //       class={move || { (if CommentSortType::Controversial == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                    //       on:click={on_sort_click(CommentSortType::Controversial)}
+                    //     >
+                    //       <span>"Contraversial"</span>
+                    //     </li>
+                    //   </ul>
+                    // </div>
                     <ResponsiveCommentNodes ssr_site comments={res.comments.into()} _post_id={post_id().into()} />
                   </div>
                 }

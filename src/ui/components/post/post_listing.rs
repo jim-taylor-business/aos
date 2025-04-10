@@ -441,13 +441,13 @@ pub fn PostListing(
           <a
             href={move || format!("{}", post_view.get().creator.actor_id)}
             target="_blank"
-            class="inline-block text-sm break-words hover:text-secondary"
+            class="inline text-sm break-words hover:text-secondary"
           >
             <span inner_html={creator_name_encoded} />
           </a>
           " in "
           <A
-            class="inline-block text-sm break-words hover:text-secondary"
+            class="inline text-sm break-words hover:text-secondary"
             href={if post_view.get().community.local {
               format!("/c/{}", post_view.get().community.name)
             } else {
