@@ -105,6 +105,14 @@ pub fn App() -> impl IntoView {
   let csr_next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
   provide_context(csr_next_page_cursor);
 
+  // let lot_resources: RwSignal<BTreeMap<(usize, usize, ResourceStatus), Resource<Option<PaginationCursor>, Result<GetPostsResponse, LemmyAppError>>>> =
+
+  let response_cache: RwSignal<BTreeMap<(usize, Option<PaginationCursor>), Option<GetPostsResponse>>> = RwSignal::new(BTreeMap::new());
+  provide_context(response_cache);
+
+  // let lot_next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
+  // provide_context(lot_next_page_cursor);
+
   let site_signal: RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>> = RwSignal::new(None);
 
   let ssr_site = Resource::new(

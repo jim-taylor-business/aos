@@ -128,6 +128,7 @@ pub fn ResponsivePostListing(
     }
   });
   let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
+  let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
 
   let post_view = RwSignal::new(post_view.get());
   let vote_action = create_server_action::<VotePostFn>();
@@ -454,6 +455,7 @@ pub fn ResponsivePostListing(
             }}
             on:click={ move |e: MouseEvent| {
               csr_resources.set(BTreeMap::new());
+              csr_next_page_cursor.set((0, None));
             }}
           >
             <span inner_html={community_title_encoded} />

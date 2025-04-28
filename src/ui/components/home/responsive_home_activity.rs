@@ -19,7 +19,7 @@ use leptos::{html::*, *};
 use leptos_meta::*;
 use leptos_router::*;
 use std::{collections::BTreeMap, usize, vec};
-use web_sys::MouseEvent;
+use web_sys::{js_sys::Atomics::wait_async, MouseEvent};
 
 #[component]
 pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
@@ -34,42 +34,48 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
 
   let ssr_list = move || serde_json::from_str::<ListingType>(&query.get().get("list").cloned().unwrap_or("".into())).unwrap_or(ListingType::All);
   let ssr_sort = move || serde_json::from_str::<SortType>(&query.get().get("sort").cloned().unwrap_or("".into())).unwrap_or(SortType::Active);
-  let ssr_from = move || {
-    serde_json::from_str::<(usize, Option<PaginationCursor>)>(&query.get().get("from").cloned().unwrap_or("".into())).unwrap_or((0usize, None))
+  // let ssr_from = move || {
+  //   serde_json::from_str::<(usize, Option<PaginationCursor>)>(&query.get().get("from").cloned().unwrap_or("".into())).unwrap_or((0usize, None))
+  // };
+  // let ssr_prev =
+  //   move || serde_json::from_str::<Vec<(usize, Option<PaginationCursor>)>>(&query.get().get("prev").cloned().unwrap_or("".into())).unwrap_or(vec![]);
+  let ssr_page = move || {
+    serde_json::from_str::<Vec<(usize, Option<PaginationCursor>)>>(&query.get().get("page").cloned().unwrap_or("".into()))
+      .unwrap_or(vec![(0usize, None)])
   };
-  let ssr_prev =
-    move || serde_json::from_str::<Vec<(usize, Option<PaginationCursor>)>>(&query.get().get("prev").cloned().unwrap_or("".into())).unwrap_or(vec![]);
   let ssr_limit = move || query.get().get("limit").cloned().unwrap_or("".into()).parse::<usize>().unwrap_or(10usize);
 
-  let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
-  let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
+  // let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
+  // let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
+  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, Option<PaginationCursor>), Option<GetPostsResponse>>>>();
 
-  let on_sort_click = move |s: SortType| {
-    move |_e: MouseEvent| {
-      csr_resources.set(BTreeMap::new());
+  // let on_sort_click = move |s: SortType| {
+  //   move |_e: MouseEvent| {
+  //     // csr_resources.set(BTreeMap::new());
+  //     // csr_next_page_cursor.set((0, None));
 
-      let r = serde_json::to_string::<SortType>(&s);
-      let mut query_params = query.get();
-      match r {
-        Ok(o) => {
-          query_params.insert("sort".into(), o);
-        }
-        Err(e) => {
-          error.update(|es| es.push(Some((e.into(), None))));
-        }
-      }
-      if SortType::Active == s {
-        query_params.remove("sort".into());
-      }
-      query_params.remove("from".into());
-      query_params.remove("prev".into());
-      let navigate = leptos_router::use_navigate();
-      navigate(
-        &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-        Default::default(),
-      );
-    }
-  };
+  //     let r = serde_json::to_string::<SortType>(&s);
+  //     let mut query_params = query.get();
+  //     match r {
+  //       Ok(o) => {
+  //         query_params.insert("sort".into(), o);
+  //       }
+  //       Err(e) => {
+  //         error.update(|es| es.push(Some((e.into(), None))));
+  //       }
+  //     }
+  //     if SortType::Active == s {
+  //       query_params.remove("sort".into());
+  //     }
+  //     query_params.remove("from".into());
+  //     query_params.remove("prev".into());
+  //     let navigate = leptos_router::use_navigate();
+  //     navigate(
+  //       &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+  //       Default::default(),
+  //     );
+  //   }
+  // };
 
   let loading = RwSignal::new(false);
   let refresh = RwSignal::new(false);
@@ -82,82 +88,83 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
     }
   });
 
-  let posts_resource = Resource::new(
-    move || {
-      (
-        refresh.get(),
-        logged_in.get(),
-        ssr_list(),
-        ssr_sort(),
-        ssr_from(),
-        ssr_limit(),
-        community_name(),
-      )
-    },
-    move |(_refresh, _logged_in, list_type, sort_type, from, limit, name)| async move {
-      loading.set(true);
+  // let posts_resource = Resource::new(
+  //   move || {
+  //     (
+  //       refresh.get(),
+  //       logged_in.get(),
+  //       ssr_list(),
+  //       ssr_sort(),
+  //       ssr_from(),
+  //       ssr_limit(),
+  //       community_name(),
+  //     )
+  //   },
+  //   move |(_refresh, _logged_in, list_type, sort_type, from, limit, name)| async move {
+  //     logging::log!("ssr");
+  //     loading.set(true);
 
-      let form = GetPosts {
-        type_: Some(list_type),
-        sort: Some(sort_type),
-        community_name: name,
-        community_id: None,
-        page: None,
-        limit: Some(i64::try_from(limit).unwrap_or(10)),
-        saved_only: None,
-        disliked_only: None,
-        liked_only: None,
-        page_cursor: from.1.clone(),
-        show_hidden: Some(true),
-        show_nsfw: Some(false),
-        show_read: Some(true),
-      };
+  //     let form = GetPosts {
+  //       type_: Some(list_type),
+  //       sort: Some(sort_type),
+  //       community_name: name,
+  //       community_id: None,
+  //       page: None,
+  //       limit: Some(i64::try_from(limit).unwrap_or(10)),
+  //       saved_only: None,
+  //       disliked_only: None,
+  //       liked_only: None,
+  //       page_cursor: from.1.clone(),
+  //       show_hidden: Some(true),
+  //       show_nsfw: Some(false),
+  //       show_read: Some(true),
+  //     };
 
-      let result = LemmyClient.list_posts(form.clone()).await;
-      loading.set(false);
-      match result {
-        Ok(o) => {
-          #[cfg(not(feature = "ssr"))]
-          if let Ok(Some(s)) = window().local_storage() {
-            if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {}
-            let _ = s.set_item(&serde_json::to_string(&form).ok().unwrap(), &serde_json::to_string(&o).ok().unwrap());
-          }
-          Ok((from, o))
-        }
-        Err(e) => {
-          error.update(|es| es.push(Some((e.clone(), None))));
-          Err((e, Some(refresh)))
-        }
-      }
-    },
-  );
+  //     let result = LemmyClient.list_posts(form.clone()).await;
+  //     loading.set(false);
+  //     match result {
+  //       Ok(o) => {
+  //         #[cfg(not(feature = "ssr"))]
+  //         if let Ok(Some(s)) = window().local_storage() {
+  //           if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {}
+  //           let _ = s.set_item(&serde_json::to_string(&form).ok().unwrap(), &serde_json::to_string(&o).ok().unwrap());
+  //         }
+  //         Ok((from, o))
+  //       }
+  //       Err(e) => {
+  //         error.update(|es| es.push(Some((e.clone(), None))));
+  //         Err((e, Some(refresh)))
+  //       }
+  //     }
+  //   },
+  // );
 
-  let on_csr_filter_click = move |l: ListingType| {
-    move |_e: MouseEvent| {
-      let mut query_params = query.get();
-      // query_params.remove("sort".into());
-      query_params.remove("from".into());
-      query_params.remove("prev".into());
-      let navigate = leptos_router::use_navigate();
-      if l == ListingType::All {
-        query_params.remove("list".into());
-      } else {
-        query_params.insert("list".into(), serde_json::to_string(&l).ok().unwrap());
-      }
-      navigate(
-        &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-        Default::default(),
-      );
-    }
-  };
+  // let on_csr_filter_click = move |l: ListingType| {
+  //   move |_e: MouseEvent| {
+  //     let mut query_params = query.get();
+  //     // query_params.remove("sort".into());
+  //     query_params.remove("from".into());
+  //     query_params.remove("prev".into());
+  //     let navigate = leptos_router::use_navigate();
+  //     if l == ListingType::All {
+  //       query_params.remove("list".into());
+  //     } else {
+  //       query_params.insert("list".into(), serde_json::to_string(&l).ok().unwrap());
+  //     }
+  //     navigate(
+  //       &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+  //       Default::default(),
+  //     );
+  //   }
+  // };
 
-  let highlight_csr_filter = move |l: ListingType| {
-    if l == ssr_list() {
-      "btn-active"
-    } else {
-      ""
-    }
-  };
+  // let highlight_csr_filter = move |l: ListingType| {
+  //   if l == ssr_list() {
+  //     "btn-active"
+  //   } else {
+  //     ""
+  //   }
+  // };
 
   let _scroll_element = create_node_ref::<Div>();
 
@@ -173,68 +180,94 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
     } = use_intersection_observer_with_options(
       _scroll_element,
       move |_entries, _| {
-        // let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
+        if let Some(e) = response_cache.get().last_entry() {
+          logging::log!("{:#?}", e.get().as_ref().unwrap().next_page);
 
-        // if iw < 640f64 {
+          let next_page = Some((ssr_from().0 + 50, e.get().as_ref().unwrap().next_page.clone()));
+          // let next_page = e.get().as_ref().unwrap().next_page.clone();
 
-        if csr_resources
-          .get()
-          .get(&(csr_next_page_cursor.get().0, ResourceStatus::Loading))
-          .is_none()
-          && csr_resources.get().get(&(csr_next_page_cursor.get().0, ResourceStatus::Ok)).is_none()
-          && csr_resources.get().get(&(csr_next_page_cursor.get().0, ResourceStatus::Err)).is_none()
-        {
-          csr_resources.update(|h| {
-            h.insert(
-              (csr_next_page_cursor.get().0, ResourceStatus::Loading),
-              (csr_next_page_cursor.get().1, None),
-            );
-          });
+          let mut st = ssr_prev();
+          st.push(ssr_from());
+          let mut query_params = query.get();
+          query_params.insert("prev".into(), serde_json::to_string(&st).unwrap_or("[]".into()));
+          query_params.insert("from".into(), serde_json::to_string(&next_page).unwrap_or("[0,None]".into()));
 
-          let _csr_resource = create_local_resource(
-            move || (),
-            move |()| async move {
-              let from = csr_next_page_cursor.get();
-
-              let form = GetPosts {
-                type_: Some(ssr_list()),
-                sort: Some(ssr_sort()),
-                community_name: community_name(),
-                community_id: None,
-                page: None,
-                limit: Some(50),
-                saved_only: None,
-                disliked_only: None,
-                liked_only: None,
-                page_cursor: from.1.clone(),
-                show_hidden: Some(true),
-                show_nsfw: Some(false),
-                show_read: Some(true),
-              };
-
-              let result = LemmyClient.list_posts(form).await;
-
-              match result {
-                Ok(o) => {
-                  csr_next_page_cursor.set((from.0 + 50, o.next_page.clone()));
-                  csr_resources.update(move |h| {
-                    h.remove(&(from.0, ResourceStatus::Loading));
-                    h.insert((from.0, ResourceStatus::Ok), (from.1.clone(), Some(o.clone())));
-                  });
-                  Some(())
-                }
-                Err(e) => {
-                  csr_resources.update(move |h| {
-                    h.remove(&(from.0, ResourceStatus::Loading));
-                    h.insert((from.0, ResourceStatus::Err), (from.1, None));
-                  });
-                  error.update(|es| es.push(Some((e, Some(refresh)))));
-                  None
-                }
-              }
+          let navigate = leptos_router::use_navigate();
+          navigate(
+            &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+            NavigateOptions {
+              resolve: true,
+              replace: false,
+              scroll: false,
+              state: State::default(),
             },
           );
         }
+
+        // let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
+
+        // if iw < 640f64 {
+        // logging::log!("inter");
+
+        // if csr_next_page_cursor.get().1.is_some()
+        //   && csr_resources
+        //     .get()
+        //     .get(&(csr_next_page_cursor.get().0, ResourceStatus::Loading))
+        //     .is_none()
+        //   && csr_resources.get().get(&(csr_next_page_cursor.get().0, ResourceStatus::Ok)).is_none()
+        //   && csr_resources.get().get(&(csr_next_page_cursor.get().0, ResourceStatus::Err)).is_none()
+        // {
+        //   csr_resources.update(|h| {
+        //     h.insert(
+        //       (csr_next_page_cursor.get().0, ResourceStatus::Loading),
+        //       (csr_next_page_cursor.get().1, None),
+        //     );
+        //   });
+
+        //   let _csr_resource = create_local_resource(
+        //     move || (),
+        //     move |()| async move {
+        //       let from = csr_next_page_cursor.get();
+
+        //       let form = GetPosts {
+        //         type_: Some(ssr_list()),
+        //         sort: Some(ssr_sort()),
+        //         community_name: community_name(),
+        //         community_id: None,
+        //         page: None,
+        //         limit: Some(50),
+        //         saved_only: None,
+        //         disliked_only: None,
+        //         liked_only: None,
+        //         page_cursor: from.1.clone(),
+        //         show_hidden: Some(true),
+        //         show_nsfw: Some(false),
+        //         show_read: Some(true),
+        //       };
+
+        //       let result = LemmyClient.list_posts(form).await;
+
+        //       match result {
+        //         Ok(o) => {
+        //           csr_next_page_cursor.set((from.0 + 50, o.next_page.clone()));
+        //           csr_resources.update(move |h| {
+        //             h.remove(&(from.0, ResourceStatus::Loading));
+        //             h.insert((from.0, ResourceStatus::Ok), (from.1.clone(), Some(o.clone())));
+        //           });
+        //           Some(())
+        //         }
+        //         Err(e) => {
+        //           csr_resources.update(move |h| {
+        //             h.remove(&(from.0, ResourceStatus::Loading));
+        //             h.insert((from.0, ResourceStatus::Err), (from.1, None));
+        //           });
+        //           error.update(|es| es.push(Some((e, Some(refresh)))));
+        //           None
+        //         }
+        //       }
+        //     },
+        //   );
+        // }
 
         // }
       },
@@ -254,59 +287,134 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
     // });
   }
 
-  let on_retry_click = move |i: (usize, ResourceStatus)| {
-    move |_e: MouseEvent| {
-      let _csr_resource = create_local_resource(
-        move || (),
-        move |()| //{
-        async move {
-          let from = csr_resources.get().get(&i).unwrap().0.clone();
+  // let on_retry_click = move |i: (usize, ResourceStatus)| {
+  //   move |_e: MouseEvent| {
+  //     let _csr_resource = create_local_resource(
+  //       move || (),
+  //       move |()| //{
+  //       async move {
+  //         let from = csr_resources.get().get(&i).unwrap().0.clone();
+  //         let form = GetPosts {
+  //           type_: Some(ssr_list()),
+  //           sort: Some(ssr_sort()),
+  //           community_name: community_name(),
+  //           community_id: None,
+  //           page: None,
+  //           limit: Some(10),
+  //           saved_only: None,
+  //           disliked_only: None,
+  //           liked_only: None,
+  //           page_cursor: from.clone(),
+  //           show_hidden: Some(true),
+  //           show_nsfw: Some(false),
+  //           show_read: Some(true),
+  //         };
+
+  //         let from_clone = from.clone();
+  //         csr_resources.update(move |h| {
+  //           h.remove(&(i.0, ResourceStatus::Err));
+  //           h.insert((i.0, ResourceStatus::Loading), (from_clone, None));
+  //         });
+
+  //         let result = LemmyClient.list_posts(form).await;
+
+  //         match result {
+  //           Ok(o) => {
+  //             csr_next_page_cursor.set((i.0 + ssr_limit(), o.next_page.clone()));
+  //             csr_resources.update(move |h| {
+  //               h.remove(&(i.0, ResourceStatus::Loading));
+  //               h.insert((i.0, ResourceStatus::Ok), (from, Some(o.clone())));
+  //             });
+  //             Some(())
+  //           }
+  //           Err(e) => {
+  //             csr_resources.update(move |h| {
+  //               h.remove(&(i.0, ResourceStatus::Loading));
+  //               h.insert((i.0, ResourceStatus::Err), (from, None));
+  //             });
+  //             error.update(|es| es.push(Some((e, None))));
+  //             None
+  //           }
+  //         }
+  //       },
+  //     );
+  //   }
+  // };
+
+  let responsive_cache_resourcs = Resource::new(
+    move || {
+      (
+        refresh.get(),
+        logged_in.get(),
+        ssr_list(),
+        ssr_sort(),
+        // ssr_from(),
+        ssr_limit(),
+        community_name(),
+        // ssr_prev(),
+        ssr_page(),
+      )
+    },
+    move |(_refresh, _logged_in, list, sort, limit, name, pages)| async move {
+      let rc = response_cache.get();
+      let mut new_pages: BTreeMap<(usize, Option<PaginationCursor>), Option<GetPostsResponse>> = BTreeMap::new();
+
+      for p in pages {
+        if new_pages.get(&p).is_none() {
           let form = GetPosts {
-            type_: Some(ssr_list()),
-            sort: Some(ssr_sort()),
-            community_name: community_name(),
+            type_: Some(list),
+            sort: Some(sort),
+            community_name: name,
             community_id: None,
             page: None,
-            limit: Some(10),
+            limit: Some(50),
             saved_only: None,
             disliked_only: None,
             liked_only: None,
-            page_cursor: from.clone(),
+            page_cursor: p.1,
             show_hidden: Some(true),
             show_nsfw: Some(false),
             show_read: Some(true),
           };
-
-          let from_clone = from.clone();
-          csr_resources.update(move |h| {
-            h.remove(&(i.0, ResourceStatus::Err));
-            h.insert((i.0, ResourceStatus::Loading), (from_clone, None));
-          });
-
-          let result = LemmyClient.list_posts(form).await;
-
+          let result = LemmyClient.list_posts(form.clone()).await;
           match result {
             Ok(o) => {
-              csr_next_page_cursor.set((i.0 + ssr_limit(), o.next_page.clone()));
-              csr_resources.update(move |h| {
-                h.remove(&(i.0, ResourceStatus::Loading));
-                h.insert((i.0, ResourceStatus::Ok), (from, Some(o.clone())));
-              });
-              Some(())
+              new_pages.insert(p, Some(o));
             }
-            Err(e) => {
-              csr_resources.update(move |h| {
-                h.remove(&(i.0, ResourceStatus::Loading));
-                h.insert((i.0, ResourceStatus::Err), (from, None));
-              });
-              error.update(|es| es.push(Some((e, None))));
-              None
-            }
+            Err(e) => {}
           }
-        },
-      );
-    }
-  };
+        }
+      }
+
+      // if rc.get(&from.clone()).is_some() {
+      //   Ok((from, None, rc))
+      // } else {
+      //   let form = GetPosts {
+      //     type_: Some(list_type),
+      //     sort: Some(sort_type),
+      //     community_name: name,
+      //     community_id: None,
+      //     page: None,
+      //     limit: Some(50),
+      //     saved_only: None,
+      //     disliked_only: None,
+      //     liked_only: None,
+      //     page_cursor: from.1.clone(),
+      //     show_hidden: Some(true),
+      //     show_nsfw: Some(false),
+      //     show_read: Some(true),
+      //   };
+      //   let result = LemmyClient.list_posts(form.clone()).await;
+      //   match result {
+      //     Ok(o) => Ok((from, Some(o), rc)),
+      //     Err(e) => {
+      //       error.update(|es| es.push(Some((e.clone(), None))));
+      //       Err((e, Some(refresh)))
+      //     }
+      //   }
+      // }
+    },
+  );
 
   view! {
   <main class="flex flex-col">
@@ -414,40 +522,190 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
         // format!("sm:container sm:h-[calc(100%-12rem)] absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[50ch] gap-0{}", if loading.get() { " opacity-25" } else { "" })
       }}>
 
+        // <Transition fallback={|| {}}>
+        //   {move || {
+        //     match posts_resource.get() {
+        //       Some(Err(err)) => {
+        //         view! {
+        //           <Title text="Error loading post list" />
+        //           <div class="py-4 px-8">
+        //             <div class="flex justify-between alert alert-error">
+        //               <span>{message_from_error(&err.0)} " - " {err.0.content}</span>
+        //               <div>
+        //                 <Show when={move || { if let Some(_) = err.1 { true } else { false } }} fallback={|| {}}>
+        //                   <button
+        //                     on:click={move |_| {
+        //                       if let Some(r) = err.1 {
+        //                         r.set(!r.get());
+        //                       } else {}
+        //                     }}
+        //                     class="btn btn-sm"
+        //                   >
+        //                     "Retry"
+        //                   </button>
+        //                 </Show>
+        //               </div>
+        //             </div>
+        //           </div>
+        //         }
+        //       }
+        //       Some(Ok(posts)) => {
+        //         let next_page = Some((posts.0.0 + ssr_limit(), posts.1.next_page.clone()));
+        //         // csr_next_page_cursor.set(next_page.clone().unwrap());
+        //         view! {
+        //           // <Title text={format!("Page {}", 1 + (ssr_from().0 / ssr_limit()))} />
+        //           <Title text="" />
+        //           <ResponsivePostListings posts={posts.1.posts.into()} ssr_site page_number={posts.0.0.into()} />
+        //           // <div class="hidden sm:block join">
+        //           //   {
+        //           //     let mut st = ssr_prev();
+        //           //     let p = st.pop();
+        //           //     let mut query_params = query.get();
+        //           //     if st.len() > 0 {
+        //           //       query_params.insert("prev".into(), serde_json::to_string(&st).unwrap_or("[]".into()));
+        //           //     } else {
+        //           //       query_params.remove("prev".into());
+        //           //     }
+        //           //     if p.ne(&Some((0, None))) {
+        //           //       query_params.insert("from".into(), serde_json::to_string(&p).unwrap_or("[0,None]".into()));
+        //           //     } else {
+        //           //       query_params.remove("from".into());
+        //           //     }
+        //           //     view! {
+        //           //       <A
+        //           //         on:click={move |_| {
+        //           //           loading.set(true);
+        //           //         }}
+        //           //         href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())}
+        //           //         class={move || format!("btn join-item{}", if !ssr_prev().is_empty() { "" } else { " btn-disabled" })}
+        //           //       >
+        //           //         "Prev"
+        //           //       </A>
+        //           //     }
+        //           //   }
+        //           //   {
+        //           //     let mut st = ssr_prev();
+        //           //     st.push(ssr_from());
+        //           //     let mut query_params = query.get();
+        //           //     query_params.insert("prev".into(), serde_json::to_string(&st).unwrap_or("[]".into()));
+        //           //     query_params.insert("from".into(), serde_json::to_string(&next_page).unwrap_or("[0,None]".into()));
+        //           //     view! {
+        //           //       <A
+        //           //         on:click={move |_| {
+        //           //           loading.set(true);
+        //           //         }}
+        //           //         href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())}
+        //           //         class={move || {
+        //           //           format!(
+        //           //             "btn join-item{}{}",
+        //           //             if next_page.clone().unwrap_or((0, None)).1.is_some() && !loading.get() { "" } else { " btn-disabled" },
+        //           //             if loading.get() { " btn-disabled" } else { "" },
+        //           //           )
+        //           //         }}
+        //           //       >
+        //           //         "Next"
+        //           //       </A>
+        //           //     }
+        //           //   }
+        //           // </div>
+        //         }
+        //       }
+        //       None => {
+        //         view! {
+        //           <Title text="Loading post list" />
+        //           {loading
+        //             .get()
+        //             .then(move || {
+        //               view! {
+        //                 <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
+        //                   <div class="py-4 px-8">
+        //                     <div class="alert">
+        //                       <span>"Loading"</span>
+        //                     </div>
+        //                   </div>
+        //                 </div>
+        //               }
+        //             })}
+        //           <div class="hidden" />
+        //         }
+        //       }
+        //     }
+        //   }}
+        // </Transition>
+
+        // <For each={move || csr_resources.get()} key={|r| r.0.clone()} let:r>
+        //   {
+        //     let r_copy = r.clone();
+        //     view! {
+        //       <Title text="" />
+        //       <Show
+        //         when={move || r.0.1 == ResourceStatus::Ok}
+        //         fallback={move || {
+        //           match r_copy.0.1 {
+        //             ResourceStatus::Err => {
+        //               view! {
+        //                 <div class="py-4 px-8">
+        //                   <div class="flex justify-between alert alert-error">
+        //                     <span class="text-lg">"Error"</span>
+        //                     // <span on:click={on_retry_click(r_copy.0)} class="btn btn-sm">
+        //                     //   "Retry"
+        //                     // </span>
+        //                   </div>
+        //                 </div>
+        //               }
+        //             }
+        //             _rs => {
+        //               view! {
+        //                 <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
+        //                   <div class="py-4 px-8">
+        //                     <div class="alert">
+        //                       <span>"Loading..."</span>
+        //                     </div>
+        //                   </div>
+        //                 </div>
+        //               }
+        //             }
+        //           }
+        //         }}
+        //       >
+        //         <ResponsivePostListings posts={r.1.clone().1.unwrap().posts.into()} ssr_site page_number={r.0.0.into()} />
+        //       </Show>
+        //     }
+        //   }
+        // </For>
         <Transition fallback={|| {}}>
           {move || {
-            match posts_resource.get() {
-              Some(Err(err)) => {
-                view! {
-                  <Title text="Error loading post list" />
-                  <div class="py-4 px-8">
-                    <div class="flex justify-between alert alert-error">
-                      <span>{message_from_error(&err.0)} " - " {err.0.content}</span>
-                      <div>
-                        <Show when={move || { if let Some(_) = err.1 { true } else { false } }} fallback={|| {}}>
-                          <button
-                            on:click={move |_| {
-                              if let Some(r) = err.1 {
-                                r.set(!r.get());
-                              } else {}
-                            }}
-                            class="btn btn-sm"
-                          >
-                            "Retry"
-                          </button>
-                        </Show>
-                      </div>
-                    </div>
-                  </div>
+            match responsive_cache_resourcs.get() {
+              Some(Ok(o)) => {
+                let ohye = o.clone();
+                // let woop = o.clone();
+                // let goop = o.clone();
+
+                if let Some(x) = ohye.1 {
+                  response_cache.update(move |lr| {
+                    if lr.get(&ohye.0.clone()).is_none() {
+                      lr.insert(ohye.0.clone(), Some(x.clone()));
+                    }
+                  });
+
+                // } else {
+                //   view! {
+                //     // <For each={move || lot_resources.get()} key={|r| r.0 /* .1.0*/} let:r>
+                //     // </For>
+                //     // <span> "Ok" </span>
+                //     <div class="hidden sm:block join">
+                //     </div>
+                //     <div class={move || {
+                //       format!("sm:block columns-1 2xl:columns-2 3xl:columns-3 4xl:columns-4 gap-0{}", if loading.get() { " opacity-25" } else { "" })
+                //     }}>
+                //       // <PostListings posts={ohye.1.posts.into()} ssr_site page_number={ohye.0.0.into()} on_community_change={move |s| {}} />
+                //     </div>
+
+                //   }
                 }
-              }
-              Some(Ok(posts)) => {
-                let next_page = Some((posts.0.0 + ssr_limit(), posts.1.next_page.clone()));
-                csr_next_page_cursor.set(next_page.clone().unwrap());
+
+                // let next_page = Some((goop.0.0 + ssr_limit(), goop.1.unwrap().next_page.clone()));
                 view! {
-                  // <Title text={format!("Page {}", 1 + (ssr_from().0 / ssr_limit()))} />
-                  <Title text="" />
-                  <ResponsivePostListings posts={posts.1.posts.into()} ssr_site page_number={posts.0.0.into()} />
                   // <div class="hidden sm:block join">
                   //   {
                   //     let mut st = ssr_prev();
@@ -465,9 +723,9 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                   //     }
                   //     view! {
                   //       <A
-                  //         on:click={move |_| {
-                  //           loading.set(true);
-                  //         }}
+                  //         // on:click={move |_| {
+                  //         //   loading.set(true);
+                  //         // }}
                   //         href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())}
                   //         class={move || format!("btn join-item{}", if !ssr_prev().is_empty() { "" } else { " btn-disabled" })}
                   //       >
@@ -483,9 +741,9 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                   //     query_params.insert("from".into(), serde_json::to_string(&next_page).unwrap_or("[0,None]".into()));
                   //     view! {
                   //       <A
-                  //         on:click={move |_| {
-                  //           loading.set(true);
-                  //         }}
+                  //         // on:click={move |_| {
+                  //         //   loading.set(true);
+                  //         // }}
                   //         href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())}
                   //         class={move || {
                   //           format!(
@@ -500,72 +758,35 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                   //     }
                   //   }
                   // </div>
+                  // <div class={move || {
+                  //   format!("sm:block columns-1 2xl:columns-2 3xl:columns-3 4xl:columns-4 gap-0{}", if loading.get() { " opacity-25" } else { "" })
+                  // }}>
+                  <div>
+                    <For each={move || response_cache.get()} key={|r| r.0.clone() /* .1.0*/} let:r>
+                      <ResponsivePostListings posts={r.1.unwrap().posts.into()} ssr_site page_number={r.0.0.into()} />
+                    </For>
+                    // <PostListings posts={woop.1.unwrap().posts.into()} ssr_site page_number={woop.0.0.into()} on_community_change={move |s| {}} />
+                  </div>
+
                 }
+
+
               }
-              None => {
+              _ => {
                 view! {
-                  <Title text="Loading post list" />
-                  {loading
-                    .get()
-                    .then(move || {
-                      view! {
-                        <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
-                          <div class="py-4 px-8">
-                            <div class="alert">
-                              <span>"Loading"</span>
-                            </div>
-                          </div>
-                        </div>
-                      }
-                    })}
-                  <div class="hidden" />
+                  // <div class="hidden sm:block join">
+                  // </div>
+                  <div>
+                    <span> "None" </span>
+                  </div>
                 }
               }
             }
           }}
+          // <div node_ref={_scroll_element} class="block bg-transparent sm:hidden h-[1px]" />
+          <div node_ref={_scroll_element} class="block bg-white h-[5px]" />
         </Transition>
-
-        <For each={move || csr_resources.get()} key={|r| r.0.clone()} let:r>
-          {
-            let r_copy = r.clone();
-            view! {
-              <Title text="" />
-              <Show
-                when={move || r.0.1 == ResourceStatus::Ok}
-                fallback={move || {
-                  match r_copy.0.1 {
-                    ResourceStatus::Err => {
-                      view! {
-                        <div class="py-4 px-8">
-                          <div class="flex justify-between alert alert-error">
-                            <span class="text-lg">"Error"</span>
-                            <span on:click={on_retry_click(r_copy.0)} class="btn btn-sm">
-                              "Retry"
-                            </span>
-                          </div>
-                        </div>
-                      }
-                    }
-                    _rs => {
-                      view! {
-                        <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
-                          <div class="py-4 px-8">
-                            <div class="alert">
-                              <span>"Loading..."</span>
-                            </div>
-                          </div>
-                        </div>
-                      }
-                    }
-                  }
-                }}
-              >
-                <ResponsivePostListings posts={r.1.clone().1.unwrap().posts.into()} ssr_site page_number={r.0.0.into()} />
-              </Show>
-            }
-          }
-        </For>
-        <div node_ref={_scroll_element} class="block bg-white h-[5px]" />
+        // <div node_ref={_scroll_element} class="block bg-white h-[5px]" />
 
       // </div>
       // // <div class="hidden lg:block lg:w-1/3 2xl:w-1/4 3xl:w-1/5 4xl:w-1/6">

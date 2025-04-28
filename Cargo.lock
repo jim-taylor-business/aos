@@ -324,7 +324,7 @@ dependencies = [
 
 [[package]]
 name = "aos"
-version = "0.19.9-aos-demo-alpha"
+version = "0.19.10-aos-demo-alpha"
 dependencies = [
  "actix-files",
  "actix-http",
@@ -2012,8 +2012,8 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "lemmy_api_common"
-version = "0.19.10"
-source = "git+https://github.com/LemmyNet/lemmy.git?tag=0.19.10#194e436c6c1e54ca8ca00344915f7e16f2a4c6a6"
+version = "0.19.11"
+source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#43e64b92490469717f32d4fedabb404a470d80e5"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2036,8 +2036,8 @@ dependencies = [
 
 [[package]]
 name = "lemmy_db_schema"
-version = "0.19.10"
-source = "git+https://github.com/LemmyNet/lemmy.git?tag=0.19.10#194e436c6c1e54ca8ca00344915f7e16f2a4c6a6"
+version = "0.19.11"
+source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#43e64b92490469717f32d4fedabb404a470d80e5"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2056,8 +2056,8 @@ dependencies = [
 
 [[package]]
 name = "lemmy_db_views"
-version = "0.19.10"
-source = "git+https://github.com/LemmyNet/lemmy.git?tag=0.19.10#194e436c6c1e54ca8ca00344915f7e16f2a4c6a6"
+version = "0.19.11"
+source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#43e64b92490469717f32d4fedabb404a470d80e5"
 dependencies = [
  "chrono",
  "lemmy_db_schema",
@@ -2067,8 +2067,8 @@ dependencies = [
 
 [[package]]
 name = "lemmy_db_views_actor"
-version = "0.19.10"
-source = "git+https://github.com/LemmyNet/lemmy.git?tag=0.19.10#194e436c6c1e54ca8ca00344915f7e16f2a4c6a6"
+version = "0.19.11"
+source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#43e64b92490469717f32d4fedabb404a470d80e5"
 dependencies = [
  "chrono",
  "lemmy_db_schema",
@@ -2079,8 +2079,8 @@ dependencies = [
 
 [[package]]
 name = "lemmy_db_views_moderator"
-version = "0.19.10"
-source = "git+https://github.com/LemmyNet/lemmy.git?tag=0.19.10#194e436c6c1e54ca8ca00344915f7e16f2a4c6a6"
+version = "0.19.11"
+source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#43e64b92490469717f32d4fedabb404a470d80e5"
 dependencies = [
  "lemmy_db_schema",
  "serde",
@@ -2089,8 +2089,8 @@ dependencies = [
 
 [[package]]
 name = "lemmy_utils"
-version = "0.19.10"
-source = "git+https://github.com/LemmyNet/lemmy.git?tag=0.19.10#194e436c6c1e54ca8ca00344915f7e16f2a4c6a6"
+version = "0.19.11"
+source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#43e64b92490469717f32d4fedabb404a470d80e5"
 dependencies = [
  "cfg-if",
  "clearurls",

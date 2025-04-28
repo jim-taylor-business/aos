@@ -1,6 +1,6 @@
 [package]
 name = "aos"
-version = "0.19.9-aos-demo-alpha"
+version = "0.19.10-aos-demo-alpha"
 edition = "2021"
 
 [lib]
@@ -8,14 +8,14 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 # recommended - use the latest version tag and test against an instance that supports the same version
-lemmy_api_common = { tag = "0.19.10", git = "https://github.com/LemmyNet/lemmy.git", default-features = false }
+# lemmy_api_common = { tag = "0.19.10", git = "https://github.com/LemmyNet/lemmy.git", default-features = false }
 
 # test against unstable main dev branch of Lemmy
 # lemmy_api_common = { branch = "main", git = "https://github.com/LemmyNet/lemmy.git", default-features = false }
 
 # for testing potential lemmy changes
 # lemmy_api_common = { path = "../lemmy/crates/api_common", default-features = false }
-# lemmy_api_common = { branch = "deploy_demo", git = "https://github.com/jim-taylor-business/lemmy.git", default-features = false }
+lemmy_api_common = { branch = "deploy_demo", git = "https://github.com/jim-taylor-business/lemmy.git", default-features = false }
 # lemmy_api_common_latest = { tag = "0.19.9", git = "https://github.com/jim-taylor-business/lemmy.git", default-features = false, package = "lemmy_api_common" }
 # lemmy_api_common = { tag = "0.19.9", git = "https://github.com/jim-taylor-business/lemmy.git", default-features = false }
 
