@@ -7,7 +7,7 @@ use crate::{
     home::{site_summary::SiteSummary, trending::Trending},
     post::{post_listings::PostListings, responsive_post_listings::ResponsivePostListings},
   },
-  ResourceStatus,
+  ResourceStatus, ResponseLoad,
 };
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SortType},
@@ -15,11 +15,15 @@ use lemmy_api_common::{
   post::{GetPosts, GetPostsResponse},
   site::GetSiteResponse,
 };
-use leptos::{html::*, *};
+use leptos::{html::*, logging::log, *};
 use leptos_meta::*;
 use leptos_router::*;
-use std::{collections::BTreeMap, usize, vec};
-use web_sys::{js_sys::Atomics::wait_async, MouseEvent};
+// use serde::serde_as;
+use std::{
+  collections::{BTreeMap, HashMap},
+  usize, vec,
+};
+use web_sys::{js_sys::Atomics::wait_async, Event, MouseEvent, WheelEvent};
 
 #[component]
 pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
@@ -28,7 +32,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
 
   let param = use_params_map();
-  let community_name = move || param.get().get("name").cloned();
+  let ssr_name = move || param.get().get("name").cloned().unwrap_or("".into());
 
   let query = use_query_map();
 
@@ -39,15 +43,15 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
   // };
   // let ssr_prev =
   //   move || serde_json::from_str::<Vec<(usize, Option<PaginationCursor>)>>(&query.get().get("prev").cloned().unwrap_or("".into())).unwrap_or(vec![]);
-  let ssr_page = move || {
-    serde_json::from_str::<Vec<(usize, Option<PaginationCursor>)>>(&query.get().get("page").cloned().unwrap_or("".into()))
-      .unwrap_or(vec![(0usize, None)])
-  };
-  let ssr_limit = move || query.get().get("limit").cloned().unwrap_or("".into()).parse::<usize>().unwrap_or(10usize);
+  let ssr_page =
+    move || serde_json::from_str::<Vec<(usize, String)>>(&query.get().get("page").cloned().unwrap_or("".into())).unwrap_or(vec![(0usize, "".into())]);
+  // let ssr_limit = move || query.get().get("limit").cloned().unwrap_or("".into()).parse::<usize>().unwrap_or(10usize);
 
   // let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
   // let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
-  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, Option<PaginationCursor>), Option<GetPostsResponse>>>>();
+  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>>>();
+  let response_load = expect_context::<RwSignal<ResponseLoad>>();
+  let next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
 
   // let on_sort_click = move |s: SortType| {
   //   move |_e: MouseEvent| {
@@ -168,8 +172,25 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
 
   let _scroll_element = create_node_ref::<Div>();
 
+  let on_scroll_element = NodeRef::<Div>::new();
+
   #[cfg(not(feature = "ssr"))]
   {
+    let on_scroll = |_: Event| {
+      log!("scrolling");
+    };
+
+    let UseScrollReturn {
+      x,
+      y,
+      set_x,
+      set_y,
+      is_scrolling,
+      arrived_state,
+      directions,
+      ..
+    } = use_scroll_with_options(on_scroll_element, UseScrollOptions::default().on_scroll(on_scroll));
+
     use leptos_use::*;
 
     let UseIntersectionObserverReturn {
@@ -180,28 +201,63 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
     } = use_intersection_observer_with_options(
       _scroll_element,
       move |_entries, _| {
-        if let Some(e) = response_cache.get().last_entry() {
-          logging::log!("{:#?}", e.get().as_ref().unwrap().next_page);
+        // if let Some(e) = response_cache.get().last_entry() {
+        //   logging::log!("trigger");
 
-          let next_page = Some((ssr_from().0 + 50, e.get().as_ref().unwrap().next_page.clone()));
-          // let next_page = e.get().as_ref().unwrap().next_page.clone();
+        //   // logging::log!("{:#?}", e.key());
+        //   // logging::log!("{:#?}", e.get().as_ref().unwrap().next_page);
+        //   let mut st = ssr_page();
+        //   if let Some(PaginationCursor(next_page)) = e.get().as_ref().unwrap().next_page.clone() {
+        //     // let next_page = (e.key().0 + 50, e.get().as_ref().unwrap().next_page.clone());
+        //     // let next_page = Some((e.key().0 + 50, e.get().as_ref().unwrap().next_page.clone()));
+        //     // let next_page = e.get().as_ref().unwrap().next_page.clone();
 
-          let mut st = ssr_prev();
-          st.push(ssr_from());
-          let mut query_params = query.get();
-          query_params.insert("prev".into(), serde_json::to_string(&st).unwrap_or("[]".into()));
-          query_params.insert("from".into(), serde_json::to_string(&next_page).unwrap_or("[0,None]".into()));
+        //     // let mut st = ssr_prev();
+        //     st.push((e.key().0 + 50, next_page));
+        //   }
+        //   let mut query_params = query.get();
+        //   query_params.insert("page".into(), serde_json::to_string(&st).unwrap_or("[]".into()));
+        //   // query_params.insert("prev".into(), serde_json::to_string(&st).unwrap_or("[]".into()));
+        //   // query_params.insert("from".into(), serde_json::to_string(&next_page).unwrap_or("[0,None]".into()));
 
-          let navigate = leptos_router::use_navigate();
-          navigate(
-            &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-            NavigateOptions {
-              resolve: true,
-              replace: false,
-              scroll: false,
-              state: State::default(),
-            },
-          );
+        //   let navigate = leptos_router::use_navigate();
+        //   navigate(
+        //     &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+        //     NavigateOptions {
+        //       resolve: true,
+        //       replace: false,
+        //       scroll: false,
+        //       state: State::default(),
+        //     },
+        //   );
+        // } else {
+        //   logging::log!("trigger ignore");
+        // }
+
+        if let (key, _) = next_page_cursor.get() {
+          if key > 0 {
+            logging::log!("trigger");
+
+            let mut st = ssr_page();
+            if let (_, Some(PaginationCursor(next_page))) = next_page_cursor.get() {
+              st.push((key + 50usize, next_page));
+            }
+            let mut query_params = query.get();
+            query_params.insert("page".into(), serde_json::to_string(&st).unwrap_or("[]".into()));
+
+            let navigate = leptos_router::use_navigate();
+            navigate(
+              &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+              NavigateOptions {
+                resolve: true,
+                replace: false,
+                scroll: false,
+                state: State::default(),
+              },
+            );
+          }
+        } else {
+          logging::log!("trigger ignore");
         }
 
         // let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
@@ -349,42 +405,116 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
         ssr_list(),
         ssr_sort(),
         // ssr_from(),
-        ssr_limit(),
-        community_name(),
+        // ssr_limit(),
+        ssr_name(),
         // ssr_prev(),
         ssr_page(),
       )
     },
-    move |(_refresh, _logged_in, list, sort, limit, name, pages)| async move {
-      let rc = response_cache.get();
-      let mut new_pages: BTreeMap<(usize, Option<PaginationCursor>), Option<GetPostsResponse>> = BTreeMap::new();
+    move |(_refresh, _logged_in, list, sort, name, pages)| async move {
+      // let mut rc = response_cache.get();
+      // let mut new_pages: HashMap<String, Option<GetPostsResponse>> = HashMap::new();
+
+      // let pages_later = pages.clone();
+
+      // for p in pages {
+      //   if rc.get(&(p.0, p.1.clone(), list, sort, name.clone())).is_none() && new_pages.get(&p.1.clone()).is_none() {
+      //     // if rc.get(&(p.0, p.1.clone(), list, sort, name.clone())).is_none() && new_pages.get(&(p.0, p.1.clone(), list, sort, name.clone())).is_none() {
+      //     let form = GetPosts {
+      //       type_: Some(list),
+      //       sort: Some(sort),
+      //       // community_name: name.clone(),
+      //       community_name: if name.clone().len() == 0usize { None } else { Some(name.clone()) },
+      //       community_id: None,
+      //       page: None,
+      //       limit: Some(50),
+      //       saved_only: None,
+      //       disliked_only: None,
+      //       liked_only: None,
+      //       // page_cursor: Some(p.1.clone()),
+      //       page_cursor: if p.0 == 0usize { None } else { Some(PaginationCursor(p.1.clone())) },
+      //       show_hidden: Some(true),
+      //       show_nsfw: Some(false),
+      //       show_read: Some(true),
+      //     };
+      //     let result = LemmyClient.list_posts(form.clone()).await;
+      //     match result {
+      //       Ok(o) => {
+      //         logging::log!("load");
+      //         // new_pages.insert((p.0, p.1, list, sort, name.clone()), Some(o));
+      //         new_pages.insert(p.1, Some(o));
+      //         // rc.insert(p, Some(o));
+      //       }
+      //       Err(e) => {}
+      //     }
+      //   } else {
+      //     logging::log!("ignore");
+      //   }
+      // }
+
+      // response_load.set(ResponseLoad(true));
+
+      // (new_pages, rc, pages_later, list, sort, name)
+
+      let mut new_pages: RwSignal<BTreeMap<usize, Option<GetPostsResponse>>> = RwSignal::new(BTreeMap::new());
+
+      let mut counter = 0usize;
 
       for p in pages {
-        if new_pages.get(&p).is_none() {
-          let form = GetPosts {
-            type_: Some(list),
-            sort: Some(sort),
-            community_name: name,
-            community_id: None,
-            page: None,
-            limit: Some(50),
-            saved_only: None,
-            disliked_only: None,
-            liked_only: None,
-            page_cursor: p.1,
-            show_hidden: Some(true),
-            show_nsfw: Some(false),
-            show_read: Some(true),
-          };
-          let result = LemmyClient.list_posts(form.clone()).await;
-          match result {
-            Ok(o) => {
-              new_pages.insert(p, Some(o));
-            }
-            Err(e) => {}
+        let form = GetPosts {
+          type_: Some(list),
+          sort: Some(sort),
+          // community_name: name.clone(),
+          community_name: if name.clone().len() == 0usize { None } else { Some(name.clone()) },
+          community_id: None,
+          page: None,
+          limit: Some(50),
+          saved_only: None,
+          disliked_only: None,
+          liked_only: None,
+          // page_cursor: Some(p.1.clone()),
+          page_cursor: if p.0 == 0usize { None } else { Some(PaginationCursor(p.1.clone())) },
+          show_hidden: Some(true),
+          show_nsfw: Some(false),
+          show_read: Some(true),
+        };
+        let result = LemmyClient.list_posts(form.clone()).await;
+        match result {
+          Ok(o) => {
+            logging::log!("load");
+            new_pages.update(|np| {
+              np.insert(counter, Some(o));
+            });
+            counter = counter + 50usize;
           }
+          Err(e) => {}
         }
       }
+
+      new_pages
+
+      // let mut counter = if let Some(e) = rc.last_entry() {
+      //   // let mut counter = if let Some(e) = response_cache.get().last_entry() {
+      //   logging::log!("render {}", e.key().0 + 50usize);
+      //   e.key().0 + 50usize
+      // } else {
+      //   logging::log!("render empty");
+      //   0usize
+      // };
+
+      // rc.retain(|p, q| pages_later.contains(&p));
+
+      // for n in new_pages {
+      //   // rc.update(move |rc| {
+      //   if rc.get(&(counter, n.0.clone())).is_none() {
+      //     logging::log!("add");
+      //     rc.insert((counter, n.0), n.1);
+      //   }
+      //   // });
+      //   counter = counter + 50usize;
+      // }
+
+      // (rc)
 
       // if rc.get(&from.clone()).is_some() {
       //   Ok((from, None, rc))
@@ -517,7 +647,11 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
     // <main class="">
       // <div class="relative w-full sm:pr-4 lg:w-2/3 2xl:w-3/4 3xl:w-4/5 4xl:w-5/6">
     <div class="flex flex-grow">
-      <div class={move || {
+      <div on:wheel=move |e: WheelEvent| {
+        if let Some(se) = on_scroll_element.get() {
+          se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+        }
+      } node_ref=on_scroll_element class={move || {
         format!("sm:h-[calc(100%-6rem)] min-w-full absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-sm px-4 gap-4{}", if loading.get() { " opacity-25" } else { "" })
         // format!("sm:container sm:h-[calc(100%-12rem)] absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[50ch] gap-0{}", if loading.get() { " opacity-25" } else { "" })
       }}>
@@ -676,17 +810,48 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
         <Transition fallback={|| {}}>
           {move || {
             match responsive_cache_resourcs.get() {
-              Some(Ok(o)) => {
-                let ohye = o.clone();
+              Some(o) => {
+                if let Some(e) = o.get().last_entry() {
+                  next_page_cursor.set((e.key() + 50usize, e.get().as_ref().unwrap().next_page.clone()));
+                }
+                // let ohye = o.clone();
                 // let woop = o.clone();
                 // let goop = o.clone();
 
-                if let Some(x) = ohye.1 {
-                  response_cache.update(move |lr| {
-                    if lr.get(&ohye.0.clone()).is_none() {
-                      lr.insert(ohye.0.clone(), Some(x.clone()));
-                    }
-                  });
+                // if let Some(x) = ohye.1 {
+                //
+                //
+                // response_cache.set(o.1);
+
+
+                // response_cache.update(move |rc| {
+                //   // rc.retain(|p, q| o.2.contains(&p.1));
+                //   rc.retain(|p, q| o.2.contains(&(p.0, p.1.clone())) && p.2.eq(&o.3) && p.3.eq(&o.4) && p.4.eq(&o.5.clone()));
+                // // });
+
+                // let mut counter = if let Some(e) = o.1.last_entry() {
+                // // let mut counter = if let Some(e) = response_cache.get().last_entry() {
+                //   logging::log!("counter {}", e.key().0 + 50usize);
+                //   e.key().0 + 50usize
+                // } else {
+                //   logging::log!("counter empty");
+                //   0usize
+                // };
+
+                // // response_cache.update(move |rc| {
+                //   // rc.retain(|p, q| o.2.contains(&p.1));
+                //   // rc.retain(|p, q| o.2.contains(&(p.0, p.1.clone())) && p.2.eq(&o.3) && p.3.eq(&o.4) && p.4.eq(&o.5.clone()));
+                //   for n in o.0 {
+                //     if rc.get(&(counter, n.0.clone(), o.3, o.4, o.5.clone())).is_none() {
+                //       logging::log!("add");
+                //       rc.insert((counter, n.0, o.3, o.4, o.5.clone()), n.1);
+                //     }
+                //     counter = counter + 50usize;
+                //   }
+                // });
+                // // counter = counter + 50usize;
+
+
 
                 // } else {
                 //   view! {
@@ -702,7 +867,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                 //     </div>
 
                 //   }
-                }
+                // }
 
                 // let next_page = Some((goop.0.0 + ssr_limit(), goop.1.unwrap().next_page.clone()));
                 view! {
@@ -761,11 +926,21 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                   // <div class={move || {
                   //   format!("sm:block columns-1 2xl:columns-2 3xl:columns-3 4xl:columns-4 gap-0{}", if loading.get() { " opacity-25" } else { "" })
                   // }}>
+
                   <div>
-                    <For each={move || response_cache.get()} key={|r| r.0.clone() /* .1.0*/} let:r>
-                      <ResponsivePostListings posts={r.1.unwrap().posts.into()} ssr_site page_number={r.0.0.into()} />
+                  // // <span>{move || response_cache.get().len()} </span>
+                  //   <For each={move || response_cache.get()} key={|r| r.0.clone() /* .1.0*/} let:r>
+                  // // <span>{move || o.1.clone().len()} </span>
+                  // // <For each={move || o.1} key={|r| r.0.clone() /* .1.0*/} let:r>
+                  //     <ResponsivePostListings posts={r.1.unwrap().posts.into()} ssr_site page_number={r.0.0.into()} />
+                  //   </For>
+                  //   // <PostListings posts={woop.1.unwrap().posts.into()} ssr_site page_number={woop.0.0.into()} on_community_change={move |s| {}} />
+
+
+                    <For each={move || o.get()} key={|r| r.0} let:r>
+                      <ResponsivePostListings posts={r.1.unwrap().posts.into()} ssr_site page_number={r.0.into()} />
                     </For>
-                    // <PostListings posts={woop.1.unwrap().posts.into()} ssr_site page_number={woop.0.0.into()} on_community_change={move |s| {}} />
+
                   </div>
 
                 }
@@ -784,8 +959,14 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
             }
           }}
           // <div node_ref={_scroll_element} class="block bg-transparent sm:hidden h-[1px]" />
-          <div node_ref={_scroll_element} class="block bg-white h-[5px]" />
+          <div node_ref={_scroll_element} class=move || format!("{} bg-white h-[5px]", if response_load.get().eq(&ResponseLoad(true)) { "block"} else { "hidden" }) />
         </Transition>
+        // <Transition fallback={|| {}}>
+        //   <For each={move || responsive_cache_resourcs.get().unwrap()} key={|r| r.0} let:r>
+        //     <ResponsivePostListings posts={r.1.unwrap().posts.into()} ssr_site page_number={r.0.into()} />
+        //   </For>
+        //   // <div node_ref={_scroll_element} class=move || format!("{} bg-white h-[5px]", if response_load.get().eq(&ResponseLoad(true)) { "block"} else { "hidden" }) />
+        // </Transition>
         // <div node_ref={_scroll_element} class="block bg-white h-[5px]" />
 
       // </div>

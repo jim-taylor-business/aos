@@ -5,7 +5,7 @@ use crate::{
   i18n::*,
   lemmy_client::*,
   ui::components::common::icon::{Icon, IconType::*},
-  NotificationsRefresh, OnlineSetter, ResourceStatus,
+  NotificationsRefresh, OnlineSetter, ResourceStatus, ResponseLoad,
 };
 use codee::string::FromToStringCodec;
 use ev::MouseEvent;
@@ -79,7 +79,8 @@ pub fn ResponsiveTopNav(
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
   // let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
   // let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
-  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, Option<PaginationCursor>), Option<GetPostsResponse>>>>();
+  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>>>();
+  let response_load = expect_context::<RwSignal<ResponseLoad>>();
 
   // let ssr_error = RwSignal::new::<Option<(LemmyAppError, Option<RwSignal<bool>>)>>(None);
 
@@ -305,7 +306,9 @@ pub fn ResponsiveTopNav(
           <ul class="flex-nowrap items-center menu menu-horizontal">
             <li>
               <A href="/responsive" class="text-xl whitespace-nowrap" on:click={ move |e: MouseEvent| {
-                response_cache.set(BTreeMap::new());
+                // response_cache.set(BTreeMap::new());
+                // e.prevent_default();
+                // e.cancel_bubble();
                 // csr_resources.set(BTreeMap::new());
                 // csr_next_page_cursor.set((0, None));
               }}>
@@ -313,11 +316,11 @@ pub fn ResponsiveTopNav(
                   if let Some(Ok(GetSiteResponse { site_view: SiteView { site: Site { icon: Some(i), .. }, .. }, .. })) = ssr_site.get() {
                     view! { <img class="h-8" src={i.inner().to_string()} /> }
                   } else {
-                    view! { <img class="h-8" src="/lemmy.svg" /> }
+                    view! { <img class="h-8" src="/favicon.png" /> }
                   }
                 }}
                 <span class="hidden lg:flex">
-                  {move || { if let Some(Ok(m)) = ssr_site.get() { m.site_view.site.name } else { "Lemmy".to_string() } }}
+                  {move || { if let Some(Ok(m)) = ssr_site.get() { m.site_view.site.name } else { "A.O.S".to_string() } }}
                 </span>
               </A>
             </li>

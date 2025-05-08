@@ -26,14 +26,16 @@ leptos_router = "0.6"
 
 # leptos_i18n = "0.15"
 # leptos_i18n = { path = "../leptos_i18n/leptos_i18n", optional = true }
-leptos_i18n = { branch = "ssr_cookie_bugs", git = "https://github.com/jim-taylor-business/leptos_i18n.git", optional = true }
+# leptos_i18n = { branch = "ssr_cookie_bugs", git = "https://github.com/jim-taylor-business/leptos_i18n.git", optional = true }
+leptos_i18n = { branch = "codee", git = "https://github.com/jim-taylor-business/leptos_i18n.git", optional = true }
+# leptos_i18n = { rev = "0d4c1920", git = "https://github.com/jim-taylor-business/leptos_i18n.git", optional = true }
 
 # leptos-use = { version = "0.6", optional = true }
 # leptos-use = { path = "../leptos-use", optional = true }
 leptos-use = { branch = "ssr_cookie_bugs", git = "https://github.com/jim-taylor-business/leptos-use.git", optional = true }
-
 codee = "0"
 
+# serde_json_any_key = "*"
 serde = { version = "1", features = ["derive"] }
 serde_urlencoded = "0"
 serde_json = "1"

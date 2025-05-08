@@ -4,10 +4,16 @@ use crate::{
   errors::{LemmyAppError, LemmyAppErrorType},
   lemmy_client::*,
   ui::components::common::icon::{Icon, IconType::*},
-  ResourceStatus,
+  ResourceStatus, ResponseLoad,
 };
 use ev::MouseEvent;
-use lemmy_api_common::{lemmy_db_views::structs::*, person::*, post::*, site::GetSiteResponse};
+use lemmy_api_common::{
+  lemmy_db_schema::{ListingType, SortType},
+  lemmy_db_views::structs::*,
+  person::*,
+  post::*,
+  site::GetSiteResponse,
+};
 use leptos::*;
 use leptos_router::*;
 use web_sys::SubmitEvent;
@@ -127,8 +133,10 @@ pub fn ResponsivePostListing(
       Some(false)
     }
   });
-  let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
-  let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
+  // let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
+  // let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
+  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>>>();
+  let response_load = expect_context::<RwSignal<ResponseLoad>>();
 
   let post_view = RwSignal::new(post_view.get());
   let vote_action = create_server_action::<VotePostFn>();
@@ -454,8 +462,11 @@ pub fn ResponsivePostListing(
               format!("/responsive/c/{}@{}", post_view.get().community.name, post_view.get().community.actor_id.inner().host().unwrap().to_string())
             }}
             on:click={ move |e: MouseEvent| {
-              csr_resources.set(BTreeMap::new());
-              csr_next_page_cursor.set((0, None));
+              // response_load.set(ResponseLoad(false));
+              // response_cache.set(BTreeMap::new());
+              // e.prevent_default();
+              // csr_resources.set(BTreeMap::new());
+              // csr_next_page_cursor.set((0, None));
             }}
           >
             <span inner_html={community_title_encoded} />
