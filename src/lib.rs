@@ -21,7 +21,12 @@ use crate::{
     post::post_activity::PostActivity,
   },
 };
-use lemmy_api_common::{lemmy_db_views::structs::PaginationCursor, post::GetPostsResponse, site::GetSiteResponse};
+use lemmy_api_common::{
+  lemmy_db_schema::{ListingType, SortType},
+  lemmy_db_views::structs::PaginationCursor,
+  post::GetPostsResponse,
+  site::GetSiteResponse,
+};
 use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
@@ -55,6 +60,8 @@ enum ResourceStatus {
 }
 #[derive(Clone, Debug, PartialEq)]
 pub struct NotificationsRefresh(bool);
+#[derive(Clone, PartialEq)]
+pub struct ResponseLoad(bool);
 
 #[component]
 pub fn App() -> impl IntoView {
@@ -104,6 +111,17 @@ pub fn App() -> impl IntoView {
   // provide_context(csr_sort);
   let csr_next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
   provide_context(csr_next_page_cursor);
+
+  // let lot_resources: RwSignal<BTreeMap<(usize, usize, ResourceStatus), Resource<Option<PaginationCursor>, Result<GetPostsResponse, LemmyAppError>>>> =
+
+  let response_cache: RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>> = RwSignal::new(BTreeMap::new());
+  provide_context(response_cache);
+
+  let response_load: RwSignal<ResponseLoad> = RwSignal::new(ResponseLoad(true));
+  provide_context(response_load);
+
+  // let lot_next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
+  // provide_context(lot_next_page_cursor);
 
   let site_signal: RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>> = RwSignal::new(None);
 

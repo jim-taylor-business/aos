@@ -581,6 +581,7 @@ pub fn ResponsiveCommentNode(
         </div>
       </Show>
       <For each={move || children.get()} key={|cv| cv.comment.id} let:cv>
+      // <span />
         <CommentNode
           ssr_site
           parent_comment_id={comment_view.get().comment.id.0}

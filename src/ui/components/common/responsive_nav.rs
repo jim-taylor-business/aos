@@ -5,7 +5,7 @@ use crate::{
   i18n::*,
   lemmy_client::*,
   ui::components::common::icon::{Icon, IconType::*},
-  NotificationsRefresh, OnlineSetter, ResourceStatus,
+  NotificationsRefresh, OnlineSetter, ResourceStatus, ResponseLoad,
 };
 use codee::string::FromToStringCodec;
 use ev::MouseEvent;
@@ -77,7 +77,10 @@ pub fn ResponsiveTopNav(
 
   let online = expect_context::<RwSignal<OnlineSetter>>();
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
-  let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
+  // let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
+  // let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
+  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>>>();
+  let response_load = expect_context::<RwSignal<ResponseLoad>>();
 
   // let ssr_error = RwSignal::new::<Option<(LemmyAppError, Option<RwSignal<bool>>)>>(None);
 
@@ -99,7 +102,9 @@ pub fn ResponsiveTopNav(
 
   let on_sort_click = move |s: SortType| {
     move |_e: MouseEvent| {
-      csr_resources.set(BTreeMap::new());
+      response_cache.set(BTreeMap::new());
+      // csr_resources.set(BTreeMap::new());
+      // csr_next_page_cursor.set((0, None));
 
       let r = serde_json::to_string::<SortType>(&s);
       let mut query_params = query.get();
@@ -126,6 +131,7 @@ pub fn ResponsiveTopNav(
 
   let on_csr_filter_click = move |l: ListingType| {
     move |_e: MouseEvent| {
+      response_cache.set(BTreeMap::new());
       let mut query_params = query.get();
       // query_params.remove("sort".into());
       query_params.remove("from".into());
@@ -192,18 +198,18 @@ pub fn ResponsiveTopNav(
     _ => {}
   });
 
-  #[cfg(not(feature = "ssr"))]
-  let _unread_interval_handle = set_interval_with_handle(
-    move || match visibility.get() {
-      VisibilityState::Visible => {
-        refresh.update(|b| *b = !*b);
-      }
-      VisibilityState::Hidden => {}
-      _ => {}
-    },
-    std::time::Duration::from_millis(60000),
-  )
-  .ok();
+  // #[cfg(not(feature = "ssr"))]
+  // let _unread_interval_handle = set_interval_with_handle(
+  //   move || match visibility.get() {
+  //     VisibilityState::Visible => {
+  //       refresh.update(|b| *b = !*b);
+  //     }
+  //     VisibilityState::Hidden => {}
+  //     _ => {}
+  //   },
+  //   std::time::Duration::from_millis(60000),
+  // )
+  // .ok();
 
   let on_logout_submit = move |ev: SubmitEvent| {
     ev.prevent_default();
@@ -300,17 +306,21 @@ pub fn ResponsiveTopNav(
           <ul class="flex-nowrap items-center menu menu-horizontal">
             <li>
               <A href="/responsive" class="text-xl whitespace-nowrap" on:click={ move |e: MouseEvent| {
-                csr_resources.set(BTreeMap::new());
+                // response_cache.set(BTreeMap::new());
+                // e.prevent_default();
+                // e.cancel_bubble();
+                // csr_resources.set(BTreeMap::new());
+                // csr_next_page_cursor.set((0, None));
               }}>
                 {move || {
                   if let Some(Ok(GetSiteResponse { site_view: SiteView { site: Site { icon: Some(i), .. }, .. }, .. })) = ssr_site.get() {
                     view! { <img class="h-8" src={i.inner().to_string()} /> }
                   } else {
-                    view! { <img class="h-8" src="/lemmy.svg" /> }
+                    view! { <img class="h-8" src="/favicon.png" /> }
                   }
                 }}
                 <span class="hidden lg:flex">
-                  {move || { if let Some(Ok(m)) = ssr_site.get() { m.site_view.site.name } else { "Lemmy".to_string() } }}
+                  {move || { if let Some(Ok(m)) = ssr_site.get() { m.site_view.site.name } else { "A.O.S".to_string() } }}
                 </span>
               </A>
             </li>
@@ -327,6 +337,9 @@ pub fn ResponsiveTopNav(
                     query_params.remove("from".into());
                     query_params.remove("prev".into());
                     format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
+                  }}
+                  on:click={ move |e: MouseEvent| {
+                    response_cache.set(BTreeMap::new());
                   }}
                   class={move || {
                     format!(
@@ -346,6 +359,9 @@ pub fn ResponsiveTopNav(
                     query_params.remove("prev".into());
                     format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
                   }}
+                  on:click={ move |e: MouseEvent| {
+                    response_cache.set(BTreeMap::new());
+                  }}
                   class={move || format!("btn join-item{}", if ListingType::Local == ssr_list() { " btn-active" } else { "" })}
                 >
                   "Local"
@@ -357,6 +373,9 @@ pub fn ResponsiveTopNav(
                     query_params.remove("from".into());
                     query_params.remove("prev".into());
                     format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
+                  }}
+                  on:click={ move |e: MouseEvent| {
+                    response_cache.set(BTreeMap::new());
                   }}
                   class={move || format!("btn join-item{}", if ListingType::All == ssr_list() { " btn-active" } else { "" })}
                 >
@@ -531,21 +550,22 @@ pub fn ResponsiveTopNav(
                 </ul>
               </details>
             </li>
-            <Transition fallback={|| {}}>
-              {move || {
-                unread_resource
-                  .get()
-                  .map(|u| {
-                    let unread = if let Ok(c) = u.clone() { format!(", {} unread", c.replies + c.mentions + c.private_messages) } else { "".into() };
-                    view! {
-                      <li title={move || {
-                        format!(
-                          "{}{}{}",
-                          if error.get().len() > 0 { format!("{} errors, ", error.get().len()) } else { "".into() },
-                          if online.get().0 { "app online" } else { "app offline" },
-                          unread,
-                        )
-                      }}>
+            // <Transition fallback={|| {}}>
+            //   {move || {
+            //     unread_resource
+            //       .get()
+            //       .map(|u| {
+            //         let unread = if let Ok(c) = u.clone() { format!(", {} unread", c.replies + c.mentions + c.private_messages) } else { "".into() };
+            //         view! {
+            //           <li title={move || {
+            //             format!(
+            //               "{}{}{}",
+            //               if error.get().len() > 0 { format!("{} errors, ", error.get().len()) } else { "".into() },
+            //               if online.get().0 { "app online" } else { "app offline" },
+            //               unread,
+            //             )
+            //           }}>
+                      <li>
                         <A href="/notifications">
                           <span class="flex flex-row items-center">
                             {move || {
@@ -560,19 +580,19 @@ pub fn ResponsiveTopNav(
                               {move || { (!online.get().0).then(move || view! { <div class="absolute top-0 badge badge-warning badge-xs" /> }) }}
                               <Icon icon={Notifications} />
                             </span>
-                            {if let Ok(c) = u {
-                              (c.replies + c.mentions + c.private_messages > 0)
-                                .then(move || view! { <div class="badge badge-primary badge-xs">{c.replies + c.mentions + c.private_messages}</div> })
-                            } else {
-                              None
-                            }}
+                            // {if let Ok(c) = u {
+                            //   (c.replies + c.mentions + c.private_messages > 0)
+                            //     .then(move || view! { <div class="badge badge-primary badge-xs">{c.replies + c.mentions + c.private_messages}</div> })
+                            // } else {
+                            //   None
+                            // }}
                           </span>
                         </A>
                       </li>
-                    }
-                  })
-              }}
-            </Transition>
+            //         }
+            //       })
+            //   }}
+            // </Transition>
             <Show
               when={move || { if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { true } else { false } }}
               fallback={move || {
