@@ -130,8 +130,6 @@ pub fn PostListing(
   });
   let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
 
-  let lot_resources = expect_context::<RwSignal<BTreeMap<(usize, Option<PaginationCursor>), Option<GetPostsResponse>>>>();
-
   let post_view = RwSignal::new(post_view.get());
   let vote_action = create_server_action::<VotePostFn>();
 
@@ -456,9 +454,7 @@ pub fn PostListing(
               format!("/c/{}@{}", post_view.get().community.name, post_view.get().community.actor_id.inner().host().unwrap().to_string())
             }}
             on:click={ move |e: MouseEvent| {
-              // csr_resources.set(BTreeMap::new());
-              lot_resources.set(BTreeMap::new());
-
+              csr_resources.set(BTreeMap::new());
 
               // e.prevent_default();
             //   on_community_change.call(post_view.get().community.name);

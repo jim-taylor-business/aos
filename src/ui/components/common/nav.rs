@@ -73,8 +73,6 @@ pub fn TopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppE
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
   let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
 
-  // let lot_resources = expect_context::<RwSignal<BTreeMap<(usize, Option<PaginationCursor>), Option<GetPostsResponse>>>>();
-
   // let ssr_error = RwSignal::new::<Option<(LemmyAppError, Option<RwSignal<bool>>)>>(None);
 
   // if let Some(Err(e)) = site_signal.get() {
@@ -238,8 +236,7 @@ pub fn TopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppE
         <ul class="flex-nowrap items-center menu menu-horizontal">
           <li>
             <A href="/" class="text-xl whitespace-nowrap" on:click={ move |e: MouseEvent| {
-              // csr_resources.set(BTreeMap::new());
-              // lot_resources.set(BTreeMap::new());
+              csr_resources.set(BTreeMap::new());
             }}>
               {move || {
                 if let Some(Ok(GetSiteResponse { site_view: SiteView { site: Site { icon: Some(i), .. }, .. }, .. })) = ssr_site.get() {

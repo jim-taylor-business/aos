@@ -176,20 +176,20 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
 
   #[cfg(not(feature = "ssr"))]
   {
-    let on_scroll = |_: Event| {
-      log!("scrolling");
-    };
+    // let on_scroll = |_: Event| {
+    //   log!("scrolling");
+    // };
 
-    let UseScrollReturn {
-      x,
-      y,
-      set_x,
-      set_y,
-      is_scrolling,
-      arrived_state,
-      directions,
-      ..
-    } = use_scroll_with_options(on_scroll_element, UseScrollOptions::default().on_scroll(on_scroll));
+    // let UseScrollReturn {
+    //   x,
+    //   y,
+    //   set_x,
+    //   set_y,
+    //   is_scrolling,
+    //   arrived_state,
+    //   directions,
+    //   ..
+    // } = use_scroll_with_options(on_scroll_element, UseScrollOptions::default().on_scroll(on_scroll));
 
     use leptos_use::*;
 
@@ -200,7 +200,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
       is_active,
     } = use_intersection_observer_with_options(
       _scroll_element,
-      move |_entries, _| {
+      move |intersections, _| {
         // if let Some(e) = response_cache.get().last_entry() {
         //   logging::log!("trigger");
 
@@ -233,31 +233,39 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
         // } else {
         //   logging::log!("trigger ignore");
         // }
+        //
+        log!("{:#?}", intersections[0].is_intersecting());
 
-        if let (key, _) = next_page_cursor.get() {
-          if key > 0 {
-            logging::log!("trigger");
+        if intersections[0].is_intersecting() {
+          if let (key, _) = next_page_cursor.get() {
+            if key > 0 {
+              log!("trigger {}", key);
 
-            let mut st = ssr_page();
-            if let (_, Some(PaginationCursor(next_page))) = next_page_cursor.get() {
-              st.push((key + 50usize, next_page));
+              let mut st = ssr_page();
+              if let (_, Some(PaginationCursor(next_page))) = next_page_cursor.get() {
+                st.push((key, next_page));
+              }
+              let mut query_params = query.get();
+              query_params.insert("page".into(), serde_json::to_string(&st).unwrap_or("[]".into()));
+
+              let navigate = leptos_router::use_navigate();
+              navigate(
+                &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+                NavigateOptions {
+                  resolve: true,
+                  replace: false,
+                  scroll: false,
+                  state: State::default(),
+                },
+              );
+            } else {
+              log!("trigger ignore");
             }
-            let mut query_params = query.get();
-            query_params.insert("page".into(), serde_json::to_string(&st).unwrap_or("[]".into()));
-
-            let navigate = leptos_router::use_navigate();
-            navigate(
-              &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-              NavigateOptions {
-                resolve: true,
-                replace: false,
-                scroll: false,
-                state: State::default(),
-              },
-            );
+          } else {
+            log!("trigger ignore");
           }
         } else {
-          logging::log!("trigger ignore");
+          log!("trigger ignore");
         }
 
         // let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
@@ -812,6 +820,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
             match responsive_cache_resourcs.get() {
               Some(o) => {
                 if let Some(e) = o.get().last_entry() {
+                  // log!("next {} ", e.key());
                   next_page_cursor.set((e.key() + 50usize, e.get().as_ref().unwrap().next_page.clone()));
                 }
                 // let ohye = o.clone();
