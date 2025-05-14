@@ -36,7 +36,7 @@ pub fn Page(from: (usize, Option<PaginationCursor>)) -> impl IntoView {
 
       let result = LemmyClient.list_posts(form.clone()).await;
 
-      logging::log!("luu lu");
+      // logging::log!("luu lu");
 
       result
     },
@@ -49,7 +49,7 @@ pub fn Page(from: (usize, Option<PaginationCursor>)) -> impl IntoView {
       // view! { <span> "move" </span> }
       match trending.get() {
         Some(Ok(o)) => {
-          logging::log!("wuu wu");
+          // logging::log!("wuu wu");
           view! {
             <span> "Ok" { format!("{:#?}", o.next_page) } </span>
           }

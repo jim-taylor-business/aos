@@ -14,10 +14,10 @@ use lemmy_api_common::{
   post::GetPost,
   site::GetSiteResponse,
 };
-use leptos::*;
+use leptos::{html::Div, *};
 use leptos_meta::*;
 use leptos_router::{use_location, use_params_map, use_query_map};
-use web_sys::{wasm_bindgen::JsCast, HtmlAnchorElement, HtmlImageElement};
+use web_sys::{wasm_bindgen::JsCast, HtmlAnchorElement, HtmlImageElement, WheelEvent};
 
 #[component]
 pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
@@ -187,13 +187,19 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
     );
   }
 
+  let on_scroll_element = NodeRef::<Div>::new();
+
   view! {
     // <main role="main" class="flex flex-col flex-grow w-full">
 
     <main class="flex flex-col">
       <ResponsiveTopNav ssr_site default_sort=SortType::TopAll.into() />
       <div class="flex flex-grow">
-        <div class="sm:h-[calc(100%-6rem)] min-w-full absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-sm pl-4 gap-4">
+        <div on:wheel=move |e: WheelEvent| {
+          if let Some(se) = on_scroll_element.get() {
+            se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+          }
+        } node_ref=on_scroll_element class="sm:h-[calc(100%-6rem)] min-w-full absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-sm pl-4 gap-4">
 
 
     // <div class="sm:h-full w-full absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[50ch] gap-0">

@@ -6,6 +6,7 @@ use crate::{
   ui::components::common::icon::{Icon, IconType::*},
   ResourceStatus, ResponseLoad,
 };
+use codee::string::FromToStringCodec;
 use ev::MouseEvent;
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SortType},
@@ -15,6 +16,8 @@ use lemmy_api_common::{
   site::GetSiteResponse,
 };
 use leptos::*;
+use leptos_use::*;
+
 use leptos_router::*;
 use web_sys::SubmitEvent;
 
@@ -134,9 +137,9 @@ pub fn ResponsivePostListing(
     }
   });
   // let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
-  // let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
+  let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
   let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>>>();
-  let response_load = expect_context::<RwSignal<ResponseLoad>>();
+  // let response_load = expect_context::<RwSignal<ResponseLoad>>();
 
   let post_view = RwSignal::new(post_view.get());
   let vote_action = create_server_action::<VotePostFn>();
@@ -218,6 +221,12 @@ pub fn ResponsivePostListing(
       },
     );
   };
+
+  #[cfg(not(feature = "ssr"))]
+  let (get_scroll_cookie, set_scroll_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+    "scroll",
+    UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+  );
 
   let report_post_action = create_server_action::<ReportPostFn>();
   let report_validation = RwSignal::new(String::from(""));
@@ -462,6 +471,10 @@ pub fn ResponsivePostListing(
               format!("/responsive/c/{}@{}", post_view.get().community.name, post_view.get().community.actor_id.inner().host().unwrap().to_string())
             }}
             on:click={ move |e: MouseEvent| {
+              #[cfg(not(feature = "ssr"))]
+              set_scroll_cookie.set(Some("0".into()));
+              csr_next_page_cursor.set((0, None));
+
               // response_load.set(ResponseLoad(false));
               // response_cache.set(BTreeMap::new());
               // e.prevent_default();

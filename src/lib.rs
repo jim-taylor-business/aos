@@ -27,7 +27,7 @@ use lemmy_api_common::{
   post::GetPostsResponse,
   site::GetSiteResponse,
 };
-use leptos::*;
+use leptos::{logging::log, *};
 use leptos_meta::*;
 use leptos_router::*;
 use leptos_use::{use_service_worker_with_options, SameSite, UseServiceWorkerOptions};
@@ -37,6 +37,7 @@ use ui::components::{
   home::responsive_home_activity::ResponsiveHomeActivity, notifications::notifications_activity::NotificationsActivity,
   post::responsive_post_activity::ResponsivePostActivity,
 };
+use web_sys::Event;
 
 #[cfg(feature = "ssr")]
 use codee::string::FromToStringCodec;
@@ -117,11 +118,11 @@ pub fn App() -> impl IntoView {
   let response_cache: RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>> = RwSignal::new(BTreeMap::new());
   provide_context(response_cache);
 
-  let response_load: RwSignal<ResponseLoad> = RwSignal::new(ResponseLoad(true));
-  provide_context(response_load);
+  // let response_load: RwSignal<ResponseLoad> = RwSignal::new(ResponseLoad(true));
+  // provide_context(response_load);
 
-  // let lot_next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
-  // provide_context(lot_next_page_cursor);
+  let lot_next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
+  provide_context(lot_next_page_cursor);
 
   let site_signal: RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>> = RwSignal::new(None);
 

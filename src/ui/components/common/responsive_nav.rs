@@ -18,6 +18,7 @@ use lemmy_api_common::{
 };
 use leptos::*;
 use leptos_router::*;
+use leptos_use::*;
 use leptos_use::{use_cookie_with_options, SameSite, UseCookieOptions};
 use web_sys::SubmitEvent;
 
@@ -78,9 +79,9 @@ pub fn ResponsiveTopNav(
   let online = expect_context::<RwSignal<OnlineSetter>>();
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
   // let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
-  // let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
+  let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
   let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>>>();
-  let response_load = expect_context::<RwSignal<ResponseLoad>>();
+  // let response_load = expect_context::<RwSignal<ResponseLoad>>();
 
   // let ssr_error = RwSignal::new::<Option<(LemmyAppError, Option<RwSignal<bool>>)>>(None);
 
@@ -100,11 +101,18 @@ pub fn ResponsiveTopNav(
     serde_json::from_str::<SortType>(&query.get().get("sort").cloned().unwrap_or("".into())).unwrap_or(default_sort.get().unwrap_or(SortType::Active))
   };
 
+  #[cfg(not(feature = "ssr"))]
+  let (get_scroll_cookie, set_scroll_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+    "scroll",
+    UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+  );
+
   let on_sort_click = move |s: SortType| {
     move |_e: MouseEvent| {
-      response_cache.set(BTreeMap::new());
       // csr_resources.set(BTreeMap::new());
-      // csr_next_page_cursor.set((0, None));
+      csr_next_page_cursor.set((0, None));
+      #[cfg(not(feature = "ssr"))]
+      set_scroll_cookie.set(Some("0".into()));
 
       let r = serde_json::to_string::<SortType>(&s);
       let mut query_params = query.get();
@@ -119,23 +127,23 @@ pub fn ResponsiveTopNav(
       if default_sort.get().unwrap_or(SortType::Active) == s {
         query_params.remove("sort".into());
       }
-      query_params.remove("from".into());
-      query_params.remove("prev".into());
+      query_params.remove("page".into());
+      // query_params.remove("prev".into());
       let navigate = leptos_router::use_navigate();
       navigate(
         &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
         Default::default(),
       );
+      // response_cache.set(BTreeMap::new());
     }
   };
 
   let on_csr_filter_click = move |l: ListingType| {
     move |_e: MouseEvent| {
-      response_cache.set(BTreeMap::new());
       let mut query_params = query.get();
       // query_params.remove("sort".into());
-      query_params.remove("from".into());
-      query_params.remove("prev".into());
+      query_params.remove("page".into());
+      // query_params.remove("prev".into());
       let navigate = leptos_router::use_navigate();
       if l == ListingType::All {
         query_params.remove("list".into());
@@ -146,6 +154,7 @@ pub fn ResponsiveTopNav(
         &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
         Default::default(),
       );
+      // response_cache.set(BTreeMap::new());
     }
   };
 
@@ -306,7 +315,11 @@ pub fn ResponsiveTopNav(
           <ul class="flex-nowrap items-center menu menu-horizontal">
             <li>
               <A href="/responsive" class="text-xl whitespace-nowrap" on:click={ move |e: MouseEvent| {
+                #[cfg(not(feature = "ssr"))]
+                set_scroll_cookie.set(Some("0".into()));
+                csr_next_page_cursor.set((0, None));
                 // response_cache.set(BTreeMap::new());
+
                 // e.prevent_default();
                 // e.cancel_bubble();
                 // csr_resources.set(BTreeMap::new());
@@ -334,12 +347,16 @@ pub fn ResponsiveTopNav(
                   href={move || {
                     let mut query_params = query.get();
                     query_params.insert("list".into(), serde_json::to_string(&ListingType::Subscribed).ok().unwrap());
-                    query_params.remove("from".into());
-                    query_params.remove("prev".into());
+                    query_params.remove("page".into());
+                    // query_params.remove("prev".into());
                     format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
                   }}
                   on:click={ move |e: MouseEvent| {
-                    response_cache.set(BTreeMap::new());
+                    #[cfg(not(feature = "ssr"))]
+                    set_scroll_cookie.set(Some("0".into()));
+                    csr_next_page_cursor.set((0, None));
+
+                    // response_cache.set(BTreeMap::new());
                   }}
                   class={move || {
                     format!(
@@ -355,12 +372,16 @@ pub fn ResponsiveTopNav(
                   href={move || {
                     let mut query_params = query.get();
                     query_params.insert("list".into(), serde_json::to_string(&ListingType::Local).ok().unwrap());
-                    query_params.remove("from".into());
-                    query_params.remove("prev".into());
+                    query_params.remove("page".into());
+                    // query_params.remove("prev".into());
                     format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
                   }}
                   on:click={ move |e: MouseEvent| {
-                    response_cache.set(BTreeMap::new());
+                    #[cfg(not(feature = "ssr"))]
+                    set_scroll_cookie.set(Some("0".into()));
+                    csr_next_page_cursor.set((0, None));
+
+                    // response_cache.set(BTreeMap::new());
                   }}
                   class={move || format!("btn join-item{}", if ListingType::Local == ssr_list() { " btn-active" } else { "" })}
                 >
@@ -370,12 +391,16 @@ pub fn ResponsiveTopNav(
                   href={move || {
                     let mut query_params = query.get();
                     query_params.remove("list".into());
-                    query_params.remove("from".into());
-                    query_params.remove("prev".into());
+                    query_params.remove("page".into());
+                    // query_params.remove("prev".into());
                     format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
                   }}
                   on:click={ move |e: MouseEvent| {
-                    response_cache.set(BTreeMap::new());
+                    #[cfg(not(feature = "ssr"))]
+                    set_scroll_cookie.set(Some("0".into()));
+                    csr_next_page_cursor.set((0, None));
+
+                    // response_cache.set(BTreeMap::new());
                   }}
                   class={move || format!("btn join-item{}", if ListingType::All == ssr_list() { " btn-active" } else { "" })}
                 >

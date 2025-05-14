@@ -9,6 +9,7 @@ use crate::{
   },
   ResourceStatus, ResponseLoad,
 };
+use codee::string::FromToStringCodec;
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SortType},
   lemmy_db_views::structs::PaginationCursor,
@@ -18,6 +19,9 @@ use lemmy_api_common::{
 use leptos::{html::*, logging::log, *};
 use leptos_meta::*;
 use leptos_router::*;
+use leptos_use::*;
+#[cfg(not(feature = "ssr"))]
+use wasm_bindgen::{prelude::Closure, JsCast};
 // use serde::serde_as;
 use std::{
   collections::{BTreeMap, HashMap},
@@ -50,7 +54,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
   // let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
   // let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
   let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>>>();
-  let response_load = expect_context::<RwSignal<ResponseLoad>>();
+  // let response_load = expect_context::<RwSignal<ResponseLoad>>();
   let next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
 
   // let on_sort_click = move |s: SortType| {
@@ -170,28 +174,164 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
   //   }
   // };
 
-  let _scroll_element = create_node_ref::<Div>();
+  let intersection_element = create_node_ref::<Div>();
 
   let on_scroll_element = NodeRef::<Div>::new();
 
   #[cfg(not(feature = "ssr"))]
+  let (get_scroll_cookie, set_scroll_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+    "scroll",
+    UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+  );
+
+  #[cfg(not(feature = "ssr"))]
   {
-    // let on_scroll = |_: Event| {
-    //   log!("scrolling");
+    // if let Some(se) = on_scroll_element.get() {
+    //   // log!("scrolling {}", se.scroll_left());
+    //   if let Some(s) = get_scroll_cookie.get() {
+    //     log!("set");
+    //     se.set_scroll_left(s.parse().unwrap_or(0i32));
+    //   } else {
+    //     log!("ignore");
+    //   }
+    //   // se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+    // } else {
+    //   log!("ignore");
+    // }
+
+    let on_scroll = move |e: Event| {
+      if let Some(se) = on_scroll_element.get() {
+        set_scroll_cookie.set(Some(se.scroll_left().to_string()));
+        // log!("scrolling {}", se.scroll_left());
+        // se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+        // } else {
+        //   log!("ignore");
+      }
+    };
+
+    let UseScrollReturn {
+      x,
+      y,
+      set_x,
+      set_y,
+      is_scrolling,
+      arrived_state,
+      directions,
+      ..
+    } = use_scroll_with_options(on_scroll_element, UseScrollOptions::default().on_scroll(on_scroll));
+
+    // let on_online = move |b: bool| {
+    //   move |_| {
+    //     online.set(OnlineSetter(b));
+    //   }
     // };
 
-    // let UseScrollReturn {
-    //   x,
-    //   y,
-    //   set_x,
-    //   set_y,
-    //   is_scrolling,
-    //   arrived_state,
-    //   directions,
-    //   ..
-    // } = use_scroll_with_options(on_scroll_element, UseScrollOptions::default().on_scroll(on_scroll));
+    // let _offline_handle = window_event_listener_untyped("offline", on_online(false));
+    // let _online_handle = window_event_listener_untyped("online", on_online(true));
+    //
+    // canvas.add_event_listener_with_callback("mousedown", closure.as_ref().unchecked_ref())?;
+    //
+    // set_timeout(
+    //   move || {
+    //     if let Some(se) = on_scroll_element.get() {
+    //       // log!("scrolling {}", se.scroll_left());
+    //       if let Some(s) = get_scroll_cookie.get() {
+    //         log!("set");
+    //         se.set_scroll_left(s.parse().unwrap_or(0i32));
+    //       } else {
+    //         log!("ignore");
+    //       }
+    //       // se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+    //     } else {
+    //       log!("ignore");
+    //     }
+    //   },
+    //   std::time::Duration::new(0, 500_000_000),
+    // );
+    //
+    // pub fn window_event_listener_untyped(
+    //     event_name: &str,
+    //     cb: impl Fn(web_sys::Event) + 'static,
+    // ) -> WindowListenerHandle {
+    //     cfg_if::cfg_if! {
+    //       if #[cfg(debug_assertions)] {
+    //         let span = ::tracing::Span::current();
+    //         let cb = move |e| {
+    //           let prev = leptos_reactive::SpecialNonReactiveZone::enter();
+    //           let _guard = span.enter();
+    //           cb(e);
+    //           leptos_reactive::SpecialNonReactiveZone::exit(prev);
+    //         };
+    //       }
+    //     }
 
-    use leptos_use::*;
+    //     if !is_server() {
+    //         #[inline(never)]
+    //         fn wel(
+    //             cb: Box<dyn FnMut(web_sys::Event)>,
+    //             event_name: &str,
+    //         ) -> WindowListenerHandle {
+    //             let cb = Closure::wrap(cb).into_js_value();
+    //             _ = window().add_event_listener_with_callback(
+    //                 event_name,
+    //                 cb.unchecked_ref(),
+    //             );
+    //             let event_name = event_name.to_string();
+    //             WindowListenerHandle(Box::new(move || {
+    //                 _ = window().remove_event_listener_with_callback(
+    //                     &event_name,
+    //                     cb.unchecked_ref(),
+    //                 );
+    //             }))
+    //         }
+
+    //         wel(Box::new(cb), event_name)
+    //     } else {
+    //         WindowListenerHandle(Box::new(|| ()))
+    //     }
+    // }
+
+    // let on_rsc = move |e: Event| {
+    //   log!("state! {:#?}", e);
+    // };
+    // let _handle = window_event_listener_untyped("offline", on_rsc);
+    // documen
+    // let _handle = window_event_listener_untyped("readystatechange", on_rsc);
+    // let _handle = window_event_listener_untyped("load", on_rsc);
+
+    let on_rsc = move |e: Event| {
+      log!("rsc state! {:#?}", e);
+    };
+    // // let _handle = window_event_listener_untyped("readystatechange", on_rsc);
+    let _handle = window_event_listener_untyped("load", on_rsc);
+
+    let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::Event| {
+      log!("load state! {:#?}", event);
+    });
+    // if let Some(d) = window().document() {
+    window()
+      // .document()
+      // .unwrap()
+      .add_event_listener_with_callback("load", closure.as_ref().unchecked_ref());
+    // } else {
+    //   log!("NOOO state!");
+    // }
+    //   .unwrap()
+
+    // window()
+    //   .document().unwrap().ready_state()
+
+    closure.forget();
+
+    // .onreadystatechange() {//.readyState == 'complete' {
+    //     highlighter();
+    // } else {
+    //     document.onreadystatechange = function () {
+    //         if (document.readyState === "complete") {
+    //             highlighter();
+    //         }
+    //     }
+    // }
 
     let UseIntersectionObserverReturn {
       pause,
@@ -199,7 +339,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
       stop,
       is_active,
     } = use_intersection_observer_with_options(
-      _scroll_element,
+      intersection_element,
       move |intersections, _| {
         // if let Some(e) = response_cache.get().last_entry() {
         //   logging::log!("trigger");
@@ -234,12 +374,12 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
         //   logging::log!("trigger ignore");
         // }
         //
-        log!("{:#?}", intersections[0].is_intersecting());
+        // log!("{:#?}", intersections[0].is_intersecting());
 
         if intersections[0].is_intersecting() {
           if let (key, _) = next_page_cursor.get() {
             if key > 0 {
-              log!("trigger {}", key);
+              // log!("trigger {}", key);
 
               let mut st = ssr_page();
               if let (_, Some(PaginationCursor(next_page))) = next_page_cursor.get() {
@@ -259,13 +399,13 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                 },
               );
             } else {
-              log!("trigger ignore");
+              // log!("trigger ignore");
             }
           } else {
-            log!("trigger ignore");
+            // log!("trigger ignore");
           }
         } else {
-          log!("trigger ignore");
+          // log!("trigger ignore");
         }
 
         // let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
@@ -406,100 +546,73 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
   // };
 
   let responsive_cache_resourcs = Resource::new(
-    move || {
-      (
-        refresh.get(),
-        logged_in.get(),
-        ssr_list(),
-        ssr_sort(),
-        // ssr_from(),
-        // ssr_limit(),
-        ssr_name(),
-        // ssr_prev(),
-        ssr_page(),
-      )
-    },
+    move || (refresh.get(), logged_in.get(), ssr_list(), ssr_sort(), ssr_name(), ssr_page()),
     move |(_refresh, _logged_in, list, sort, name, pages)| async move {
-      // let mut rc = response_cache.get();
-      // let mut new_pages: HashMap<String, Option<GetPostsResponse>> = HashMap::new();
+      let mut rc = response_cache.get();
+      let mut new_pages: HashMap<usize, Option<GetPostsResponse>> = HashMap::new();
 
-      // let pages_later = pages.clone();
+      let pages_later = pages.clone();
 
-      // for p in pages {
-      //   if rc.get(&(p.0, p.1.clone(), list, sort, name.clone())).is_none() && new_pages.get(&p.1.clone()).is_none() {
-      //     // if rc.get(&(p.0, p.1.clone(), list, sort, name.clone())).is_none() && new_pages.get(&(p.0, p.1.clone(), list, sort, name.clone())).is_none() {
-      //     let form = GetPosts {
-      //       type_: Some(list),
-      //       sort: Some(sort),
-      //       // community_name: name.clone(),
-      //       community_name: if name.clone().len() == 0usize { None } else { Some(name.clone()) },
-      //       community_id: None,
-      //       page: None,
-      //       limit: Some(50),
-      //       saved_only: None,
-      //       disliked_only: None,
-      //       liked_only: None,
-      //       // page_cursor: Some(p.1.clone()),
-      //       page_cursor: if p.0 == 0usize { None } else { Some(PaginationCursor(p.1.clone())) },
-      //       show_hidden: Some(true),
-      //       show_nsfw: Some(false),
-      //       show_read: Some(true),
-      //     };
-      //     let result = LemmyClient.list_posts(form.clone()).await;
-      //     match result {
-      //       Ok(o) => {
-      //         logging::log!("load");
-      //         // new_pages.insert((p.0, p.1, list, sort, name.clone()), Some(o));
-      //         new_pages.insert(p.1, Some(o));
-      //         // rc.insert(p, Some(o));
-      //       }
-      //       Err(e) => {}
-      //     }
-      //   } else {
-      //     logging::log!("ignore");
-      //   }
-      // }
-
-      // response_load.set(ResponseLoad(true));
-
-      // (new_pages, rc, pages_later, list, sort, name)
-
-      let mut new_pages: RwSignal<BTreeMap<usize, Option<GetPostsResponse>>> = RwSignal::new(BTreeMap::new());
-
-      let mut counter = 0usize;
+      log!("keys {:#?}", rc.keys());
 
       for p in pages {
-        let form = GetPosts {
-          type_: Some(list),
-          sort: Some(sort),
-          // community_name: name.clone(),
-          community_name: if name.clone().len() == 0usize { None } else { Some(name.clone()) },
-          community_id: None,
-          page: None,
-          limit: Some(50),
-          saved_only: None,
-          disliked_only: None,
-          liked_only: None,
-          // page_cursor: Some(p.1.clone()),
-          page_cursor: if p.0 == 0usize { None } else { Some(PaginationCursor(p.1.clone())) },
-          show_hidden: Some(true),
-          show_nsfw: Some(false),
-          show_read: Some(true),
-        };
-        let result = LemmyClient.list_posts(form.clone()).await;
-        match result {
-          Ok(o) => {
-            logging::log!("load");
-            new_pages.update(|np| {
-              np.insert(counter, Some(o));
-            });
-            counter = counter + 50usize;
+        if rc.get(&(p.0, p.1.clone(), list, sort, name.clone())).is_none() {
+          //} && new_pages.get(&p.1.clone()).is_none() {
+          // // if rc.get(&(p.0, p.1.clone(), list, sort, name.clone())).is_none() && new_pages.get(&(p.0, p.1.clone(), list, sort, name.clone())).is_none() {
+          let form = GetPosts {
+            type_: Some(list),
+            sort: Some(sort),
+            // community_name: name.clone(),
+            community_name: if name.clone().len() == 0usize { None } else { Some(name.clone()) },
+            community_id: None,
+            page: None,
+            limit: Some(50),
+            saved_only: None,
+            disliked_only: None,
+            liked_only: None,
+            // page_cursor: Some(p.1.clone()),
+            page_cursor: if p.0 == 0usize { None } else { Some(PaginationCursor(p.1.clone())) },
+            show_hidden: Some(true),
+            show_nsfw: Some(false),
+            show_read: Some(true),
+          };
+          let result = LemmyClient.list_posts(form.clone()).await;
+          match result {
+            Ok(o) => {
+              logging::log!("load");
+              // new_pages.insert((p.0, p.1, list, sort, name.clone()), Some(o));
+              new_pages.insert(p.0, Some(o));
+              // rc.insert(p, Some(o));
+            }
+            Err(e) => {}
           }
-          Err(e) => {}
+        } else {
+          logging::log!("ignore");
         }
       }
 
-      new_pages
+      // response_load.set(ResponseLoad(true));
+      //
+      #[cfg(not(feature = "ssr"))]
+      set_timeout(
+        move || {
+          if let Some(se) = on_scroll_element.get() {
+            // log!("scrolling {}", se.scroll_left());
+            if let Some(s) = get_scroll_cookie.get() {
+              log!("set");
+              se.set_scroll_left(s.parse().unwrap_or(0i32));
+            } else {
+              log!("ignore");
+            }
+            // se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+          } else {
+            log!("ignore");
+          }
+        },
+        std::time::Duration::new(0, 500_000_000),
+      );
+
+      (new_pages, pages_later, list, sort, name)
 
       // let mut counter = if let Some(e) = rc.last_entry() {
       //   // let mut counter = if let Some(e) = response_cache.get().last_entry() {
@@ -553,6 +666,42 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
       // }
     },
   );
+
+  // let responsive_cache_resourcs = Resource::new(
+  //   move || (ssr_list(), ssr_sort(), ssr_name(), ssr_page()),
+  //   move |(list, sort, name, pages)| async move {
+  //     let mut new_pages: RwSignal<BTreeMap<usize, Option<GetPostsResponse>>> = RwSignal::new(BTreeMap::new());
+  //     let mut counter = 0usize;
+  //     for p in pages {
+  //       let form = GetPosts {
+  //         type_: Some(list),
+  //         sort: Some(sort),
+  //         community_name: if name.clone().len() == 0usize { None } else { Some(name.clone()) },
+  //         community_id: None,
+  //         page: None,
+  //         limit: Some(50),
+  //         saved_only: None,
+  //         disliked_only: None,
+  //         liked_only: None,
+  //         page_cursor: if p.0 == 0usize { None } else { Some(PaginationCursor(p.1.clone())) },
+  //         show_hidden: Some(true),
+  //         show_nsfw: Some(false),
+  //         show_read: Some(true),
+  //       };
+  //       let result = LemmyClient.list_posts(form.clone()).await;
+  //       match result {
+  //         Ok(o) => {
+  //           new_pages.update(|np| {
+  //             np.insert(counter, Some(o));
+  //           });
+  //           counter = counter + 50usize;
+  //         }
+  //         Err(e) => {}
+  //       }
+  //     }
+  //     new_pages
+  //   },
+  // );
 
   view! {
   <main class="flex flex-col">
@@ -654,6 +803,11 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
 
     // <main class="">
       // <div class="relative w-full sm:pr-4 lg:w-2/3 2xl:w-3/4 3xl:w-4/5 4xl:w-5/6">
+    // <script>
+    // document.addEventListener("readystatechange", (event) => {
+    //   console.log(document.readyState);
+    // });
+    // </script>
     <div class="flex flex-grow">
       <div on:wheel=move |e: WheelEvent| {
         if let Some(se) = on_scroll_element.get() {
@@ -818,11 +972,13 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
         <Transition fallback={|| {}}>
           {move || {
             match responsive_cache_resourcs.get() {
-              Some(o) => {
-                if let Some(e) = o.get().last_entry() {
-                  // log!("next {} ", e.key());
-                  next_page_cursor.set((e.key() + 50usize, e.get().as_ref().unwrap().next_page.clone()));
-                }
+              Some(mut o) => {
+                // if let Some(e) = o.get().last_entry() {
+                //   // log!("next {} ", e.key());
+                //   next_page_cursor.set((e.key() + 50usize, e.get().as_ref().unwrap().next_page.clone()));
+                // }
+
+
                 // let ohye = o.clone();
                 // let woop = o.clone();
                 // let goop = o.clone();
@@ -847,19 +1003,47 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                 //   0usize
                 // };
 
-                // // response_cache.update(move |rc| {
-                //   // rc.retain(|p, q| o.2.contains(&p.1));
-                //   // rc.retain(|p, q| o.2.contains(&(p.0, p.1.clone())) && p.2.eq(&o.3) && p.3.eq(&o.4) && p.4.eq(&o.5.clone()));
-                //   for n in o.0 {
-                //     if rc.get(&(counter, n.0.clone(), o.3, o.4, o.5.clone())).is_none() {
-                //       logging::log!("add");
-                //       rc.insert((counter, n.0, o.3, o.4, o.5.clone()), n.1);
-                //     }
-                //     counter = counter + 50usize;
-                //   }
-                // });
-                // // counter = counter + 50usize;
+                response_cache.update(move |rc| {
+                  // rc.clear();
+                  rc.retain(|t, u| o.1.contains(&(t.0, t.1.clone())) && t.2.eq(&o.2) && t.3.eq(&o.3) && t.4.eq(&o.4.clone()));
+                  let mut counter = 0usize;
+                  // rc.retain(|p, q| o.2.contains(&p.1));
+                  for n in o.1 {
+                    if rc.get(&(n.0, n.1.clone(), o.2, o.3, o.4.clone())).is_none() {
+                      logging::log!("add");
+                      if let Some(q) = o.0.remove(&n.0) {
+                        rc.insert((n.0, n.1.clone(), o.2, o.3, o.4.clone()), q);
+                      }
+                    }
+                    counter = counter + 1usize;
+                  }
+                  if let Some(e) = rc.last_entry() {
+                    next_page_cursor.set((e.key().0 + 50usize, e.get().as_ref().unwrap().next_page.clone()));
+                  }
 
+                  log!("keys ater {:#?}", rc.keys());
+
+                });
+
+
+
+
+
+                // counter = counter + 50usize;
+
+                // #[cfg(not(feature = "ssr"))]
+                // if let Some(se) = on_scroll_element.get() {
+                //   // log!("scrolling {}", se.scroll_left());
+                //   if let Some(s) = get_scroll_cookie.get() {
+                //     log!("set");
+                //     se.set_scroll_left(s.parse().unwrap_or(0i32));
+                //   } else {
+                //     log!("ignore");
+                //   }
+                //   // se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+                // } else {
+                //   log!("ignore");
+                // }
 
 
                 // } else {
@@ -937,18 +1121,14 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                   // }}>
 
                   <div>
-                  // // <span>{move || response_cache.get().len()} </span>
-                  //   <For each={move || response_cache.get()} key={|r| r.0.clone() /* .1.0*/} let:r>
-                  // // <span>{move || o.1.clone().len()} </span>
-                  // // <For each={move || o.1} key={|r| r.0.clone() /* .1.0*/} let:r>
-                  //     <ResponsivePostListings posts={r.1.unwrap().posts.into()} ssr_site page_number={r.0.0.into()} />
-                  //   </For>
-                  //   // <PostListings posts={woop.1.unwrap().posts.into()} ssr_site page_number={woop.0.0.into()} on_community_change={move |s| {}} />
-
-
-                    <For each={move || o.get()} key={|r| r.0} let:r>
-                      <ResponsivePostListings posts={r.1.unwrap().posts.into()} ssr_site page_number={r.0.into()} />
+                    <For each={move || response_cache.get()} key={|r| r.0.clone()} let:r>
+                      <ResponsivePostListings posts={r.1.unwrap().posts.into()} ssr_site page_number={r.0.0.into()} />
                     </For>
+
+
+                    // <For each={move || o.get()} key={|r| r.0} let:r>
+                    //   <ResponsivePostListings posts={r.1.unwrap().posts.into()} ssr_site page_number={r.0.into()} />
+                    // </For>
 
                   </div>
 
@@ -958,17 +1138,37 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
               }
               _ => {
                 view! {
-                  // <div class="hidden sm:block join">
-                  // </div>
                   <div>
-                    <span> "None" </span>
+                    <Title text="" />
+                    // {loading
+                    //   .get()
+                    //   .then(move || {
+                    //     view! {
+                          <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
+                            <div class="py-4 px-8">
+                              <div class="alert">
+                                <span>"Loading"</span>
+                              </div>
+                            </div>
+                          </div>
+                    //     }
+                    // })}
+                  // <div class="hidden" />
                   </div>
                 }
+
+                // view! {
+                //   // <div class="hidden sm:block join">
+                //   // </div>
+                //   <div>
+                //     <span> "None" </span>
+                //   </div>
+                // }
               }
             }
           }}
-          // <div node_ref={_scroll_element} class="block bg-transparent sm:hidden h-[1px]" />
-          <div node_ref={_scroll_element} class=move || format!("{} bg-white h-[5px]", if response_load.get().eq(&ResponseLoad(true)) { "block"} else { "hidden" }) />
+          <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
+          // <div node_ref={intersection_element} class=move || format!("{} bg-white h-[5px]", if response_load.get().eq(&ResponseLoad(true)) { "block"} else { "hidden" }) />
         </Transition>
         // <Transition fallback={|| {}}>
         //   <For each={move || responsive_cache_resourcs.get().unwrap()} key={|r| r.0} let:r>
