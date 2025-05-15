@@ -379,7 +379,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
         if intersections[0].is_intersecting() {
           if let (key, _) = next_page_cursor.get() {
             if key > 0 {
-              // log!("trigger {}", key);
+              log!("trigger {}", key);
 
               let mut st = ssr_page();
               if let (_, Some(PaginationCursor(next_page))) = next_page_cursor.get() {
@@ -552,11 +552,12 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
       let mut new_pages: HashMap<usize, Option<GetPostsResponse>> = HashMap::new();
 
       let pages_later = pages.clone();
+      let pages_unit = pages_later.eq(&vec![(0usize, "".into())]);
 
       log!("keys {:#?}", rc.keys());
 
       for p in pages {
-        if rc.get(&(p.0, p.1.clone(), list, sort, name.clone())).is_none() {
+        if pages_unit || rc.get(&(p.0, p.1.clone(), list, sort, name.clone())).is_none() {
           //} && new_pages.get(&p.1.clone()).is_none() {
           // // if rc.get(&(p.0, p.1.clone(), list, sort, name.clone())).is_none() && new_pages.get(&(p.0, p.1.clone(), list, sort, name.clone())).is_none() {
           let form = GetPosts {
@@ -599,7 +600,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
           if let Some(se) = on_scroll_element.get() {
             // log!("scrolling {}", se.scroll_left());
             if let Some(s) = get_scroll_cookie.get() {
-              log!("set");
+              log!("set {}", s);
               se.set_scroll_left(s.parse().unwrap_or(0i32));
             } else {
               log!("ignore");
@@ -1004,10 +1005,12 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                 // };
 
                 response_cache.update(move |rc| {
-                  // rc.clear();
-                  rc.retain(|t, u| o.1.contains(&(t.0, t.1.clone())) && t.2.eq(&o.2) && t.3.eq(&o.3) && t.4.eq(&o.4.clone()));
-                  let mut counter = 0usize;
-                  // rc.retain(|p, q| o.2.contains(&p.1));
+                  if o.1.eq(&vec![(0usize, "".into())]) {
+                    rc.clear();
+                  } else {
+                    rc.retain(|t, u| o.1.contains(&(t.0, t.1.clone())) && t.2.eq(&o.2) && t.3.eq(&o.3) && t.4.eq(&o.4.clone()));
+                  }
+                  // let mut counter = 0usize;
                   for n in o.1 {
                     if rc.get(&(n.0, n.1.clone(), o.2, o.3, o.4.clone())).is_none() {
                       logging::log!("add");
@@ -1015,14 +1018,12 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                         rc.insert((n.0, n.1.clone(), o.2, o.3, o.4.clone()), q);
                       }
                     }
-                    counter = counter + 1usize;
+                    // counter = counter + 1usize;
                   }
                   if let Some(e) = rc.last_entry() {
                     next_page_cursor.set((e.key().0 + 50usize, e.get().as_ref().unwrap().next_page.clone()));
                   }
-
-                  log!("keys ater {:#?}", rc.keys());
-
+                  log!("after {:#?}", rc.keys());
                 });
 
 
