@@ -199,7 +199,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
           if let Some(se) = on_scroll_element.get() {
             se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
           }
-        } node_ref=on_scroll_element class="sm:h-[calc(100%-6rem)] min-w-full absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-sm pl-4 gap-4">
+        } node_ref=on_scroll_element class="sm:h-[calc(100%-4rem)] min-w-full sm:absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-sm sm:px-4 gap-4">
 
 
     // <div class="sm:h-full w-full absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[50ch] gap-0">

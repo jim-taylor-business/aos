@@ -310,11 +310,11 @@ pub fn ResponsiveTopNav(
   };
 
   view! {
-      <nav class="flex navbar flex-row">
-        <div class="navbar-start flex-grow">
+      <nav class="flex navbar flex-row py-0">
+        <div class="flex-grow">
           <ul class="flex-nowrap items-center menu menu-horizontal">
             <li>
-              <A href="/responsive" class="text-xl whitespace-nowrap" on:click={ move |e: MouseEvent| {
+              <A href="/responsive" class="text-xl py-1/2 whitespace-nowrap" on:click={ move |e: MouseEvent| {
                 #[cfg(not(feature = "ssr"))]
                 set_scroll_cookie.set(Some("0".into()));
                 csr_next_page_cursor.set((0, None));
@@ -337,84 +337,86 @@ pub fn ResponsiveTopNav(
                 </span>
               </A>
             </li>
-            <li>
-              // <div class="hidden mr-3 sm:inline-block join">
-              //   <button class="btn join-item btn-active">"Posts"</button>
-              //   <button class="btn join-item btn-disabled">"Comments"</button>
-              // </div>
-              <div class="hidden sm:block join">
-                <A
-                  href={move || {
-                    let mut query_params = query.get();
-                    query_params.insert("list".into(), serde_json::to_string(&ListingType::Subscribed).ok().unwrap());
-                    query_params.remove("page".into());
-                    // query_params.remove("prev".into());
-                    format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
-                  }}
-                  on:click={ move |e: MouseEvent| {
-                    #[cfg(not(feature = "ssr"))]
-                    set_scroll_cookie.set(Some("0".into()));
-                    csr_next_page_cursor.set((0, None));
+          //   <li>
+          //     // <div class="hidden mr-3 sm:inline-block join">
+          //     //   <button class="btn join-item btn-active">"Posts"</button>
+          //     //   <button class="btn join-item btn-disabled">"Comments"</button>
+          //     // </div>
+          //     <div class="hidden sm:block join">
+          //       <A
+          //         href={move || {
+          //           let mut query_params = query.get();
+          //           query_params.insert("list".into(), serde_json::to_string(&ListingType::Subscribed).ok().unwrap());
+          //           query_params.remove("page".into());
+          //           // query_params.remove("prev".into());
+          //           format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
+          //         }}
+          //         on:click={ move |e: MouseEvent| {
+          //           #[cfg(not(feature = "ssr"))]
+          //           set_scroll_cookie.set(Some("0".into()));
+          //           csr_next_page_cursor.set((0, None));
 
-                    // response_cache.set(BTreeMap::new());
-                  }}
-                  class={move || {
-                    format!(
-                      "btn join-item{}{}",
-                      if ListingType::Subscribed == ssr_list() { " btn-active" } else { "" },
-                      if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { "" } else { " btn-disabled" },
-                    )
-                  }}
-                >
-                  "Subscribed"
-                </A>
-                <A
-                  href={move || {
-                    let mut query_params = query.get();
-                    query_params.insert("list".into(), serde_json::to_string(&ListingType::Local).ok().unwrap());
-                    query_params.remove("page".into());
-                    // query_params.remove("prev".into());
-                    format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
-                  }}
-                  on:click={ move |e: MouseEvent| {
-                    #[cfg(not(feature = "ssr"))]
-                    set_scroll_cookie.set(Some("0".into()));
-                    csr_next_page_cursor.set((0, None));
+          //           // response_cache.set(BTreeMap::new());
+          //         }}
+          //         class={move || {
+          //           format!(
+          //             "btn join-item{}{}",
+          //             if ListingType::Subscribed == ssr_list() { " btn-active" } else { "" },
+          //             if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { "" } else { " btn-disabled" },
+          //           )
+          //         }}
+          //       >
+          //         "Subscribed"
+          //       </A>
+          //       <A
+          //         href={move || {
+          //           let mut query_params = query.get();
+          //           query_params.insert("list".into(), serde_json::to_string(&ListingType::Local).ok().unwrap());
+          //           query_params.remove("page".into());
+          //           // query_params.remove("prev".into());
+          //           format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
+          //         }}
+          //         on:click={ move |e: MouseEvent| {
+          //           #[cfg(not(feature = "ssr"))]
+          //           set_scroll_cookie.set(Some("0".into()));
+          //           csr_next_page_cursor.set((0, None));
 
-                    // response_cache.set(BTreeMap::new());
-                  }}
-                  class={move || format!("btn join-item{}", if ListingType::Local == ssr_list() { " btn-active" } else { "" })}
-                >
-                  "Local"
-                </A>
-                <A
-                  href={move || {
-                    let mut query_params = query.get();
-                    query_params.remove("list".into());
-                    query_params.remove("page".into());
-                    // query_params.remove("prev".into());
-                    format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
-                  }}
-                  on:click={ move |e: MouseEvent| {
-                    #[cfg(not(feature = "ssr"))]
-                    set_scroll_cookie.set(Some("0".into()));
-                    csr_next_page_cursor.set((0, None));
+          //           // response_cache.set(BTreeMap::new());
+          //         }}
+          //         class={move || format!("btn join-item{}", if ListingType::Local == ssr_list() { " btn-active" } else { "" })}
+          //       >
+          //         "Local"
+          //       </A>
+          //       <A
+          //         href={move || {
+          //           let mut query_params = query.get();
+          //           query_params.remove("list".into());
+          //           query_params.remove("page".into());
+          //           // query_params.remove("prev".into());
+          //           format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
+          //         }}
+          //         on:click={ move |e: MouseEvent| {
+          //           #[cfg(not(feature = "ssr"))]
+          //           set_scroll_cookie.set(Some("0".into()));
+          //           csr_next_page_cursor.set((0, None));
 
-                    // response_cache.set(BTreeMap::new());
-                  }}
-                  class={move || format!("btn join-item{}", if ListingType::All == ssr_list() { " btn-active" } else { "" })}
-                >
-                  "All"
-                </A>
-              </div>
-            </li>
-            // <li class="flex lg:hidden">
+          //           // response_cache.set(BTreeMap::new());
+          //         }}
+          //         class={move || format!("btn join-item{}", if ListingType::All == ssr_list() { " btn-active" } else { "" })}
+          //       >
+          //         "All"
+          //       </A>
+          //     </div>
             // </li>
-          </ul>
-          <div class="sm:hidden dropdown">
-            <label tabindex="0" class="btn">
-              "List"
-            </label>
+            <li class="flex z-[1]">
+          // <div class="dropdown">
+          //   <label tabindex="0" class="btn">
+          //     "List"
+          //   </label>
+          <details>
+            <summary>
+              <Icon icon={Community} />
+            </summary>
             <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
               <li class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}>
                 <span>"All"</span>
@@ -426,43 +428,20 @@ pub fn ResponsiveTopNav(
                 <span>"Subscribed"</span>
               </li>
             </ul>
-            </div>
-          </div>
-  //         <div class="navbar-center">
-  // //        <A href={move || format!("/responsive/p/{}", post_view.get().post.id)} class=" hover:text-accent">
-  //           <span class="block text-lg break-words" inner_html={post_name.get()} />
-  //         // </A>
-  //         <span class="block mb-1">
-  //           // <span>{abbr_duration}</span>
-  //           " ago by "
-  //           <a
-  //             // href={move || format!("{}", post_view.get().creator.actor_id)}
-  //             target="_blank"
-  //             class="inline text-sm break-words hover:text-secondary"
-  //           >
-  //             <span inner_html={user_name.get()} />
-  //           </a>
-  //           " in "
-  //           <a
-  //             class="inline text-sm break-words hover:text-secondary"
-  //             // href={if post_view.get().community.local {
-  //             //   format!("/responsive/c/{}", post_view.get().community.name)
-  //             // } else {
-  //             //   format!("/responsive/c/{}@{}", post_view.get().community.name, post_view.get().community.actor_id.inner().host().unwrap().to_string())
-  //             // }}
-  //             // on:click={ move |e: MouseEvent| {
-  //             //   csr_resources.set(BTreeMap::new());
-  //             // }}
-  //           >
-  //             <span inner_html={community_name.get()} />
-  //           </a>
-  //         </span>
-  //       </div>
-        <div class="navbar-end">
-          <div class="dropdown">
-            <label tabindex="0" class="btn">
-              "Sort"
-            </label>
+          // </div>
+          </details>
+            </li>
+            <li class="flex z-[1]">
+
+            <details>
+              <summary>
+                <Icon icon={Sort} />
+              </summary>
+
+          // <div class="dropdown">
+          //   <label tabindex="0" class="btn">
+          //     "Sort"
+          //   </label>
             <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
               <li
                 class={move || { (if SortType::Active == ssr_sort() { "btn-active" } else { "" }).to_string() }}
@@ -513,16 +492,52 @@ pub fn ResponsiveTopNav(
               //   <span>{t!(i18n, new)}</span>
               // </li>
             </ul>
-          </div>
+          // </div>
+          </details>
+            </li>
+          </ul>
+
+        </div>
+  //         <div class="navbar-center">
+  // //        <A href={move || format!("/responsive/p/{}", post_view.get().post.id)} class=" hover:text-accent">
+  //           <span class="block text-lg break-words" inner_html={post_name.get()} />
+  //         // </A>
+  //         <span class="block mb-1">
+  //           // <span>{abbr_duration}</span>
+  //           " ago by "
+  //           <a
+  //             // href={move || format!("{}", post_view.get().creator.actor_id)}
+  //             target="_blank"
+  //             class="inline text-sm break-words hover:text-secondary"
+  //           >
+  //             <span inner_html={user_name.get()} />
+  //           </a>
+  //           " in "
+  //           <a
+  //             class="inline text-sm break-words hover:text-secondary"
+  //             // href={if post_view.get().community.local {
+  //             //   format!("/responsive/c/{}", post_view.get().community.name)
+  //             // } else {
+  //             //   format!("/responsive/c/{}@{}", post_view.get().community.name, post_view.get().community.actor_id.inner().host().unwrap().to_string())
+  //             // }}
+  //             // on:click={ move |e: MouseEvent| {
+  //             //   csr_resources.set(BTreeMap::new());
+  //             // }}
+  //           >
+  //             <span inner_html={community_name.get()} />
+  //           </a>
+  //         </span>
+  //       </div>
+        <div class="flex-none">
           <ul class="flex-nowrap items-center menu menu-horizontal">
             // <li class="flex">
             // </li>
-            <li class="hidden lg:flex z-[1]">
+            <li class="hidden lg:flex">
               <details>
                 <summary>
                   <Icon icon={Translate} />
                 </summary>
-                <ul>
+                <ul class="z-[1] [inset-inline-end:0]">
                   <li>
                     <ActionForm class="p-0" action={lang_action} on:submit={on_lang_submit(Locale::fr)}>
                       <input type="hidden" name="lang" value="FR" />
@@ -542,12 +557,12 @@ pub fn ResponsiveTopNav(
                 </ul>
               </details>
             </li>
-            <li class="hidden lg:flex z-[1]">
+            <li class="hidden lg:flex">
               <details>
                 <summary>
                   <Icon icon={Palette} />
                 </summary>
-                <ul>
+                <ul class="z-[1] [inset-inline-end:0]">
                   <li>
                     <ActionForm class="p-0" action={theme_action} on:submit={on_theme_submit("dark")}>
                       <input type="hidden" name="theme" value="dark" />
@@ -634,7 +649,8 @@ pub fn ResponsiveTopNav(
                     // </Form>
                     <form class="p-0" action="/login" method="POST" on:submit={on_navigate_login}>
                       <button class="py-2 px-4" type="submit">
-                        {t!(i18n, login)}
+                        <Icon icon={SignIn} />
+                        // {t!(i18n, login)}
                       </button>
                     </form>
                   // <A href="/login">{t!(i18n, login)}</A>
@@ -650,15 +666,16 @@ pub fn ResponsiveTopNav(
               <li>
                 <details>
                   <summary>
-                    {move || {
-                      if let Some(Ok(GetSiteResponse { my_user: Some(m), .. })) = ssr_site.get() {
-                        m.local_user_view.person.display_name.unwrap_or(m.local_user_view.person.name)
-                      } else {
-                        String::default()
-                      }
-                    }}
+                    // {move || {
+                    //   if let Some(Ok(GetSiteResponse { my_user: Some(m), .. })) = ssr_site.get() {
+                    //     m.local_user_view.person.display_name.unwrap_or(m.local_user_view.person.name)
+                    //   } else {
+                    //     String::default()
+                    //   }
+                    // }}
+                    <Icon icon={User} />
                   </summary>
-                  <ul class="z-10">
+                  <ul class="z-[1] [inset-inline-end:0]">
                     <li>
                       <A
                         on:click={move |e: MouseEvent| {

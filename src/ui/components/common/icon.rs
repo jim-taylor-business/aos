@@ -22,6 +22,11 @@ pub enum IconType {
   Palette,
   Pencil,
   Highlighter,
+  Filter,
+  Sort,
+  Community,
+  User,
+  SignIn,
 }
 
 impl IconType {
@@ -47,6 +52,11 @@ impl IconType {
       IconType::Palette => "palette",
       IconType::Pencil => "pencil",
       IconType::Highlighter => "highlighter",
+      IconType::Filter => "filter",
+      IconType::Sort => "sort",
+      IconType::Community => "community",
+      IconType::User => "user",
+      IconType::SignIn => "signin",
     }
   }
 }
@@ -54,7 +64,6 @@ impl IconType {
 #[component]
 pub fn Icon(#[prop(into)] icon: MaybeSignal<IconType>, #[prop(optional)] class: MaybeProp<TextProp>) -> impl IntoView {
   let href = Signal::derive(move || format!("/icons.svg#{}", icon.get().as_str()));
-
   view! {
     <svg class={class} width="1.5em" height="1.5em">
       <use_ href={href} xlink:href={href} />

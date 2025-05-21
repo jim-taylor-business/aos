@@ -594,6 +594,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
 
       // response_load.set(ResponseLoad(true));
       //
+
       #[cfg(not(feature = "ssr"))]
       set_timeout(
         move || {
@@ -812,10 +813,11 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
     <div class="flex flex-grow">
       <div on:wheel=move |e: WheelEvent| {
         if let Some(se) = on_scroll_element.get() {
-          se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+          // se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+          se.scroll_by_with_x_and_y(e.delta_y(), 0f64);
         }
       } node_ref=on_scroll_element class={move || {
-        format!("sm:h-[calc(100%-6rem)] min-w-full absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-sm px-4 gap-4{}", if loading.get() { " opacity-25" } else { "" })
+        format!("sm:h-[calc(100%-4rem)] min-w-full sm:absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-sm sm:px-4 gap-4{}", if loading.get() { " opacity-25" } else { "" })
         // format!("sm:container sm:h-[calc(100%-12rem)] absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[50ch] gap-0{}", if loading.get() { " opacity-25" } else { "" })
       }}>
 
@@ -1122,6 +1124,8 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                   // }}>
 
                   <div>
+                    <Title text="" />
+
                     <For each={move || response_cache.get()} key={|r| r.0.clone()} let:r>
                       <ResponsivePostListings posts={r.1.unwrap().posts.into()} ssr_site page_number={r.0.0.into()} />
                     </For>
