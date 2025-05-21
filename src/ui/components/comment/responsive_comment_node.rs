@@ -13,7 +13,7 @@ use lemmy_api_common::{
   lemmy_db_views::structs::{CommentView, LocalUserView},
   site::{GetSiteResponse, MyUserInfo},
 };
-use leptos::*;
+use leptos::{logging::log, *};
 use leptos_dom::helpers::TimeoutHandle;
 use leptos_router::Form;
 use web_sys::{wasm_bindgen::JsCast, HtmlAnchorElement, HtmlImageElement};
@@ -284,8 +284,11 @@ pub fn ResponsiveCommentNode(
 
   view! {
     <div class={move || {
+      // log!("{}", level);
       format!(
-        "pl-4{}{}",
+        // "pl-4{}{}",
+        "{}{}{}",
+        if level > 8 { "" } else { "pl-4" },
         if level == 1 { " odd:bg-base-200 pr-4 pt-2 pb-1" } else { "" },
         if !hidden_comments.get().contains(&parent_comment_id) { "" } else { " hidden" },
       )
@@ -373,9 +376,30 @@ pub fn ResponsiveCommentNode(
         // e.stop_propagation();
         // highlight_show.set(false);
         // }}
-        <div class={move || format!("prose{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html} />
+        <Show when={move || !(
+          comment_view.get().comment.deleted
+        )} fallback={|| view! {
+          <Icon icon={Eraser} />
+        }}>
+          <Show when={move || !(
+            comment_view.get().comment.removed
+          )} fallback={|| view! {
+            <Icon icon={Block} />
+          }}>
+            <Show when={move || !(
+              comment_view.get().creator_banned_from_community ||
+              comment_view.get().banned_from_community ||
+              comment_view.get().creator_blocked
+            )} fallback={|| view! {
+              <Icon icon={Hammer} />
+            }}>
+              <div class={move || format!("prose{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html} />
+            </Show>
+          </Show>
+        </Show>
+
         <Show when={move || vote_show.get()} fallback={|| view! {}}>
-          <div on:click={cancel} class="flex flex-wrap gap-x-2 items-center">
+          <div on:click={cancel} class="flex flex-wrap gap-x-2 items-center break-inside-avoid">
             <Form on:submit={on_up_vote_submit} action="POST" class="flex items-center">
               <input type="hidden" name="post_id" value={format!("{}", comment_view.get().post.id)} />
               <input type="hidden" name="score" value={move || if Some(1) == comment_view.get().my_vote { 0 } else { 1 }} />
@@ -582,14 +606,14 @@ pub fn ResponsiveCommentNode(
       </Show>
       <For each={move || children.get()} key={|cv| cv.comment.id} let:cv>
       // <span />
-        <CommentNode
+        <ResponsiveCommentNode
           ssr_site
           parent_comment_id={comment_view.get().comment.id.0}
           hidden_comments={hidden_comments}
           on_toggle
           comment={cv.into()}
           comments={descendants.get().into()}
-          level={level + 1}
+          level={level + 1usize}
           now_in_millis
           highlight_user_id
         />

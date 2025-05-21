@@ -27,6 +27,8 @@ pub enum IconType {
   Community,
   User,
   SignIn,
+  Eraser,
+  Hammer,
 }
 
 impl IconType {
@@ -57,6 +59,8 @@ impl IconType {
       IconType::Community => "community",
       IconType::User => "user",
       IconType::SignIn => "signin",
+      IconType::Eraser => "eraser",
+      IconType::Hammer => "hammer",
     }
   }
 }

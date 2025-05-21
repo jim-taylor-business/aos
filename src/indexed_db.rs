@@ -1,7 +1,5 @@
-use cfg_if::cfg_if;
-
-cfg_if! {
-  if #[cfg(not(feature = "ssr"))] {
+#[cfg(not(feature = "ssr"))]
+pub mod csr_indexed_db {
 
   use rexie::{ObjectStore, Result, Rexie, TransactionMode};
   use serde::{Deserialize, Serialize};
@@ -48,7 +46,11 @@ cfg_if! {
     let transaction = rexie.transaction(&["post_meta"], TransactionMode::ReadOnly)?;
     let posts = transaction.store("post_meta")?;
     if let Some(post_meta_value) = posts.get(id.into()).await? {
-      if let Ok(PostMeta { hidden_comment_ids: Some(hidden_comment_ids), .. }) = serde_wasm_bindgen::from_value::<PostMeta>(post_meta_value) {
+      if let Ok(PostMeta {
+        hidden_comment_ids: Some(hidden_comment_ids),
+        ..
+      }) = serde_wasm_bindgen::from_value::<PostMeta>(post_meta_value)
+      {
         Ok(hidden_comment_ids)
       } else {
         Ok(vec![])
@@ -86,14 +88,13 @@ cfg_if! {
   //   }
   // }
 
-// pub async fn get_comments(rexie: &Rexie, post_id: i32) -> Result<Vec<JsValue>> {
-//   let transaction = rexie.transaction(&["comment"], TransactionMode::ReadOnly)?;
-//   let comments = transaction.store("comment")?;
-//   let post_id_value = serde_wasm_bindgen::to_value(&post_id).unwrap();
-//   let range = KeyRange::only(&post_id_value)?;
-//   let post_id_index = comments.index("post_id")?;
-//   let values = post_id_index.get_all(Some(range), None).await?;
-//   Ok(values)
-// }
-  }
+  // pub async fn get_comments(rexie: &Rexie, post_id: i32) -> Result<Vec<JsValue>> {
+  //   let transaction = rexie.transaction(&["comment"], TransactionMode::ReadOnly)?;
+  //   let comments = transaction.store("comment")?;
+  //   let post_id_value = serde_wasm_bindgen::to_value(&post_id).unwrap();
+  //   let range = KeyRange::only(&post_id_value)?;
+  //   let post_id_index = comments.index("post_id")?;
+  //   let values = post_id_index.get_all(Some(range), None).await?;
+  //   Ok(values)
+  // }
 }

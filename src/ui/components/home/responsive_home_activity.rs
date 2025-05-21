@@ -299,29 +299,29 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
     // let _handle = window_event_listener_untyped("readystatechange", on_rsc);
     // let _handle = window_event_listener_untyped("load", on_rsc);
 
-    let on_rsc = move |e: Event| {
-      log!("rsc state! {:#?}", e);
-    };
+    // let on_rsc = move |e: Event| {
+    //   log!("rsc state! {:#?}", e);
+    // };
     // // let _handle = window_event_listener_untyped("readystatechange", on_rsc);
-    let _handle = window_event_listener_untyped("load", on_rsc);
+    // let _handle = window_event_listener_untyped("load", on_rsc);
 
-    let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::Event| {
-      log!("load state! {:#?}", event);
-    });
+    // let closure = Closure::<dyn FnMut(_)>::new(move |event: web_sys::Event| {
+    //   log!("load state! {:#?}", event);
+    // });
     // if let Some(d) = window().document() {
-    window()
-      // .document()
-      // .unwrap()
-      .add_event_listener_with_callback("load", closure.as_ref().unchecked_ref());
-    // } else {
-    //   log!("NOOO state!");
-    // }
-    //   .unwrap()
-
     // window()
-    //   .document().unwrap().ready_state()
+    //   // .document()
+    //   // .unwrap()
+    //   .add_event_listener_with_callback("load", closure.as_ref().unchecked_ref());
+    // // } else {
+    // //   log!("NOOO state!");
+    // // }
+    // //   .unwrap()
 
-    closure.forget();
+    // // window()
+    // //   .document().unwrap().ready_state()
+
+    // closure.forget();
 
     // .onreadystatechange() {//.readyState == 'complete' {
     //     highlighter();
@@ -379,7 +379,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
         if intersections[0].is_intersecting() {
           if let (key, _) = next_page_cursor.get() {
             if key > 0 {
-              log!("trigger {}", key);
+              // log!("trigger {}", key);
 
               let mut st = ssr_page();
               if let (_, Some(PaginationCursor(next_page))) = next_page_cursor.get() {
@@ -554,7 +554,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
       let pages_later = pages.clone();
       let pages_unit = pages_later.eq(&vec![(0usize, "".into())]);
 
-      log!("keys {:#?}", rc.keys());
+      // log!("keys {:#?}", rc.keys());
 
       for p in pages {
         if pages_unit || rc.get(&(p.0, p.1.clone(), list, sort, name.clone())).is_none() {
@@ -580,15 +580,15 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
           let result = LemmyClient.list_posts(form.clone()).await;
           match result {
             Ok(o) => {
-              logging::log!("load");
+              // logging::log!("load");
               // new_pages.insert((p.0, p.1, list, sort, name.clone()), Some(o));
               new_pages.insert(p.0, Some(o));
               // rc.insert(p, Some(o));
             }
             Err(e) => {}
           }
-        } else {
-          logging::log!("ignore");
+          // } else {
+          //   logging::log!("ignore");
         }
       }
 
@@ -1015,7 +1015,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                   // let mut counter = 0usize;
                   for n in o.1 {
                     if rc.get(&(n.0, n.1.clone(), o.2, o.3, o.4.clone())).is_none() {
-                      logging::log!("add");
+                      // logging::log!("add");
                       if let Some(q) = o.0.remove(&n.0) {
                         rc.insert((n.0, n.1.clone(), o.2, o.3, o.4.clone()), q);
                       }
@@ -1025,7 +1025,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                   if let Some(e) = rc.last_entry() {
                     next_page_cursor.set((e.key().0 + 50usize, e.get().as_ref().unwrap().next_page.clone()));
                   }
-                  log!("after {:#?}", rc.keys());
+                  // log!("after {:#?}", rc.keys());
                 });
 
 

@@ -1,5 +1,5 @@
 #[cfg(not(feature = "ssr"))]
-use crate::indexed_db::*;
+use crate::indexed_db::csr_indexed_db::*;
 use crate::{errors::LemmyAppError, ui::components::comment::comment_node::CommentNode};
 use lemmy_api_common::{lemmy_db_views::structs::CommentView, site::GetSiteResponse};
 use leptos::*;

@@ -331,7 +331,6 @@ dependencies = [
  "actix-proxy",
  "actix-web",
  "awc",
- "cfg-if",
  "chrono",
  "codee",
  "console_error_panic_hook",
