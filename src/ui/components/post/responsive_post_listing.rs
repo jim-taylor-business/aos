@@ -361,7 +361,7 @@ pub fn ResponsivePostListing(
   let thumbnail = RwSignal::new(String::from(""));
 
   view! {
-    <div class="grid gap-y-3 gap-x-4 py-3 px-4 grid-cols-[6rem_1fr] grid-rows-[1fr_2rem] break-inside-avoid sm:grid-cols-[2rem_6rem_1fr] sm:grid-rows-[1fr_2rem]">
+    <div class="grid gap-y-3 gap-x-4 pb-3 px-4 grid-cols-[6rem_1fr] grid-rows-[1fr_2rem] break-inside-avoid sm:grid-cols-[2rem_6rem_1fr] sm:grid-rows-[1fr_2rem]">
       <div class="hidden items-start pt-2 sm:flex sm:flex-row sm:col-span-1 sm:row-span-2">
         <div class="flex flex-col items-center w-8 text-center">
           <ActionForm action={vote_action} on:submit={on_up_vote_submit}>
