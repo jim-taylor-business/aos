@@ -222,11 +222,11 @@ pub fn ResponsivePostListing(
     );
   };
 
-  #[cfg(not(feature = "ssr"))]
-  let (get_scroll_cookie, set_scroll_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
-    "scroll",
-    UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
-  );
+  // #[cfg(not(feature = "ssr"))]
+  // let (get_scroll_cookie, set_scroll_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+  //   "scroll",
+  //   UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+  // );
 
   let report_post_action = create_server_action::<ReportPostFn>();
   let report_validation = RwSignal::new(String::from(""));
@@ -471,9 +471,14 @@ pub fn ResponsivePostListing(
               format!("/responsive/c/{}@{}", post_view.get().community.name, post_view.get().community.actor_id.inner().host().unwrap().to_string())
             }}
             on:click={ move |e: MouseEvent| {
-              #[cfg(not(feature = "ssr"))]
-              set_scroll_cookie.set(Some("0".into()));
+              // #[cfg(not(feature = "ssr"))]
+              // set_scroll_cookie.set(Some("0".into()));
               csr_next_page_cursor.set((0, None));
+              if let Ok(Some(s)) = window().local_storage() {
+                let mut query_params = query.get();
+                // if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&query_params.to_query_string()).ok().unwrap()) {}
+                let _ = s.set_item(&format!("/responsive/c/{}", post_view.get().community.name), "0");
+              }
 
               // response_load.set(ResponseLoad(false));
               // response_cache.set(BTreeMap::new());

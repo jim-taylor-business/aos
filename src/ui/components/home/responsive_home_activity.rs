@@ -178,11 +178,11 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
 
   let on_scroll_element = NodeRef::<Div>::new();
 
-  #[cfg(not(feature = "ssr"))]
-  let (get_scroll_cookie, set_scroll_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
-    "scroll",
-    UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
-  );
+  // #[cfg(not(feature = "ssr"))]
+  // let (get_scroll_cookie, set_scroll_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+  //   "scroll",
+  //   UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+  // );
 
   #[cfg(not(feature = "ssr"))]
   {
@@ -201,7 +201,16 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
 
     let on_scroll = move |e: Event| {
       if let Some(se) = on_scroll_element.get() {
-        set_scroll_cookie.set(Some(se.scroll_left().to_string()));
+        if let Ok(Some(s)) = window().local_storage() {
+          let mut query_params = query.get();
+          // if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&query_params.to_query_string()).ok().unwrap()) {}
+          let _ = s.set_item(
+            &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+            &se.scroll_left().to_string(),
+          );
+        }
+
+        // set_scroll_cookie.set(Some(se.scroll_left().to_string()));
         // log!("scrolling {}", se.scroll_left());
         // se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
         // } else {
@@ -599,16 +608,25 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
       set_timeout(
         move || {
           if let Some(se) = on_scroll_element.get() {
-            // log!("scrolling {}", se.scroll_left());
-            if let Some(s) = get_scroll_cookie.get() {
-              log!("set {}", s);
-              se.set_scroll_left(s.parse().unwrap_or(0i32));
-            } else {
-              log!("ignore");
+            if let Ok(Some(s)) = window().local_storage() {
+              let mut query_params = query.get();
+              if let Ok(Some(l)) = s.get_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string())) {
+                se.set_scroll_left(l.parse().unwrap_or(0i32));
+                log!("set {}", l);
+              }
+              // let _ = s.set_item(&query_params.to_query_string(), &se.scroll_left().to_string());
             }
-            // se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
-          } else {
-            log!("ignore");
+
+            //   // log!("scrolling {}", se.scroll_left());
+            //   if let Some(s) = get_scroll_cookie.get() {
+            //     log!("set {}", s);
+            //     se.set_scroll_left(s.parse().unwrap_or(0i32));
+            //   } else {
+            //     log!("ignore");
+            //   }
+            //   // se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+            // } else {
+            //   log!("ignore");
           }
         },
         std::time::Duration::new(0, 500_000_000),

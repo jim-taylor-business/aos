@@ -101,18 +101,23 @@ pub fn ResponsiveTopNav(
     serde_json::from_str::<SortType>(&query.get().get("sort").cloned().unwrap_or("".into())).unwrap_or(default_sort.get().unwrap_or(SortType::Active))
   };
 
-  #[cfg(not(feature = "ssr"))]
-  let (get_scroll_cookie, set_scroll_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
-    "scroll",
-    UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
-  );
+  // #[cfg(not(feature = "ssr"))]
+  // let (get_scroll_cookie, set_scroll_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+  //   "scroll",
+  //   UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+  // );
 
   let on_sort_click = move |s: SortType| {
     move |_e: MouseEvent| {
       // csr_resources.set(BTreeMap::new());
       csr_next_page_cursor.set((0, None));
-      #[cfg(not(feature = "ssr"))]
-      set_scroll_cookie.set(Some("0".into()));
+      // if let Ok(Some(s)) = window().local_storage() {
+      //   let mut query_params = query.get();
+      //   // if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&query_params.to_query_string()).ok().unwrap()) {}
+      //   let _ = s.set_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), "0");
+      // }
+      // #[cfg(not(feature = "ssr"))]
+      // set_scroll_cookie.set(Some("0".into()));
 
       let r = serde_json::to_string::<SortType>(&s);
       let mut query_params = query.get();
@@ -315,9 +320,14 @@ pub fn ResponsiveTopNav(
           <ul class="flex-nowrap items-center menu menu-horizontal">
             <li>
               <A href="/responsive" class="text-xl py-1/2 whitespace-nowrap" on:click={ move |e: MouseEvent| {
-                #[cfg(not(feature = "ssr"))]
-                set_scroll_cookie.set(Some("0".into()));
                 csr_next_page_cursor.set((0, None));
+                if let Ok(Some(s)) = window().local_storage() {
+                  let mut query_params = query.get();
+                  // if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&query_params.to_query_string()).ok().unwrap()) {}
+                  let _ = s.set_item("/responsive", "0");
+                }
+                // #[cfg(not(feature = "ssr"))]
+                // set_scroll_cookie.set(Some("0".into()));
                 // response_cache.set(BTreeMap::new());
 
                 // e.prevent_default();
@@ -605,30 +615,30 @@ pub fn ResponsiveTopNav(
             //               unread,
             //             )
             //           }}>
-                      <li>
-                        <A href="/notifications">
-                          <span class="flex flex-row items-center">
-                            {move || {
-                              let v = error.get();
-                              (v.len() > 0)
-                                .then(move || {
-                                  let l = v.len();
-                                  view! { <div class="badge badge-error badge-xs">{l}</div> }
-                                })
-                            }}
-                            <span>
-                              {move || { (!online.get().0).then(move || view! { <div class="absolute top-0 badge badge-warning badge-xs" /> }) }}
-                              <Icon icon={Notifications} />
-                            </span>
-                            // {if let Ok(c) = u {
-                            //   (c.replies + c.mentions + c.private_messages > 0)
-                            //     .then(move || view! { <div class="badge badge-primary badge-xs">{c.replies + c.mentions + c.private_messages}</div> })
-                            // } else {
-                            //   None
-                            // }}
-                          </span>
-                        </A>
-                      </li>
+                      // <li>
+                      //   <A href="/notifications">
+                      //     <span class="flex flex-row items-center">
+                      //       {move || {
+                      //         let v = error.get();
+                      //         (v.len() > 0)
+                      //           .then(move || {
+                      //             let l = v.len();
+                      //             view! { <div class="badge badge-error badge-xs">{l}</div> }
+                      //           })
+                      //       }}
+                      //       <span>
+                      //         {move || { (!online.get().0).then(move || view! { <div class="absolute top-0 badge badge-warning badge-xs" /> }) }}
+                      //         <Icon icon={Notifications} />
+                      //       </span>
+                      //       // {if let Ok(c) = u {
+                      //       //   (c.replies + c.mentions + c.private_messages > 0)
+                      //       //     .then(move || view! { <div class="badge badge-primary badge-xs">{c.replies + c.mentions + c.private_messages}</div> })
+                      //       // } else {
+                      //       //   None
+                      //       // }}
+                      //     </span>
+                      //   </A>
+                      // </li>
             //         }
             //       })
             //   }}
@@ -655,11 +665,11 @@ pub fn ResponsiveTopNav(
                     </form>
                   // <A href="/login">{t!(i18n, login)}</A>
                   </li>
-                  <li class="hidden lg:flex">
-                    <A href="/signup" class="pointer-events-none text-base-content/50">
-                      {t!(i18n, signup)}
-                    </A>
-                  </li>
+                  // <li class="hidden lg:flex">
+                  //   <A href="/signup" class="pointer-events-none text-base-content/50">
+                  //     {t!(i18n, signup)}
+                  //   </A>
+                  // </li>
                 }
               }}
             >
@@ -676,6 +686,11 @@ pub fn ResponsiveTopNav(
                     <Icon icon={User} />
                   </summary>
                   <ul class="z-[1] [inset-inline-end:0]">
+                    <li>
+                      <A href="/notifications">
+                        "Notifications"
+                      </A>
+                    </li>
                     <li>
                       <A
                         on:click={move |e: MouseEvent| {

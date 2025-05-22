@@ -1,72 +1,17 @@
-// useful in development to only have errors in compiler output
 #![allow(warnings)]
 
 use aos::*;
-
-#[cfg(feature = "ssr")]
-use actix_files::Files;
-#[cfg(feature = "ssr")]
-use actix_web::*;
-
-#[cfg(feature = "ssr")]
-use awc::Client;
 use leptos::*;
-#[cfg(feature = "ssr")]
-use leptos_actix::{generate_route_list, LeptosRoutes};
-
-#[cfg(feature = "ssr")]
-#[actix_web::get("lemmy.svg")]
-async fn lemmy(leptos_options: web::Data<leptos::LeptosOptions>) -> actix_web::Result<actix_files::NamedFile> {
-  let leptos_options = leptos_options.into_inner();
-  let site_root = &leptos_options.site_root;
-  Ok(actix_files::NamedFile::open(format!("{site_root}/lemmy.svg"))?)
-}
-
-#[cfg(feature = "ssr")]
-#[actix_web::get("favicon.ico")]
-async fn favicon(leptos_options: web::Data<leptos::LeptosOptions>) -> actix_web::Result<actix_files::NamedFile> {
-  let leptos_options = leptos_options.into_inner();
-  let site_root = &leptos_options.site_root;
-  Ok(actix_files::NamedFile::open(format!("{site_root}/favicon.ico"))?)
-}
-
-#[cfg(feature = "ssr")]
-#[actix_web::get("favicon.png")]
-async fn large_favicon(leptos_options: web::Data<leptos::LeptosOptions>) -> actix_web::Result<actix_files::NamedFile> {
-  let leptos_options = leptos_options.into_inner();
-  let site_root = &leptos_options.site_root;
-  Ok(actix_files::NamedFile::open(format!("{site_root}/favicon.png"))?)
-}
-
-#[cfg(feature = "ssr")]
-#[actix_web::get("icons.svg")]
-async fn icons(leptos_options: web::Data<leptos::LeptosOptions>) -> actix_web::Result<actix_files::NamedFile> {
-  let leptos_options = leptos_options.into_inner();
-  let site_root = &leptos_options.site_root;
-  Ok(actix_files::NamedFile::open(format!("{site_root}/icons.svg"))?)
-}
-
-#[cfg(feature = "ssr")]
-#[actix_web::get("manifest.json")]
-async fn manifest(leptos_options: web::Data<leptos::LeptosOptions>) -> actix_web::Result<actix_files::NamedFile> {
-  let leptos_options = leptos_options.into_inner();
-  let site_root = &leptos_options.site_root;
-  // let mut f = actix_files::NamedFile::open(format!("{site_root}/manifest.json"))?.set_content_type(mime::Mime::from_str("application/manifest+json").unwrap());
-  // Ok(f)
-  Ok(actix_files::NamedFile::open(format!("{site_root}/manifest.json"))?)
-}
-
-#[cfg(feature = "ssr")]
-#[actix_web::get("service-worker.js")]
-async fn service_worker(leptos_options: web::Data<leptos::LeptosOptions>) -> actix_web::Result<actix_files::NamedFile> {
-  let leptos_options = leptos_options.into_inner();
-  let site_root = &leptos_options.site_root;
-  Ok(actix_files::NamedFile::open(format!("{site_root}/service-worker.js"))?)
-}
 
 #[cfg(feature = "ssr")]
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+  use actix_files::Files;
+  use actix_web::*;
+  use awc::Client;
+  use leptos_actix::{generate_route_list, LeptosRoutes};
+  use ssr_services::*;
+
   let conf = get_configuration(None).await.unwrap();
   let addr = conf.leptos_options.site_addr;
   let routes = generate_route_list(App);
@@ -75,13 +20,12 @@ async fn main() -> std::io::Result<()> {
     let leptos_options = &conf.leptos_options;
     let site_root = &leptos_options.site_root;
     let routes = &routes;
-
     let client = web::Data::new(Client::new());
 
     App::new()
       .route("/serverfn/{tail:.*}", leptos_actix::handle_server_fns())
       .service(Files::new("/pkg", format!("{site_root}/pkg")))
-      .service(Files::new("/assets", site_root))
+      // .service(Files::new("/assets", site_root))
       .service(favicon)
       .service(large_favicon)
       .service(icons)
@@ -95,6 +39,56 @@ async fn main() -> std::io::Result<()> {
   .bind(&addr)?
   .run()
   .await
+}
+
+#[cfg(feature = "ssr")]
+mod ssr_services {
+  use actix_files::Files;
+  use actix_web::*;
+
+  #[actix_web::get("lemmy.svg")]
+  async fn lemmy(leptos_options: web::Data<leptos::LeptosOptions>) -> actix_web::Result<actix_files::NamedFile> {
+    let leptos_options = leptos_options.into_inner();
+    let site_root = &leptos_options.site_root;
+    Ok(actix_files::NamedFile::open(format!("{site_root}/lemmy.svg"))?)
+  }
+
+  #[actix_web::get("favicon.ico")]
+  async fn favicon(leptos_options: web::Data<leptos::LeptosOptions>) -> actix_web::Result<actix_files::NamedFile> {
+    let leptos_options = leptos_options.into_inner();
+    let site_root = &leptos_options.site_root;
+    Ok(actix_files::NamedFile::open(format!("{site_root}/favicon.ico"))?)
+  }
+
+  #[actix_web::get("favicon.png")]
+  async fn large_favicon(leptos_options: web::Data<leptos::LeptosOptions>) -> actix_web::Result<actix_files::NamedFile> {
+    let leptos_options = leptos_options.into_inner();
+    let site_root = &leptos_options.site_root;
+    Ok(actix_files::NamedFile::open(format!("{site_root}/favicon.png"))?)
+  }
+
+  #[actix_web::get("icons.svg")]
+  async fn icons(leptos_options: web::Data<leptos::LeptosOptions>) -> actix_web::Result<actix_files::NamedFile> {
+    let leptos_options = leptos_options.into_inner();
+    let site_root = &leptos_options.site_root;
+    Ok(actix_files::NamedFile::open(format!("{site_root}/icons.svg"))?)
+  }
+
+  #[actix_web::get("manifest.json")]
+  async fn manifest(leptos_options: web::Data<leptos::LeptosOptions>) -> actix_web::Result<actix_files::NamedFile> {
+    let leptos_options = leptos_options.into_inner();
+    let site_root = &leptos_options.site_root;
+    // let mut f = actix_files::NamedFile::open(format!("{site_root}/manifest.json"))?.set_content_type(mime::Mime::from_str("application/manifest+json").unwrap());
+    // Ok(f)
+    Ok(actix_files::NamedFile::open(format!("{site_root}/manifest.json"))?)
+  }
+
+  #[actix_web::get("service-worker.js")]
+  async fn service_worker(leptos_options: web::Data<leptos::LeptosOptions>) -> actix_web::Result<actix_files::NamedFile> {
+    let leptos_options = leptos_options.into_inner();
+    let site_root = &leptos_options.site_root;
+    Ok(actix_files::NamedFile::open(format!("{site_root}/service-worker.js"))?)
+  }
 }
 
 #[cfg(not(any(feature = "ssr", feature = "csr")))]
