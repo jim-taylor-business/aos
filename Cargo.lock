@@ -2967,8 +2967,8 @@ dependencies = [
 
 [[package]]
 name = "pulldown-cmark"
-version = "0.12.2"
-source = "git+https://github.com/jim-taylor-business/pulldown-cmark.git?branch=deploy_demo#dbffb44fa9f706cd69f13fff324795bbd38885b4"
+version = "0.13.0"
+source = "git+https://github.com/jim-taylor-business/pulldown-cmark.git?branch=deploy_demo#a764586faec798f947a92497cfcfab64d5896121"
 dependencies = [
  "bitflags",
  "getopts",
@@ -2980,7 +2980,7 @@ dependencies = [
 [[package]]
 name = "pulldown-cmark-escape"
 version = "0.11.0"
-source = "git+https://github.com/jim-taylor-business/pulldown-cmark.git?branch=deploy_demo#dbffb44fa9f706cd69f13fff324795bbd38885b4"
+source = "git+https://github.com/jim-taylor-business/pulldown-cmark.git?branch=deploy_demo#a764586faec798f947a92497cfcfab64d5896121"
 
 [[package]]
 name = "quote"
