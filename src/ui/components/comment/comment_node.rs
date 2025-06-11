@@ -10,10 +10,10 @@ use lemmy_api_common::{
   lemmy_db_views::structs::{CommentView, LocalUserView},
   site::{GetSiteResponse, MyUserInfo},
 };
-use leptos::*;
+use leptos::{html::ElementDescriptor, *};
 use leptos_dom::helpers::TimeoutHandle;
 use leptos_router::Form;
-use web_sys::{wasm_bindgen::JsCast, HtmlAnchorElement, HtmlImageElement};
+use web_sys::{wasm_bindgen::JsCast, HtmlAnchorElement, HtmlDetailsElement, HtmlImageElement};
 
 #[component]
 pub fn CommentNode(
@@ -312,24 +312,43 @@ pub fn CommentNode(
               } else if let Some(l) = t.dyn_ref::<HtmlAnchorElement>() {
                 let _ = window().open_with_url_and_target(&l.href(), "_blank");
                 e.prevent_default();
+              } else if let Some(s) = t.dyn_ref::<web_sys::Element>() {
+                // log!("detail {:#?}", s.tag_name());
+                if s.tag_name().eq("SUMMARY") {
+                  // e.prevent_default();
+                } else {
+                  on_toggle.call(comment_view.get().comment.id.0);
+                }
               } else {
                 on_toggle.call(comment_view.get().comment.id.0);
               }
             }
           }
         }}
-        on:mousedown={move |_e: MouseEvent| {
-          still_handle
-            .set(
-              set_timeout_with_handle(
-                  move || {
-                    vote_show.set(!vote_show.get());
-                    still_down.set(true);
-                  },
-                  std::time::Duration::from_millis(500),
-                )
-                .ok(),
-            );
+        on:mousedown={move |e: MouseEvent| {
+          if e.buttons() == 1 {
+            still_handle
+              .set(
+                set_timeout_with_handle(
+                    move || {
+                      vote_show.set(!vote_show.get());
+                      still_down.set(true);
+                    },
+                    std::time::Duration::from_millis(500),
+                  )
+                  .ok(),
+              );
+          } else {
+            if let Some(h) = still_handle.get() {
+              h.clear();
+            }
+          }
+        }}
+        on:mousemove={move |e: MouseEvent| {
+          // log!("{}", e.buttons());
+          if let Some(h) = still_handle.get() {
+            h.clear();
+          }
         }}
         on:touchstart={move |_e: TouchEvent| {
           still_handle
