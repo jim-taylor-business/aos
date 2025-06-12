@@ -32,6 +32,8 @@ async fn main() -> std::io::Result<()> {
       .service(lemmy)
       .service(manifest)
       .service(service_worker)
+      .service(font_regular)
+      .service(font_italic)
       .leptos_routes(leptos_options.to_owned(), routes.to_owned(), App)
       .app_data(web::Data::new(leptos_options.to_owned()))
       .app_data(client)
@@ -88,6 +90,20 @@ mod ssr_services {
     let leptos_options = leptos_options.into_inner();
     let site_root = &leptos_options.site_root;
     Ok(actix_files::NamedFile::open(format!("{site_root}/service-worker.js"))?)
+  }
+
+  #[actix_web::get("AdwaitaSans-Regular.ttf")]
+  async fn font_regular(leptos_options: web::Data<leptos::LeptosOptions>) -> actix_web::Result<actix_files::NamedFile> {
+    let leptos_options = leptos_options.into_inner();
+    let site_root = &leptos_options.site_root;
+    Ok(actix_files::NamedFile::open(format!("{site_root}/AdwaitaSans-Regular.ttf"))?)
+  }
+
+  #[actix_web::get("AdwaitaSans-Italic.ttf")]
+  async fn font_italic(leptos_options: web::Data<leptos::LeptosOptions>) -> actix_web::Result<actix_files::NamedFile> {
+    let leptos_options = leptos_options.into_inner();
+    let site_root = &leptos_options.site_root;
+    Ok(actix_files::NamedFile::open(format!("{site_root}/AdwaitaSans-Italic.ttf"))?)
   }
 }
 

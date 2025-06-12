@@ -3,6 +3,19 @@
 @tailwind utilities;
 
 @layer base {
+    @font-face {
+      font-family: 'AdwaitaSans';
+      src: url('/AdwaitaSans-Regular.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'AdwaitaSans';
+      src: url('/AdwaitaSans-Italic.ttf') format('truetype');
+      font-weight: normal;
+      font-style: italic;
+    }
+
     .prose p {
         @apply break-words leading-6 my-0 mb-1;
     }
