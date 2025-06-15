@@ -604,33 +604,33 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
       // response_load.set(ResponseLoad(true));
       //
 
-      #[cfg(not(feature = "ssr"))]
-      set_timeout(
-        move || {
-          if let Some(se) = on_scroll_element.get() {
-            if let Ok(Some(s)) = window().local_storage() {
-              let mut query_params = query.get();
-              if let Ok(Some(l)) = s.get_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string())) {
-                se.set_scroll_left(l.parse().unwrap_or(0i32));
-                log!("set {}", l);
-              }
-              // let _ = s.set_item(&query_params.to_query_string(), &se.scroll_left().to_string());
-            }
+      // #[cfg(not(feature = "ssr"))]
+      // set_timeout(
+      //   move || {
+      //     if let Some(se) = on_scroll_element.get() {
+      //       if let Ok(Some(s)) = window().local_storage() {
+      //         let mut query_params = query.get();
+      //         if let Ok(Some(l)) = s.get_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string())) {
+      //           se.set_scroll_left(l.parse().unwrap_or(0i32));
+      //           log!("set {}", l);
+      //         }
+      //         // let _ = s.set_item(&query_params.to_query_string(), &se.scroll_left().to_string());
+      //       }
 
-            //   // log!("scrolling {}", se.scroll_left());
-            //   if let Some(s) = get_scroll_cookie.get() {
-            //     log!("set {}", s);
-            //     se.set_scroll_left(s.parse().unwrap_or(0i32));
-            //   } else {
-            //     log!("ignore");
-            //   }
-            //   // se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
-            // } else {
-            //   log!("ignore");
-          }
-        },
-        std::time::Duration::new(0, 500_000_000),
-      );
+      //       //   // log!("scrolling {}", se.scroll_left());
+      //       //   if let Some(s) = get_scroll_cookie.get() {
+      //       //     log!("set {}", s);
+      //       //     se.set_scroll_left(s.parse().unwrap_or(0i32));
+      //       //   } else {
+      //       //     log!("ignore");
+      //       //   }
+      //       //   // se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+      //       // } else {
+      //       //   log!("ignore");
+      //     }
+      //   },
+      //   std::time::Duration::new(0, 500_000_000),
+      // );
 
       (new_pages, pages_later, list, sort, name)
 

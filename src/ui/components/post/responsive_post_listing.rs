@@ -362,52 +362,52 @@ pub fn ResponsivePostListing(
   let thumbnail = RwSignal::new(String::from(""));
 
   view! {
-    <div class="grid gap-y-3 gap-x-4 pb-3 px-4 grid-cols-[6rem_1fr] grid-rows-[1fr_2rem] break-inside-avoid sm:grid-cols-[2rem_6rem_1fr] sm:grid-rows-[1fr_2rem]">
-      <div class="hidden items-start pt-2 sm:flex sm:flex-row sm:col-span-1 sm:row-span-2">
-        <div class="flex flex-col items-center w-8 text-center">
-          <ActionForm action={vote_action} on:submit={on_up_vote_submit}>
-            <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
-            <input type="hidden" name="score" value={move || if Some(1) == post_view.get().my_vote { 0 } else { 1 }} />
-            <button
-              type="submit"
-              class={move || {
-                format!(
-                  "align-bottom{}{}",
-                  { if Some(true) != logged_in.get() { " text-base-content/50" } else { " hover:text-secondary/50" } },
-                  { if Some(1) == post_view.get().my_vote { " text-secondary" } else { "" } },
-                )
-              }}
-              disabled={move || Some(true) != logged_in.get()}
-              title="Up vote"
-            >
-              <Icon icon={Upvote} />
-            // <Icon icon=Upvote class="absolute animate-ping".into() />
-            </button>
-          </ActionForm>
-          <span class="block text-sm">{move || post_view.get().counts.score}</span>
-          <ActionForm action={vote_action} on:submit={on_down_vote_submit}>
-            <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
-            <input type="hidden" name="score" value={move || if Some(-1) == post_view.get().my_vote { 0 } else { -1 }} />
-            <button
-              type="submit"
-              class={move || {
-                format!(
-                  "align-top{}{}",
-                  { if Some(true) != logged_in.get() { " text-base-content/50" } else { " hover:text-primary/50" } },
-                  { if Some(-1) == post_view.get().my_vote { " text-primary" } else { "" } },
-                )
-              }}
-              disabled={move || Some(true) != logged_in.get()}
-              title="Down vote"
-            >
-              <Icon icon={Downvote} />
-            </button>
-          </ActionForm>
-        </div>
-      </div>
+    <div class="grid gap-x-4 pb-6 px-4 grid-cols-[6rem_1fr] grid-rows-[1fr_2rem] break-inside-avoid sm:grid-rows-[1fr_2rem]">
+      // <div class="hidden items-start pt-2">
+      //   <div class="flex flex-col items-center w-8 text-center">
+      //     <ActionForm action={vote_action} on:submit={on_up_vote_submit}>
+      //       <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
+      //       <input type="hidden" name="score" value={move || if Some(1) == post_view.get().my_vote { 0 } else { 1 }} />
+      //       <button
+      //         type="submit"
+      //         class={move || {
+      //           format!(
+      //             "align-bottom{}{}",
+      //             { if Some(true) != logged_in.get() { " text-base-content/50" } else { " hover:text-secondary/50" } },
+      //             { if Some(1) == post_view.get().my_vote { " text-secondary" } else { "" } },
+      //           )
+      //         }}
+      //         disabled={move || Some(true) != logged_in.get()}
+      //         title="Up vote"
+      //       >
+      //         <Icon icon={Upvote} />
+      //       // <Icon icon=Upvote class="absolute animate-ping".into() />
+      //       </button>
+      //     </ActionForm>
+      //     <span class="block text-sm">{move || post_view.get().counts.score}</span>
+      //     <ActionForm action={vote_action} on:submit={on_down_vote_submit}>
+      //       <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
+      //       <input type="hidden" name="score" value={move || if Some(-1) == post_view.get().my_vote { 0 } else { -1 }} />
+      //       <button
+      //         type="submit"
+      //         class={move || {
+      //           format!(
+      //             "align-top{}{}",
+      //             { if Some(true) != logged_in.get() { " text-base-content/50" } else { " hover:text-primary/50" } },
+      //             { if Some(-1) == post_view.get().my_vote { " text-primary" } else { "" } },
+      //           )
+      //         }}
+      //         disabled={move || Some(true) != logged_in.get()}
+      //         title="Down vote"
+      //       >
+      //         <Icon icon={Downvote} />
+      //       </button>
+      //     </ActionForm>
+      //   </div>
+      // </div>
       <div class={move || {
         format!(
-          "row-span-1 col-span-1 sm:col-span-1 sm:row-span-2 flex items-start pt-2{}",
+          "col-span-1 row-span-2 flex items-start pt-2{}",
           if post_view.get().post.thumbnail_url.is_none() && post_view.get().post.url.is_none() { " hidden" } else { "" },
         )
       }}>
@@ -446,7 +446,7 @@ pub fn ResponsivePostListing(
       </div>
       <div class={move || {
         format!(
-          "row-span-1 col-span-1 sm:col-span-1 sm:row-span-1{}",
+          "col-span-1 row-span-1{}",
           if post_view.get().post.thumbnail_url.is_none() && post_view.get().post.url.is_none() { " col-span-2 sm:col-span-2" } else { "" },
         )
       }}>
@@ -494,11 +494,11 @@ pub fn ResponsivePostListing(
       </div>
       <div class={move || {
         format!(
-          "row-span-1 col-span-2 sm:col-span-1 sm:row-span-1 flex items-center gap-x-2{}",
+          "col-span-1 row-span-1 flex items-center gap-x-2{}",
           if post_view.get().post.thumbnail_url.is_none() && post_view.get().post.url.is_none() { " sm:col-span-2" } else { "" },
         )
       }}>
-        <ActionForm action={vote_action} on:submit={on_up_vote_submit} class="flex items-center sm:hidden">
+        <ActionForm action={vote_action} on:submit={on_up_vote_submit} class="flex items-center">
           <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
           <input type="hidden" name="score" value={move || if Some(1) == post_view.get().my_vote { 0 } else { 1 }} />
           <button
@@ -516,8 +516,8 @@ pub fn ResponsivePostListing(
             <Icon icon={Upvote} />
           </button>
         </ActionForm>
-        <span class="block text-sm sm:hidden">{move || post_view.get().counts.score}</span>
-        <ActionForm action={vote_action} on:submit={on_down_vote_submit} class="flex items-center sm:hidden">
+        <span class="block text-sm">{move || post_view.get().counts.score}</span>
+        <ActionForm action={vote_action} on:submit={on_down_vote_submit} class="flex items-center">
           <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
           <input type="hidden" name="score" value={move || if Some(-1) == post_view.get().my_vote { 0 } else { -1 }} />
           <button
@@ -560,6 +560,7 @@ pub fn ResponsivePostListing(
             }}
           </A>
         </span>
+        <Show when={move || { post_number == 0 }} fallback={|| {}}>
         <ActionForm action={save_post_action} on:submit={on_save_submit} class="flex items-center">
           <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
           <input type="hidden" name="save" value={move || format!("{}", !post_view.get().saved)} />
@@ -578,7 +579,6 @@ pub fn ResponsivePostListing(
             <Icon icon={Save} />
           </button>
         </ActionForm>
-        <Show when={move || { post_number == 0 }} fallback={|| {}}>
           <span
             class="cursor-pointer"
             on:click={move |_| {
@@ -588,13 +588,13 @@ pub fn ResponsivePostListing(
           >
             <Icon icon={Reply} />
           </span>
-        </Show>
+        // </Show>
         <span class={format!("text-base-content{}", if post_view.get().post.local { " hidden" } else { "" })} title="Original post">
           <A href={post_view.get().post.ap_id.inner().to_string()}>
             <Icon icon={External} />
           </A>
         </span>
-        <Show when={move || { post_number == 0 }} fallback={|| {}}>
+        // <Show when={move || { post_number == 0 }} fallback={|| {}}>
           <span
             class="text-base-content/50"
             title="Cross post"
