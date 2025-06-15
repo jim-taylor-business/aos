@@ -494,7 +494,7 @@ pub fn ResponsivePostListing(
       </div>
       <div class={move || {
         format!(
-          "col-span-1 row-span-1 flex items-center gap-x-2{}",
+          "col-span-1 row-span-1 flex flex-wrap items-center gap-x-2{}",
           if post_view.get().post.thumbnail_url.is_none() && post_view.get().post.url.is_none() { " sm:col-span-2" } else { "" },
         )
       }}>
