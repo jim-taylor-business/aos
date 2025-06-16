@@ -494,8 +494,8 @@ pub fn ResponsivePostListing(
       </div>
       <div class={move || {
         format!(
-          "col-span-1 row-span-1 flex flex-wrap items-center gap-x-2{}",
-          if post_view.get().post.thumbnail_url.is_none() && post_view.get().post.url.is_none() { " sm:col-span-2" } else { "" },
+          "row-span-1 flex flex-wrap items-center gap-x-2{}",
+          if post_view.get().post.thumbnail_url.is_none() && post_view.get().post.url.is_none() { " col-span-2" } else { " col-span-1" },
         )
       }}>
         <ActionForm action={vote_action} on:submit={on_up_vote_submit} class="flex items-center">
