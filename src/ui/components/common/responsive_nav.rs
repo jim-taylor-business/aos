@@ -89,6 +89,17 @@ pub fn ResponsiveTopNav(
   // if let Some(Err(e)) = site_signal.get() {
   //   ssr_error.set(Some((e, None)));
   // }
+  //
+  let display_title = Signal::derive(move || {
+    if let Some(pv) = post_view.get() {
+      format!(
+        "{} by {} in {}",
+        pv.post_view.post.name, pv.post_view.creator.name, pv.community_view.community.name
+      )
+    } else {
+      "".to_string()
+    }
+  });
 
   let query = use_query_map();
 
@@ -507,7 +518,7 @@ pub fn ResponsiveTopNav(
           </details>
             </li>
           </ul>
-          <div class="flex-grow" >
+          <div class="flex-grow">
             <form class="form-control flex-grow" action="/responsive/s/p" method="GET">
               <input name="term" type="text"
               // on:keypress={|e: KeyboardEvent| {
@@ -518,7 +529,9 @@ pub fn ResponsiveTopNav(
               //   }
               //   log!("{:#?}", e);
               // }}
-              placeholder=move || if let Some(pv) = post_view.get() { format!("{} by {} in {}", pv.post_view.post.name, pv.post_view.creator.name, pv.community_view.community.name) } else { "".to_string() } class="input w-auto" />
+                placeholder=move || display_title.get() //=move || if let Some(pv) = post_view.get() { format!("{} by {} in {}", pv.post_view.post.name, pv.post_view.creator.name, pv.community_view.community.name) } else { "".to_string() }
+                title=move || display_title.get() //move || if let Some(pv) = post_view.get() { format!("{} by {} in {}", pv.post_view.post.name, pv.post_view.creator.name, pv.community_view.community.name) } else { "".to_string() }
+                class="input w-auto" />
               // <button class="py-2 px-4" type="submit">
               //   <Icon icon={SignIn} />
               //   // {t!(i18n, login)}

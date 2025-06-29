@@ -97,7 +97,7 @@ pub fn ResponsiveSearchActivity(ssr_site: Resource<Option<bool>, Result<GetSiteR
       intersection_element,
       move |intersections, _| {
         if intersections[0].is_intersecting() {
-          log!("trigger");
+          // log!("trigger");
           if let key = next_page_cursor.get() {
             if key > 0 {
               let mut st = ssr_page();
