@@ -115,6 +115,10 @@ pub trait LemmyApi: Fetch {
   async fn edit_comment(&self, form: EditComment) -> LemmyAppResult<CommentResponse> {
     self.make_request(HttpType::Put, "comment", form).await
   }
+
+  async fn search(&self, form: Search) -> LemmyAppResult<SearchResponse> {
+    self.make_request(HttpType::Get, "search", form).await
+  }
 }
 
 impl LemmyApi for LemmyClient {}

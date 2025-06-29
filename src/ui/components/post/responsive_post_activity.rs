@@ -11,7 +11,7 @@ use ev::MouseEvent;
 use lemmy_api_common::{
   comment::{CreateComment, GetComments},
   lemmy_db_schema::{newtypes::PostId, CommentSortType, SortType},
-  post::GetPost,
+  post::{GetPost, GetPostResponse},
   site::GetSiteResponse,
 };
 use leptos::{html::Div, *};
@@ -34,6 +34,8 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
   let content = RwSignal::new(String::default());
   let loading = RwSignal::new(true);
   let refresh = RwSignal::new(false);
+
+  let post_view = RwSignal::new(None::<GetPostResponse>);
 
   #[cfg(not(feature = "ssr"))]
   if let Some(id) = post_id() {
@@ -190,10 +192,8 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
   let on_scroll_element = NodeRef::<Div>::new();
 
   view! {
-    // <main role="main" class="flex flex-col flex-grow w-full">
-
     <main class="flex flex-col">
-      <ResponsiveTopNav ssr_site default_sort=SortType::TopAll.into() />
+      <ResponsiveTopNav ssr_site default_sort=SortType::TopAll.into() post_view=post_view.into() />
       <div class="flex flex-grow">
         <div
         on:wheel=move |e: WheelEvent| {
@@ -202,9 +202,6 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
           }
         }
         node_ref=on_scroll_element class="sm:h-[calc(100%-4rem)] min-w-full sm:absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-sm sm:px-4 gap-4">
-
-
-    // <div class="sm:h-full w-full absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[50ch] gap-0">
       <div>
         <Transition fallback={|| {}}>
           {move || {
@@ -237,6 +234,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                 )
               }
               Some(Some(Ok(res))) => {
+                post_view.set(Some(res.clone()));
                 let text = if let Some(b) = res.post_view.post.body.clone() {
                   if b.len() > 0 { Some(b) } else { res.post_view.post.embed_description.clone() }
                 } else {
@@ -423,8 +421,6 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
           }}
         </Transition>
       </div>
-    // </div>
-
         </div>
       </div>
     </main>

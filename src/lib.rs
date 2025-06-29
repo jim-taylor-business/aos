@@ -17,7 +17,9 @@ use crate::{
   layout::Layout,
   lemmy_client::*,
   ui::components::{
-    communities::communities_activity::CommunitiesActivity, home::home_activity::HomeActivity, login::login_activity::LoginActivity,
+    communities::communities_activity::CommunitiesActivity,
+    home::{home_activity::HomeActivity, responsive_search_activity::ResponsiveSearchActivity},
+    login::login_activity::LoginActivity,
     post::post_activity::PostActivity,
   },
 };
@@ -117,6 +119,9 @@ pub fn App() -> impl IntoView {
 
   let response_cache: RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>> = RwSignal::new(BTreeMap::new());
   provide_context(response_cache);
+
+  // let search_cache: RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>> = RwSignal::new(BTreeMap::new());
+  // provide_context(response_cache);
 
   // let response_load: RwSignal<ResponseLoad> = RwSignal::new(ResponseLoad(true));
   // provide_context(response_load);
@@ -222,6 +227,7 @@ pub fn App() -> impl IntoView {
             <Route path="" view={move || view! { <ResponsiveHomeActivity ssr_site /> }} />
             <Route path="p/:id" view={move || view! { <ResponsivePostActivity ssr_site /> }} />
             <Route path="c/:name" view={move || view! { <ResponsiveHomeActivity ssr_site /> }} />
+            <Route path="s/p" view={move || view! { <ResponsiveSearchActivity ssr_site /> }} />
           </Route>
         </Routes>
       </Router>

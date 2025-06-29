@@ -13,14 +13,14 @@ use lemmy_api_common::{
   lemmy_db_schema::{source::site::Site, ListingType, SortType},
   lemmy_db_views::structs::{PaginationCursor, SiteView},
   person::GetUnreadCountResponse,
-  post::GetPostsResponse,
+  post::{GetPostResponse, GetPostsResponse},
   site::GetSiteResponse,
 };
-use leptos::*;
+use leptos::{logging::log, *};
 use leptos_router::*;
 use leptos_use::*;
 use leptos_use::{use_cookie_with_options, SameSite, UseCookieOptions};
-use web_sys::SubmitEvent;
+use web_sys::{KeyboardEvent, SubmitEvent};
 
 #[cfg(not(feature = "ssr"))]
 use web_sys::VisibilityState;
@@ -67,9 +67,10 @@ pub async fn change_theme(theme: String) -> Result<(), ServerFnError> {
 pub fn ResponsiveTopNav(
   ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>,
   #[prop(optional)] default_sort: MaybeProp<SortType>,
-  #[prop(optional)] post_name: MaybeSignal<String>,
-  #[prop(optional)] user_name: MaybeSignal<String>,
-  #[prop(optional)] community_name: MaybeSignal<String>,
+  #[prop(optional)] post_view: MaybeSignal<Option<GetPostResponse>>,
+  // #[prop(optional)] post_name: MaybeSignal<String>,
+  // #[prop(optional)] user_name: MaybeSignal<String>,
+  // #[prop(optional)] community_name: MaybeSignal<String>,
 ) -> impl IntoView {
   let i18n = use_i18n();
 
@@ -316,7 +317,7 @@ pub fn ResponsiveTopNav(
 
   view! {
       <nav class="flex navbar flex-row py-0">
-        <div class="flex-grow">
+        <div class="flex-grow flex">
           <ul class="flex-nowrap items-center menu menu-horizontal">
             <li>
               <A href="/responsive" class="text-xl py-1/2 whitespace-nowrap" on:click={ move |e: MouseEvent| {
@@ -335,13 +336,13 @@ pub fn ResponsiveTopNav(
                 // csr_resources.set(BTreeMap::new());
                 // csr_next_page_cursor.set((0, None));
               }}>
-                {move || {
-                  if let Some(Ok(GetSiteResponse { site_view: SiteView { site: Site { icon: Some(i), .. }, .. }, .. })) = ssr_site.get() {
-                    view! { <img class="h-8" src={i.inner().to_string()} /> }
-                  } else {
-                    view! { <img class="h-8" src="/favicon.png" /> }
-                  }
-                }}
+                // {move || {
+                //   if let Some(Ok(GetSiteResponse { site_view: SiteView { site: Site { icon: Some(i), .. }, .. }, .. })) = ssr_site.get() {
+                //     view! { <img class="h-8" src={i.inner().to_string()} /> }
+                //   } else {
+                //     view! { <img class="h-8" src="/favicon.png" /> }
+                //   }
+                // }}
                 <span class="hidden lg:flex">
                   {move || { if let Some(Ok(m)) = ssr_site.get() { m.site_view.site.name } else { "A.O.S".to_string() } }}
                 </span>
@@ -506,7 +507,24 @@ pub fn ResponsiveTopNav(
           </details>
             </li>
           </ul>
+          <div class="flex-grow" >
+            <form class="form-control flex-grow" action="/responsive/s/p" method="GET">
+              <input name="term" type="text"
+              // on:keypress={|e: KeyboardEvent| {
+              //   if e.key.eq("\n") {
 
+              //   } else {
+
+              //   }
+              //   log!("{:#?}", e);
+              // }}
+              placeholder=move || if let Some(pv) = post_view.get() { format!("{} by {} in {}", pv.post_view.post.name, pv.post_view.creator.name, pv.community_view.community.name) } else { "".to_string() } class="input w-auto" />
+              // <button class="py-2 px-4" type="submit">
+              //   <Icon icon={SignIn} />
+              //   // {t!(i18n, login)}
+              // </button>
+            </form>
+          </div>
         </div>
   //         <div class="navbar-center">
   // //        <A href={move || format!("/responsive/p/{}", post_view.get().post.id)} class=" hover:text-accent">
