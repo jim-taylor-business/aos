@@ -347,14 +347,14 @@ pub fn ResponsiveTopNav(
                 // csr_resources.set(BTreeMap::new());
                 // csr_next_page_cursor.set((0, None));
               }}>
-                // {move || {
-                //   if let Some(Ok(GetSiteResponse { site_view: SiteView { site: Site { icon: Some(i), .. }, .. }, .. })) = ssr_site.get() {
-                //     view! { <img class="h-8" src={i.inner().to_string()} /> }
-                //   } else {
-                //     view! { <img class="h-8" src="/favicon.png" /> }
-                //   }
-                // }}
-                <span class="hidden lg:flex">
+                {move || {
+                  if let Some(Ok(GetSiteResponse { site_view: SiteView { site: Site { icon: Some(i), .. }, .. }, .. })) = ssr_site.get() {
+                    view! { <img class="sm:hidden h-8" src={i.inner().to_string()} /> }
+                  } else {
+                    view! { <img class="h-8" src="/favicon.png" /> }
+                  }
+                }}
+                <span class="hidden sm:flex">
                   {move || { if let Some(Ok(m)) = ssr_site.get() { m.site_view.site.name } else { "A.O.S".to_string() } }}
                 </span>
               </A>
@@ -518,7 +518,7 @@ pub fn ResponsiveTopNav(
           </details>
             </li>
           </ul>
-          <div class="flex-grow">
+          <div class="hidden sm:flex flex-grow">
             <form class="form-control flex-grow" action="/responsive/s/p" method="GET">
               <input name="term" type="text"
               // on:keypress={|e: KeyboardEvent| {
@@ -531,7 +531,7 @@ pub fn ResponsiveTopNav(
               // }}
                 placeholder=move || display_title.get() //=move || if let Some(pv) = post_view.get() { format!("{} by {} in {}", pv.post_view.post.name, pv.post_view.creator.name, pv.community_view.community.name) } else { "".to_string() }
                 title=move || display_title.get() //move || if let Some(pv) = post_view.get() { format!("{} by {} in {}", pv.post_view.post.name, pv.post_view.creator.name, pv.community_view.community.name) } else { "".to_string() }
-                class="input w-auto" />
+                class="input w-full" />
               // <button class="py-2 px-4" type="submit">
               //   <Icon icon={SignIn} />
               //   // {t!(i18n, login)}
