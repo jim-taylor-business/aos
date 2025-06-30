@@ -45,6 +45,13 @@ pub async fn logout() -> Result<(), ServerFnError> {
   }
 }
 
+#[server(SearchFn, "/serverfn")]
+pub async fn search(term: String) -> Result<(), ServerFnError> {
+  use leptos_actix::redirect;
+  redirect(&format!("/responsive/s/p?term={}", &term));
+  Ok(())
+}
+
 #[server(ChangeLangFn, "/serverfn")]
 pub async fn change_lang(lang: String) -> Result<(), ServerFnError> {
   let (_, set_locale_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
@@ -262,6 +269,14 @@ pub fn ResponsiveTopNav(
     );
   };
 
+  let search_action = create_server_action::<SearchFn>();
+  let search_term = RwSignal::new("".to_string());
+
+  let on_search_submit = move |e: SubmitEvent| {
+    e.prevent_default();
+    use_navigate()(&format!("/responsive/s/p?term={}", search_term.get()), NavigateOptions::default());
+  };
+
   let logged_in = Signal::derive(move || {
     if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() {
       Some(true)
@@ -270,35 +285,35 @@ pub fn ResponsiveTopNav(
     }
   });
 
-  let unread_resource = Resource::new(
-    move || (refresh.get(), logged_in.get(), notifications_refresh.get()),
-    move |(_refresh, logged_in, _notifications_refresh)| async move {
-      if online.get().0 {
-        let result = if logged_in == Some(true) {
-          LemmyClient.unread_count().await
-        } else {
-          Ok(GetUnreadCountResponse {
-            replies: 0,
-            mentions: 0,
-            private_messages: 0,
-          })
-        };
-        match result {
-          Ok(o) => Ok(o),
-          Err(e) => {
-            error.update(|es| es.push(Some((e.clone(), None))));
-            Err(e)
-          }
-        }
-      } else {
-        Ok(GetUnreadCountResponse {
-          replies: 0,
-          mentions: 0,
-          private_messages: 0,
-        })
-      }
-    },
-  );
+  // let unread_resource = Resource::new(
+  //   move || (refresh.get(), logged_in.get(), notifications_refresh.get()),
+  //   move |(_refresh, logged_in, _notifications_refresh)| async move {
+  //     if online.get().0 {
+  //       let result = if logged_in == Some(true) {
+  //         LemmyClient.unread_count().await
+  //       } else {
+  //         Ok(GetUnreadCountResponse {
+  //           replies: 0,
+  //           mentions: 0,
+  //           private_messages: 0,
+  //         })
+  //       };
+  //       match result {
+  //         Ok(o) => Ok(o),
+  //         Err(e) => {
+  //           error.update(|es| es.push(Some((e.clone(), None))));
+  //           Err(e)
+  //         }
+  //       }
+  //     } else {
+  //       Ok(GetUnreadCountResponse {
+  //         replies: 0,
+  //         mentions: 0,
+  //         private_messages: 0,
+  //       })
+  //     }
+  //   },
+  // );
 
   let online = expect_context::<RwSignal<OnlineSetter>>();
   let theme_action = create_server_action::<ChangeThemeFn>();
@@ -519,24 +534,37 @@ pub fn ResponsiveTopNav(
             </li>
           </ul>
           <div class="hidden sm:flex flex-grow">
-            <form class="form-control flex-grow" action="/responsive/s/p" method="GET">
-              <input name="term" type="text"
-              // on:keypress={|e: KeyboardEvent| {
-              //   if e.key.eq("\n") {
+            <ActionForm class="form-control flex-grow" action={search_action} on:submit={on_search_submit}>
+              <input
+                placeholder=move || display_title.get()
+                title=move || display_title.get()
+                class="input w-full"
+                type="text" name="term"
+                prop:value={move || search_term.get()}
+                on:input={move |ev| {
+                  search_term.set(event_target_value(&ev));
+              }}
+            />
+            </ActionForm>
 
-              //   } else {
+            // <form class="form-control flex-grow" action="/responsive/s/p" method="GET">
+            //   <input name="term" type="text"
+            //   // on:keypress={|e: KeyboardEvent| {
+            //   //   if e.key.eq("\n") {
 
-              //   }
-              //   log!("{:#?}", e);
-              // }}
-                placeholder=move || display_title.get() //=move || if let Some(pv) = post_view.get() { format!("{} by {} in {}", pv.post_view.post.name, pv.post_view.creator.name, pv.community_view.community.name) } else { "".to_string() }
-                title=move || display_title.get() //move || if let Some(pv) = post_view.get() { format!("{} by {} in {}", pv.post_view.post.name, pv.post_view.creator.name, pv.community_view.community.name) } else { "".to_string() }
-                class="input w-full" />
-              // <button class="py-2 px-4" type="submit">
-              //   <Icon icon={SignIn} />
-              //   // {t!(i18n, login)}
-              // </button>
-            </form>
+            //   //   } else {
+
+            //   //   }
+            //   //   log!("{:#?}", e);
+            //   // }}
+            //     placeholder=move || display_title.get() //=move || if let Some(pv) = post_view.get() { format!("{} by {} in {}", pv.post_view.post.name, pv.post_view.creator.name, pv.community_view.community.name) } else { "".to_string() }
+            //     title=move || display_title.get() //move || if let Some(pv) = post_view.get() { format!("{} by {} in {}", pv.post_view.post.name, pv.post_view.creator.name, pv.community_view.community.name) } else { "".to_string() }
+            //     class="input w-full" />
+            //   // <button class="py-2 px-4" type="submit">
+            //   //   <Icon icon={SignIn} />
+            //   //   // {t!(i18n, login)}
+            //   // </button>
+            // </form>
           </div>
         </div>
   //         <div class="navbar-center">

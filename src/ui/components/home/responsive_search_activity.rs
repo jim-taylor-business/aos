@@ -132,8 +132,8 @@ pub fn ResponsiveSearchActivity(ssr_site: Resource<Option<bool>, Result<GetSiteR
   }
 
   let search_cache_resource = Resource::new(
-    move || (refresh.get(), logged_in.get(), ssr_list(), ssr_sort(), ssr_name(), ssr_page()),
-    move |(_refresh, _logged_in, list, sort, name, pages)| async move {
+    move || (refresh.get(), logged_in.get(), ssr_list(), ssr_sort(), ssr_name(), ssr_page(), ssr_term()),
+    move |(_refresh, _logged_in, list, sort, name, pages, term)| async move {
       // let mut rc = response_cache.get();
       let mut new_pages: HashMap<usize, Option<SearchResponse>> = HashMap::new();
       let pages_later = pages.clone();
@@ -142,7 +142,7 @@ pub fn ResponsiveSearchActivity(ssr_site: Resource<Option<bool>, Result<GetSiteR
       for p in pages {
         // if pages_unit { // || rc.get(&(p.0, p.1.clone(), list, sort, name.clone())).is_none() {
         let form = Search {
-          q: ssr_term(),
+          q: term.clone(),
           type_: Some(SearchType::Posts),
           sort: Some(sort),
           community_name: None,
