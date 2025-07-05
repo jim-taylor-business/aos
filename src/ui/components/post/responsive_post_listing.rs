@@ -451,7 +451,7 @@ pub fn ResponsivePostListing(
         )
       }}>
         <A href={move || format!("/responsive/p/{}", post_view.get().post.id)} class="block hover:text-accent">
-          <span class="text-lg break-words" inner_html={title_encoded} />
+          <span class="text-lg break-words overflow-y-auto" inner_html={title_encoded} />
         </A>
         <span class="block mb-1">
           <span>{abbr_duration}</span>
@@ -461,7 +461,7 @@ pub fn ResponsivePostListing(
             target="_blank"
             class="inline text-sm break-words hover:text-secondary"
           >
-            <span inner_html={creator_name_encoded} />
+            <span class="overflow-y-auto" inner_html={creator_name_encoded} />
           </a>
           " in "
           <A
@@ -488,7 +488,7 @@ pub fn ResponsivePostListing(
               // csr_next_page_cursor.set((0, None));
             }}
           >
-            <span inner_html={community_title_encoded} />
+            <span class="overflow-y-auto" inner_html={community_title_encoded} />
           </A>
         </span>
       </div>

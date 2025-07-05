@@ -556,7 +556,7 @@ pub fn ResponsiveCommentNode(
         }}>{children.get().len() + descendants.get().len()} " replies"</span>
       </div>
       <Show when={move || reply_show.get() || edit_show.get()} fallback={|| {}}>
-        <div class="mb-3 space-y-3">
+        <div class="mb-3 space-y-3 break-inside-avoid">
           // <label class="form-control">
           // <textarea
           // class="h-24 text-base textarea textarea-bordered"

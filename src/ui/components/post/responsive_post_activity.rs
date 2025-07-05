@@ -190,6 +190,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
   }
 
   let on_scroll_element = NodeRef::<Div>::new();
+  let thumbnail = RwSignal::new(String::from(""));
 
   view! {
     <main class="flex flex-col">
@@ -258,9 +259,46 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
 
                     // }
                     // })}
-                    <div>
-                      <ResponsivePostListing post_view={res.post_view.into()} ssr_site post_number=0 reply_show />
-                    </div>
+
+                    // <div>
+                    //   <ResponsivePostListing post_view={res.post_view.into()} ssr_site post_number=0 reply_show />
+                    // </div>
+                    //
+                    <a
+                      class="float-left"
+                      target="_blank"
+                      href={move || { if let Some(d) = post_view.get().unwrap().post_view.post.url { d.inner().to_string() } else { format!("/responsive/post/{}", post_view.get().unwrap().post_view.post.id) } }}
+                    >
+                    {move || {
+                      if let Some(t) = post_view.get().unwrap().post_view.post.thumbnail_url {
+                        let h = t.inner().to_string();
+                        thumbnail.set(h);
+                        view! {
+                          <div class="px-4 py-2">
+                            <div class="block">
+                              <img
+                                class={move || format!("w-auto{}", if thumbnail.get().eq(&"/lemmy.svg".to_string()) { " h-16" } else { "" })}
+                                src={move || thumbnail.get()}
+                                // node_ref={thumbnail_element}
+                                on:error={move |_e| {
+                                  thumbnail.set("/lemmy.svg".into());
+                                }}
+                              />
+                            </div>
+                          </div>
+                        }
+                      } else {
+                        view! {
+                          <div class="px-4 py-2">
+                            <div class="block">
+                              <img class="h-16" src="/lemmy.svg" />
+                            </div>
+                          </div>
+                        }
+                      }
+                    }}
+                    </a>
+
                     {if let Some(ref content) = text {
                       let mut options = pulldown_cmark::Options::empty();
                       options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
