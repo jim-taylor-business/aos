@@ -4,7 +4,7 @@ use crate::{
   ui::components::{
     comment::responsive_comment_nodes::ResponsiveCommentNodes,
     common::responsive_nav::ResponsiveTopNav,
-    post::{post_listing::PostListing, responsive_post_listing::ResponsivePostListing},
+    post::{post_listing::PostListing, responsive_post_listing::ResponsivePostListing, responsive_post_toolbar::ResponsivePostToolbar},
   },
 };
 use ev::MouseEvent;
@@ -202,7 +202,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
             se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
           }
         }
-        node_ref=on_scroll_element class="sm:h-[calc(100%-4rem)] min-w-full sm:absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-sm sm:px-4 gap-4">
+        node_ref=on_scroll_element class="sm:h-[calc(100%-4rem)] min-w-full sm:absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-sm sm:px-4 gap-4" style="column-fill: auto">
       <div>
         <Transition fallback={|| {}}>
           {move || {
@@ -244,6 +244,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                 Some(
                   view! {
                     <Title text={res.post_view.post.name.clone()} />
+
                     // {loading
                     // .get()
                     // .then(move || {
@@ -260,10 +261,10 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                     // }
                     // })}
 
-                    // <div>
-                    //   <ResponsivePostListing post_view={res.post_view.into()} ssr_site post_number=0 reply_show />
-                    // </div>
-                    //
+                    <div>
+                      <ResponsivePostToolbar post_view={res.post_view.into()} ssr_site post_number=0 reply_show />
+                    </div>
+
                     <a
                       class="float-left"
                       target="_blank"
@@ -277,7 +278,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                           <div class="px-4 py-2">
                             <div class="block">
                               <img
-                                class={move || format!("w-auto{}", if thumbnail.get().eq(&"/lemmy.svg".to_string()) { " h-16" } else { "" })}
+                                class={move || format!("w-auto max-w-9/12{}", if thumbnail.get().eq(&"/lemmy.svg".to_string()) { " h-16" } else { "" })}
                                 src={move || thumbnail.get()}
                                 // node_ref={thumbnail_element}
                                 on:error={move |_e| {
@@ -323,7 +324,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                       pulldown_cmark::html::push_html(&mut safe_html, custom);
                       Some(
                         view! {
-                          <div class="pr-4 pl-4">
+                          <div class="pr-4 pl-4 before:content-[''] before:block before:w-24 before:overflow-hidden">
                             <div
                               class="py-2"
                               on:click={move |e: MouseEvent| {
@@ -414,7 +415,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
               .unwrap_or(None)
               .map(|res| {
                 view! {
-                  <div class="w-full">
+                  <div class="w-full before:content-[''] before:block before:w-24 before:overflow-hidden">
                     // <div class="ml-3 sm:inline-block sm:ml-0 dropdown">
                     //   <label tabindex="0" class="btn">
                     //     "Sort"
