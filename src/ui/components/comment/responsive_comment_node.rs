@@ -20,7 +20,7 @@ use leptos::{
 };
 use leptos_dom::helpers::TimeoutHandle;
 use leptos_router::Form;
-use web_sys::{wasm_bindgen::JsCast, DragEvent, Element, Event, HtmlAnchorElement, HtmlDetailsElement, HtmlImageElement};
+use web_sys::{wasm_bindgen::JsCast, DragEvent, Element, Event, HtmlAnchorElement, HtmlDetailsElement, HtmlImageElement, WheelEvent};
 
 #[component]
 pub fn ResponsiveCommentNode(
@@ -574,6 +574,9 @@ pub fn ResponsiveCommentNode(
                 placeholder="Comment text"
                 prop:value={move || reply_content.get()}
                 node_ref={_visibility_element}
+                on:wheel=move |e: WheelEvent| {
+                  e.stop_propagation();
+                }
                 on:input={move |ev| {
                   reply_content.set(event_target_value(&ev));
                   let form = CreateComment {
@@ -603,6 +606,9 @@ pub fn ResponsiveCommentNode(
                 class="h-24 text-base textarea textarea-bordered"
                 placeholder="Comment text"
                 prop:value={move || edit_content.get()}
+                on:wheel=move |e: WheelEvent| {
+                  e.stop_propagation();
+                }
                 on:input={move |ev| {
                   edit_content.set(event_target_value(&ev));
                   comment_view.update(|cv| cv.comment.content = event_target_value(&ev));

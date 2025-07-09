@@ -197,12 +197,12 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
       <ResponsiveTopNav ssr_site default_sort=SortType::TopAll.into() post_view=post_view.into() />
       <div class="flex flex-grow">
         <div
-        on:wheel=move |e: WheelEvent| {
-          if let Some(se) = on_scroll_element.get() {
-            se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+          on:wheel=move |e: WheelEvent| {
+            if let Some(se) = on_scroll_element.get() {
+              se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+            }
           }
-        }
-        node_ref=on_scroll_element class="sm:h-[calc(100%-4rem)] min-w-full sm:absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-sm sm:px-4 gap-4" style="column-fill: auto">
+          node_ref=on_scroll_element class="sm:h-[calc(100%-4rem)] min-w-full sm:absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-sm sm:px-4 gap-4" style="column-fill: auto">
       <div>
         <Transition fallback={|| {}}>
           {move || {
@@ -348,7 +348,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                     }}
                     // <div id="reply_box">
                     <Show when={move || reply_show.get()} fallback={|| {}}>
-                      <div class="mb-3 space-y-3">
+                      <div class="mb-3 space-y-3 before:content-[''] before:block before:w-24 before:overflow-hidden">
                         <label class="form-control">
                           <textarea
                             class="h-24 text-base textarea textarea-bordered"
@@ -357,6 +357,9 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                             node_ref={_visibility_element}
                             // id="reply_text"
                             // autofocus=true
+                            on:wheel=move |e: WheelEvent| {
+                              e.stop_propagation();
+                            }
                             on:input={move |ev| {
                               content.set(event_target_value(&ev));
                               if let Some(id) = post_id() {
