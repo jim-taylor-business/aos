@@ -10,6 +10,7 @@ use crate::{
   ResourceStatus, ResponseLoad,
 };
 use codee::string::FromToStringCodec;
+// use ev::*;
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SortType},
   lemmy_db_views::structs::PaginationCursor,
@@ -20,14 +21,13 @@ use leptos::{html::*, logging::log, *};
 use leptos_meta::*;
 use leptos_router::*;
 use leptos_use::*;
-#[cfg(not(feature = "ssr"))]
-use wasm_bindgen::{prelude::Closure, JsCast};
-// use serde::serde_as;
 use std::{
   collections::{BTreeMap, HashMap},
   usize, vec,
 };
-use web_sys::{js_sys::Atomics::wait_async, Event, MouseEvent, WheelEvent};
+#[cfg(not(feature = "ssr"))]
+use wasm_bindgen::{prelude::Closure, JsCast};
+use web_sys::{js_sys::Atomics::wait_async, Event, MouseEvent, TouchEvent, WheelEvent};
 
 #[component]
 pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
@@ -95,6 +95,8 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
       Some(false)
     }
   });
+
+  let sleep = RwSignal::new(false);
 
   // let posts_resource = Resource::new(
   //   move || {
@@ -200,34 +202,43 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
     // }
 
     let on_scroll = move |e: Event| {
-      if let Some(se) = on_scroll_element.get() {
-        if let Ok(Some(s)) = window().local_storage() {
-          let mut query_params = query.get();
-          // if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&query_params.to_query_string()).ok().unwrap()) {}
-          let _ = s.set_item(
-            &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-            &se.scroll_left().to_string(),
-          );
-        }
+      if !sleep.get() {
+        let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
 
-        // set_scroll_cookie.set(Some(se.scroll_left().to_string()));
-        // log!("scrolling {}", se.scroll_left());
-        // se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
-        // } else {
-        //   log!("ignore");
+        if iw < 768f64 {
+          if let Ok(Some(s)) = window().local_storage() {
+            let mut query_params = query.get();
+            let _ = s.set_item(
+              &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+              &window().scroll_y().unwrap_or(0.0).to_string(),
+            );
+            log!("weee {}", window().scroll_y().unwrap_or(0.0));
+          }
+        } else {
+          if let Some(se) = on_scroll_element.get() {
+            if let Ok(Some(s)) = window().local_storage() {
+              let mut query_params = query.get();
+              // if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&query_params.to_query_string()).ok().unwrap()) {}
+              let _ = s.set_item(
+                &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+                &se.scroll_left().to_string(),
+              );
+              log!("scrolling {}", se.scroll_left());
+            }
+
+            // set_scroll_cookie.set(Some(se.scroll_left().to_string()));
+            // log!("scrolling {}", se.scroll_left());
+            // se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+            // } else {
+            //   log!("ignore");
+          }
+        }
       }
     };
 
-    let UseScrollReturn {
-      x,
-      y,
-      set_x,
-      set_y,
-      is_scrolling,
-      arrived_state,
-      directions,
-      ..
-    } = use_scroll_with_options(on_scroll_element, UseScrollOptions::default().on_scroll(on_scroll));
+    let _scroll_handle = window_event_listener_untyped("scroll", on_scroll);
+
+    let UseScrollReturn { .. } = use_scroll_with_options(on_scroll_element, UseScrollOptions::default().on_scroll(on_scroll));
 
     // let on_online = move |b: bool| {
     //   move |_| {
@@ -397,12 +408,38 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
               let mut query_params = query.get();
               query_params.insert("page".into(), serde_json::to_string(&st).unwrap_or("[]".into()));
 
+              let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
+
+              if iw < 768f64 {
+                if let Ok(Some(s)) = window().local_storage() {
+                  // let mut query_params = query.get();
+                  let _ = s.set_item(
+                    &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+                    &window().scroll_y().unwrap_or(0.0).to_string(),
+                  );
+                  log!("shreee {}", window().scroll_y().unwrap_or(0.0));
+                }
+              } else {
+                if let Some(se) = on_scroll_element.get() {
+                  if let Ok(Some(s)) = window().local_storage() {
+                    // let mut query_params = query.get();
+                    let _ = s.set_item(
+                      &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+                      &se.scroll_left().to_string(),
+                    );
+                    log!("leeftling {}", se.scroll_left());
+                  }
+                }
+              }
+
+              sleep.set(true);
+
               let navigate = leptos_router::use_navigate();
               navigate(
                 &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
                 NavigateOptions {
-                  resolve: true,
-                  replace: false,
+                  resolve: false,
+                  replace: true,
                   scroll: false,
                   state: State::default(),
                 },
@@ -554,13 +591,14 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
   //   }
   // };
 
-  let responsive_cache_resourcs = Resource::new(
+  let responsive_cache_resource = Resource::new(
     move || (refresh.get(), logged_in.get(), ssr_list(), ssr_sort(), ssr_name(), ssr_page()),
     move |(_refresh, _logged_in, list, sort, name, pages)| async move {
       let mut rc = response_cache.get();
       let mut new_pages: HashMap<usize, Option<GetPostsResponse>> = HashMap::new();
 
       let pages_later = pages.clone();
+      let pages_even_later = pages.clone();
       let pages_unit = pages_later.eq(&vec![(0usize, "".into())]);
 
       // log!("keys {:#?}", rc.keys());
@@ -603,34 +641,57 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
 
       // response_load.set(ResponseLoad(true));
       //
+      // let ts = pages.clone();
 
-      // #[cfg(not(feature = "ssr"))]
-      // set_timeout(
-      //   move || {
-      //     if let Some(se) = on_scroll_element.get() {
-      //       if let Ok(Some(s)) = window().local_storage() {
-      //         let mut query_params = query.get();
-      //         if let Ok(Some(l)) = s.get_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string())) {
-      //           se.set_scroll_left(l.parse().unwrap_or(0i32));
-      //           log!("set {}", l);
-      //         }
-      //         // let _ = s.set_item(&query_params.to_query_string(), &se.scroll_left().to_string());
-      //       }
+      #[cfg(not(feature = "ssr"))]
+      set_timeout(
+        move || {
+          if pages_even_later.eq(&vec![(0usize, "".into())]) {
+            if let Ok(Some(s)) = window().local_storage() {
+              let mut query_params = query.get();
+              let _ = s.set_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), &"0.0");
+              log!("gee {}", 0.0);
+            }
+          }
 
-      //       //   // log!("scrolling {}", se.scroll_left());
-      //       //   if let Some(s) = get_scroll_cookie.get() {
-      //       //     log!("set {}", s);
-      //       //     se.set_scroll_left(s.parse().unwrap_or(0i32));
-      //       //   } else {
-      //       //     log!("ignore");
-      //       //   }
-      //       //   // se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
-      //       // } else {
-      //       //   log!("ignore");
-      //     }
-      //   },
-      //   std::time::Duration::new(0, 500_000_000),
-      // );
+          let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
+
+          if iw < 768f64 {
+            if let Ok(Some(s)) = window().local_storage() {
+              let mut query_params = query.get();
+              if let Ok(Some(l)) = s.get_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string())) {
+                window().scroll_to_with_x_and_y(0f64, l.parse().unwrap_or(0f64));
+                log!("poop {}", l);
+              }
+            }
+          } else {
+            if let Some(se) = on_scroll_element.get() {
+              if let Ok(Some(s)) = window().local_storage() {
+                let mut query_params = query.get();
+                if let Ok(Some(l)) = s.get_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string())) {
+                  se.set_scroll_left(l.parse().unwrap_or(0i32));
+                  log!("set {}", l);
+                }
+                // let _ = s.set_item(&query_params.to_query_string(), &se.scroll_left().to_string());
+              }
+
+              //   // log!("scrolling {}", se.scroll_left());
+              //   if let Some(s) = get_scroll_cookie.get() {
+              //     log!("set {}", s);
+              //     se.set_scroll_left(s.parse().unwrap_or(0i32));
+              //   } else {
+              //     log!("ignore");
+              //   }
+              //   // se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+              // } else {
+              //   log!("ignore");
+            }
+          }
+
+          sleep.set(false);
+        },
+        std::time::Duration::new(0, 1_000_000_000),
+      );
 
       (new_pages, pages_later, list, sort, name)
 
@@ -831,9 +892,64 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
     <div class="flex flex-grow">
       <div on:wheel=move |e: WheelEvent| {
         if let Some(se) = on_scroll_element.get() {
-          // se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
           se.scroll_by_with_x_and_y(e.delta_y(), 0f64);
         }
+
+        // let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
+
+        // if iw < 768f64 {
+        //   if let Ok(Some(s)) = window().local_storage() {
+        //     let mut query_params = query.get();
+        //     let _ = s.set_item(
+        //       &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+        //       &window().scroll_y().unwrap_or(0.0).to_string(),
+        //     );
+        //     log!("wh win {}", window().scroll_y().unwrap_or(0.0));
+        //   }
+        // } else {
+        //   if let Some(se) = on_scroll_element.get() {
+        //     if let Ok(Some(s)) = window().local_storage() {
+        //       let mut query_params = query.get();
+        //       let _ = s.set_item(
+        //         &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+        //         &se.scroll_left().to_string(),
+        //       );
+        //       log!("wh scr {}", se.scroll_left());
+        //     }
+        //   }
+        // }
+      } on:touchmove=move |e: ev::TouchEvent| {
+      // } on:scroll=move |e: ScrollEvent| {
+        // let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
+
+        // if iw < 768f64 {
+        //   if let Ok(Some(s)) = window().local_storage() {
+        //     let mut query_params = query.get();
+        //     let _ = s.set_item(
+        //       &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+        //       &window().scroll_y().unwrap_or(0.0).to_string(),
+        //     );
+        //     log!("tm win {}", window().scroll_y().unwrap_or(0.0));
+        //   }
+        // } else {
+        //   if let Some(se) = on_scroll_element.get() {
+        //     if let Ok(Some(s)) = window().local_storage() {
+        //       let mut query_params = query.get();
+        //       // if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&query_params.to_query_string()).ok().unwrap()) {}
+        //       let _ = s.set_item(
+        //         &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+        //         &se.scroll_left().to_string(),
+        //       );
+        //       log!("tm scr {}", se.scroll_left());
+        //     }
+
+        //     // set_scroll_cookie.set(Some(se.scroll_left().to_string()));
+        //     // log!("scrolling {}", se.scroll_left());
+        //     // se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+        //     // } else {
+        //     //   log!("ignore");
+        //   }
+        // }
       } node_ref=on_scroll_element class={move || {
         format!("md:h-[calc(100%-4rem)] min-w-full md:absolute md:overflow-x-auto md:overflow-y-hidden md:columns-sm md:px-4 gap-4{}", if loading.get() { " opacity-25" } else { "" })
         // format!("sm:container sm:h-[calc(100%-12rem)] absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[50ch] gap-0{}", if loading.get() { " opacity-25" } else { "" })
@@ -992,7 +1108,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
         // </For>
         <Transition fallback={|| {}}>
           {move || {
-            match responsive_cache_resourcs.get() {
+            match responsive_cache_resource.get() {
               Some(mut o) => {
                 // if let Some(e) = o.get().last_entry() {
                 //   // log!("next {} ", e.key());
@@ -1027,6 +1143,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                 response_cache.update(move |rc| {
                   if o.1.eq(&vec![(0usize, "".into())]) {
                     rc.clear();
+
                   } else {
                     rc.retain(|t, u| o.1.contains(&(t.0, t.1.clone())) && t.2.eq(&o.2) && t.3.eq(&o.3) && t.4.eq(&o.4.clone()));
                   }
@@ -1144,7 +1261,10 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                   <div>
                     <Title text="" />
 
-                    <For each={move || response_cache.get()} key={|r| r.0.clone()} let:r>
+                    <For each={move || response_cache.get()} key={|r| r.0.0.clone()} let:r>
+                      // {
+                      //   log!("{:#?}", r.0.clone());
+                      // }
                       <ResponsivePostListings posts={r.1.unwrap().posts.into()} ssr_site page_number={r.0.0.into()} />
                     </For>
 
@@ -1152,6 +1272,26 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                     // <For each={move || o.get()} key={|r| r.0} let:r>
                     //   <ResponsivePostListings posts={r.1.unwrap().posts.into()} ssr_site page_number={r.0.into()} />
                     // </For>
+                // {
+                // if let Some(se) = on_scroll_element.get() {
+                //   if let Ok(Some(s)) = window().local_storage() {
+                //     let mut query_params = query.get();
+                //     if let Ok(Some(l)) = s.get_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string())) {
+                //       se.set_scroll_left(l.parse().unwrap_or(0i32));
+                //       log!("set {}", l);
+                //     } else {
+                //       log!("cope");
+                //     }
+                //   } else {
+                //     log!("bope");
+                //   }
+                // } else {
+                //   log!("nope");
+                // }
+
+                // log!("buuuuu");
+
+                // }
 
                   </div>
 
