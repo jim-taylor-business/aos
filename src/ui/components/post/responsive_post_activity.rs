@@ -16,7 +16,7 @@ use lemmy_api_common::{
 };
 use leptos::{html::Div, *};
 use leptos_meta::*;
-use leptos_router::{use_location, use_params_map, use_query_map};
+use leptos_router::{use_location, use_params_map, use_query_map, A};
 use web_sys::{wasm_bindgen::JsCast, HtmlAnchorElement, HtmlImageElement, WheelEvent};
 
 #[component]
@@ -241,6 +241,70 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                 } else {
                   None
                 };
+
+                let title = post_view.get().unwrap().post_view.post.name.clone();
+                // let title_encoded = html_escape::encode_safe(&title).to_string();
+                let mut options = pulldown_cmark::Options::empty();
+                options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
+                options.insert(pulldown_cmark::Options::ENABLE_TABLES);
+                options.insert(pulldown_cmark::Options::ENABLE_SUPERSCRIPT);
+                options.insert(pulldown_cmark::Options::ENABLE_SUBSCRIPT);
+                options.insert(pulldown_cmark::Options::ENABLE_SPOILER);
+                let parser = pulldown_cmark::Parser::new_ext(&title, options);
+
+                let custom = parser.map(|event| match event {
+                  pulldown_cmark::Event::Html(text) => {
+                    let er = format!("<p>{}</p>", html_escape::encode_safe(&text).to_string());
+                    pulldown_cmark::Event::Html(er.into())
+                  }
+                  pulldown_cmark::Event::InlineHtml(text) => {
+                    let er = html_escape::encode_safe(&text).to_string();
+                    pulldown_cmark::Event::InlineHtml(er.into())
+                  }
+                  _ => event,
+                });
+                let mut title_encoded = String::new();
+                pulldown_cmark::html::push_html(&mut title_encoded, custom);
+
+                let community_title = if post_view.get().unwrap().post_view.community.local {
+                  format!("{}", post_view.get().unwrap().post_view.community.name)
+                } else {
+                  format!(
+                    "{}@{}",
+                    post_view.get().unwrap().post_view.community.name,
+                    post_view.get().unwrap().post_view.community.actor_id.inner().host().unwrap().to_string()
+                  )
+                };
+                let community_title_encoded = html_escape::encode_safe(&community_title).to_string();
+                let creator_name = &post_view.get().unwrap().post_view.creator.actor_id.to_string()[8..];
+                let creator_name_encoded = html_escape::encode_safe(creator_name).to_string();
+
+                let now_in_millis = {
+                  #[cfg(not(feature = "ssr"))]
+                  {
+                    chrono::offset::Utc::now().timestamp_millis() as u64
+                  }
+                  #[cfg(feature = "ssr")]
+                  {
+                    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64
+                  }
+                };
+                let duration_in_text = pretty_duration::pretty_duration(
+                  &std::time::Duration::from_millis(now_in_millis - post_view.get().unwrap().post_view.post.published.timestamp_millis() as u64),
+                  Some(pretty_duration::PrettyDurationOptions {
+                    output_format: Some(pretty_duration::PrettyDurationOutputFormat::Compact),
+                    singular_labels: None,
+                    plural_labels: None,
+                  }),
+                );
+                let abbr_duration = if let Some((index, _)) = duration_in_text.match_indices(' ').nth(1) {
+                  duration_in_text.split_at(index)
+                } else {
+                  (&duration_in_text[..], "")
+                }
+                .0
+                .to_string();
+
                 Some(
                   view! {
                     <Title text={res.post_view.post.name.clone()} />
@@ -264,9 +328,48 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                     <div>
                       <ResponsivePostToolbar post_view={res.post_view.into()} ssr_site post_number=0 reply_show />
                     </div>
-
+                    <div class="px-4 py-2">
+                      // <A href={move || format!("/responsive/p/{}", post_view.get().unwrap().post_view.post.id)} class="pb-1 block hover:text-accent">
+                        <span class="text-xl break-words overflow-y-auto" inner_html={title_encoded} />
+                      // </A>
+                      <span class="block mb-1 text-md">
+                        <span>{abbr_duration}</span>
+                        " ago by "
+                        <a
+                          href={move || format!("{}", post_view.get().unwrap().post_view.creator.actor_id)}
+                          target="_blank"
+                          class="inline break-words hover:text-secondary"
+                        >
+                          <span class="overflow-y-auto" inner_html={creator_name_encoded} />
+                        </a>
+                        " in "
+                        <A
+                          class="inline break-words hover:text-secondary"
+                          href={if post_view.get().unwrap().post_view.community.local {
+                            format!("/responsive/c/{}", post_view.get().unwrap().post_view.community.name)
+                          } else {
+                            format!("/responsive/c/{}@{}", post_view.get().unwrap().post_view.community.name, post_view.get().unwrap().post_view.community.actor_id.inner().host().unwrap().to_string())
+                          }}
+                          on:click={ move |e: MouseEvent| {
+                            // csr_next_page_cursor.set((0, None));
+                            if let Ok(Some(s)) = window().local_storage() {
+                              let mut query_params = query.get();
+                              let _ = s.set_item(&format!("/responsive/c/{}", post_view.get().unwrap().post_view.community.name), "0");
+                            }
+                          }}
+                        >
+                          <span class="overflow-y-auto" inner_html={community_title_encoded} />
+                        </A>
+                      </span>
+                    </div>
                     <a
-                      class="float-left"
+                      // class="float-left"
+                      class={move || {
+                        format!(
+                          "float-left{}",
+                          if post_view.get().unwrap().post_view.post.thumbnail_url.is_none() && post_view.get().unwrap().post_view.post.url.is_none() { " hidden" } else { "" },
+                        )
+                      }}
                       target="_blank"
                       href={move || { if let Some(d) = post_view.get().unwrap().post_view.post.url { d.inner().to_string() } else { format!("/responsive/post/{}", post_view.get().unwrap().post_view.post.id) } }}
                     >

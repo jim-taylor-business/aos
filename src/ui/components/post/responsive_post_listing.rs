@@ -452,45 +452,46 @@ pub fn ResponsivePostListing(
       }}>
         <A href={move || format!("/responsive/p/{}", post_view.get().post.id)} class="block hover:text-accent">
           <span class="text-lg break-words overflow-y-auto" inner_html={title_encoded} />
-        </A>
-        <span class="block mb-1">
+        // </A>
+        <span class="block mb-1 text-sm">
           <span>{abbr_duration}</span>
           " ago by "
-          <a
-            href={move || format!("{}", post_view.get().creator.actor_id)}
-            target="_blank"
-            class="inline text-sm break-words hover:text-secondary"
-          >
+          // <a
+          //   href={move || format!("{}", post_view.get().creator.actor_id)}
+          //   target="_blank"
+          //   class="inline break-words hover:text-secondary"
+          // >
             <span class="overflow-y-auto" inner_html={creator_name_encoded} />
-          </a>
+          // </a>
           " in "
-          <A
-            class="inline text-sm break-words hover:text-secondary"
-            href={if post_view.get().community.local {
-              format!("/responsive/c/{}", post_view.get().community.name)
-            } else {
-              format!("/responsive/c/{}@{}", post_view.get().community.name, post_view.get().community.actor_id.inner().host().unwrap().to_string())
-            }}
-            on:click={ move |e: MouseEvent| {
-              // #[cfg(not(feature = "ssr"))]
-              // set_scroll_cookie.set(Some("0".into()));
-              csr_next_page_cursor.set((0, None));
-              if let Ok(Some(s)) = window().local_storage() {
-                let mut query_params = query.get();
-                // if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&query_params.to_query_string()).ok().unwrap()) {}
-                let _ = s.set_item(&format!("/responsive/c/{}", post_view.get().community.name), "0");
-              }
+          // <A
+          //   class="inline break-words hover:text-secondary"
+          //   href={if post_view.get().community.local {
+          //     format!("/responsive/c/{}", post_view.get().community.name)
+          //   } else {
+          //     format!("/responsive/c/{}@{}", post_view.get().community.name, post_view.get().community.actor_id.inner().host().unwrap().to_string())
+          //   }}
+          //   on:click={ move |e: MouseEvent| {
+          //     // #[cfg(not(feature = "ssr"))]
+          //     // set_scroll_cookie.set(Some("0".into()));
+          //     csr_next_page_cursor.set((0, None));
+          //     if let Ok(Some(s)) = window().local_storage() {
+          //       let mut query_params = query.get();
+          //       // if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&query_params.to_query_string()).ok().unwrap()) {}
+          //       let _ = s.set_item(&format!("/responsive/c/{}", post_view.get().community.name), "0");
+          //     }
 
-              // response_load.set(ResponseLoad(false));
-              // response_cache.set(BTreeMap::new());
-              // e.prevent_default();
-              // csr_resources.set(BTreeMap::new());
-              // csr_next_page_cursor.set((0, None));
-            }}
-          >
+          //     // response_load.set(ResponseLoad(false));
+          //     // response_cache.set(BTreeMap::new());
+          //     // e.prevent_default();
+          //     // csr_resources.set(BTreeMap::new());
+          //     // csr_next_page_cursor.set((0, None));
+          //   }}
+          // >
             <span class="overflow-y-auto" inner_html={community_title_encoded} />
-          </A>
+          // </A>
         </span>
+        </A>
       </div>
       <div class={move || {
         format!(

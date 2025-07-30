@@ -97,16 +97,6 @@ pub fn ResponsiveTopNav(
   //   ssr_error.set(Some((e, None)));
   // }
   //
-  let display_title = Signal::derive(move || {
-    if let Some(pv) = post_view.get() {
-      format!(
-        "{} by {} in {}",
-        pv.post_view.post.name, pv.post_view.creator.name, pv.community_view.community.name
-      )
-    } else {
-      "".to_string()
-    }
-  });
 
   let query = use_query_map();
 
@@ -271,6 +261,30 @@ pub fn ResponsiveTopNav(
 
   let search_action = create_server_action::<SearchFn>();
   let search_term = RwSignal::new("".to_string());
+
+  let display_title = Signal::derive(move || {
+    let s = if let Some(pv) = post_view.get() {
+      let community_title = if pv.post_view.community.local {
+        format!("{}", pv.post_view.community.name)
+      } else {
+        format!(
+          "{}@{}",
+          pv.post_view.community.name,
+          pv.post_view.community.actor_id.inner().host().unwrap().to_string()
+        )
+      };
+      format!(
+        "{} by {} in {}",
+        pv.post_view.post.name,
+        pv.post_view.creator.actor_id.to_string()[8..].to_string(),
+        community_title
+      )
+    } else {
+      "".to_string()
+    };
+    search_term.set(s.clone());
+    s
+  });
 
   let on_search_submit = move |e: SubmitEvent| {
     e.prevent_default();
@@ -536,11 +550,11 @@ pub fn ResponsiveTopNav(
           <div class="hidden sm:flex flex-grow">
             <ActionForm class="form-control flex-grow" action={search_action} on:submit={on_search_submit}>
               <input
-                placeholder=move || display_title.get()
+                // placeholder=move || display_title.get()
                 title=move || display_title.get()
                 class="input w-full"
                 type="text" name="term"
-                prop:value={move || search_term.get()}
+                prop:value={move || display_title.get()}
                 on:input={move |ev| {
                   search_term.set(event_target_value(&ev));
               }}
