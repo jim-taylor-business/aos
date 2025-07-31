@@ -30,7 +30,7 @@
     }
     .prose h4 {
         @apply my-0 mb-1;
-    }
+      }
     .prose h5 {
         @apply my-0 mb-1;
     }

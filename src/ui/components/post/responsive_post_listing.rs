@@ -452,8 +452,8 @@ pub fn ResponsivePostListing(
       }}>
         <A href={move || format!("/responsive/p/{}", post_view.get().post.id)} class="block hover:text-accent">
           <span class="text-lg break-words overflow-y-auto" inner_html={title_encoded} />
-        // </A>
-        <span class="block mb-1 text-sm">
+        </A>
+        <span class="block mb-1 mt-1 text-sm break-words">
           <span>{abbr_duration}</span>
           " ago by "
           // <a
@@ -491,7 +491,7 @@ pub fn ResponsivePostListing(
             <span class="overflow-y-auto" inner_html={community_title_encoded} />
           // </A>
         </span>
-        </A>
+        // </A>
       </div>
       <div class={move || {
         format!(

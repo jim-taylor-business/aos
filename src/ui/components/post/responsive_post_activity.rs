@@ -332,7 +332,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                       // <A href={move || format!("/responsive/p/{}", post_view.get().unwrap().post_view.post.id)} class="pb-1 block hover:text-accent">
                         <span class="text-xl break-words overflow-y-auto" inner_html={title_encoded} />
                       // </A>
-                      <span class="block mb-1 text-md">
+                      <span class="block mb-1 text-md break-words">
                         <span>{abbr_duration}</span>
                         " ago by "
                         <a
