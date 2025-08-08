@@ -8,10 +8,10 @@ use crate::{
 };
 use ev::{MouseEvent, SubmitEvent, TouchEvent};
 use lemmy_api_common::{
-  comment::{CreateComment, CreateCommentLike, EditComment, SaveComment},
+  comment::{CreateComment, CreateCommentLike, EditComment, GetComment, SaveComment},
   lemmy_db_schema::newtypes::PersonId,
   lemmy_db_views::structs::{CommentView, LocalUserView},
-  site::{GetSiteResponse, MyUserInfo},
+  site::{GetModlog, GetSiteResponse, MyUserInfo},
 };
 use leptos::{
   html::{ElementDescriptor, Summary},
@@ -187,6 +187,59 @@ pub fn ResponsiveCommentNode(
         match result {
           Ok(o) => {
             comment_view.set(o.comment_view);
+          }
+          Err(e) => {
+            error.update(|es| es.push(Some((e, None))));
+          }
+        }
+      },
+    );
+  };
+
+  let on_get_click = move |ev: MouseEvent| {
+    ev.stop_propagation();
+    create_local_resource(
+      move || (),
+      move |()| async move {
+        let form = GetComment {
+          id: comment_view.get().comment.id,
+        };
+        let result = LemmyClient.get_comment(form).await;
+        match result {
+          Ok(o) => {
+            comment_view.set(o.comment_view);
+          }
+          Err(e) => {
+            error.update(|es| es.push(Some((e, None))));
+          }
+        }
+      },
+    );
+  };
+
+  let on_mod_log_click = move |ev: MouseEvent| {
+    ev.stop_propagation();
+    create_local_resource(
+      move || (),
+      move |()| async move {
+        let form = GetModlog {
+          comment_id: Some(comment_view.get().comment.id),
+          community_id: None,
+          limit: None,
+          mod_person_id: None,
+          other_person_id: None,
+          page: None,
+          post_id: None,
+          type_: None,
+        };
+        let result = LemmyClient.get_mod_log(form).await;
+        match result {
+          Ok(o) => {
+            if let Some(c) = o.removed_comments.get(0) {
+              comment_view.update(|u| {
+                u.comment = c.comment.clone();
+              });
+            }
           }
           Err(e) => {
             error.update(|es| es.push(Some((e, None))));
@@ -400,27 +453,33 @@ pub fn ResponsiveCommentNode(
         // e.stop_propagation();
         // highlight_show.set(false);
         // }}
-        <Show when={move || !(
-          comment_view.get().comment.deleted
-        )} fallback={|| view! {
-          <Icon icon={Eraser} />
-        }}>
-          <Show when={move || !(
-            comment_view.get().comment.removed
-          )} fallback={|| view! {
-            <Icon icon={Block} />
-          }}>
-            <Show when={move || !(
-              comment_view.get().creator_banned_from_community ||
-              comment_view.get().banned_from_community ||
-              comment_view.get().creator_blocked
-            )} fallback={|| view! {
-              <Icon icon={Hammer} />
-            }}>
-              <div class={move || format!("prose{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html} />
-            </Show>
-          </Show>
-        </Show>
+          // <Show when={move || !(
+          //   comment_view.get().creator_blocked
+          // )} fallback={move || view! {
+          //   <Icon on:click=on_get_click icon={EyeSlash} />
+          // }}>
+              <Show when={move || !(
+                comment_view.get().creator_banned_from_community
+              )} fallback={move || view! {
+                <Icon on:click=on_mod_log_click icon={Hammer} />
+              }}>
+              <Show when={move || !(
+                comment_view.get().comment.removed
+              )} fallback={move || view! {
+                <Icon on:click=on_mod_log_click icon={Block} />
+              }}>
+              <Show when={move || !(
+                comment_view.get().comment.deleted
+              )} fallback={move || view! {
+                <Icon /*on:click=on_get_click*/ icon={Eraser} />
+              }}>
+                { () }
+              </Show>
+              </Show>
+          // </Show>
+              </Show>
+
+        <div class={move || format!("prose{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html} />
 
         <Show when={move || vote_show.get()} fallback={|| view! {}}>
           <div on:click={cancel} class="flex flex-wrap gap-x-2 items-center break-inside-avoid">

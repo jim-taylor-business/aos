@@ -38,9 +38,6 @@ pub trait LemmyApi: Fetch {
   }
 
   async fn logout(&self) -> LemmyAppResult<SuccessResponse> {
-    // let _ = self.make_request::<(), ()>(HttpType::Post, "user/logout", ()).await;
-    // // TODO: do not ignore error due to not being able to decode empty http response cleanly
-    // Ok(())
     self.make_request(HttpType::Post, "user/logout", ()).await
   }
 
@@ -118,6 +115,14 @@ pub trait LemmyApi: Fetch {
 
   async fn search(&self, form: Search) -> LemmyAppResult<SearchResponse> {
     self.make_request(HttpType::Get, "search", form).await
+  }
+
+  async fn get_comment(&self, form: GetComment) -> LemmyAppResult<CommentResponse> {
+    self.make_request(HttpType::Get, "comment", form).await
+  }
+
+  async fn get_mod_log(&self, form: GetModlog) -> LemmyAppResult<GetModlogResponse> {
+    self.make_request(HttpType::Get, "modlog", form).await
   }
 }
 
