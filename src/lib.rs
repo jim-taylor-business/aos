@@ -29,7 +29,7 @@ use lemmy_api_common::{
   post::GetPostsResponse,
   site::GetSiteResponse,
 };
-use leptos::{logging::log, *};
+use leptos::{html::Div, logging::log, *};
 use leptos_meta::*;
 use leptos_router::*;
 use leptos_use::{use_service_worker_with_options, SameSite, UseServiceWorkerOptions};
@@ -128,6 +128,9 @@ pub fn App() -> impl IntoView {
 
   let lot_next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
   provide_context(lot_next_page_cursor);
+
+  let scroll_element: RwSignal<Option<NodeRef<Div>>> = RwSignal::new(None);
+  provide_context(scroll_element);
 
   let site_signal: RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>> = RwSignal::new(None);
 

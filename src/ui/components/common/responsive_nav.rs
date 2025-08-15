@@ -16,7 +16,7 @@ use lemmy_api_common::{
   post::{GetPostResponse, GetPostsResponse},
   site::GetSiteResponse,
 };
-use leptos::{logging::log, *};
+use leptos::{html::Div, logging::log, *};
 use leptos_router::*;
 use leptos_use::*;
 use leptos_use::{use_cookie_with_options, SameSite, UseCookieOptions};
@@ -97,6 +97,8 @@ pub fn ResponsiveTopNav(
   //   ssr_error.set(Some((e, None)));
   // }
   //
+
+  let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
 
   let query = use_query_map();
 
@@ -366,6 +368,11 @@ pub fn ResponsiveTopNav(
                   let mut query_params = query.get();
                   // if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&query_params.to_query_string()).ok().unwrap()) {}
                   let _ = s.set_item("/responsive", "0");
+                }
+                if let Some(on_scroll_element) = scroll_element.get() {
+                  if let Some(se) = on_scroll_element.get() {
+                    se.set_scroll_left(0i32);
+                  }
                 }
                 // #[cfg(not(feature = "ssr"))]
                 // set_scroll_cookie.set(Some("0".into()));

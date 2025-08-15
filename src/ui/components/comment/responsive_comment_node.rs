@@ -453,31 +453,31 @@ pub fn ResponsiveCommentNode(
         // e.stop_propagation();
         // highlight_show.set(false);
         // }}
-          // <Show when={move || !(
-          //   comment_view.get().creator_blocked
-          // )} fallback={move || view! {
-          //   <Icon on:click=on_get_click icon={EyeSlash} />
-          // }}>
+        <Show when={move || !(
+          comment_view.get().creator_banned_from_community || comment_view.get().creator.banned
+        )} fallback={move || view! {
+          <Icon on:click=on_mod_log_click icon={Hammer} />
+        }}>
+          <Show when={move || !(
+            comment_view.get().comment.removed
+          )} fallback={move || view! {
+            <Icon on:click=on_mod_log_click icon={Block} />
+          }}>
+            <Show when={move || !(
+              comment_view.get().comment.deleted
+            )} fallback={move || view! {
+              <Icon /*on:click=on_get_click*/ icon={Eraser} />
+            }}>
               <Show when={move || !(
-                comment_view.get().creator_banned_from_community
+                comment_view.get().creator_blocked
               )} fallback={move || view! {
-                <Icon on:click=on_mod_log_click icon={Hammer} />
+                <Icon on:click=on_get_click icon={EyeSlash} />
               }}>
-              <Show when={move || !(
-                comment_view.get().comment.removed
-              )} fallback={move || view! {
-                <Icon on:click=on_mod_log_click icon={Block} />
-              }}>
-              <Show when={move || !(
-                comment_view.get().comment.deleted
-              )} fallback={move || view! {
-                <Icon /*on:click=on_get_click*/ icon={Eraser} />
-              }}>
-                { () }
+              { () }
               </Show>
-              </Show>
-          // </Show>
-              </Show>
+            </Show>
+          </Show>
+        </Show>
 
         <div class={move || format!("prose{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html} />
 
