@@ -120,15 +120,7 @@ pub fn ResponsiveTopNav(
 
   let on_sort_click = move |s: SortType| {
     move |_e: MouseEvent| {
-      // csr_resources.set(BTreeMap::new());
       csr_next_page_cursor.set((0, None));
-      // if let Ok(Some(s)) = window().local_storage() {
-      //   let mut query_params = query.get();
-      //   // if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&query_params.to_query_string()).ok().unwrap()) {}
-      //   let _ = s.set_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), "0");
-      // }
-      // #[cfg(not(feature = "ssr"))]
-      // set_scroll_cookie.set(Some("0".into()));
 
       let r = serde_json::to_string::<SortType>(&s);
       let mut query_params = query.get();
@@ -144,22 +136,18 @@ pub fn ResponsiveTopNav(
         query_params.remove("sort".into());
       }
       query_params.remove("page".into());
-      // query_params.remove("prev".into());
       let navigate = leptos_router::use_navigate();
       navigate(
         &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
         Default::default(),
       );
-      // response_cache.set(BTreeMap::new());
     }
   };
 
   let on_csr_filter_click = move |l: ListingType| {
     move |_e: MouseEvent| {
       let mut query_params = query.get();
-      // query_params.remove("sort".into());
       query_params.remove("page".into());
-      // query_params.remove("prev".into());
       let navigate = leptos_router::use_navigate();
       if l == ListingType::All {
         query_params.remove("list".into());
@@ -170,7 +158,6 @@ pub fn ResponsiveTopNav(
         &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
         Default::default(),
       );
-      // response_cache.set(BTreeMap::new());
     }
   };
 
@@ -365,8 +352,6 @@ pub fn ResponsiveTopNav(
               <A href="/responsive" class="text-xl py-1/2 whitespace-nowrap" on:click={ move |e: MouseEvent| {
                 csr_next_page_cursor.set((0, None));
                 if let Ok(Some(s)) = window().local_storage() {
-                  let mut query_params = query.get();
-                  // if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&query_params.to_query_string()).ok().unwrap()) {}
                   let _ = s.set_item("/responsive", "0");
                 }
                 if let Some(on_scroll_element) = scroll_element.get() {
@@ -374,14 +359,6 @@ pub fn ResponsiveTopNav(
                     se.set_scroll_left(0i32);
                   }
                 }
-                // #[cfg(not(feature = "ssr"))]
-                // set_scroll_cookie.set(Some("0".into()));
-                // response_cache.set(BTreeMap::new());
-
-                // e.prevent_default();
-                // e.cancel_bubble();
-                // csr_resources.set(BTreeMap::new());
-                // csr_next_page_cursor.set((0, None));
               }}>
                 {move || {
                   if let Some(Ok(GetSiteResponse { site_view: SiteView { site: Site { icon: Some(i), .. }, .. }, .. })) = ssr_site.get() {

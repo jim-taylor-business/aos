@@ -102,8 +102,6 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
     },
     move |(_refresh, _logged_in, list_type, sort_type, from, limit, name)| async move {
       loading.set(true);
-      // csr_next_page_cursor.set((0, None));
-      // csr_resources.set(BTreeMap::new());
 
       let form = GetPosts {
         type_: Some(list_type),
@@ -125,55 +123,18 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
       let result = LemmyClient.list_posts(form.clone()).await;
       loading.set(false);
       match result {
-        Ok(o) => {
-          // #[cfg(not(feature = "ssr"))]
-          // {
-          //   let next_page = Some((ssr_limit(), o.next_page.clone()));
-          //   csr_next_page_cursor.set(next_page.clone().unwrap());
-          // }
-          // if let Ok(Some(s)) = window().local_storage() {
-          //   if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {}
-          //   let _ = s.set_item(&serde_json::to_string(&form).ok().unwrap(), &serde_json::to_string(&o).ok().unwrap());
-          // }
-          Ok((from, o))
-        }
+        Ok(o) => Ok((from, o)),
         Err(e) => {
           error.update(|es| es.push(Some((e.clone(), None))));
           Err((e, Some(refresh)))
         }
       }
-      // } else {
-      //   #[cfg(not(feature = "ssr"))]
-      //   if let Ok(Some(s)) = window().local_storage() {
-      //     if let Ok(Some(c)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {
-      //       if let Ok(o) = serde_json::from_str::<GetPostsResponse>(&c) {
-      //         loading.set(false);
-      //         return Ok((from, o));
-      //       }
-      //     }
-      //   }
-
-      //   loading.set(false);
-      //   let e = LemmyAppError {
-      //     error_type: LemmyAppErrorType::OfflineError,
-      //     content: String::from(""),
-      //   };
-      //   error.update(|es| es.push(Some((e.clone(), None))));
-      //   Err((e, Some(refresh)))
-      // }
     },
   );
 
-  // let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
-  // // let csr_sort = expect_context::<RwSignal<SortType>>();
-  // let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
-
   let on_csr_filter_click = move |l: ListingType| {
     move |_e: MouseEvent| {
-      // csr_resources.set(BTreeMap::new());
-
       let mut query_params = query.get();
-      // query_params.remove("sort".into());
       query_params.remove("from".into());
       query_params.remove("prev".into());
       let navigate = leptos_router::use_navigate();
@@ -204,14 +165,6 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
   {
     use leptos_use::*;
 
-    // let _reset_effect = Effect::new(move |_| {
-    //   if community_name().is_some() {
-    //     csr_resources.set(BTreeMap::new());
-    //   } else {
-    //     csr_resources.set(BTreeMap::new());
-    //   }
-    // });
-
     use_resize_observer(_resize_element, move |entries, _| {
       let _rect = entries[0].content_rect();
       // logging::log!("width: {:.0} height: {:.0}", rect.width(), rect.height());
@@ -241,7 +194,6 @@ pub fn HomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, Lem
 
       if iw >= 640f64 {
         csr_resources.set(BTreeMap::new());
-        // csr_next_page_cursor.set((0, None));
       }
 
       if prev_limit.ne(&new_limit) {

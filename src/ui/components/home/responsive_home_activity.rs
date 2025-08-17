@@ -254,23 +254,6 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
       #[cfg(not(feature = "ssr"))]
       set_timeout(
         move || {
-          // if pages_even_later.eq(&vec![(0usize, "".into())]) {
-          //   if let Ok(Some(s)) = window().local_storage() {
-          //     let mut query_params = query.get();
-          //     let _ = s.set_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), &"0.0");
-          //     log!("gee {}", 0.0);
-          //   }
-          // }
-          // let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-          // if iw < 768f64 {
-          //   if let Ok(Some(s)) = window().local_storage() {
-          //     let mut query_params = query.get();
-          //     if let Ok(Some(l)) = s.get_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string())) {
-          //       window().scroll_to_with_x_and_y(0f64, l.parse().unwrap_or(0f64));
-          //       log!("poop {}", l);
-          //     }
-          //   }
-          // } else {
           if let Some(se) = on_scroll_element.get() {
             if let Ok(Some(s)) = window().local_storage() {
               let mut query_params = query.get();
@@ -281,8 +264,6 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
             }
             scroll_element.set(Some(on_scroll_element));
           }
-          // }
-          // sleep.set(false);
         },
         std::time::Duration::new(0, 1_000_000_000),
       );

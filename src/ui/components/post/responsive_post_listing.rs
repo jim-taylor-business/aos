@@ -456,40 +456,9 @@ pub fn ResponsivePostListing(
         <span class="block mb-1 mt-1 text-sm break-words">
           <span>{abbr_duration}</span>
           " ago by "
-          // <a
-          //   href={move || format!("{}", post_view.get().creator.actor_id)}
-          //   target="_blank"
-          //   class="inline break-words hover:text-secondary"
-          // >
-            <span class="overflow-y-auto" inner_html={creator_name_encoded} />
-          // </a>
+          <span class="overflow-y-auto" inner_html={creator_name_encoded} />
           " in "
-          // <A
-          //   class="inline break-words hover:text-secondary"
-          //   href={if post_view.get().community.local {
-          //     format!("/responsive/c/{}", post_view.get().community.name)
-          //   } else {
-          //     format!("/responsive/c/{}@{}", post_view.get().community.name, post_view.get().community.actor_id.inner().host().unwrap().to_string())
-          //   }}
-          //   on:click={ move |e: MouseEvent| {
-          //     // #[cfg(not(feature = "ssr"))]
-          //     // set_scroll_cookie.set(Some("0".into()));
-          //     csr_next_page_cursor.set((0, None));
-          //     if let Ok(Some(s)) = window().local_storage() {
-          //       let mut query_params = query.get();
-          //       // if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&query_params.to_query_string()).ok().unwrap()) {}
-          //       let _ = s.set_item(&format!("/responsive/c/{}", post_view.get().community.name), "0");
-          //     }
-
-          //     // response_load.set(ResponseLoad(false));
-          //     // response_cache.set(BTreeMap::new());
-          //     // e.prevent_default();
-          //     // csr_resources.set(BTreeMap::new());
-          //     // csr_next_page_cursor.set((0, None));
-          //   }}
-          // >
-            <span class="overflow-y-auto" inner_html={community_title_encoded} />
-          // </A>
+          <span class="overflow-y-auto" inner_html={community_title_encoded} />
         </span>
         // </A>
       </div>

@@ -19,6 +19,9 @@ use leptos_meta::*;
 use leptos_router::{use_location, use_params_map, use_query_map, A};
 use web_sys::{wasm_bindgen::JsCast, HtmlAnchorElement, HtmlImageElement, WheelEvent};
 
+#[cfg(not(feature = "ssr"))]
+use crate::indexed_db::csr_indexed_db::*;
+
 #[component]
 pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
   let params = use_params_map();
@@ -39,23 +42,22 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
 
   #[cfg(not(feature = "ssr"))]
   if let Some(id) = post_id() {
-    let form = CreateComment {
-      content: "".into(),
-      post_id: PostId(id),
-      parent_id: None,
-      language_id: None,
-    };
-    if let Ok(Some(s)) = window().local_storage() {
-      if let Ok(Some(c)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {
-        content.set(c);
-      }
-    }
+    #[cfg(not(feature = "ssr"))]
+    create_local_resource(
+      move || (),
+      move |()| async move {
+        if let Ok(d) = build_indexed_database().await {
+          if let Ok(c) = get_draft(&d, id, Draft::Post).await {
+            content.set(c);
+          }
+        }
+      },
+    );
   }
 
   let post_resource = Resource::new(
     move || (refresh.get(), post_id()),
     move |(_refresh, id_string)| async move {
-      // logging::log!("6 {:?} {}", id_string, _refresh);
       if let Some(id) = id_string {
         let form = GetPost {
           id: Some(PostId(id)),
@@ -71,13 +73,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
           }
         }
       } else {
-        // Err((
-        //   LemmyAppError {
-        //     error_type: LemmyAppErrorType::ParamsError,
-        //     content: "".into(),
-        //   },
-        None //,
-             // ))
+        None
       }
     },
   );
@@ -91,7 +87,6 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
           community_id: None,
           type_: None,
           sort: Some(sort_type),
-          // sort: Some(CommentSortType::Top),
           max_depth: Some(128),
           page: None,
           limit: None,
@@ -130,8 +125,6 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
       if CommentSortType::Top == s {
         query_params.remove("sort".into());
       }
-      // query_params.remove("from".into());
-      // query_params.remove("prev".into());
       let navigate = leptos_router::use_navigate();
       navigate(
         &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
@@ -157,14 +150,9 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
             Ok(_o) => {
               refresh_comments.update(|b| *b = !*b);
               reply_show.update(|b| *b = !*b);
-              let form = CreateComment {
-                content: "".into(),
-                post_id: PostId(id),
-                parent_id: None,
-                language_id: None,
-              };
-              if let Ok(Some(s)) = window().local_storage() {
-                let _ = s.delete(&serde_json::to_string(&form).ok().unwrap());
+              #[cfg(not(feature = "ssr"))]
+              if let Ok(d) = build_indexed_database().await {
+                if let Ok(c) = del_draft(&d, id, Draft::Post).await {}
               }
             }
             Err(e) => {
@@ -351,7 +339,6 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                             format!("/responsive/c/{}@{}", post_view.get().unwrap().post_view.community.name, post_view.get().unwrap().post_view.community.actor_id.inner().host().unwrap().to_string())
                           }}
                           on:click={ move |e: MouseEvent| {
-                            // csr_next_page_cursor.set((0, None));
                             if let Ok(Some(s)) = window().local_storage() {
                               let mut query_params = query.get();
                               let _ = s.set_item(&format!("/responsive/c/{}", post_view.get().unwrap().post_view.community.name), "0");
@@ -466,15 +453,16 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                             on:input={move |ev| {
                               content.set(event_target_value(&ev));
                               if let Some(id) = post_id() {
-                                let form = CreateComment {
-                                  content: "".into(),
-                                  post_id: PostId(id),
-                                  parent_id: None,
-                                  language_id: None,
-                                };
-                                if let Ok(Some(s)) = window().local_storage() {
-                                  let _ = s.set_item(&serde_json::to_string(&form).ok().unwrap(), &event_target_value(&ev));
-                                }
+                                #[cfg(not(feature = "ssr"))]
+                                create_local_resource(
+                                  move || (),
+                                  move |()| async move {
+                                    if let Ok(d) = build_indexed_database().await {
+                                      if let Ok(c) = set_draft(&d, id, Draft::Post, content.get()).await {
+                                      }
+                                    }
+                                  }
+                                );
                               }
                             }}
                           >

@@ -22,6 +22,9 @@ use leptos_dom::helpers::TimeoutHandle;
 use leptos_router::Form;
 use web_sys::{wasm_bindgen::JsCast, DragEvent, Element, Event, HtmlAnchorElement, HtmlDetailsElement, HtmlImageElement, WheelEvent};
 
+#[cfg(not(feature = "ssr"))]
+use crate::indexed_db::csr_indexed_db::*;
+
 #[component]
 pub fn ResponsiveCommentNode(
   ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>,
@@ -268,14 +271,9 @@ pub fn ResponsiveCommentNode(
             now_in_millis.set(chrono::offset::Utc::now().timestamp_millis() as u64);
             children.update(|cs| cs.push(o.comment_view));
             reply_show.set(false);
-            let form = CreateComment {
-              content: "".into(),
-              post_id: comment_view.get().comment.post_id,
-              parent_id: Some(comment_view.get().comment.id),
-              language_id: None,
-            };
-            if let Ok(Some(s)) = window().local_storage() {
-              let _ = s.delete(&serde_json::to_string(&form).ok().unwrap());
+            #[cfg(not(feature = "ssr"))]
+            if let Ok(d) = build_indexed_database().await {
+              if let Ok(c) = del_draft(&d, comment_view.get().comment.id.0, Draft::Reply).await {}
             }
           }
           Err(e) => {
@@ -303,13 +301,9 @@ pub fn ResponsiveCommentNode(
           Ok(_o) => {
             loading.set(false);
             edit_show.set(false);
-            let form = EditComment {
-              content: None,
-              comment_id: comment_view.get().comment.id,
-              language_id: None,
-            };
-            if let Ok(Some(s)) = window().local_storage() {
-              let _ = s.delete(&serde_json::to_string(&form).ok().unwrap());
+            #[cfg(not(feature = "ssr"))]
+            if let Ok(d) = build_indexed_database().await {
+              if let Ok(c) = del_draft(&d, comment_view.get().comment.id.0, Draft::Reply).await {}
             }
           }
           Err(e) => {
@@ -342,9 +336,7 @@ pub fn ResponsiveCommentNode(
 
   view! {
     <div class={move || {
-      // log!("{}", level);
       format!(
-        // "pl-4{}{}",
         "{}{}{}",
         if level > 8 { "" } else { "pl-4" },
         if level == 1 { " odd:bg-base-200 pr-4 pt-2 pb-1" } else { "" },
@@ -376,9 +368,7 @@ pub fn ResponsiveCommentNode(
                 let _ = window().open_with_url_and_target(&l.href(), "_blank");
                 e.prevent_default();
               } else if let Some(s) = t.dyn_ref::<web_sys::Element>() {
-                // log!("detail {:#?}", s.tag_name());
                 if s.tag_name().eq("SUMMARY") {
-                  // e.prevent_default();
                 } else {
                   on_toggle.call(comment_view.get().comment.id.0);
                 }
@@ -525,7 +515,7 @@ pub fn ResponsiveCommentNode(
               <input type="hidden" name="save" value={move || format!("{}", !comment_view.get().saved)} />
               <button
                 type="submit"
-                title="Save comment"
+                title="Save"
                 class={move || {
                   format!(
                     "{}{}",
@@ -542,17 +532,16 @@ pub fn ResponsiveCommentNode(
               on:click={move |_| {
                 edit_show.set(false);
                 reply_show.update(|b| *b = !*b);
-                let form = CreateComment {
-                  content: "".into(),
-                  post_id: comment_view.get().comment.post_id,
-                  parent_id: Some(comment_view.get().comment.id),
-                  language_id: None,
-                };
-                if let Ok(Some(s)) = window().local_storage() {
-                  if let Ok(Some(c)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {
-                    reply_content.set(c);
-                  }
-                }
+                #[cfg(not(feature = "ssr"))]
+                create_local_resource(
+                  move || (),
+                  move |()| async move {
+                    if let Ok(d) = build_indexed_database().await {
+                      if let Ok(c) = get_draft(&d, comment_view.get().comment.id.0, Draft::Reply).await {
+                        reply_content.set(c);
+                      }
+                    }
+                });
               }}
               title="Reply"
             >
@@ -562,18 +551,18 @@ pub fn ResponsiveCommentNode(
               on:click={move |_| {
                 reply_show.set(false);
                 edit_show.update(|b| *b = !*b);
-                let form = EditComment {
-                  content: None,
-                  comment_id: comment_view.get().comment.id,
-                  language_id: None,
-                };
-                if let Ok(Some(s)) = window().local_storage() {
-                  if let Ok(Some(c)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {
-                    edit_content.set(c);
-                  } else {
-                    edit_content.set(comment_view.get_untracked().comment.content);
-                  }
-                }
+                #[cfg(not(feature = "ssr"))]
+                create_local_resource(
+                  move || (),
+                  move |()| async move {
+                    if let Ok(d) = build_indexed_database().await {
+                      if let Ok(c) = get_draft(&d, comment_view.get().comment.id.0, Draft::Edit).await {
+                        edit_content.set(c);
+                      } else {
+                        edit_content.set(comment_view.get_untracked().comment.content);
+                      }
+                    }
+                });
               }}
               class={move || {
                 format!(
@@ -601,7 +590,6 @@ pub fn ResponsiveCommentNode(
               <span>{abbr_duration.clone()}</span>
               " ago, by "
               <a href={move || format!("{}", comment_view.get().creator.actor_id)} target="_blank" class="text-sm hover:text-secondary">
-                // <span inner_html={html_escape::encode_safe(&comment_view.get().creator.name).to_string()} />
                 <span inner_html={html_escape::encode_safe(&comment_view.get().creator.actor_id.to_string()[8..]).to_string()} />
               </a>
             </span>
@@ -638,15 +626,18 @@ pub fn ResponsiveCommentNode(
                 }
                 on:input={move |ev| {
                   reply_content.set(event_target_value(&ev));
-                  let form = CreateComment {
-                    content: "".into(),
-                    post_id: comment_view.get().comment.post_id,
-                    parent_id: Some(comment_view.get().comment.id),
-                    language_id: None,
-                  };
-                  if let Ok(Some(s)) = window().local_storage() {
-                    let _ = s.set_item(&serde_json::to_string(&form).ok().unwrap(), &event_target_value(&ev));
-                  }
+                  #[cfg(not(feature = "ssr"))]
+                  create_local_resource(
+                    move || (),
+                    move |()| async move {
+                      if let Ok(d) = build_indexed_database().await {
+                        if let Ok(comment_ids) = set_draft(&d, comment_view.get().comment.id.0, Draft::Reply, reply_content.get()).await {
+                        } else {
+                          if let Err(e) = set_draft(&d, comment_view.get().comment.id.0, Draft::Reply, reply_content.get()).await {
+                          }
+                        }
+                      }
+                  });
                 }}
               >
                 {reply_content.get_untracked()}
@@ -671,14 +662,15 @@ pub fn ResponsiveCommentNode(
                 on:input={move |ev| {
                   edit_content.set(event_target_value(&ev));
                   comment_view.update(|cv| cv.comment.content = event_target_value(&ev));
-                  let form = EditComment {
-                    content: None,
-                    comment_id: comment_view.get().comment.id,
-                    language_id: None,
-                  };
-                  if let Ok(Some(s)) = window().local_storage() {
-                    let _ = s.set_item(&serde_json::to_string(&form).ok().unwrap(), &event_target_value(&ev));
-                  }
+                  #[cfg(not(feature = "ssr"))]
+                  create_local_resource(
+                    move || (),
+                    move |()| async move {
+                      if let Ok(d) = build_indexed_database().await {
+                        if let Ok(comment_ids) = set_draft(&d, comment_view.get().comment.id.0, Draft::Edit, edit_content.get()).await {
+                        }
+                      }
+                  });
                 }}
               >
                 {edit_content.get_untracked()}
@@ -694,7 +686,6 @@ pub fn ResponsiveCommentNode(
         </div>
       </Show>
       <For each={move || children.get()} key={|cv| cv.comment.id} let:cv>
-      // <span />
         <ResponsiveCommentNode
           ssr_site
           parent_comment_id={comment_view.get().comment.id.0}

@@ -435,7 +435,7 @@ pub fn CommentNode(
               <input type="hidden" name="save" value={move || format!("{}", !comment_view.get().saved)} />
               <button
                 type="submit"
-                title="Save comment"
+                title="Save"
                 class={move || {
                   format!(
                     "{}{}",

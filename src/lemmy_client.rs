@@ -223,6 +223,7 @@ mod client {
 mod client {
 
   use super::*;
+  use crate::indexed_db::csr_indexed_db::{build_indexed_database, set_post_listings};
   use crate::OnlineSetter;
   use gloo_net::{http, http::RequestBuilder};
   use leptos::wasm_bindgen::UnwrapThrowExt;
@@ -345,10 +346,14 @@ mod client {
         let t = r.text().await?;
 
         if method == HttpType::Get {
-          if let Ok(Some(s)) = window().local_storage() {
-            // if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {}
-            let _ = s.set_item(&serde_json::to_string(&form).ok().unwrap(), &t);
+          if let Ok(d) = build_indexed_database().await {
+            if let Ok(c) = set_post_listings(&d, &form, &t).await {}
           }
+
+          // if let Ok(Some(s)) = window().local_storage() {
+          //   // if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {}
+          //   let _ = s.set_item(&serde_json::to_string(&form).ok().unwrap(), &t);
+          // }
         }
 
         if t.is_empty() {

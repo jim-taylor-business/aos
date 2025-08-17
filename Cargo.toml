@@ -51,6 +51,7 @@ gloo-net = { version = "0", optional = true, features = ["http"] }
 console_error_panic_hook = { version = "0", optional = true }
 rexie = { version = "0", optional = true }
 serde-wasm-bindgen = { version = "0", optional = true }
+tsify = "0"
 
 # dependencies for ssr feature
 actix-files = { version = "0", optional = true }
@@ -64,7 +65,7 @@ default = "en"
 locales = ["en", "fr"]
 
 [features]
-default = ["ssr"]
+default = ["csr"]
 hydrate = [
   "leptos/hydrate",
   "leptos_meta/hydrate",

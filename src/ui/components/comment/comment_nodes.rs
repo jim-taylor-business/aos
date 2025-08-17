@@ -33,8 +33,8 @@ pub fn CommentNodes(
     move || (),
     move |()| async move {
       if let Some(p) = _post_id.get() {
-        if let Ok(d) = build_post_meta_database().await {
-          if let Ok(comment_ids) = get_comment_array(&d, p).await {
+        if let Ok(d) = build_indexed_database().await {
+          if let Ok(comment_ids) = get_hidden_comments(&d, p).await {
             hidden_comments.set(comment_ids);
           }
         }
@@ -53,8 +53,8 @@ pub fn CommentNodes(
       move |()| async move {
         #[cfg(not(feature = "ssr"))]
         if let Some(p) = _post_id.get() {
-          if let Ok(d) = build_post_meta_database().await {
-            if let Ok(_) = add_comment_array(&d, p, hidden_comments.get()).await {}
+          if let Ok(d) = build_indexed_database().await {
+            if let Ok(_) = set_hidden_comments(&d, p, hidden_comments.get()).await {}
           }
         }
       },
