@@ -28,7 +28,7 @@ pub struct LemmyClient;
 pub trait Fetch {
   async fn make_request<Response, Form>(&self, method: HttpType, path: &str, form: Form) -> LemmyAppResult<Response>
   where
-    Response: Serializable + for<'de> Deserialize<'de> + 'static,
+    Response: Serializable + Serialize + for<'de> Deserialize<'de> + 'static,
     Form: Serialize + core::clone::Clone + 'static + core::fmt::Debug;
 }
 
@@ -157,7 +157,7 @@ mod client {
   impl Fetch for LemmyClient {
     async fn make_request<Response, Form>(&self, method: HttpType, path: &str, form: Form) -> LemmyAppResult<Response>
     where
-      Response: Serializable + for<'de> Deserialize<'de> + 'static,
+      Response: Serializable + Serialize + for<'de> Deserialize<'de> + 'static,
       Form: Serialize + core::clone::Clone + 'static + core::fmt::Debug,
     {
       let (get_auth_cookie, _) = use_cookie_with_options::<String, FromToStringCodec>(
@@ -223,7 +223,7 @@ mod client {
 mod client {
 
   use super::*;
-  use crate::indexed_db::csr_indexed_db::{build_indexed_database, set_post_listings};
+  use crate::indexed_db::csr_indexed_db::*;
   use crate::OnlineSetter;
   use gloo_net::{http, http::RequestBuilder};
   use leptos::wasm_bindgen::UnwrapThrowExt;
@@ -248,7 +248,7 @@ mod client {
   impl Fetch for LemmyClient {
     async fn make_request<Response, Form>(&self, method: HttpType, path: &str, form: Form) -> LemmyAppResult<Response>
     where
-      Response: Serializable + for<'de> Deserialize<'de> + 'static,
+      Response: Serializable + Serialize + for<'de> Deserialize<'de> + 'static,
       Form: Serialize + core::clone::Clone + 'static + core::fmt::Debug,
     {
       let route = &build_route(path);
@@ -345,30 +345,25 @@ mod client {
 
         let t = r.text().await?;
 
-        if method == HttpType::Get {
-          if let Ok(d) = build_indexed_database().await {
-            if let Ok(c) = set_post_listings(&d, &form, &t).await {}
-          }
-
-          // if let Ok(Some(s)) = window().local_storage() {
-          //   // if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {}
-          //   let _ = s.set_item(&serde_json::to_string(&form).ok().unwrap(), &t);
-          // }
-        }
-
         if t.is_empty() {
           serde_json::from_str::<Response>("{}").map_err(Into::into)
-          // // Ok(()::Response)
         } else {
-          serde_json::from_str::<Response>(&t).map_err(Into::into)
+          let o = serde_json::from_str::<Response>(&t).map_err(Into::into);
+          if method == HttpType::Get {
+            if let Ok(ref e) = o {
+              if let Ok(d) = build_indexed_database().await {
+                if let Ok(c) = set_query_get_cache(&d, &form, e).await {}
+              }
+            }
+          }
+          o
           // r.json::<Response>().await.map_err(Into::into)
         }
       } else {
         if method == HttpType::Get {
-          if let Ok(Some(s)) = window().local_storage() {
-            // logging::log!("off {:#?}", &form);
-            if let Ok(Some(c)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {
-              if let Ok(o) = serde_json::from_str::<Response>(&c) {
+          if let Ok(d) = build_indexed_database().await {
+            if let Ok(c) = get_query_get_cache::<Form, Response>(&d, &form).await {
+              if let Some(o) = c {
                 return Ok(o);
               }
             }

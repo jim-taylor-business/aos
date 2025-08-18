@@ -22,6 +22,8 @@ use leptos_router::*;
 use web_sys::SubmitEvent;
 
 #[cfg(not(feature = "ssr"))]
+use crate::indexed_db::csr_indexed_db::*;
+#[cfg(not(feature = "ssr"))]
 use leptos::html::Img;
 
 #[server(VotePostFn, "/serverfn")]
@@ -127,6 +129,8 @@ pub fn ResponsivePostToolbar(
   ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>,
   post_number: usize,
   reply_show: RwSignal<bool>,
+  content: RwSignal<String>,
+  post_id: Signal<Option<i32>>,
 ) -> impl IntoView {
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
   let logged_in = Signal::derive(move || {
@@ -448,6 +452,19 @@ pub fn ResponsivePostToolbar(
           <span
             class="cursor-pointer"
             on:click={move |_| {
+              if let Some(id) = post_id.get() {
+                #[cfg(not(feature = "ssr"))]
+                create_local_resource(
+                  move || (),
+                  move |()| async move {
+                    if let Ok(d) = build_indexed_database().await {
+                      if let Ok(c) = get_draft(&d, id, Draft::Post).await {
+                        content.set(c);
+                      }
+                    }
+                  },
+                );
+              }
               reply_show.update(|b| *b = !*b);
             }}
             title="Reply"

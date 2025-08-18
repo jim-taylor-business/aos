@@ -27,7 +27,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
   let params = use_params_map();
   let query = use_query_map();
 
-  let post_id = move || params.get().get("id").cloned().unwrap_or_default().parse::<i32>().ok();
+  let post_id = Signal::derive(move || params.get().get("id").cloned().unwrap_or_default().parse::<i32>().ok());
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
   let ssr_sort =
     move || serde_json::from_str::<CommentSortType>(&query.get().get("sort").cloned().unwrap_or("".into())).unwrap_or(CommentSortType::Top);
@@ -40,23 +40,8 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
 
   let post_view = RwSignal::new(None::<GetPostResponse>);
 
-  #[cfg(not(feature = "ssr"))]
-  if let Some(id) = post_id() {
-    #[cfg(not(feature = "ssr"))]
-    create_local_resource(
-      move || (),
-      move |()| async move {
-        if let Ok(d) = build_indexed_database().await {
-          if let Ok(c) = get_draft(&d, id, Draft::Post).await {
-            content.set(c);
-          }
-        }
-      },
-    );
-  }
-
   let post_resource = Resource::new(
-    move || (refresh.get(), post_id()),
+    move || (refresh.get(), post_id.get()),
     move |(_refresh, id_string)| async move {
       if let Some(id) = id_string {
         let form = GetPost {
@@ -79,7 +64,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
   );
 
   let comments = Resource::new(
-    move || (refresh.get(), post_id(), ssr_sort(), refresh_comments.get()),
+    move || (refresh.get(), post_id.get(), ssr_sort(), refresh_comments.get()),
     move |(_refresh, post_id, sort_type, _refresh_comments)| async move {
       if let Some(id) = post_id {
         let form = GetComments {
@@ -138,7 +123,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
     create_local_resource(
       move || (),
       move |()| async move {
-        if let Some(id) = post_id() {
+        if let Some(id) = post_id.get() {
           let form = CreateComment {
             content: content.get(),
             post_id: PostId(id),
@@ -314,7 +299,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                     // })}
 
                     <div>
-                      <ResponsivePostToolbar post_view={res.post_view.into()} ssr_site post_number=0 reply_show />
+                      <ResponsivePostToolbar post_view={res.post_view.into()} ssr_site post_number=0 reply_show content post_id />
                     </div>
                     <div class="px-4 py-2">
                       // <A href={move || format!("/responsive/p/{}", post_view.get().unwrap().post_view.post.id)} class="pb-1 block hover:text-accent">
@@ -350,7 +335,6 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                       </span>
                     </div>
                     <a
-                      // class="float-left"
                       class={move || {
                         format!(
                           "float-left{}",
@@ -436,8 +420,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                     } else {
                       None
                     }}
-                    // <div id="reply_box">
-                    <Show when={move || reply_show.get()} fallback={|| {}}>
+                    <Show when={move || reply_show.get()} fallback={|| { }}>
                       <div class="mb-3 space-y-3 before:content-[''] before:block before:w-24 before:overflow-hidden">
                         <label class="form-control">
                           <textarea
@@ -445,14 +428,12 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                             placeholder="Comment text"
                             prop:value={move || content.get()}
                             node_ref={_visibility_element}
-                            // id="reply_text"
-                            // autofocus=true
                             on:wheel=move |e: WheelEvent| {
                               e.stop_propagation();
                             }
                             on:input={move |ev| {
                               content.set(event_target_value(&ev));
-                              if let Some(id) = post_id() {
+                              if let Some(id) = post_id.get() {
                                 #[cfg(not(feature = "ssr"))]
                                 create_local_resource(
                                   move || (),
@@ -473,12 +454,6 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                           "Comment"
                         </button>
                       </div>
-                    // {
-                    // let t = document().get_element_by_id("reply_text").unwrap().dyn_ref::<HtmlTextAreaElement>().unwrap().clone();
-                    // // let d = document().get_element_by_id("reply_text").unwrap();
-                    // // d.a;
-                    // t.focus();
-                    // }
                     </Show>
                   },
                 )
@@ -510,44 +485,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
               .map(|res| {
                 view! {
                   <div class="w-full before:content-[''] before:block before:w-24 before:overflow-hidden">
-                    // <div class="ml-3 sm:inline-block sm:ml-0 dropdown">
-                    //   <label tabindex="0" class="btn">
-                    //     "Sort"
-                    //   </label>
-                    //   <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
-                    //     <li
-                    //       class={move || { (if CommentSortType::Top == ssr_sort() { "btn-active" } else { "" }).to_string() }}
-                    //       on:click={on_sort_click(CommentSortType::Top)}
-                    //     >
-                    //       <span>"Top"</span>
-                    //     </li>
-                    //     <li
-                    //       class={move || { (if CommentSortType::Hot == ssr_sort() { "btn-active" } else { "" }).to_string() }}
-                    //       on:click={on_sort_click(CommentSortType::Hot)}
-                    //     >
-                    //       <span>"Hot"</span>
-                    //     </li>
-                    //     <li
-                    //       class={move || { (if CommentSortType::New == ssr_sort() { "btn-active" } else { "" }).to_string() }}
-                    //       on:click={on_sort_click(CommentSortType::New)}
-                    //     >
-                    //       <span>"New"</span>
-                    //     </li>
-                    //     <li
-                    //       class={move || { (if CommentSortType::Old == ssr_sort() { "btn-active" } else { "" }).to_string() }}
-                    //       on:click={on_sort_click(CommentSortType::Old)}
-                    //     >
-                    //       <span>"Old"</span>
-                    //     </li>
-                    //     <li
-                    //       class={move || { (if CommentSortType::Controversial == ssr_sort() { "btn-active" } else { "" }).to_string() }}
-                    //       on:click={on_sort_click(CommentSortType::Controversial)}
-                    //     >
-                    //       <span>"Contraversial"</span>
-                    //     </li>
-                    //   </ul>
-                    // </div>
-                    <ResponsiveCommentNodes ssr_site comments={res.comments.into()} _post_id={post_id().into()} />
+                    <ResponsiveCommentNodes ssr_site comments={res.comments.into()} _post_id={post_id.get().into()} />
                   </div>
                 }
               })
