@@ -93,7 +93,7 @@ pub fn ResponsiveCommentNode(
     options.insert(pulldown_cmark::Options::ENABLE_TABLES);
     options.insert(pulldown_cmark::Options::ENABLE_SUPERSCRIPT);
     options.insert(pulldown_cmark::Options::ENABLE_SUBSCRIPT);
-    options.insert(pulldown_cmark::Options::ENABLE_SPOILER);
+    options.insert(pulldown_cmark::Options::ENABLE_CONTAINER_EXTENSIONS);
     let parser = pulldown_cmark::Parser::new_ext(&content, options);
 
     let custom = parser.map(|event| match event {

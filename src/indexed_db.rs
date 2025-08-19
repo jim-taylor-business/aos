@@ -42,7 +42,7 @@ pub mod csr_indexed_db {
     let transaction = rexie.transaction(&["post_closed_comments"], TransactionMode::ReadOnly)?;
     let posts = transaction.store("post_closed_comments")?;
     if let Some(post_meta_value) = posts.get(post_id.into()).await? {
-      leptos::logging::log!("pood {:#?} {:#?}", post_id, post_meta_value);
+      // leptos::logging::log!("pood {:#?} {:#?}", post_id, post_meta_value);
       Ok(serde_wasm_bindgen::from_value::<Vec<i32>>(post_meta_value)?)
     } else {
       Ok(vec![])

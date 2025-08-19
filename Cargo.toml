@@ -1,6 +1,6 @@
 [package]
 name = "aos"
-version = "0.19.11-aos-demo-alpha"
+version = "0.19.12-aos-demo-alpha"
 edition = "2021"
 
 [lib]
@@ -43,6 +43,11 @@ html-escape = "0"
 pretty-duration = { branch = "main", git = "https://github.com/jim-taylor-business/pretty-duration.git" }
 chrono = "0"
 thiserror = "2"
+
+# rand = { version = "0", features = ["std", "std_rng"] }
+# getrandom = { version = "0", default-features = false, features = ["wasm_js"] }
+uuid = { version = "1", default-features = false, features = ["js"] }
+
 
 # specific version required for cargo-leptos wasm compatibility
 wasm-bindgen = { version = "=0.2.100", optional = true }

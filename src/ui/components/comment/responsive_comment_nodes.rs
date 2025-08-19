@@ -38,7 +38,7 @@ pub fn ResponsiveCommentNodes(
       if let Some(p) = post_id.get() {
         if let Ok(d) = build_indexed_database().await {
           if let Ok(comment_ids) = get_hidden_comments(&d, p).await {
-            logging::log!("dood {:#?}", comment_ids);
+            // logging::log!("dood {:#?}", comment_ids);
             hidden_comments.set(comment_ids);
           }
         }

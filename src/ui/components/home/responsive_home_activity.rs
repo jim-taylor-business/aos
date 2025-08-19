@@ -86,7 +86,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
             &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
             &se.scroll_left().to_string(),
           );
-          log!("scrolling {}", se.scroll_left());
+          // log!("scrolling {}", se.scroll_left());
         }
       }
       // }
@@ -171,7 +171,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
         #[cfg(not(feature = "ssr"))]
         refresh_base.set_untracked(chrono::Utc::now().timestamp_millis());
 
-        log!("empty {}", refresh_base.get_untracked());
+        // log!("empty {}", refresh_base.get_untracked());
 
         let form = GetPosts {
           type_: Some(list),
@@ -201,7 +201,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
       } else {
         for p in pages {
           if let Some(c) = rc.get(&(p.0, p.1.clone(), list, sort, name.clone())) {
-            log!("hit {}", p.0);
+            // log!("hit {}", p.0);
             new_pages.push((
               p.0,
               if p.0 == 0usize {
@@ -212,7 +212,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
               c.clone(),
             ));
           } else {
-            log!("miss {}", p.0);
+            // log!("miss {}", p.0);
             let form = GetPosts {
               type_: Some(list),
               sort: Some(sort),
@@ -259,7 +259,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
               let mut query_params = query.get();
               if let Ok(Some(l)) = s.get_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string())) {
                 se.set_scroll_left(l.parse().unwrap_or(0i32));
-                log!("set {}", l);
+                // log!("set {}", l);
               }
             }
             scroll_element.set(Some(on_scroll_element));
@@ -288,7 +288,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
             <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| (p.0, p.1.clone())} let:p>
               <ResponsivePostListings posts={p.2.clone().unwrap().posts.into()} ssr_site page_number={p.0.into()} />
               {
-                log!("next {}", p.0 + 50usize);
+                // log!("next {}", p.0 + 50usize);
                 next_page_cursor.set((p.0 + 50usize, p.2.unwrap().next_page.clone()));
               }
             </For>
