@@ -458,7 +458,7 @@ pub fn ResponsivePostToolbar(
                   move || (),
                   move |()| async move {
                     if let Ok(d) = build_indexed_database().await {
-                      if let Ok(c) = get_draft(&d, id, Draft::Post).await {
+                      if let Ok(Some(c)) = get_draft(&d, id, Draft::Post).await {
                         content.set(c);
                       }
                     }

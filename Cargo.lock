@@ -352,6 +352,7 @@ dependencies = [
  "serde_urlencoded",
  "strum",
  "strum_macros",
+ "thiserror 2.0.12",
  "tsify",
  "wasm-bindgen",
  "web-sys",

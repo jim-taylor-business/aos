@@ -537,7 +537,7 @@ pub fn ResponsiveCommentNode(
                   move || (),
                   move |()| async move {
                     if let Ok(d) = build_indexed_database().await {
-                      if let Ok(c) = get_draft(&d, comment_view.get().comment.id.0, Draft::Reply).await {
+                      if let Ok(Some(c)) = get_draft(&d, comment_view.get().comment.id.0, Draft::Reply).await {
                         reply_content.set(c);
                       }
                     }
@@ -556,7 +556,7 @@ pub fn ResponsiveCommentNode(
                   move || (),
                   move |()| async move {
                     if let Ok(d) = build_indexed_database().await {
-                      if let Ok(c) = get_draft(&d, comment_view.get().comment.id.0, Draft::Edit).await {
+                      if let Ok(Some(c)) = get_draft(&d, comment_view.get().comment.id.0, Draft::Edit).await {
                         edit_content.set(c);
                       } else {
                         edit_content.set(comment_view.get_untracked().comment.content);

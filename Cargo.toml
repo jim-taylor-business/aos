@@ -42,6 +42,7 @@ html-escape = "0"
 # pretty-duration = "0"
 pretty-duration = { branch = "main", git = "https://github.com/jim-taylor-business/pretty-duration.git" }
 chrono = "0"
+thiserror = "2"
 
 # specific version required for cargo-leptos wasm compatibility
 wasm-bindgen = { version = "=0.2.100", optional = true }

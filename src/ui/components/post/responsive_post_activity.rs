@@ -453,6 +453,9 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
                         <button on:click={on_reply_click} type="button" class="btn btn-neutral">
                           "Comment"
                         </button>
+                        <button on:click={move |_| reply_show.set(false)} type="button" class="btn btn-neutral">
+                          "Cancel"
+                        </button>
                       </div>
                     </Show>
                   },
@@ -485,7 +488,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<bool>, Result<GetSiteRes
               .map(|res| {
                 view! {
                   <div class="w-full before:content-[''] before:block before:w-24 before:overflow-hidden">
-                    <ResponsiveCommentNodes ssr_site comments={res.comments.into()} _post_id={post_id.get().into()} />
+                    <ResponsiveCommentNodes ssr_site comments={res.comments.into()} post_id />
                   </div>
                 }
               })

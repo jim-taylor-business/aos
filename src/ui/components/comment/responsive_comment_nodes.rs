@@ -11,7 +11,7 @@ use leptos::*;
 pub fn ResponsiveCommentNodes(
   ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>,
   comments: MaybeSignal<Vec<CommentView>>,
-  _post_id: MaybeSignal<Option<i32>>,
+  post_id: Signal<Option<i32>>,
 ) -> impl IntoView {
   let mut comments_clone = comments.get().clone();
   comments_clone.retain(|ct| ct.comment.path.chars().filter(|c| *c == '.').count() == 1);
@@ -35,9 +35,10 @@ pub fn ResponsiveCommentNodes(
   let _hidden_comments_resource = create_local_resource(
     move || (),
     move |()| async move {
-      if let Some(p) = _post_id.get() {
+      if let Some(p) = post_id.get() {
         if let Ok(d) = build_indexed_database().await {
           if let Ok(comment_ids) = get_hidden_comments(&d, p).await {
+            logging::log!("dood {:#?}", comment_ids);
             hidden_comments.set(comment_ids);
           }
         }
@@ -55,7 +56,7 @@ pub fn ResponsiveCommentNodes(
       move || (),
       move |()| async move {
         #[cfg(not(feature = "ssr"))]
-        if let Some(p) = _post_id.get() {
+        if let Some(p) = post_id.get() {
           if let Ok(d) = build_indexed_database().await {
             if let Ok(_) = set_hidden_comments(&d, p, hidden_comments.get()).await {}
           }
