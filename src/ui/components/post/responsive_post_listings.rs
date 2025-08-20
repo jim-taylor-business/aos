@@ -8,7 +8,7 @@ use leptos::*;
 #[component]
 pub fn ResponsivePostListings(
   posts: MaybeSignal<Vec<PostView>>,
-  ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>,
+  ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>,
   page_number: RwSignal<usize>,
 ) -> impl IntoView {
   let post_number = RwSignal::new(page_number.get());

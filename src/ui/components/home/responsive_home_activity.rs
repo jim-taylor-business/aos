@@ -31,7 +31,7 @@ use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::{js_sys::Atomics::wait_async, Event, MouseEvent, TouchEvent, WheelEvent};
 
 #[component]
-pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
+pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
   let i18n = use_i18n();
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
 

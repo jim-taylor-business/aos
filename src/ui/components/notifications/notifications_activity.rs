@@ -19,7 +19,7 @@ use leptos::*;
 use leptos_meta::*;
 
 #[component]
-pub fn NotificationsActivity(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
+pub fn NotificationsActivity(ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
   let errors = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
   let notifications_refresh = expect_context::<RwSignal<NotificationsRefresh>>();
   let replies_refresh = RwSignal::new(true);

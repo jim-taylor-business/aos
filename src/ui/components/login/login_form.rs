@@ -84,7 +84,6 @@ pub fn LoginForm() -> impl IntoView {
   let query = use_query_map();
 
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
-  let authenticated = expect_context::<RwSignal<Option<bool>>>();
   // let uri = expect_context::<RwSignal<UriSetter>>();
 
   let name = RwSignal::new(String::new());
@@ -133,7 +132,6 @@ pub fn LoginForm() -> impl IntoView {
                 .same_site(SameSite::Lax),
             );
             set_auth_cookie.set(Some(jwt.clone().into_inner()));
-            authenticated.set(Some(true));
             // leptos_router::use_navigate()("/", Default::default());
             // leptos_router::use_navigate()(&query.get().get("uri").cloned().unwrap_or("/".into()), Default::default());
 

@@ -6,7 +6,7 @@ use leptos::*;
 
 #[component]
 pub fn CommentNodes(
-  ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>,
+  ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>,
   comments: MaybeSignal<Vec<CommentView>>,
   _post_id: MaybeSignal<Option<i32>>,
 ) -> impl IntoView {

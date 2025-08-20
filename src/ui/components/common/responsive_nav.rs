@@ -72,7 +72,7 @@ pub async fn change_theme(theme: String) -> Result<(), ServerFnError> {
 
 #[component]
 pub fn ResponsiveTopNav(
-  ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>,
+  ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>,
   #[prop(optional)] default_sort: MaybeProp<SortType>,
   #[prop(optional)] post_view: MaybeSignal<Option<GetPostResponse>>,
   // #[prop(optional)] post_name: MaybeSignal<String>,
@@ -186,7 +186,6 @@ pub fn ResponsiveTopNav(
   //   }
   // }
 
-  let authenticated = expect_context::<RwSignal<Option<bool>>>();
   let notifications_refresh = expect_context::<RwSignal<NotificationsRefresh>>();
   // let uri = expect_context::<RwSignal<UriSetter>>();
 
@@ -237,7 +236,11 @@ pub fn ResponsiveTopNav(
               UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
             );
             set_auth_cookie.set(None);
-            authenticated.set(Some(false));
+            let (get_auth_cookie, set_auth_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+              "jwt",
+              UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+            );
+            set_theme_cookie.set(None);
           }
           Err(e) => {
             logging::warn!("logout error {:#?}", e);
@@ -840,7 +843,7 @@ pub fn ResponsiveTopNav(
 }
 
 #[component]
-pub fn BottomNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
+pub fn BottomNav(ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
   let i18n = use_i18n();
   const FE_VERSION: &str = env!("CARGO_PKG_VERSION");
   const GIT_HASH: std::option::Option<&'static str> = option_env!("GIT_HASH");
@@ -849,7 +852,7 @@ pub fn BottomNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyA
     if let Some(Ok(m)) = ssr_site.get() {
       m.version
     } else {
-      "Lemmy".to_string()
+      "A.O.S".to_string()
     }
   };
 

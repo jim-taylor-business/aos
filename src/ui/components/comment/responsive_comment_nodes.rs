@@ -9,7 +9,7 @@ use leptos::*;
 
 #[component]
 pub fn ResponsiveCommentNodes(
-  ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>,
+  ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>,
   comments: MaybeSignal<Vec<CommentView>>,
   post_id: Signal<Option<i32>>,
 ) -> impl IntoView {

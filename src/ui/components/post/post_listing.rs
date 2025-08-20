@@ -115,7 +115,7 @@ pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostR
 #[component]
 pub fn PostListing(
   post_view: MaybeSignal<PostView>,
-  ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>,
+  ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>,
   post_number: usize,
   reply_show: RwSignal<bool>,
   #[prop(into)] on_community_change: Callback<String, ()>,

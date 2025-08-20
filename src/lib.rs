@@ -23,6 +23,7 @@ use crate::{
     post::post_activity::PostActivity,
   },
 };
+use codee::string::FromToStringCodec;
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SortType},
   lemmy_db_views::structs::PaginationCursor,
@@ -32,7 +33,7 @@ use lemmy_api_common::{
 use leptos::{html::Div, logging::log, *};
 use leptos_meta::*;
 use leptos_router::*;
-use leptos_use::{use_service_worker_with_options, SameSite, UseServiceWorkerOptions};
+use leptos_use::{use_cookie_with_options, use_service_worker_with_options, SameSite, UseCookieOptions, UseServiceWorkerOptions};
 use responsive_layout::ResponsiveLayout;
 use std::collections::BTreeMap;
 use ui::components::{
@@ -40,11 +41,6 @@ use ui::components::{
   post::responsive_post_activity::ResponsivePostActivity,
 };
 use web_sys::Event;
-
-#[cfg(feature = "ssr")]
-use codee::string::FromToStringCodec;
-#[cfg(feature = "ssr")]
-use leptos_use::{use_cookie_with_options, UseCookieOptions};
 
 #[cfg(not(feature = "ssr"))]
 use leptos_use::{use_document_visibility, use_service_worker, UseServiceWorkerReturn};
@@ -72,8 +68,6 @@ pub fn App() -> impl IntoView {
 
   let error: RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>> = RwSignal::new(Vec::new());
   provide_context(error);
-  let authenticated: RwSignal<Option<bool>> = RwSignal::new(None);
-  provide_context(authenticated);
   let online = RwSignal::new(OnlineSetter(true));
   provide_context(online);
   let notifications_refresh = RwSignal::new(NotificationsRefresh(true));
@@ -134,18 +128,26 @@ pub fn App() -> impl IntoView {
 
   let site_signal: RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>> = RwSignal::new(None);
 
+  let (get_auth_cookie, set_auth_cookie) =
+    use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax));
+
   let ssr_site = Resource::new(
-    move || (authenticated.get()),
-    move |user| async move {
-      let result = if user == Some(false) {
+    move || (get_auth_cookie.get()),
+    move |cookie| async move {
+      log!("buuuuu");
+      let result = {
+        if let Some(c) = cookie {
+          if c.len() > 0 {
+            return LemmyClient.get_site().await;
+          }
+        }
+
         if let Some(Ok(mut s)) = site_signal.get() {
           s.my_user = None;
           Ok(s)
         } else {
           LemmyClient.get_site().await
         }
-      } else {
-        LemmyClient.get_site().await
       };
       match result {
         Ok(o) => Ok(o),

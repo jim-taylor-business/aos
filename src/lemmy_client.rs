@@ -9,7 +9,7 @@ use codee::string::FromToStringCodec;
 use lemmy_api_common::private_message::PrivateMessagesResponse;
 use lemmy_api_common::SuccessResponse;
 use lemmy_api_common::{comment::*, community::*, person::*, post::*, private_message::GetPrivateMessages, site::* /* , LemmyErrorType */};
-use leptos::{Serializable, SignalGet};
+use leptos::{Serializable, SignalGet, SignalSet};
 use leptos_use::{use_cookie_with_options, SameSite, UseCookieOptions};
 use serde::{Deserialize, Serialize};
 
@@ -160,7 +160,7 @@ mod client {
       Response: Serializable + Serialize + for<'de> Deserialize<'de> + 'static,
       Form: Serialize + core::clone::Clone + 'static + core::fmt::Debug,
     {
-      let (get_auth_cookie, _) = use_cookie_with_options::<String, FromToStringCodec>(
+      let (get_auth_cookie, set_auth_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
         "jwt",
         UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
       );
@@ -185,6 +185,13 @@ mod client {
           let api_result = r.json::<LemmyErrorType>().await;
 
           match api_result {
+            Ok(LemmyErrorType::IncorrectLogin) => {
+              set_auth_cookie.set(None);
+              return Err(LemmyAppError {
+                error_type: LemmyAppErrorType::ApiError(LemmyErrorType::IncorrectLogin),
+                content: format!("{:#?}", LemmyErrorType::IncorrectLogin),
+              });
+            }
             Ok(le) => {
               return Err(LemmyAppError {
                 error_type: LemmyAppErrorType::ApiError(le.clone()),
@@ -252,7 +259,7 @@ mod client {
       Form: Serialize + core::clone::Clone + 'static + core::fmt::Debug,
     {
       let route = &build_route(path);
-      let (get_auth_cookie, _) = use_cookie_with_options::<String, FromToStringCodec>(
+      let (get_auth_cookie, set_auth_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
         "jwt",
         UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
       );
@@ -306,8 +313,7 @@ mod client {
             let api_result = r.json::<LemmyErrorType>().await;
             match api_result {
               Ok(LemmyErrorType::IncorrectLogin) => {
-                let authenticated = leptos::expect_context::<leptos::RwSignal<Option<bool>>>();
-                authenticated.set(Some(false));
+                set_auth_cookie.set(None);
                 return Err(LemmyAppError {
                   error_type: LemmyAppErrorType::ApiError(LemmyErrorType::IncorrectLogin),
                   content: format!("{:#?}", LemmyErrorType::IncorrectLogin),

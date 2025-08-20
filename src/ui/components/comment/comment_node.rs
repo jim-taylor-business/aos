@@ -17,7 +17,7 @@ use web_sys::{wasm_bindgen::JsCast, HtmlAnchorElement, HtmlDetailsElement, HtmlI
 
 #[component]
 pub fn CommentNode(
-  ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>,
+  ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>,
   comment: MaybeSignal<CommentView>,
   comments: MaybeSignal<Vec<CommentView>>,
   level: usize,

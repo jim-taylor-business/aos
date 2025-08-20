@@ -63,7 +63,7 @@ pub async fn change_theme(theme: String) -> Result<(), ServerFnError> {
 }
 
 #[component]
-pub fn TopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
+pub fn TopNav(ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
   let i18n = use_i18n();
 
   let (_, set_theme_cookie) =
@@ -104,7 +104,6 @@ pub fn TopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppE
   //   }
   // }
 
-  let authenticated = expect_context::<RwSignal<Option<bool>>>();
   let notifications_refresh = expect_context::<RwSignal<NotificationsRefresh>>();
   // let uri = expect_context::<RwSignal<UriSetter>>();
 
@@ -155,7 +154,6 @@ pub fn TopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppE
               UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
             );
             set_auth_cookie.set(None);
-            authenticated.set(Some(false));
           }
           Err(e) => {
             logging::warn!("logout error {:#?}", e);
@@ -514,7 +512,7 @@ pub fn TopNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppE
 }
 
 #[component]
-pub fn BottomNav(ssr_site: Resource<Option<bool>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
+pub fn BottomNav(ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
   let i18n = use_i18n();
   const FE_VERSION: &str = env!("CARGO_PKG_VERSION");
   const GIT_HASH: std::option::Option<&'static str> = option_env!("GIT_HASH");
