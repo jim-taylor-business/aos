@@ -3,9 +3,10 @@ use crate::{
   i18n::*,
   lemmy_client::*,
   ui::components::{
-    common::{about::About, responsive_nav::ResponsiveTopNav},
+    common::about::About,
     home::{site_summary::SiteSummary, trending::Trending},
-    post::{post_listings::PostListings, responsive_post_listings::ResponsivePostListings},
+    post::post_listings::PostListings,
+    responsive::{responsive_nav::ResponsiveTopNav, responsive_post_listings::ResponsivePostListings},
   },
   ResourceStatus, ResponseLoad,
 };

@@ -1,6 +1,6 @@
 use crate::{
   errors::LemmyAppError,
-  ui::components::post::{post_listing::PostListing, responsive_post_listing::ResponsivePostListing},
+  ui::components::{post::post_listing::PostListing, responsive::responsive_post_listing::ResponsivePostListing},
 };
 use lemmy_api_common::{lemmy_db_views::structs::PostView, site::GetSiteResponse};
 use leptos::*;

@@ -17,10 +17,8 @@ use crate::{
   layout::Layout,
   lemmy_client::*,
   ui::components::{
-    communities::communities_activity::CommunitiesActivity,
-    home::{home_activity::HomeActivity, responsive_search_activity::ResponsiveSearchActivity},
-    login::login_activity::LoginActivity,
-    post::post_activity::PostActivity,
+    communities::communities_activity::CommunitiesActivity, home::home_activity::HomeActivity, login::login_activity::LoginActivity,
+    post::post_activity::PostActivity, responsive::responsive_search_activity::ResponsiveSearchActivity,
   },
 };
 use codee::string::FromToStringCodec;
@@ -37,8 +35,8 @@ use leptos_use::{use_cookie_with_options, use_service_worker_with_options, SameS
 use responsive_layout::ResponsiveLayout;
 use std::collections::BTreeMap;
 use ui::components::{
-  home::responsive_home_activity::ResponsiveHomeActivity, notifications::notifications_activity::NotificationsActivity,
-  post::responsive_post_activity::ResponsivePostActivity,
+  notifications::notifications_activity::NotificationsActivity,
+  responsive::{responsive_home_activity::ResponsiveHomeActivity, responsive_post_activity::ResponsivePostActivity},
 };
 use web_sys::Event;
 

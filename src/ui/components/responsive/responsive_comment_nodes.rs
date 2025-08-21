@@ -2,7 +2,7 @@
 use crate::indexed_db::csr_indexed_db::*;
 use crate::{
   errors::LemmyAppError,
-  ui::components::comment::{comment_node::CommentNode, responsive_comment_node::ResponsiveCommentNode},
+  ui::components::{comment::comment_node::CommentNode, responsive::responsive_comment_node::ResponsiveCommentNode},
 };
 use lemmy_api_common::{lemmy_db_views::structs::CommentView, site::GetSiteResponse};
 use leptos::*;

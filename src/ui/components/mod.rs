@@ -5,3 +5,4 @@ pub mod home;
 pub mod login;
 pub mod notifications;
 pub mod post;
+pub mod responsive;

@@ -2,9 +2,11 @@ use crate::{
   errors::{message_from_error, LemmyAppError},
   lemmy_client::*,
   ui::components::{
-    comment::responsive_comment_nodes::ResponsiveCommentNodes,
-    common::responsive_nav::ResponsiveTopNav,
-    post::{post_listing::PostListing, responsive_post_listing::ResponsivePostListing, responsive_post_toolbar::ResponsivePostToolbar},
+    post::post_listing::PostListing,
+    responsive::{
+      responsive_comment_nodes::ResponsiveCommentNodes, responsive_nav::ResponsiveTopNav, responsive_post_listing::ResponsivePostListing,
+      responsive_post_toolbar::ResponsivePostToolbar,
+    },
   },
 };
 use ev::MouseEvent;
