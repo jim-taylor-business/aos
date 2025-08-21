@@ -1,5 +1,5 @@
 use crate::{
-  errors::{message_from_error, LemmyAppError},
+  errors::{message_from_error, LemmyAppError, LemmyAppErrorType},
   lemmy_client::*,
   ui::components::{
     post::post_listing::PostListing,
@@ -49,16 +49,16 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
     move || serde_json::from_str::<CommentSortType>(&query.get().get("sort").cloned().unwrap_or("".into())).unwrap_or(CommentSortType::Top);
 
   let reply_show = RwSignal::new(false);
-  let refresh_comments = RwSignal::new(false);
+  // let refresh_comments = RwSignal::new(false);
   let content = RwSignal::new(String::default());
   let loading = RwSignal::new(true);
-  let refresh = RwSignal::new(false);
+  // let refresh = RwSignal::new(false);
 
   let post_view = RwSignal::new(None::<GetPostResponse>);
 
   let post_resource = Resource::new(
-    move || (refresh.get(), post_id.get()),
-    move |(_refresh, id_string)| async move {
+    move || (post_id.get()),
+    move |(id_string)| async move {
       if let Some(id) = id_string {
         let form = GetPost {
           id: Some(PostId(id)),
@@ -70,7 +70,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
           Ok(o) => Some(Ok(o)),
           Err(e) => {
             error.update(|es| es.push(Some((e.clone(), None))));
-            Some(Err((e, Some(refresh))))
+            Some(Err(e))
           }
         }
       } else {
@@ -79,9 +79,9 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
     },
   );
 
-  let comments = Resource::new(
-    move || (refresh.get(), post_id.get(), ssr_sort(), refresh_comments.get()),
-    move |(_refresh, post_id, sort_type, _refresh_comments)| async move {
+  let comments_resource = Resource::new(
+    move || (post_id.get(), ssr_sort()),
+    move |(post_id, sort_type)| async move {
       if let Some(id) = post_id {
         let form = GetComments {
           post_id: Some(PostId(id)),
@@ -149,7 +149,8 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
           let result = LemmyClient.reply_comment(form).await;
           match result {
             Ok(_o) => {
-              refresh_comments.update(|b| *b = !*b);
+              comments_resource.refetch();
+              // refresh_comments.update(|b| *b = !*b);
               reply_show.update(|b| *b = !*b);
               #[cfg(not(feature = "ssr"))]
               if let Ok(d) = build_indexed_database().await {
@@ -196,26 +197,57 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
         <Transition fallback={|| {}}>
           {move || {
             match post_resource.get() {
-              Some(Some(Err(err))) => {
+              Some(Some(Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }))) => {
                 Some(
                   view! {
                     <Title text="Error loading post" />
                     <div class="py-4 px-8">
-                      <div class="flex justify-between alert alert-error">
-                        <span>{message_from_error(&err.0)} " - " {err.0.content}</span>
+                      <div class="flex justify-between alert alert-warning">
+                        <span> "Offline" </span>
                         <div>
-                          <Show when={move || { if let Some(_) = err.1 { true } else { false } }} fallback={|| {}}>
+                          // <Show when={move || { if let Some(_) = err.1 { true } else { false } }} fallback={|| {}}>
                             <button
                               on:click={move |_| {
-                                if let Some(r) = err.1 {
-                                  r.set(!r.get());
-                                } else {}
+                                post_resource.refetch();
+                                comments_resource.refetch();
+                                // if let Some(r) = err.1 {
+                                //   r.set(!r.get());
+                                // } else {}
                               }}
                               class="btn btn-sm"
                             >
                               "Retry"
                             </button>
-                          </Show>
+                          // </Show>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="hidden" />
+                  },
+                )
+              }
+              Some(Some(Err(_))) => {
+                Some(
+                  view! {
+                    <Title text="Error loading post" />
+                    <div class="py-4 px-8">
+                      <div class="flex justify-between alert alert-error">
+                        <span> "Error" </span>
+                        <div>
+                          // <Show when={move || { if let Some(_) = err.1 { true } else { false } }} fallback={|| {}}>
+                            <button
+                              on:click={move |_| {
+                                post_resource.refetch();
+                                comments_resource.refetch();
+                                // if let Some(r) = err.1 {
+                                //   r.set(!r.get());
+                                // } else {}
+                              }}
+                              class="btn btn-sm"
+                            >
+                              "Retry"
+                            </button>
+                          // </Show>
                         </div>
                       </div>
                     </div>
@@ -502,7 +534,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
         </Transition>
         <Transition fallback={|| {}}>
           {move || {
-            comments
+            comments_resource
               .get()
               .unwrap_or(None)
               .map(|res| {
