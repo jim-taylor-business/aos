@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 
 use crate::{
-  errors::{message_from_error, LemmyAppError},
+  errors::{message_from_error, LemmyAppError, LemmyAppResult},
   i18n::*,
   lemmy_client::*,
   ui::components::common::icon::{Icon, IconType::*},
@@ -88,7 +88,7 @@ pub fn ResponsiveTopNav(
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
   // let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
   let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
-  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>>>();
+  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), LemmyAppResult<GetPostsResponse>>>>();
   // let response_load = expect_context::<RwSignal<ResponseLoad>>();
 
   // let ssr_error = RwSignal::new::<Option<(LemmyAppError, Option<RwSignal<bool>>)>>(None);

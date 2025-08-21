@@ -5,6 +5,7 @@ use crate::{
     comment::comment_node::CommentNode,
     common::icon::{Icon, IconType::*},
   },
+  OnlineSetter,
 };
 use ev::{MouseEvent, SubmitEvent, TouchEvent};
 use lemmy_api_common::{
@@ -44,6 +45,7 @@ pub fn ResponsiveCommentNode(
       Some(false)
     }
   });
+  let online = expect_context::<RwSignal<OnlineSetter>>();
 
   let current_person = Signal::derive(move || {
     if let Some(Ok(GetSiteResponse {
@@ -482,11 +484,11 @@ pub fn ResponsiveCommentNode(
                   format!(
                     "{}{}",
                     { if Some(1) == comment_view.get().my_vote { "text-secondary" } else { "" } },
-                    { if Some(true) != logged_in.get() { " text-base-content/50" } else { " hover:text-secondary/50" } },
+                    { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
                   )
                 }}
                 title="Up vote"
-                disabled={move || Some(true) != logged_in.get()}
+                disabled={move || Some(true) != logged_in.get() || !online.get().0}
               >
                 <Icon icon={Upvote} />
               </button>
@@ -501,11 +503,11 @@ pub fn ResponsiveCommentNode(
                   format!(
                     "{}{}",
                     { if Some(-1) == comment_view.get().my_vote { "text-primary" } else { "" } },
-                    { if Some(true) != logged_in.get() { " text-base-content/50" } else { " hover:text-primary/50" } },
+                    { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-primary/50" } },
                   )
                 }}
                 title="Down vote"
-                disabled={move || Some(true) != logged_in.get()}
+                disabled={move || Some(true) != logged_in.get() || !online.get().0}
               >
                 <Icon icon={Downvote} />
               </button>
@@ -520,15 +522,15 @@ pub fn ResponsiveCommentNode(
                   format!(
                     "{}{}",
                     { if comment_view.get().saved { "text-accent" } else { "" } },
-                    { if Some(true) != logged_in.get() { " text-base-content/50" } else { " hover:text-accent/50" } },
+                    { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
                   )
                 }}
-                disabled={move || Some(true) != logged_in.get()}
+                disabled={move || Some(true) != logged_in.get() || !online.get().0}
               >
                 <Icon icon={Save} />
               </button>
             </Form>
-            <span
+            <button
               on:click={move |_| {
                 edit_show.set(false);
                 reply_show.update(|b| *b = !*b);
@@ -544,10 +546,17 @@ pub fn ResponsiveCommentNode(
                 });
               }}
               title="Reply"
+              class={move || {
+                format!(
+                  "{}",
+                  { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+                )
+              }}
+              disabled={move || Some(true) != logged_in.get() || !online.get().0}
             >
               <Icon icon={Reply} />
-            </span>
-            <span
+            </button>
+            <button
               on:click={move |_| {
                 reply_show.set(false);
                 edit_show.update(|b| *b = !*b);
@@ -566,14 +575,16 @@ pub fn ResponsiveCommentNode(
               }}
               class={move || {
                 format!(
-                  "{}",
+                  "{}{}",
                   if current_person.get().eq(&Some(comment_view.get().creator)) { "" } else { "pointer-events-none text-base-content/50" },
+                  { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
                 )
               }}
+              disabled={move || Some(true) != logged_in.get() || !online.get().0}
               title="Edit"
             >
               <Icon icon={Pencil} />
-            </span>
+            </button>
             <span
               on:click={move |_| {
                 if highlight_user_id.get().eq(&Some(comment_view.get().creator.id)) {
@@ -643,7 +654,9 @@ pub fn ResponsiveCommentNode(
                 {reply_content.get_untracked()}
               </textarea>
             </label>
-            <button on:click={on_reply_click} type="button" class=move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })>
+            <button on:click={on_reply_click} type="button"
+              disabled={move || Some(true) != logged_in.get() || !online.get().0}
+              class=move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })>
               "Reply"
             </button>
             <button on:click={move |_| reply_show.set(false)} type="button" class="btn btn-neutral">
@@ -676,7 +689,9 @@ pub fn ResponsiveCommentNode(
                 {edit_content.get_untracked()}
               </textarea>
             </label>
-            <button on:click={on_edit_click} type="button" class=move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })>
+            <button on:click={on_edit_click} type="button"
+              disabled={move || Some(true) != logged_in.get() || !online.get().0}
+              class=move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })>
               "Edit"
             </button>
             <button on:click={on_cancel_click} type="button" class="btn btn-neutral">

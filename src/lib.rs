@@ -12,7 +12,7 @@ mod responsive_layout;
 mod ui;
 
 use crate::{
-  errors::LemmyAppError,
+  errors::{LemmyAppError, LemmyAppResult},
   i18n::*,
   layout::Layout,
   lemmy_client::*,
@@ -109,7 +109,8 @@ pub fn App() -> impl IntoView {
 
   // let lot_resources: RwSignal<BTreeMap<(usize, usize, ResourceStatus), Resource<Option<PaginationCursor>, Result<GetPostsResponse, LemmyAppError>>>> =
 
-  let response_cache: RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>> = RwSignal::new(BTreeMap::new());
+  let response_cache: RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), LemmyAppResult<GetPostsResponse>>> =
+    RwSignal::new(BTreeMap::new());
   provide_context(response_cache);
 
   // let search_cache: RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>> = RwSignal::new(BTreeMap::new());
@@ -132,7 +133,7 @@ pub fn App() -> impl IntoView {
   let ssr_site = Resource::new(
     move || (get_auth_cookie.get()),
     move |cookie| async move {
-      log!("buuuuu");
+      // log!("buuuuu");
       let result = {
         if let Some(c) = cookie {
           if c.len() > 0 {

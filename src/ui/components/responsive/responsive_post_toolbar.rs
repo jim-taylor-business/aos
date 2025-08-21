@@ -1,10 +1,10 @@
 use std::collections::BTreeMap;
 
 use crate::{
-  errors::{LemmyAppError, LemmyAppErrorType},
+  errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult},
   lemmy_client::*,
   ui::components::common::icon::{Icon, IconType::*},
-  ResourceStatus, ResponseLoad,
+  OnlineSetter, ResourceStatus, ResponseLoad,
 };
 use codee::string::FromToStringCodec;
 use ev::MouseEvent;
@@ -141,9 +141,10 @@ pub fn ResponsivePostToolbar(
     }
   });
   // let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
-  let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
-  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>>>();
+  // let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
+  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), LemmyAppResult<GetPostsResponse>>>>();
   // let response_load = expect_context::<RwSignal<ResponseLoad>>();
+  let online = expect_context::<RwSignal<OnlineSetter>>();
 
   let post_view = RwSignal::new(post_view.get());
   let vote_action = create_server_action::<VotePostFn>();
@@ -377,10 +378,10 @@ pub fn ResponsivePostToolbar(
               format!(
                 "{}{}",
                 { if Some(1) == post_view.get().my_vote { "text-secondary" } else { "" } },
-                { if Some(true) != logged_in.get() { " text-base-content/50" } else { " hover:text-secondary/50" } },
+                { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
               )
             }}
-            disabled={move || Some(true) != logged_in.get()}
+            disabled={move || Some(true) != logged_in.get() || !online.get().0}
             title="Up vote"
           >
             <Icon icon={Upvote} />
@@ -396,10 +397,10 @@ pub fn ResponsivePostToolbar(
               format!(
                 "{}{}",
                 { if Some(-1) == post_view.get().my_vote { "text-primary" } else { "" } },
-                { if Some(true) != logged_in.get() { " text-base-content/50" } else { " hover:text-primary/50" } },
+                { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-primary/50" } },
               )
             }}
-            disabled={move || Some(true) != logged_in.get()}
+            disabled={move || Some(true) != logged_in.get() || !online.get().0}
             title="Down vote"
           >
             <Icon icon={Downvote} />
@@ -441,16 +442,21 @@ pub fn ResponsivePostToolbar(
               format!(
                 "{}{}",
                 { if post_view.get().saved { "text-accent" } else { "" } },
-                { if Some(true) != logged_in.get() { " text-base-content/50" } else { " hover:text-accent/50" } },
+                { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
               )
             }}
-            disabled={move || Some(true) != logged_in.get()}
+            disabled={move || Some(true) != logged_in.get() || !online.get().0}
           >
             <Icon icon={Save} />
           </button>
         </ActionForm>
-          <span
-            class="cursor-pointer"
+          <button
+            class={move || {
+              format!(
+                "cursor-pointer{}",
+                { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+              )
+            }}
             on:click={move |_| {
               if let Some(id) = post_id.get() {
                 #[cfg(not(feature = "ssr"))]
@@ -468,9 +474,10 @@ pub fn ResponsivePostToolbar(
               reply_show.update(|b| *b = !*b);
             }}
             title="Reply"
+            disabled={move || Some(true) != logged_in.get() || !online.get().0}
           >
             <Icon icon={Reply} />
-          </span>
+          </button>
         // </Show>
         <span class={format!("text-base-content{}", if post_view.get().post.local { " hidden" } else { "" })} title="Original post">
           <A href={post_view.get().post.ap_id.inner().to_string()}>

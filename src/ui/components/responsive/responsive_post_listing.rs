@@ -4,7 +4,7 @@ use crate::{
   errors::{LemmyAppError, LemmyAppErrorType},
   lemmy_client::*,
   ui::components::common::icon::{Icon, IconType::*},
-  ResourceStatus, ResponseLoad,
+  OnlineSetter, ResourceStatus, ResponseLoad,
 };
 use codee::string::FromToStringCodec;
 use ev::MouseEvent;
@@ -136,9 +136,11 @@ pub fn ResponsivePostListing(
       Some(false)
     }
   });
+  let online = expect_context::<RwSignal<OnlineSetter>>();
+
   // let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
-  let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
-  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>>>();
+  // let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
+  // let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>>>();
   // let response_load = expect_context::<RwSignal<ResponseLoad>>();
 
   let post_view = RwSignal::new(post_view.get());
@@ -477,10 +479,10 @@ pub fn ResponsivePostListing(
               format!(
                 "{}{}",
                 { if Some(1) == post_view.get().my_vote { "text-secondary" } else { "" } },
-                { if Some(true) != logged_in.get() { " text-base-content/50" } else { " hover:text-secondary/50" } },
+                { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
               )
             }}
-            disabled={move || Some(true) != logged_in.get()}
+            disabled={move || Some(true) != logged_in.get() || !online.get().0}
             title="Up vote"
           >
             <Icon icon={Upvote} />
@@ -496,10 +498,10 @@ pub fn ResponsivePostListing(
               format!(
                 "{}{}",
                 { if Some(-1) == post_view.get().my_vote { "text-primary" } else { "" } },
-                { if Some(true) != logged_in.get() { " text-base-content/50" } else { " hover:text-primary/50" } },
+                { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-primary/50" } },
               )
             }}
-            disabled={move || Some(true) != logged_in.get()}
+            disabled={move || Some(true) != logged_in.get() || !online.get().0}
             title="Down vote"
           >
             <Icon icon={Downvote} />
@@ -541,10 +543,10 @@ pub fn ResponsivePostListing(
               format!(
                 "{}{}",
                 { if post_view.get().saved { "text-accent" } else { "" } },
-                { if Some(true) != logged_in.get() { " text-base-content/50" } else { " hover:text-accent/50" } },
+                { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
               )
             }}
-            disabled={move || Some(true) != logged_in.get()}
+            disabled={move || Some(true) != logged_in.get() || !online.get().0}
           >
             <Icon icon={Save} />
           </button>

@@ -8,6 +8,7 @@ use crate::{
       responsive_post_toolbar::ResponsivePostToolbar,
     },
   },
+  OnlineSetter,
 };
 use ev::MouseEvent;
 use lemmy_api_common::{
@@ -31,6 +32,19 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
 
   let post_id = Signal::derive(move || params.get().get("id").cloned().unwrap_or_default().parse::<i32>().ok());
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
+
+  let logged_in = Signal::derive(move || {
+    if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() {
+      Some(true)
+    } else {
+      Some(false)
+    }
+  });
+  let online = expect_context::<RwSignal<OnlineSetter>>();
+
+  let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
+  scroll_element.set(None);
+
   let ssr_sort =
     move || serde_json::from_str::<CommentSortType>(&query.get().get("sort").cloned().unwrap_or("".into())).unwrap_or(CommentSortType::Top);
 
@@ -452,7 +466,11 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                             {content.get_untracked()}
                           </textarea>
                         </label>
-                        <button on:click={on_reply_click} type="button" class="btn btn-neutral">
+                        <button
+                          on:click={on_reply_click} type="button"
+                          class={move || {format!("btn btn-neutral{}", { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } })}}
+                          disabled={move || Some(true) != logged_in.get() || !online.get().0}
+                        >
                           "Comment"
                         </button>
                         <button on:click={move |_| reply_show.set(false)} type="button" class="btn btn-neutral">

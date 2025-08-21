@@ -1,5 +1,5 @@
 use crate::{
-  errors::{message_from_error, LemmyAppError},
+  errors::{message_from_error, LemmyAppError, LemmyAppErrorType, LemmyAppResult},
   i18n::*,
   lemmy_client::*,
   ui::components::{
@@ -19,7 +19,7 @@ use lemmy_api_common::{
   post::{GetPosts, GetPostsResponse},
   site::GetSiteResponse,
 };
-use leptos::{html::*, logging::log, *};
+use leptos::{html::*, logging::log, svg::view, *};
 use leptos_meta::*;
 use leptos_router::*;
 use leptos_use::*;
@@ -43,7 +43,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
   let ssr_list = move || serde_json::from_str::<ListingType>(&query.get().get("list").cloned().unwrap_or("".into())).unwrap_or(ListingType::All);
   let ssr_sort = move || serde_json::from_str::<SortType>(&query.get().get("sort").cloned().unwrap_or("".into())).unwrap_or(SortType::Active);
   let ssr_page = move || serde_json::from_str::<Vec<(usize, String)>>(&query.get().get("page").cloned().unwrap_or("".into())).unwrap_or(vec![]);
-  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>>>();
+  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), LemmyAppResult<GetPostsResponse>>>>();
   let next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
 
   let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
@@ -114,7 +114,9 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                 if st.len() == 0 {
                   st.push((0usize, "".into()));
                 }
-                st.push((key, next_page));
+                if st.iter().find(|s| s.0 == key).is_none() {
+                  st.push((key, next_page));
+                }
               }
               let mut query_params = query.get();
               query_params.insert("page".into(), serde_json::to_string(&st).unwrap_or("[]".into()));
@@ -165,8 +167,9 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
   let post_list_resource = Resource::new(
     move || (logged_in.get(), ssr_list(), ssr_sort(), ssr_name(), ssr_page()),
     move |(_logged_in, list, sort, name, mut pages)| async move {
-      let mut rc = response_cache.get();
-      let mut new_pages: Vec<(usize, String, Option<GetPostsResponse>)> = vec![];
+      loading.set(true);
+      let mut rc = response_cache.get_untracked();
+      let mut new_pages: Vec<(usize, String, LemmyAppResult<GetPostsResponse>)> = vec![];
 
       if pages.len() == 0 {
         #[cfg(not(feature = "ssr"))]
@@ -190,28 +193,64 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
           show_read: Some(true),
         };
         let result = LemmyClient.list_posts(form.clone()).await;
-        match result {
-          Ok(o) => {
-            new_pages.push((0, format!("{}", refresh_base.get_untracked()), Some(o.clone())));
-            response_cache.update(move |rc| {
-              rc.insert((0, "".into(), ListingType::All, SortType::Active, "".into()), Some(o));
-            });
-          }
-          Err(e) => {}
-        }
+        new_pages.push((0, format!("{}", refresh_base.get_untracked()), result.clone()));
+        response_cache.update(move |rc| {
+          rc.insert((0, "".into(), ListingType::All, SortType::Active, "".into()), result);
+        });
+        // match result {
+        //   Ok(o) => {
+        //   }
+        //   Err(e) => {}
+        // }
       } else {
         for p in pages {
           if let Some(c) = rc.get(&(p.0, p.1.clone(), list, sort, name.clone())) {
+            match c {
+              Ok(_) => {
+                new_pages.push((
+                  p.0,
+                  if p.0 == 0usize {
+                    format!("{}", refresh_base.get_untracked())
+                  } else {
+                    p.1.clone()
+                  },
+                  c.clone(),
+                ));
+              }
+              _ => {
+                let form = GetPosts {
+                  type_: Some(list),
+                  sort: Some(sort),
+                  community_name: if name.clone().len() == 0usize { None } else { Some(name.clone()) },
+                  community_id: None,
+                  page: None,
+                  limit: Some(50),
+                  saved_only: None,
+                  disliked_only: None,
+                  liked_only: None,
+                  page_cursor: if p.0 == 0usize { None } else { Some(PaginationCursor(p.1.clone())) },
+                  show_hidden: Some(true),
+                  show_nsfw: Some(false),
+                  show_read: Some(true),
+                };
+                let result = LemmyClient.list_posts(form.clone()).await;
+                new_pages.push((
+                  p.0,
+                  if p.0 == 0usize {
+                    format!("{}", refresh_base.get_untracked())
+                  } else {
+                    format!("{}", chrono::Utc::now().timestamp_millis())
+                    // p.1.clone()
+                  },
+                  result.clone(),
+                ));
+                let moved_name = name.clone();
+                response_cache.update(move |rc| {
+                  rc.insert((p.0, p.1.clone(), list, sort, moved_name), result);
+                });
+              }
+            }
             // log!("hit {}", p.0);
-            new_pages.push((
-              p.0,
-              if p.0 == 0usize {
-                format!("{}", refresh_base.get_untracked())
-              } else {
-                p.1.clone()
-              },
-              c.clone(),
-            ));
           } else {
             // log!("miss {}", p.0);
             let form = GetPosts {
@@ -230,24 +269,24 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
               show_read: Some(true),
             };
             let result = LemmyClient.list_posts(form.clone()).await;
-            match result {
-              Ok(o) => {
-                new_pages.push((
-                  p.0,
-                  if p.0 == 0usize {
-                    format!("{}", refresh_base.get_untracked())
-                  } else {
-                    p.1.clone()
-                  },
-                  Some(o.clone()),
-                ));
-                let moved_name = name.clone();
-                response_cache.update(move |rc| {
-                  rc.insert((p.0, p.1.clone(), list, sort, moved_name), Some(o));
-                });
-              }
-              Err(e) => {}
-            }
+            new_pages.push((
+              p.0,
+              if p.0 == 0usize {
+                format!("{}", refresh_base.get_untracked())
+              } else {
+                p.1.clone()
+              },
+              result.clone(),
+            ));
+            let moved_name = name.clone();
+            response_cache.update(move |rc| {
+              rc.insert((p.0, p.1.clone(), list, sort, moved_name), result);
+            });
+            // match result {
+            //   Ok(o) => {
+            //   }
+            //   Err(e) => {}
+            // }
           }
         }
       }
@@ -255,6 +294,8 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
       #[cfg(not(feature = "ssr"))]
       set_timeout(
         move || {
+          loading.set(false);
+
           if let Some(se) = on_scroll_element.get() {
             if let Ok(Some(s)) = window().local_storage() {
               let mut query_params = query.get();
@@ -266,12 +307,16 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
             scroll_element.set(Some(on_scroll_element));
           }
         },
-        std::time::Duration::new(0, 1_000_000_000),
+        std::time::Duration::new(0, 750_000_000),
       );
 
       (new_pages)
     },
   );
+
+  let on_retry_click = move |_e: MouseEvent| {
+    post_list_resource.refetch();
+  };
 
   view! {
     <main class="flex flex-col">
@@ -282,18 +327,86 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
             se.scroll_by_with_x_and_y(e.delta_y(), 0f64);
           }
         } node_ref=on_scroll_element class={move || {
-          format!("md:h-[calc(100%-4rem)] min-w-full md:absolute md:overflow-x-auto md:overflow-y-hidden md:columns-sm md:px-4 gap-4{}", if loading.get() { " opacity-25" } else { "" })
+          // format!("md:h-[calc(100%-4rem)] min-w-full md:absolute md:overflow-x-auto md:overflow-y-hidden md:columns-sm md:px-4 gap-4{}", if loading.get() { " opacity-25" } else { "" })
+          "md:h-[calc(100%-4rem)] min-w-full md:absolute md:overflow-x-auto md:overflow-y-hidden md:columns-sm md:px-4 gap-4"
         }}>
           <Transition fallback={|| {}}>
             <Title text="" />
             <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| (p.0, p.1.clone())} let:p>
-              <ResponsivePostListings posts={p.2.clone().unwrap().posts.into()} ssr_site page_number={p.0.into()} />
               {
-                // log!("next {}", p.0 + 50usize);
-                next_page_cursor.set((p.0 + 50usize, p.2.unwrap().next_page.clone()));
+                match p.2 {
+                  Ok(ref o) => {
+                    loading.set(false);
+                    // log!("next {}", p.0 + 50usize);
+                    next_page_cursor.set((p.0 + 50usize, o.next_page.clone()));
+                    view! {
+                      <div>
+                        <ResponsivePostListings posts={o.posts.clone().into()} ssr_site page_number={p.0.into()} />
+                      </div>
+                    }
+                  }
+                  Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
+                    view! {
+                      <div class="py-4 px-8 break-inside-avoid">
+                        <div class="flex justify-between alert alert-warning">
+                          <span class="text-lg"> { "Offline" } </span>
+                          <span on:click={on_retry_click} class="btn btn-sm">
+                            "Retry"
+                          </span>
+                        </div>
+                      </div>
+                    }
+                  }
+                  _ => {
+                    view! {
+                      <div class="py-4 px-8 break-inside-avoid">
+                        <div class="flex justify-between alert alert-error">
+                          <span class="text-lg"> { "Error" } </span>
+                          <span on:click={on_retry_click} class="btn btn-sm">
+                            "Retry"
+                          </span>
+                        </div>
+                      </div>
+                    }
+                  }
+                }
+                // if let Ok(ref o) = p.2 {
+                // } else {
+                // }
               }
+              // <Show when={move || p.2.is_ok()} fallback={move || view! {
+              //   <div>
+              //   // <div class="py-4 px-8">
+              //   //   <div class="flex justify-between alert alert-error">
+              //   //     <span class="text-lg"> { "Error" } </span>
+              //   //     <span /*on:click={on_retry_click(r_copy.0)} */class="btn btn-sm">
+              //   //       "Retry"
+              //   //     </span>
+              //   //   </div>
+              //   // </div>
+              //   </div>
+              // }}>
+              //   <div>
+              // //   // <ResponsivePostListings posts={p.2.unwrap().clone().posts.into()} ssr_site page_number={p.0.into()} />
+              //   </div>
+              // </Show>
             </For>
             <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
+            {move || {
+              if loading.get() {
+                Some(view! {
+                  <div class="break-inside-avoid overflow-hidden animate-[popdown_1s_step-end_1]">
+                    <div class="py-4 px-8">
+                      <div class="alert">
+                        <span>"Loading..."</span>
+                      </div>
+                    </div>
+                  </div>
+                })
+              } else {
+                None
+              }
+            }}
           </Transition>
         </div>
       </div>

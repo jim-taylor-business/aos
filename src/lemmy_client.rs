@@ -209,19 +209,13 @@ mod client {
         _ => {}
       };
 
-      // r.take_payload().
-      //
-
       let s = r.body().limit(10485760).await?;
-      // let t = str::from_utf8(&s)?;
 
       if s.len() == 0 {
         serde_json::from_str::<Response>("{}").map_err(Into::into)
       } else {
         serde_json::from_str::<Response>(&str::from_utf8(&s)?).map_err(Into::into)
       }
-
-      // r.json::<Response>().limit(10485760).await.map_err(Into::into)
     }
   }
 }
@@ -276,17 +270,6 @@ mod client {
       });
 
       if online.get().0 {
-        //   let result = http::Request::get(&build_fetch_query(path, form))
-        //     .cache(RequestCache::Default)
-        //     .maybe_bearer_auth(jwt.as_deref())
-        //     .abort_signal(abort_signal.as_ref())
-        //     .build()
-        //     .expect_throw("Could not parse query params")
-        //     .send()
-        //     .await;
-        //   result?
-        // } else {
-        // }
         let r = match method {
           HttpType::Get => http::Request::get(&build_fetch_query(path, form.clone()))
             .cache(web_sys::RequestCache::Default)
@@ -333,20 +316,7 @@ mod client {
               }
             }
           }
-          _ => {
-            // match result {
-            //   Ok(o) => {
-            // if let Ok(Some(s)) = window().local_storage() {
-            //   if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&form).ok().unwrap()) {}
-            //   let _ = s.set_item(&serde_json::to_string(&form).ok().unwrap(), &serde_json::to_string(&o).ok().unwrap());
-            // }
-            //     return Ok(o);
-            //   }
-            //   Err(e) => {
-            //     return Err(e);
-            //   }
-            // }
-          }
+          _ => {}
         };
 
         let t = r.text().await?;
@@ -363,7 +333,6 @@ mod client {
             }
           }
           o
-          // r.json::<Response>().await.map_err(Into::into)
         }
       } else {
         if method == HttpType::Get {
