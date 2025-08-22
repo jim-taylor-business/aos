@@ -203,6 +203,30 @@ pub fn App() -> impl IntoView {
     <I18nContextProvider cookie_options={leptos_i18n::context::CookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax)}>
       <Router>
         <Routes>
+          <Route path="/" view={move || view! { <Layout ssr_site /> }} ssr={SsrMode::Async}>
+            <Route path="/*any" view={NotFound} />
+
+            <Route path="" view={move || view! { <HomeActivity ssr_site /> }} />
+            <Route path="create_post" view={CommunitiesActivity} />
+            <Route path="p/:id" view={move || view! { <PostActivity ssr_site /> }} />
+
+            <Route path="search" view={CommunitiesActivity} />
+            <Route path="communities" view={CommunitiesActivity} />
+            <Route path="create_community" view={CommunitiesActivity} />
+            <Route path="c/:name" view={move || view! { <HomeActivity ssr_site /> }} />
+
+            <Route path="login" methods={&[Method::Get, Method::Post]} view={LoginActivity} />
+            <Route path="logout" view={CommunitiesActivity} />
+            <Route path="signup" view={CommunitiesActivity} />
+
+            <Route path="inbox" view={CommunitiesActivity} />
+            <Route path="settings" view={CommunitiesActivity} />
+            <Route path="notifications" view={move || view! { <NotificationsActivity ssr_site /> }} />
+            <Route path="u/:id" view={CommunitiesActivity} />
+
+            <Route path="modlog" view={CommunitiesActivity} />
+            <Route path="instances" view={CommunitiesActivity} />
+          </Route>
           <Route path="/responsive" view={move || view! { <ResponsiveLayout ssr_site /> }} ssr={SsrMode::Async}>
             <Route path="" view={move || view! { <ResponsiveHomeActivity ssr_site /> }} />
             <Route path="p/:id" view={move || view! { <ResponsivePostActivity ssr_site /> }} />
@@ -210,30 +234,6 @@ pub fn App() -> impl IntoView {
             <Route path="s/p" view={move || view! { <ResponsiveSearchActivity ssr_site /> }} />
           </Route>
         </Routes>
-        <Route path="/" view={move || view! { <Layout ssr_site /> }} ssr={SsrMode::Async}>
-          <Route path="/*any" view={NotFound} />
-
-          <Route path="" view={move || view! { <HomeActivity ssr_site /> }} />
-          <Route path="create_post" view={CommunitiesActivity} />
-          <Route path="p/:id" view={move || view! { <PostActivity ssr_site /> }} />
-
-          <Route path="search" view={CommunitiesActivity} />
-          <Route path="communities" view={CommunitiesActivity} />
-          <Route path="create_community" view={CommunitiesActivity} />
-          <Route path="c/:name" view={move || view! { <HomeActivity ssr_site /> }} />
-
-          <Route path="login" methods={&[Method::Get, Method::Post]} view={LoginActivity} />
-          <Route path="logout" view={CommunitiesActivity} />
-          <Route path="signup" view={CommunitiesActivity} />
-
-          <Route path="inbox" view={CommunitiesActivity} />
-          <Route path="settings" view={CommunitiesActivity} />
-          <Route path="notifications" view={move || view! { <NotificationsActivity ssr_site /> }} />
-          <Route path="u/:id" view={CommunitiesActivity} />
-
-          <Route path="modlog" view={CommunitiesActivity} />
-          <Route path="instances" view={CommunitiesActivity} />
-        </Route>
       </Router>
     </I18nContextProvider>
   }

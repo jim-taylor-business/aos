@@ -335,26 +335,28 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
           // format!("md:h-[calc(100%-4rem)] min-w-full md:absolute md:overflow-x-auto md:overflow-y-hidden md:columns-sm md:px-4 gap-4{}", if loading.get() { " opacity-25" } else { "" })
           "md:h-[calc(100%-4rem)] min-w-full md:absolute md:overflow-x-auto md:overflow-y-hidden md:columns-sm md:px-4 gap-4"
         }}>
-        { move || {
-          match ssr_site.get() {
-            Some(Err( _ )) => {
-              view! {
-                <div class="py-4 px-8 break-inside-avoid">
-                  <div class="flex justify-between alert alert-error">
-                    <span class="text-lg"> { "Site Error" } </span>
-                    <span on:click={on_retry_site_click} class="btn btn-sm">
-                      "Retry"
-                    </span>
-                  </div>
-                </div>
-              }.into_view()
-            }
-            _ => {
-              view! {
-              }.into_view()
-            }
-          }
-        }}
+          <Transition fallback={|| {}}>
+            { move || {
+              match ssr_site.get() {
+                Some(Err( _ )) => {
+                  view! {
+                    <div class="py-4 px-8 break-inside-avoid">
+                      <div class="flex justify-between alert alert-error">
+                        <span class="text-lg"> { "Site Error" } </span>
+                        <span on:click={on_retry_site_click} class="btn btn-sm">
+                          "Retry"
+                        </span>
+                      </div>
+                    </div>
+                  }.into_view()
+                }
+                _ => {
+                  view! {
+                  }.into_view()
+                }
+              }
+            }}
+          </Transition>
           <Transition fallback={|| {}}>
             <Title text="" />
             <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| (p.0, p.1.clone())} let:p>
