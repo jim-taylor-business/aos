@@ -237,6 +237,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                 new_pages.push((
                   p.0,
                   if p.0 == 0usize {
+                    refresh_base.set_untracked(chrono::Utc::now().timestamp_millis());
                     format!("{}", refresh_base.get_untracked())
                   } else {
                     format!("{}", chrono::Utc::now().timestamp_millis())
@@ -318,6 +319,10 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
     post_list_resource.refetch();
   };
 
+  let on_retry_site_click = move |_e: MouseEvent| {
+    ssr_site.refetch();
+  };
+
   view! {
     <main class="flex flex-col">
       <ResponsiveTopNav ssr_site />
@@ -330,6 +335,26 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
           // format!("md:h-[calc(100%-4rem)] min-w-full md:absolute md:overflow-x-auto md:overflow-y-hidden md:columns-sm md:px-4 gap-4{}", if loading.get() { " opacity-25" } else { "" })
           "md:h-[calc(100%-4rem)] min-w-full md:absolute md:overflow-x-auto md:overflow-y-hidden md:columns-sm md:px-4 gap-4"
         }}>
+        { move || {
+          match ssr_site.get() {
+            Some(Err( _ )) => {
+              view! {
+                <div class="py-4 px-8 break-inside-avoid">
+                  <div class="flex justify-between alert alert-error">
+                    <span class="text-lg"> { "Site Error" } </span>
+                    <span on:click={on_retry_site_click} class="btn btn-sm">
+                      "Retry"
+                    </span>
+                  </div>
+                </div>
+              }.into_view()
+            }
+            _ => {
+              view! {
+              }.into_view()
+            }
+          }
+        }}
           <Transition fallback={|| {}}>
             <Title text="" />
             <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| (p.0, p.1.clone())} let:p>
@@ -340,10 +365,8 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                     // log!("next {}", p.0 + 50usize);
                     next_page_cursor.set((p.0 + 50usize, o.next_page.clone()));
                     view! {
-                      <div>
-                        <ResponsivePostListings posts={o.posts.clone().into()} ssr_site page_number={p.0.into()} />
-                      </div>
-                    }
+                      <ResponsivePostListings posts={o.posts.clone().into()} ssr_site page_number={p.0.into()} />
+                    }.into_view()
                   }
                   Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
                     view! {
@@ -355,7 +378,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                           </span>
                         </div>
                       </div>
-                    }
+                    }.into_view()
                   }
                   _ => {
                     view! {
@@ -367,7 +390,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                           </span>
                         </div>
                       </div>
-                    }
+                    }.into_view()
                   }
                 }
                 // if let Ok(ref o) = p.2 {

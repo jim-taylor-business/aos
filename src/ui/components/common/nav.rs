@@ -273,6 +273,11 @@ pub fn TopNav(ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAp
       <div class="navbar-end">
         <ul class="flex-nowrap items-center menu menu-horizontal">
           <li class="hidden lg:flex">
+            <A href="/responsive">
+              "Flow!"
+            </A>
+          </li>
+          <li class="hidden lg:flex">
             <A href="/search" class="pointer-events-none text-base-content/50">
               <span title="t!(i18n, search)">
                 <Icon icon={Search} />

@@ -1,6 +1,7 @@
 pub mod responsive_comment_node;
 pub mod responsive_comment_nodes;
 pub mod responsive_home_activity;
+pub mod responsive_layout;
 pub mod responsive_nav;
 pub mod responsive_post_activity;
 pub mod responsive_post_listing;

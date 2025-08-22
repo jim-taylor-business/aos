@@ -1,7 +1,4 @@
-use crate::{
-  errors::LemmyAppError,
-  ui::components::common::nav::{BottomNav, TopNav},
-};
+use crate::errors::LemmyAppError;
 use codee::string::FromToStringCodec;
 use lemmy_api_common::site::GetSiteResponse;
 use leptos::*;
@@ -21,15 +18,7 @@ pub fn ResponsiveLayout(ssr_site: Resource<Option<String>, Result<GetSiteRespons
           .map(|_| {
             view! {
               <div class="flex flex-col min-h-screen" data-theme={move || get_theme_cookie.get()}>
-                // <TopNav ssr_site />
-                // <div class="flex flex-col flex-grow w-full">
-                //   <div class="sm:container sm:mx-auto">
-                //     <div class="flex flex-col flex-grow px-0 w-full lg:px-6">
-                      <Outlet />
-                //     </div>
-                //   </div>
-                // </div>
-                // <BottomNav ssr_site />
+                <Outlet />
               </div>
             }
           })
