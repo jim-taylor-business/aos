@@ -426,6 +426,7 @@ pub fn ResponsivePostListing(
                 <div class="flex shrink grow basis-0 min-h-16">
                   <div class="shrink grow basis-0 truncate">
                     <img
+                      loading="lazy"
                       class={move || format!("w-24{}", if thumbnail.get().eq(&"/lemmy.svg".to_string()) { " h-16" } else { "" })}
                       src={move || thumbnail.get()}
                       node_ref={thumbnail_element}

@@ -400,6 +400,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                           <div class="px-4 py-2">
                             <div class="block">
                               <img
+                                loading="lazy"
                                 class={move || format!("w-auto max-w-9/12{}", if thumbnail.get().eq(&"/lemmy.svg".to_string()) { " h-16" } else { "" })}
                                 src={move || thumbnail.get()}
                                 // node_ref={thumbnail_element}
