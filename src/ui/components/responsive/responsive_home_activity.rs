@@ -19,7 +19,7 @@ use lemmy_api_common::{
   post::{GetPosts, GetPostsResponse},
   site::GetSiteResponse,
 };
-use leptos::{html::*, logging::log, svg::view, *};
+use leptos::{html::*, leptos_dom::helpers::TimeoutHandle, logging::log, svg::view, *};
 use leptos_meta::*;
 use leptos_router::*;
 use leptos_use::*;
@@ -28,7 +28,7 @@ use std::{
   usize, vec,
 };
 #[cfg(not(feature = "ssr"))]
-use wasm_bindgen::{prelude::Closure, JsCast};
+use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
 use web_sys::{js_sys::Atomics::wait_async, Event, MouseEvent, TouchEvent, WheelEvent};
 
 #[component]
@@ -292,24 +292,25 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
         }
       }
 
-      #[cfg(not(feature = "ssr"))]
-      set_timeout(
-        move || {
-          loading.set(false);
+      // #[cfg(not(feature = "ssr"))]
+      // set_timeout(
+      //   move || {
+      //     loading.set(false);
+      //     log!("resource timeout");
 
-          if let Some(se) = on_scroll_element.get() {
-            if let Ok(Some(s)) = window().local_storage() {
-              let mut query_params = query.get();
-              if let Ok(Some(l)) = s.get_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string())) {
-                se.set_scroll_left(l.parse().unwrap_or(0i32));
-                // log!("set {}", l);
-              }
-            }
-            scroll_element.set(Some(on_scroll_element));
-          }
-        },
-        std::time::Duration::new(0, 750_000_000),
-      );
+      //     if let Some(se) = on_scroll_element.get() {
+      //       if let Ok(Some(s)) = window().local_storage() {
+      //         let mut query_params = query.get();
+      //         if let Ok(Some(l)) = s.get_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string())) {
+      //           se.set_scroll_left(l.parse().unwrap_or(0i32));
+      //           // log!("set {}", l);
+      //         }
+      //       }
+      //       scroll_element.set(Some(on_scroll_element));
+      //     }
+      //   },
+      //   std::time::Duration::new(0, 750_000_000),
+      // );
 
       (new_pages)
     },
@@ -322,6 +323,9 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
   let on_retry_site_click = move |_e: MouseEvent| {
     ssr_site.refetch();
   };
+
+  #[cfg(not(feature = "ssr"))]
+  let mut cancel_handle: RwSignal<Option<Result<TimeoutHandle, JsValue>>> = RwSignal::new(None);
 
   view! {
     <main class="flex flex-col">
@@ -364,7 +368,32 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                 match p.2 {
                   Ok(ref o) => {
                     loading.set(false);
-                    // log!("next {}", p.0 + 50usize);
+
+                    log!("next {}", p.0 + 50usize);
+
+                    #[cfg(not(feature = "ssr"))]
+                    if let Some(Ok(c)) = cancel_handle.get_untracked() {
+                      c.clear();
+                    }
+
+                    #[cfg(not(feature = "ssr"))]
+                    cancel_handle.set(Some(set_timeout_with_handle(
+                      move || {
+                        if let Some(se) = on_scroll_element.get() {
+                          if let Ok(Some(s)) = window().local_storage() {
+                            let mut query_params = query.get();
+                            if let Ok(Some(l)) = s.get_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string())) {
+                              se.set_scroll_left(l.parse().unwrap_or(0i32));
+                              // log!("set {}", l);
+                            }
+                          }
+                          scroll_element.set(Some(on_scroll_element));
+                        }
+                      },
+                      std::time::Duration::new(0, 750_000_000),
+                    )));
+
+
                     next_page_cursor.set((p.0 + 50usize, o.next_page.clone()));
                     view! {
                       <ResponsivePostListings posts={o.posts.clone().into()} ssr_site page_number={p.0.into()} />
@@ -395,28 +424,20 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                     }.into_view()
                   }
                 }
-                // if let Ok(ref o) = p.2 {
-                // } else {
-                // }
               }
-              // <Show when={move || p.2.is_ok()} fallback={move || view! {
-              //   <div>
-              //   // <div class="py-4 px-8">
-              //   //   <div class="flex justify-between alert alert-error">
-              //   //     <span class="text-lg"> { "Error" } </span>
-              //   //     <span /*on:click={on_retry_click(r_copy.0)} */class="btn btn-sm">
-              //   //       "Retry"
-              //   //     </span>
-              //   //   </div>
-              //   // </div>
-              //   </div>
-              // }}>
-              //   <div>
-              // //   // <ResponsivePostListings posts={p.2.unwrap().clone().posts.into()} ssr_site page_number={p.0.into()} />
-              //   </div>
-              // </Show>
             </For>
             <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
+            // {
+            //   log!("inline");
+            //   #[cfg(not(feature = "ssr"))]
+            //   set_timeout(
+            //     move || {
+            //       log!("inline timeout");
+            //     },
+            //     std::time::Duration::new(0, 750_000_000),
+            //   );
+
+            // }
             {move || {
               if loading.get() {
                 Some(view! {
