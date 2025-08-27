@@ -14,12 +14,12 @@ pub fn Layout(ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAp
     use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax));
 
   view! {
-    <Transition fallback={|| {}}>
-      {move || {
-        ssr_site
-          .get()
-          .map(|_| {
-            view! {
+    // <Transition fallback={|| {}}>
+    //   {move || {
+    //     ssr_site
+    //       .get()
+    //       .map(|_| {
+    //         view! {
               <div class="flex flex-col min-h-screen" data-theme={move || get_theme_cookie.get()}>
                 <TopNav ssr_site />
                 <div class="flex flex-col flex-grow w-full">
@@ -31,9 +31,9 @@ pub fn Layout(ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAp
                 </div>
                 <BottomNav ssr_site />
               </div>
-            }
-          })
-      }}
-    </Transition>
+    //         }
+    //       })
+    //   }}
+    // </Transition>
   }
 }

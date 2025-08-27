@@ -87,7 +87,7 @@ pub fn ResponsiveTopNav(
   let online = expect_context::<RwSignal<OnlineSetter>>();
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
   // let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
-  let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
+  // let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
   let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), LemmyAppResult<GetPostsResponse>>>>();
   // let response_load = expect_context::<RwSignal<ResponseLoad>>();
 
@@ -120,8 +120,7 @@ pub fn ResponsiveTopNav(
 
   let on_sort_click = move |s: SortType| {
     move |_e: MouseEvent| {
-      csr_next_page_cursor.set((0, None));
-
+      // csr_next_page_cursor.set((0, None));
       let r = serde_json::to_string::<SortType>(&s);
       let mut query_params = query.get();
       match r {
@@ -137,6 +136,14 @@ pub fn ResponsiveTopNav(
       }
       query_params.remove("page".into());
       let navigate = leptos_router::use_navigate();
+      if let Ok(Some(s)) = window().local_storage() {
+        let _ = s.set_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), "0");
+      }
+      // if let Some(on_scroll_element) = scroll_element.get() {
+      //   if let Some(se) = on_scroll_element.get() {
+      //     se.set_scroll_left(0i32);
+      //   }
+      // }
       navigate(
         &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
         Default::default(),
@@ -154,6 +161,14 @@ pub fn ResponsiveTopNav(
       } else {
         query_params.insert("list".into(), serde_json::to_string(&l).ok().unwrap());
       }
+      if let Ok(Some(s)) = window().local_storage() {
+        let _ = s.set_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), "0");
+      }
+      // if let Some(on_scroll_element) = scroll_element.get() {
+      //   if let Some(se) = on_scroll_element.get() {
+      //     se.set_scroll_left(0i32);
+      //   }
+      // }
       navigate(
         &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
         Default::default(),
@@ -357,15 +372,15 @@ pub fn ResponsiveTopNav(
            <ul class="flex-nowrap items-center menu menu-horizontal">
              <li>
                <A href="/responsive" class="text-xl py-1/2 whitespace-nowrap" on:click={ move |e: MouseEvent| {
-                 csr_next_page_cursor.set((0, None));
+                 // csr_next_page_cursor.set((0, None));
                  if let Ok(Some(s)) = window().local_storage() {
                    let _ = s.set_item("/responsive", "0");
                  }
-                 if let Some(on_scroll_element) = scroll_element.get() {
-                   if let Some(se) = on_scroll_element.get() {
-                     se.set_scroll_left(0i32);
-                   }
-                 }
+                 // if let Some(on_scroll_element) = scroll_element.get() {
+                 //   if let Some(se) = on_scroll_element.get() {
+                 //     se.set_scroll_left(0i32);
+                 //   }
+                 // }
                }}>
                  {move || {
                    if let Some(Ok(GetSiteResponse { site_view: SiteView { site: Site { icon: Some(i), .. }, .. }, .. })) = ssr_site.get() {

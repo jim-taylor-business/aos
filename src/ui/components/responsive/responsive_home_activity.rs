@@ -29,7 +29,7 @@ use std::{
 };
 #[cfg(not(feature = "ssr"))]
 use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
-use web_sys::{js_sys::Atomics::wait_async, Event, MouseEvent, TouchEvent, WheelEvent};
+use web_sys::{js_sys::Atomics::wait_async, Event, MouseEvent, ScrollToOptions, TouchEvent, WheelEvent};
 
 #[component]
 pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
@@ -332,8 +332,15 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
       <ResponsiveTopNav ssr_site />
       <div class="flex flex-grow">
         <div on:wheel=move |e: WheelEvent| {
+          e.stop_propagation();
+          // e.prevent_default();
           if let Some(se) = on_scroll_element.get() {
-            se.scroll_by_with_x_and_y(e.delta_y(), 0f64);
+            let mut o = ScrollToOptions::new();
+            o.set_left(e.delta_y());
+            o.set_behavior(web_sys::ScrollBehavior::Smooth);
+
+            se.scroll_by_with_scroll_to_options(&o);
+            // se.scroll_by_with_x_and_y(e.delta_y(), 0f64);
           }
         } node_ref=on_scroll_element class={move || {
           // format!("md:h-[calc(100%-4rem)] min-w-full md:absolute md:overflow-x-auto md:overflow-y-hidden md:columns-sm md:px-4 gap-4{}", if loading.get() { " opacity-25" } else { "" })
@@ -342,7 +349,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
           <Transition fallback={|| {}}>
             { move || {
               match ssr_site.get() {
-                Some(Err( _ )) => {
+                Some(Err(_)) => {
                   view! {
                     <div class="py-4 px-8 break-inside-avoid">
                       <div class="flex justify-between alert alert-error">

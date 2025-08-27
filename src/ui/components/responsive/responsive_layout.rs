@@ -11,18 +11,18 @@ pub fn ResponsiveLayout(ssr_site: Resource<Option<String>, Result<GetSiteRespons
     use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax));
 
   view! {
-    <Transition fallback={|| {}}>
-      {move || {
-        ssr_site
-          .get()
-          .map(|_| {
-            view! {
+    // <Transition fallback={|| {}}>
+    //   {move || {
+    //     ssr_site
+    //       .get()
+    //       .map(|_| {
+    //         view! {
               <div class="flex flex-col min-h-screen" data-theme={move || get_theme_cookie.get()}>
                 <Outlet />
               </div>
-            }
-          })
-      }}
-    </Transition>
+    //         }
+    //       })
+    //   }}
+    // </Transition>
   }
 }
