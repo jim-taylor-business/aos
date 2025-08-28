@@ -17,7 +17,7 @@ use lemmy_api_common::{
   post::{GetPost, GetPostResponse},
   site::GetSiteResponse,
 };
-use leptos::{html::Div, *};
+use leptos::{html::Div, logging::log, *};
 use leptos_meta::*;
 use leptos_router::{use_location, use_params_map, use_query_map, A};
 use web_sys::{wasm_bindgen::JsCast, HtmlAnchorElement, HtmlImageElement, WheelEvent};
@@ -31,7 +31,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
   let query = use_query_map();
 
   let post_id = Signal::derive(move || params.get().get("id").cloned().unwrap_or_default().parse::<i32>().ok());
-  let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
+  // let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
 
   let logged_in = Signal::derive(move || {
     if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() {
@@ -64,12 +64,12 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
           id: Some(PostId(id)),
           comment_id: None,
         };
-        let result = LemmyClient.get_post(form).await;
+        let result = LemmyClient.get_post(form.clone()).await;
         loading.set(false);
         match result {
-          Ok(o) => Some(Ok(o)),
+          Ok(o) => Some(Ok((form, o))),
           Err(e) => {
-            error.update(|es| es.push(Some((e.clone(), None))));
+            // error.update(|es| es.push(Some((e.clone(), None))));
             Some(Err(e))
           }
         }
@@ -97,11 +97,11 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
           disliked_only: None,
           liked_only: None,
         };
-        let result = LemmyClient.get_comments(form).await;
+        let result = LemmyClient.get_comments(form.clone()).await;
         match result {
-          Ok(o) => Some(o),
+          Ok(o) => Some((form, o)),
           Err(e) => {
-            error.update(|es| es.push(Some((e, None))));
+            // error.update(|es| es.push(Some((e, None))));
             None
           }
         }
@@ -120,7 +120,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
           query_params.insert("sort".into(), o);
         }
         Err(e) => {
-          error.update(|es| es.push(Some((e.into(), None))));
+          // error.update(|es| es.push(Some((e.into(), None))));
         }
       }
       if CommentSortType::Top == s {
@@ -158,7 +158,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
               }
             }
             Err(e) => {
-              error.update(|es| es.push(Some((e, None))));
+              // error.update(|es| es.push(Some((e, None))));
             }
           }
         }
@@ -256,6 +256,23 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                 )
               }
               Some(Some(Ok(res))) => {
+                log!("post");
+
+                #[cfg(not(feature = "ssr"))]
+                {
+                  let rw = res.1.clone();
+                  let fm = res.0.clone();
+                  use crate::indexed_db::csr_indexed_db::*;
+                  #[cfg(not(feature = "ssr"))]
+                  spawn_local(async move {
+                    if let Ok(d) = build_indexed_database().await {
+                      if let Ok(c) = set_query_get_cache(&d, &fm, &rw).await {}
+                    }
+                  });
+                }
+
+                let res = res.1.clone();
+
                 post_view.set(Some(res.clone()));
                 let text = if let Some(b) = res.post_view.post.body.clone() {
                   if b.len() > 0 { Some(b) } else { res.post_view.post.embed_description.clone() }
@@ -539,6 +556,23 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
               .get()
               .unwrap_or(None)
               .map(|res| {
+                log!("comments");
+
+                #[cfg(not(feature = "ssr"))]
+                {
+                  let rw = res.1.clone();
+                  let fm = res.0.clone();
+                  use crate::indexed_db::csr_indexed_db::*;
+                  #[cfg(not(feature = "ssr"))]
+                  spawn_local(async move {
+                    if let Ok(d) = build_indexed_database().await {
+                      if let Ok(c) = set_query_get_cache(&d, &fm, &rw).await {}
+                    }
+                  });
+                }
+
+                let res = res.1.clone();
+
                 view! {
                   <div class="w-full before:content-[''] before:block before:w-24 before:overflow-hidden">
                     <ResponsiveCommentNodes ssr_site comments={res.comments.into()} post_id />
