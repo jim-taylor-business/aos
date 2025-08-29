@@ -465,7 +465,7 @@ pub fn ResponsiveTopNav(
            //       </A>
            //     </div>
              // </li>
-             <li class="flex z-[1]">
+             <li class="hidden sm:flex z-[1]">
            // <div class="dropdown">
            //   <label tabindex="0" class="btn">
            //     "List"
@@ -488,7 +488,7 @@ pub fn ResponsiveTopNav(
                 // </div>
                 </details>
              </li>
-             <li class="flex z-[1]">
+             <li class="hidden sm:flex z-[1]">
 
               <details>
                 <summary>
@@ -552,6 +552,110 @@ pub fn ResponsiveTopNav(
                 // </div>
                 </details>
              </li>
+             <li class="flex sm:hidden">
+               <details>
+                 <summary>
+                   // {move || {
+                   //   if let Some(Ok(GetSiteResponse { my_user: Some(m), .. })) = ssr_site.get() {
+                   //     m.local_user_view.person.display_name.unwrap_or(m.local_user_view.person.name)
+                   //   } else {
+                   //     String::default()
+                   //   }
+                   // }}
+                   <Icon icon={User} />
+                 </summary>
+                 <ul class="z-[1]">
+                  <li class="flex z-[1]">
+                // <div class="dropdown">
+                //   <label tabindex="0" class="btn">
+                //     "List"
+                //   </label>
+                      <details>
+                        <summary>
+                          <Icon icon={Community} />
+                        </summary>
+                        <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+                          <li class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}>
+                            <span>"All"</span>
+                          </li>
+                          <li class={move || highlight_csr_filter(ListingType::Local)} on:click={on_csr_filter_click(ListingType::Local)}>
+                            <span>"Local"</span>
+                          </li>
+                          <li class={move || format!("{}{}", highlight_csr_filter(ListingType::Subscribed), if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { "" } else { " btn-disabled" })} on:click={on_csr_filter_click(ListingType::Subscribed)}>
+                            <span>"Subscribed"</span>
+                          </li>
+                        </ul>
+                      // </div>
+                      </details>
+                  </li>
+                  <li class="flex z-[1]">
+
+                    <details>
+                      <summary>
+                        <Icon icon={Sort} />
+                      </summary>
+
+                  // <div class="dropdown">
+                  //   <label tabindex="0" class="btn">
+                  //     "Sort"
+                  //   </label>
+                        <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+                          <li
+                            class={move || { (if SortType::Active == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                            on:click={on_sort_click(SortType::Active)}
+                          >
+                            <span>{t!(i18n, active)}</span>
+                          </li>
+                          <li
+                            class={move || { (if SortType::TopAll == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                            on:click={on_sort_click(SortType::TopAll)}
+                          >
+                            <span>"Top"</span>
+                          </li>
+                          <li
+                            class={move || { (if SortType::Hot == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                            on:click={on_sort_click(SortType::Hot)}
+                          >
+                            <span>"Hot"</span>
+                          </li>
+                          <li
+                            class={move || { (if SortType::New == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                            on:click={on_sort_click(SortType::New)}
+                          >
+                            <span>"New"</span>
+                          </li>
+                          <li
+                            class={move || { (if SortType::Old == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                            on:click={on_sort_click(SortType::Old)}
+                          >
+                            <span>"Old"</span>
+                          </li>
+                          <li
+                            class={move || { (if SortType::Controversial == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                            on:click={on_sort_click(SortType::Controversial)}
+                          >
+                            <span>"Controversial"</span>
+                          </li>
+                          // <li class={move || { (if SortType::Hot == ssr_sort() { "btn-active" } else { "" }).to_string() }} on:click={on_sort_click(SortType::Hot)}>
+                          //   <span>{t!(i18n, hot)}</span>
+                          // </li>
+                          <li
+                            class={move || { (if SortType::Scaled == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                            on:click={on_sort_click(SortType::Scaled)}
+                          >
+                            <span>{"Scaled"}</span>
+                          </li>
+                          // <li class={move || { (if SortType::New == ssr_sort() { "btn-active" } else { "" }).to_string() }} on:click={on_sort_click(SortType::New)}>
+                          //   <span>{t!(i18n, new)}</span>
+                          // </li>
+                        </ul>
+                      // </div>
+                      </details>
+                  </li>
+                 </ul>
+               </details>
+             </li>
+
            </ul>
 
          </div>
@@ -646,14 +750,14 @@ pub fn ResponsiveTopNav(
             <Icon icon={Search} />
           </button>
         </div>
-         <div
-           class={move || { (if search_show.get() { "hidden" } else { "flex-none" }).to_string() }}
-         >
+        <div
+          class={move || { (if search_show.get() { "hidden" } else { "flex-none" }).to_string() }}
+        >
   // class="flex-none">
            <ul class="flex-nowrap items-center menu menu-horizontal">
              // <li class="flex">
              // </li>
-             <li class="hidden lg:flex">
+             <li class="hidden sm:flex">
                <details>
                  <summary>
                    <Icon icon={Translate} />
@@ -678,7 +782,7 @@ pub fn ResponsiveTopNav(
                  </ul>
                </details>
              </li>
-             <li class="hidden lg:flex">
+             <li class="hidden sm:flex">
                <details>
                  <summary>
                    <Icon icon={Palette} />
@@ -797,7 +901,7 @@ pub fn ResponsiveTopNav(
                      <Icon icon={User} />
                    </summary>
                    <ul class="z-[1] [inset-inline-end:0]">
-                    <li class="flex lg:hidden">
+                    <li class="flex sm:hidden">
                       <details>
                         <summary>
                           <Icon icon={Palette} />
@@ -830,7 +934,7 @@ pub fn ResponsiveTopNav(
                         </ul>
                       </details>
                     </li>
-                    <div class="lg:hidden my-0 divider" />
+                    <div class="flex sm:hidden my-0 divider" />
                      <li>
                        <A href="/notifications">
                          "Notifications"
