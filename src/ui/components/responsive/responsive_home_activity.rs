@@ -43,7 +43,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
   let ssr_list = move || serde_json::from_str::<ListingType>(&query.get().get("list").cloned().unwrap_or("".into())).unwrap_or(ListingType::All);
   let ssr_sort = move || serde_json::from_str::<SortType>(&query.get().get("sort").cloned().unwrap_or("".into())).unwrap_or(SortType::Active);
   let ssr_page = move || serde_json::from_str::<Vec<(usize, String)>>(&query.get().get("page").cloned().unwrap_or("".into())).unwrap_or(vec![]);
-  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), LemmyAppResult<GetPostsResponse>>>>();
+  // let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), LemmyAppResult<GetPostsResponse>>>>();
   let next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
 
   let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
@@ -164,19 +164,48 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
     );
   }
 
+  #[cfg(not(feature = "ssr"))]
+  use crate::indexed_db::csr_indexed_db::*;
+
   let post_list_resource = Resource::new(
     move || (logged_in.get(), ssr_list(), ssr_sort(), ssr_name(), ssr_page()),
     move |(_logged_in, list, sort, name, mut pages)| async move {
       loading.set(true);
-      let mut rc = response_cache.get_untracked();
+      // let mut rc = response_cache.get_untracked();
       let mut new_pages: Vec<(usize, String, LemmyAppResult<GetPostsResponse>, GetPosts)> = vec![];
 
       if pages.len() == 0 {
-        #[cfg(not(feature = "ssr"))]
-        refresh_base.set_untracked(chrono::Utc::now().timestamp_millis());
+        pages = vec![(0usize, "".to_string())];
+      }
 
-        // log!("empty {}", refresh_base.get_untracked());
+      // if pages.len() == 0 {
+      //   #[cfg(not(feature = "ssr"))]
+      //   refresh_base.set_untracked(chrono::Utc::now().timestamp_millis());
 
+      //   // log!("empty {}", refresh_base.get_untracked());
+
+      //   let form = GetPosts {
+      //     type_: Some(list),
+      //     sort: Some(sort),
+      //     community_name: if name.clone().len() == 0usize { None } else { Some(name.clone()) },
+      //     community_id: None,
+      //     page: None,
+      //     limit: Some(50),
+      //     saved_only: None,
+      //     disliked_only: None,
+      //     liked_only: None,
+      //     page_cursor: None,
+      //     show_hidden: Some(true),
+      //     show_nsfw: Some(false),
+      //     show_read: Some(true),
+      //   };
+      //   let result = LemmyClient.list_posts(form.clone()).await;
+      //   new_pages.push((0, format!("{}", refresh_base.get_untracked()), result.clone(), form));
+      //   // response_cache.update(move |rc| {
+      //   //   rc.insert((0, "".into(), ListingType::All, SortType::Active, "".into()), result);
+      //   // });
+      // } else {
+      for p in pages {
         let form = GetPosts {
           type_: Some(list),
           sort: Some(sort),
@@ -187,35 +216,16 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
           saved_only: None,
           disliked_only: None,
           liked_only: None,
-          page_cursor: None,
+          page_cursor: if p.0 == 0usize { None } else { Some(PaginationCursor(p.1.clone())) },
           show_hidden: Some(true),
           show_nsfw: Some(false),
           show_read: Some(true),
         };
-        let result = LemmyClient.list_posts(form.clone()).await;
-        new_pages.push((0, format!("{}", refresh_base.get_untracked()), result.clone(), form));
-        response_cache.update(move |rc| {
-          rc.insert((0, "".into(), ListingType::All, SortType::Active, "".into()), result);
-        });
-      } else {
-        for p in pages {
-          if let Some(c) = rc.get(&(p.0, p.1.clone(), list, sort, name.clone())) {
-            log!("hit {} {}", p.0, p.1.clone());
-            let form = GetPosts {
-              type_: Some(list),
-              sort: Some(sort),
-              community_name: if name.clone().len() == 0usize { None } else { Some(name.clone()) },
-              community_id: None,
-              page: None,
-              limit: Some(50),
-              saved_only: None,
-              disliked_only: None,
-              liked_only: None,
-              page_cursor: if p.0 == 0usize { None } else { Some(PaginationCursor(p.1.clone())) },
-              show_hidden: Some(true),
-              show_nsfw: Some(false),
-              show_read: Some(true),
-            };
+        // if let Some(c) = rc.get(&(p.0, p.1.clone(), list, sort, name.clone())) {
+        #[cfg(not(feature = "ssr"))]
+        if let Ok(d) = build_indexed_database().await {
+          if let Ok(Some(c)) = get_query_get_cache::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&d, &form).await {
+            log!("hit");
             match c {
               Ok(_) => {
                 new_pages.push((
@@ -238,51 +248,51 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                     format!("{}", refresh_base.get_untracked())
                   } else {
                     format!("{}", chrono::Utc::now().timestamp_millis())
+                    // p.1.clone()
                   },
                   result.clone(),
                   form,
                 ));
-                let moved_name = name.clone();
-                response_cache.update(move |rc| {
-                  rc.insert((p.0, p.1.clone(), list, sort, moved_name), result);
-                });
+                // let moved_name = name.clone();
+                // response_cache.update(move |rc| {
+                //   rc.insert((p.0, p.1.clone(), list, sort, moved_name), result);
+                // });
               }
             }
-          } else {
-            log!("miss {} {}", p.0, p.1.clone());
-            let form = GetPosts {
-              type_: Some(list),
-              sort: Some(sort),
-              community_name: if name.clone().len() == 0usize { None } else { Some(name.clone()) },
-              community_id: None,
-              page: None,
-              limit: Some(50),
-              saved_only: None,
-              disliked_only: None,
-              liked_only: None,
-              page_cursor: if p.0 == 0usize { None } else { Some(PaginationCursor(p.1.clone())) },
-              show_hidden: Some(true),
-              show_nsfw: Some(false),
-              show_read: Some(true),
-            };
-            let result = LemmyClient.list_posts(form.clone()).await;
-            new_pages.push((
-              p.0,
-              if p.0 == 0usize {
-                format!("{}", refresh_base.get_untracked())
-              } else {
-                p.1.clone()
-              },
-              result.clone(),
-              form,
-            ));
-            let moved_name = name.clone();
-            response_cache.update(move |rc| {
-              rc.insert((p.0, p.1.clone(), list, sort, moved_name), result);
-            });
+            continue;
+            // log!("hit {}", p.0);
           }
         }
+
+        let form = GetPosts {
+          type_: Some(list),
+          sort: Some(sort),
+          community_name: if name.clone().len() == 0usize { None } else { Some(name.clone()) },
+          community_id: None,
+          page: None,
+          limit: Some(50),
+          saved_only: None,
+          disliked_only: None,
+          liked_only: None,
+          page_cursor: if p.0 == 0usize { None } else { Some(PaginationCursor(p.1.clone())) },
+          show_hidden: Some(true),
+          show_nsfw: Some(false),
+          show_read: Some(true),
+        };
+        let result = LemmyClient.list_posts(form.clone()).await;
+        new_pages.push((
+          p.0,
+          if p.0 == 0usize {
+            format!("{}", refresh_base.get_untracked())
+          } else {
+            p.1.clone()
+          },
+          result.clone(),
+          form,
+        ));
       }
+      // }
+
       (new_pages)
     },
   );
@@ -357,9 +367,6 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                             log!("store");
                           }
                         }
-                        response_cache.update(move |rc| {
-                          rc.insert((p.0, if p.0 == 0 { "".into() } else { p.1.clone() }, fm.type_.unwrap_or(ListingType::All), fm.sort.unwrap_or(SortType::Active), fm.community_name.unwrap_or("".into())), rw);
-                        });
                       });
                     }
 
