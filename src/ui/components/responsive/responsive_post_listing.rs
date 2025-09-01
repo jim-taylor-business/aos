@@ -416,7 +416,7 @@ pub fn ResponsivePostListing(
         <a
           class="flex flex-col h-full"
           target="_blank"
-          href={move || { if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { format!("/responsive/post/{}", post_view.get().post.id) } }}
+          href={move || { if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { format!("/r/post/{}", post_view.get().post.id) } }}
         >
           {move || {
             if let Some(t) = post_view.get().post.thumbnail_url {
@@ -453,7 +453,7 @@ pub fn ResponsivePostListing(
           if post_view.get().post.thumbnail_url.is_none() && post_view.get().post.url.is_none() { " col-span-2 sm:col-span-2" } else { "" },
         )
       }}>
-        <A href={move || format!("/responsive/p/{}", post_view.get().post.id)} class="block hover:text-accent">
+        <A href={move || format!("/r/p/{}", post_view.get().post.id)} class="block hover:text-accent">
           <span class="text-lg break-words overflow-y-auto" inner_html={title_encoded} />
         </A>
         <span class="block mb-1 mt-1 text-sm break-words">
@@ -522,7 +522,7 @@ pub fn ResponsivePostListing(
             )
           }}
         >
-          <A href={move || { format!("/responsive/p/{}", post_view.get().post.id) }} class="text-sm whitespace-nowrap hover:text-accent">
+          <A href={move || { format!("/r/p/{}", post_view.get().post.id) }} class="text-sm whitespace-nowrap hover:text-accent">
             <Icon icon={Comments} class={"inline".into()} />
             " "
             {post_view.get().counts.comments}

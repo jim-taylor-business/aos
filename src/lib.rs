@@ -229,7 +229,7 @@ pub fn App() -> impl IntoView {
               <Route path="modlog" view={CommunitiesActivity} />
               <Route path="instances" view={CommunitiesActivity} />
             </Route>
-            <Route path="responsive" view={move || view! { <ResponsiveLayout ssr_site /> }}>
+            <Route path="r" view={move || view! { <ResponsiveLayout ssr_site /> }}>
               <Route path="" view={move || view! { <ResponsiveHomeActivity ssr_site /> }} />
               <Route path="p/:id" view={move || view! { <ResponsivePostActivity ssr_site /> }} />
               <Route path="c/:name" view={move || view! { <ResponsiveHomeActivity ssr_site /> }} />

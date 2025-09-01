@@ -420,7 +420,7 @@ pub fn ResponsivePostToolbar(
             )
           }}
         >
-          <A href={move || { format!("/responsive/p/{}", post_view.get().post.id) }} class="text-sm whitespace-nowrap hover:text-accent">
+          <A href={move || { format!("/r/p/{}", post_view.get().post.id) }} class="text-sm whitespace-nowrap hover:text-accent">
             <Icon icon={Comments} class={"inline".into()} />
             " "
             {post_view.get().counts.comments}

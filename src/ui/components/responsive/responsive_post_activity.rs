@@ -384,14 +384,14 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                         <A
                           class="inline break-words hover:text-secondary"
                           href={if post_view.get().unwrap().post_view.community.local {
-                            format!("/responsive/c/{}", post_view.get().unwrap().post_view.community.name)
+                            format!("/r/c/{}", post_view.get().unwrap().post_view.community.name)
                           } else {
-                            format!("/responsive/c/{}@{}", post_view.get().unwrap().post_view.community.name, post_view.get().unwrap().post_view.community.actor_id.inner().host().unwrap().to_string())
+                            format!("/r/c/{}@{}", post_view.get().unwrap().post_view.community.name, post_view.get().unwrap().post_view.community.actor_id.inner().host().unwrap().to_string())
                           }}
                           on:click={ move |e: MouseEvent| {
                             if let Ok(Some(s)) = window().local_storage() {
                               let mut query_params = query.get();
-                              let _ = s.set_item(&format!("/responsive/c/{}", post_view.get().unwrap().post_view.community.name), "0");
+                              let _ = s.set_item(&format!("/r/c/{}", post_view.get().unwrap().post_view.community.name), "0");
                             }
                           }}
                         >
@@ -407,7 +407,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                         )
                       }}
                       target="_blank"
-                      href={move || { if let Some(d) = post_view.get().unwrap().post_view.post.url { d.inner().to_string() } else { format!("/responsive/post/{}", post_view.get().unwrap().post_view.post.id) } }}
+                      href={move || { if let Some(d) = post_view.get().unwrap().post_view.post.url { d.inner().to_string() } else { format!("/r/post/{}", post_view.get().unwrap().post_view.post.id) } }}
                     >
                     {move || {
                       if let Some(t) = post_view.get().unwrap().post_view.post.thumbnail_url {

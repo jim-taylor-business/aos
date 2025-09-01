@@ -48,7 +48,7 @@ pub async fn logout() -> Result<(), ServerFnError> {
 #[server(SearchFn, "/serverfn")]
 pub async fn search(term: String) -> Result<(), ServerFnError> {
   use leptos_actix::redirect;
-  redirect(&format!("/responsive/s/p?term={}", &term));
+  redirect(&format!("/r/s/p?term={}", &term));
   Ok(())
 }
 
@@ -296,7 +296,7 @@ pub fn ResponsiveTopNav(
 
   let on_search_submit = move |e: SubmitEvent| {
     e.prevent_default();
-    use_navigate()(&format!("/responsive/s/p?term={}", search_term.get()), NavigateOptions::default());
+    use_navigate()(&format!("/r/s/p?term={}", search_term.get()), NavigateOptions::default());
   };
 
   let logged_in = Signal::derive(move || {
@@ -371,16 +371,21 @@ pub fn ResponsiveTopNav(
          >
            <ul class="flex-nowrap items-center menu menu-horizontal">
              <li>
-               <A href="/responsive" class="text-xl py-1/2 whitespace-nowrap" on:click={ move |e: MouseEvent| {
-                 // csr_next_page_cursor.set((0, None));
-                 if let Ok(Some(s)) = window().local_storage() {
-                   let _ = s.set_item("/responsive", "0");
+               <A href="/r" class="text-xl py-1/2 whitespace-nowrap" on:click={ move |e: MouseEvent| {
+                 if let Some(on_scroll_element) = scroll_element.get() {
+                   if let Some(se) = on_scroll_element.get() {
+                     se.set_scroll_left(0i32);
+                   }
                  }
-                 // if let Some(on_scroll_element) = scroll_element.get() {
-                 //   if let Some(se) = on_scroll_element.get() {
-                 //     se.set_scroll_left(0i32);
-                 //   }
+                 response_cache.update(move |rc| {
+                   rc.remove(&(0usize, "".into(), ListingType::All, SortType::Active, "".into()));
+                 });
+                 // csr_next_page_cursor.set((0, None));
+
+                 // if let Ok(Some(s)) = window().local_storage() {
+                 //   let _ = s.set_item("/r", "0");
                  // }
+
                }}>
                  {move || {
                    if let Some(Ok(GetSiteResponse { site_view: SiteView { site: Site { icon: Some(i), .. }, .. }, .. })) = ssr_site.get() {

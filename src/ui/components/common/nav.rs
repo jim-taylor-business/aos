@@ -273,7 +273,7 @@ pub fn TopNav(ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAp
       <div class="navbar-end">
         <ul class="flex-nowrap items-center menu menu-horizontal">
           <li class="hidden lg:flex">
-            <A href="/responsive">
+            <A href="/r">
               "Flow!"
             </A>
           </li>

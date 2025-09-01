@@ -43,7 +43,8 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
   let ssr_list = move || serde_json::from_str::<ListingType>(&query.get().get("list").cloned().unwrap_or("".into())).unwrap_or(ListingType::All);
   let ssr_sort = move || serde_json::from_str::<SortType>(&query.get().get("sort").cloned().unwrap_or("".into())).unwrap_or(SortType::Active);
   let ssr_page = move || serde_json::from_str::<Vec<(usize, String)>>(&query.get().get("page").cloned().unwrap_or("".into())).unwrap_or(vec![]);
-  // let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), LemmyAppResult<GetPostsResponse>>>>();
+
+  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), LemmyAppResult<GetPostsResponse>>>>();
   let next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
 
   let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
@@ -81,13 +82,15 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
       // }
       // } else {
       if let Some(se) = on_scroll_element.get() {
-        if let Ok(Some(s)) = window().local_storage() {
-          let mut query_params = query.get();
-          let _ = s.set_item(
-            &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-            &se.scroll_left().to_string(),
-          );
-          // log!("scrolling {}", se.scroll_left());
+        if ssr_page().len() > 0 {
+          if let Ok(Some(s)) = window().local_storage() {
+            let mut query_params = query.get();
+            let _ = s.set_item(
+              &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+              &se.scroll_left().to_string(),
+            );
+            // log!("scrolling {}", se.scroll_left());
+          }
         }
       }
       // }
@@ -171,12 +174,15 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
     move || (logged_in.get(), ssr_list(), ssr_sort(), ssr_name(), ssr_page()),
     move |(_logged_in, list, sort, name, mut pages)| async move {
       loading.set(true);
-      // let mut rc = response_cache.get_untracked();
+      let mut rc = response_cache.get_untracked();
       let mut new_pages: Vec<(usize, String, LemmyAppResult<GetPostsResponse>, GetPosts)> = vec![];
 
       if pages.len() == 0 {
         pages = vec![(0usize, "".to_string())];
       }
+
+      // #[cfg(not(feature = "ssr"))]
+      // let d = build_indexed_database().await.unwrap();
 
       // if pages.len() == 0 {
       //   #[cfg(not(feature = "ssr"))]
@@ -221,64 +227,63 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
           show_nsfw: Some(false),
           show_read: Some(true),
         };
-        // if let Some(c) = rc.get(&(p.0, p.1.clone(), list, sort, name.clone())) {
         #[cfg(not(feature = "ssr"))]
-        if let Ok(d) = build_indexed_database().await {
-          if let Ok(Some(c)) = get_query_get_cache::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&d, &form).await {
-            log!("hit");
-            match c {
-              Ok(_) => {
-                new_pages.push((
-                  p.0,
-                  if p.0 == 0usize {
-                    format!("{}", refresh_base.get_untracked())
-                  } else {
-                    p.1.clone()
-                  },
-                  c.clone(),
-                  form,
-                ));
-              }
-              _ => {
-                let result = LemmyClient.list_posts(form.clone()).await;
-                new_pages.push((
-                  p.0,
-                  if p.0 == 0usize {
-                    refresh_base.set_untracked(chrono::Utc::now().timestamp_millis());
-                    format!("{}", refresh_base.get_untracked())
-                  } else {
-                    format!("{}", chrono::Utc::now().timestamp_millis())
-                    // p.1.clone()
-                  },
-                  result.clone(),
-                  form,
-                ));
-                // let moved_name = name.clone();
-                // response_cache.update(move |rc| {
-                //   rc.insert((p.0, p.1.clone(), list, sort, moved_name), result);
-                // });
-              }
+        if let Some(c) = rc.get(&(p.0, p.1.clone(), list, sort, name.clone())) {
+          // if let Ok(d) = build_indexed_database().await {
+          // if let Ok(Some(c)) = get_query_get_cache::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&d, &form).await {
+          log!("hit");
+          match c {
+            Ok(_) => {
+              new_pages.push((
+                p.0,
+                if p.0 == 0usize {
+                  format!("{}", refresh_base.get_untracked())
+                } else {
+                  p.1.clone()
+                },
+                c.clone(),
+                form,
+              ));
             }
-            continue;
-            // log!("hit {}", p.0);
+            _ => {
+              let result = LemmyClient.list_posts(form.clone()).await;
+              new_pages.push((
+                p.0,
+                if p.0 == 0usize {
+                  // refresh_base.set_untracked(chrono::Utc::now().timestamp_millis());
+                  format!("{}", refresh_base.get_untracked())
+                } else {
+                  format!("{}", chrono::Utc::now().timestamp_millis())
+                  // p.1.clone()
+                },
+                result.clone(),
+                form,
+              ));
+              // let moved_name = name.clone();
+              // response_cache.update(move |rc| {
+              //   rc.insert((p.0, p.1.clone(), list, sort, moved_name), result);
+              // });
+            }
           }
+          continue;
+          // }
         }
 
-        let form = GetPosts {
-          type_: Some(list),
-          sort: Some(sort),
-          community_name: if name.clone().len() == 0usize { None } else { Some(name.clone()) },
-          community_id: None,
-          page: None,
-          limit: Some(50),
-          saved_only: None,
-          disliked_only: None,
-          liked_only: None,
-          page_cursor: if p.0 == 0usize { None } else { Some(PaginationCursor(p.1.clone())) },
-          show_hidden: Some(true),
-          show_nsfw: Some(false),
-          show_read: Some(true),
-        };
+        // let form = GetPosts {
+        //   type_: Some(list),
+        //   sort: Some(sort),
+        //   community_name: if name.clone().len() == 0usize { None } else { Some(name.clone()) },
+        //   community_id: None,
+        //   page: None,
+        //   limit: Some(50),
+        //   saved_only: None,
+        //   disliked_only: None,
+        //   liked_only: None,
+        //   page_cursor: if p.0 == 0usize { None } else { Some(PaginationCursor(p.1.clone())) },
+        //   show_hidden: Some(true),
+        //   show_nsfw: Some(false),
+        //   show_read: Some(true),
+        // };
         let result = LemmyClient.list_posts(form.clone()).await;
         new_pages.push((
           p.0,
@@ -319,7 +324,6 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
             let mut o = ScrollToOptions::new();
             o.set_left(e.delta_y());
             o.set_behavior(web_sys::ScrollBehavior::Smooth);
-
             se.scroll_by_with_scroll_to_options(&o);
             // se.scroll_by_with_x_and_y(e.delta_y(), 0f64);
           }
@@ -367,6 +371,9 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                             log!("store");
                           }
                         }
+                        response_cache.update(move |rc| {
+                          rc.insert((p.0, if let Some(pc) = fm.page_cursor { pc.0 } else { "".into() } /*if p.0 == 0 { "".into() } else { p.1.clone() }*/, fm.type_.unwrap_or(ListingType::All), fm.sort.unwrap_or(SortType::Active), fm.community_name.unwrap_or("".into())), rw);
+                        });
                       });
                     }
 
@@ -378,7 +385,6 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                     if let Some(Ok(c)) = cancel_handle.get_untracked() {
                       c.clear();
                     }
-
                     #[cfg(not(feature = "ssr"))]
                     cancel_handle.set(Some(set_timeout_with_handle(
                       move || {
@@ -395,7 +401,6 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                       },
                       std::time::Duration::new(0, 750_000_000),
                     )));
-
 
                     next_page_cursor.set((p.0 + 50usize, o.next_page.clone()));
                     view! {
@@ -430,17 +435,6 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
               }
             </For>
             <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
-            // {
-            //   log!("inline");
-            //   #[cfg(not(feature = "ssr"))]
-            //   set_timeout(
-            //     move || {
-            //       log!("inline timeout");
-            //     },
-            //     std::time::Duration::new(0, 750_000_000),
-            //   );
-
-            // }
             {move || {
               if loading.get() {
                 Some(view! {
