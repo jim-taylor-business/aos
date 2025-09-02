@@ -256,7 +256,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                 )
               }
               Some(Some(Ok(res))) => {
-                log!("post");
+                // log!("post");
 
                 #[cfg(not(feature = "ssr"))]
                 {
@@ -556,7 +556,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
               .get()
               .unwrap_or(None)
               .map(|res| {
-                log!("comments");
+                // log!("comments");
 
                 #[cfg(not(feature = "ssr"))]
                 {

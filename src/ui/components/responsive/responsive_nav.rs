@@ -13,7 +13,7 @@ use lemmy_api_common::{
   lemmy_db_schema::{source::site::Site, ListingType, SortType},
   lemmy_db_views::structs::{PaginationCursor, SiteView},
   person::GetUnreadCountResponse,
-  post::{GetPostResponse, GetPostsResponse},
+  post::{GetPostResponse, GetPosts, GetPostsResponse},
   site::GetSiteResponse,
 };
 use leptos::{html::Div, logging::log, *};
@@ -88,7 +88,7 @@ pub fn ResponsiveTopNav(
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
   // let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
   // let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
-  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), LemmyAppResult<GetPostsResponse>>>>();
+  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts), (i64, LemmyAppResult<GetPostsResponse>)>>>();
   // let response_load = expect_context::<RwSignal<ResponseLoad>>();
 
   // let ssr_error = RwSignal::new::<Option<(LemmyAppError, Option<RwSignal<bool>>)>>(None);
@@ -378,8 +378,14 @@ pub fn ResponsiveTopNav(
                    }
                  }
                  response_cache.update(move |rc| {
-                   rc.remove(&(0usize, "".into(), ListingType::All, SortType::Active, "".into()));
+                   rc.remove(&(0usize, GetPosts { type_: Some(ListingType::All), sort: Some(SortType::Active), page: None, limit: Some(50), community_id: None, community_name: None, saved_only: None, liked_only: None, disliked_only: None, show_hidden: Some(true), show_read: Some(true), show_nsfw: Some(false), page_cursor: None }));
+
+
+                    // }
+                  // rc.remove(&(0usize, GetPosts { "".into(), , SortType::Active, "".into()}));
                  });
+
+
                  // csr_next_page_cursor.set((0, None));
 
                  // if let Ok(Some(s)) = window().local_storage() {

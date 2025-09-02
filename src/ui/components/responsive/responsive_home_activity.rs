@@ -44,7 +44,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
   let ssr_sort = move || serde_json::from_str::<SortType>(&query.get().get("sort").cloned().unwrap_or("".into())).unwrap_or(SortType::Active);
   let ssr_page = move || serde_json::from_str::<Vec<(usize, String)>>(&query.get().get("page").cloned().unwrap_or("".into())).unwrap_or(vec![]);
 
-  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), LemmyAppResult<GetPostsResponse>>>>();
+  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts), (i64, LemmyAppResult<GetPostsResponse>)>>>();
   let next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
 
   let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
@@ -68,19 +68,6 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
   #[cfg(not(feature = "ssr"))]
   {
     let on_scroll = move |e: Event| {
-      // if !sleep.get() {
-      // let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-
-      // if iw < 768f64 {
-      // if let Ok(Some(s)) = window().local_storage() {
-      //   let mut query_params = query.get();
-      //   let _ = s.set_item(
-      //     &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-      //     &window().scroll_y().unwrap_or(0.0).to_string(),
-      //   );
-      //   log!("weee {}", window().scroll_y().unwrap_or(0.0));
-      // }
-      // } else {
       if let Some(se) = on_scroll_element.get() {
         if ssr_page().len() > 0 {
           if let Ok(Some(s)) = window().local_storage() {
@@ -89,12 +76,9 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
               &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
               &se.scroll_left().to_string(),
             );
-            // log!("scrolling {}", se.scroll_left());
           }
         }
       }
-      // }
-      // }
     };
 
     // let _scroll_handle = window_event_listener_untyped("scroll", on_scroll);
@@ -126,22 +110,18 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
               let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
               if iw < 768f64 {
                 if let Ok(Some(s)) = window().local_storage() {
-                  // let mut query_params = query.get();
                   let _ = s.set_item(
                     &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
                     &window().scroll_y().unwrap_or(0.0).to_string(),
                   );
-                  // log!("shreee {}", window().scroll_y().unwrap_or(0.0));
                 }
               } else {
                 if let Some(se) = on_scroll_element.get() {
                   if let Ok(Some(s)) = window().local_storage() {
-                    // let mut query_params = query.get();
                     let _ = s.set_item(
                       &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
                       &se.scroll_left().to_string(),
                     );
-                    // log!("leeftling {}", se.scroll_left());
                   }
                 }
               }
@@ -156,11 +136,8 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                   state: State::default(),
                 },
               );
-            } else {
             }
-          } else {
           }
-        } else {
         }
       },
       UseIntersectionObserverOptions::default(),
@@ -175,42 +152,12 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
     move |(_logged_in, list, sort, name, mut pages)| async move {
       loading.set(true);
       let mut rc = response_cache.get_untracked();
-      let mut new_pages: Vec<(usize, String, LemmyAppResult<GetPostsResponse>, GetPosts)> = vec![];
+      let mut new_pages: Vec<(usize, GetPosts, i64, LemmyAppResult<GetPostsResponse>)> = vec![];
 
       if pages.len() == 0 {
         pages = vec![(0usize, "".to_string())];
       }
 
-      // #[cfg(not(feature = "ssr"))]
-      // let d = build_indexed_database().await.unwrap();
-
-      // if pages.len() == 0 {
-      //   #[cfg(not(feature = "ssr"))]
-      //   refresh_base.set_untracked(chrono::Utc::now().timestamp_millis());
-
-      //   // log!("empty {}", refresh_base.get_untracked());
-
-      //   let form = GetPosts {
-      //     type_: Some(list),
-      //     sort: Some(sort),
-      //     community_name: if name.clone().len() == 0usize { None } else { Some(name.clone()) },
-      //     community_id: None,
-      //     page: None,
-      //     limit: Some(50),
-      //     saved_only: None,
-      //     disliked_only: None,
-      //     liked_only: None,
-      //     page_cursor: None,
-      //     show_hidden: Some(true),
-      //     show_nsfw: Some(false),
-      //     show_read: Some(true),
-      //   };
-      //   let result = LemmyClient.list_posts(form.clone()).await;
-      //   new_pages.push((0, format!("{}", refresh_base.get_untracked()), result.clone(), form));
-      //   // response_cache.update(move |rc| {
-      //   //   rc.insert((0, "".into(), ListingType::All, SortType::Active, "".into()), result);
-      //   // });
-      // } else {
       for p in pages {
         let form = GetPosts {
           type_: Some(list),
@@ -228,68 +175,23 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
           show_read: Some(true),
         };
         #[cfg(not(feature = "ssr"))]
-        if let Some(c) = rc.get(&(p.0, p.1.clone(), list, sort, name.clone())) {
-          // if let Ok(d) = build_indexed_database().await {
-          // if let Ok(Some(c)) = get_query_get_cache::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&d, &form).await {
-          log!("hit");
-          match c {
+        if let Some((t, r)) = rc.get(&(p.0, form.clone())) {
+          // log!("hit {:?}", form);
+          match r {
             Ok(_) => {
-              new_pages.push((
-                p.0,
-                if p.0 == 0usize {
-                  format!("{}", refresh_base.get_untracked())
-                } else {
-                  p.1.clone()
-                },
-                c.clone(),
-                form,
-              ));
+              new_pages.push((p.0, form.clone(), t.clone(), r.clone()));
             }
             _ => {
               let result = LemmyClient.list_posts(form.clone()).await;
-              new_pages.push((
-                p.0,
-                if p.0 == 0usize {
-                  // refresh_base.set_untracked(chrono::Utc::now().timestamp_millis());
-                  format!("{}", refresh_base.get_untracked())
-                } else {
-                  format!("{}", chrono::Utc::now().timestamp_millis())
-                  // p.1.clone()
-                },
-                result.clone(),
-                form,
-              ));
-              // let moved_name = name.clone();
-              // response_cache.update(move |rc| {
-              //   rc.insert((p.0, p.1.clone(), list, sort, moved_name), result);
-              // });
+              new_pages.push((p.0, form.clone(), chrono::Utc::now().timestamp_millis(), result));
             }
           }
           continue;
-          // }
         }
 
         let result = LemmyClient.list_posts(form.clone()).await;
-        new_pages.push((
-          p.0,
-          if p.0 == 0usize {
-            format!("{}", refresh_base.get_untracked())
-          } else {
-            p.1.clone()
-          },
-          result.clone(),
-          form,
-        ));
-
-        if let Ok(r) = result {
-          log!("int next {}", p.0 + 50usize);
-          next_page_cursor.set((p.0 + 50usize, r.next_page.clone()));
-        }
+        new_pages.push((p.0, form.clone(), chrono::Utc::now().timestamp_millis(), result));
       }
-
-      loading.set(false);
-
-      // }
 
       (new_pages)
     },
@@ -348,52 +250,51 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
           </Transition>
           <Transition fallback={|| {}}>
             <Title text="" />
-            <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| p.3.clone() /*(p.0, p.1.clone())*/} let:p>
+            <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| (p.1.clone(), p.2)} let:p>
               {
-                match p.2 {
+                match p.3 {
                   Ok(ref o) => {
-                    loading.set(true);
 
                     #[cfg(not(feature = "ssr"))]
                     {
-                      let rw = p.2.clone();
-                      let fm = p.3.clone();
+                      let rw = p.3.clone();
+                      let fm = p.1.clone();
                       use crate::indexed_db::csr_indexed_db::*;
-                      #[cfg(not(feature = "ssr"))]
+            //           #[cfg(not(feature = "ssr"))]
                       spawn_local(async move {
                         if let Ok(d) = build_indexed_database().await {
                           if let Ok(c) = set_query_get_cache::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&d, &fm, &rw).await {
-                            log!("store");
+                            // log!("store");
                           }
                         }
                         response_cache.update(move |rc| {
-                          rc.insert((p.0, if let Some(pc) = fm.page_cursor { pc.0 } else { "".into() } /*if p.0 == 0 { "".into() } else { p.1.clone() }*/, fm.type_.unwrap_or(ListingType::All), fm.sort.unwrap_or(SortType::Active), fm.community_name.unwrap_or("".into())), rw);
+                          //   rc.insert((p.0, if let Some(pc) = fm.page_cursor { pc.0 } else { "".into() } /*if p.0 == 0 { "".into() } else { p.1.clone() }*/, fm.type_.unwrap_or(ListingType::All), fm.sort.unwrap_or(SortType::Active), fm.community_name.unwrap_or("".into())), rw);
+                          rc.insert((p.0, fm), (p.2, rw));
                         });
                       });
-                    }
 
-                    #[cfg(not(feature = "ssr"))]
-                    if let Some(Ok(c)) = cancel_handle.get_untracked() {
-                      c.clear();
-                    }
-                    #[cfg(not(feature = "ssr"))]
-                    cancel_handle.set(Some(set_timeout_with_handle(
-                      move || {
-                        if let Some(se) = on_scroll_element.get() {
-                          if let Ok(Some(s)) = window().local_storage() {
-                            let mut query_params = query.get();
-                            if let Ok(Some(l)) = s.get_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string())) {
-                              se.set_scroll_left(l.parse().unwrap_or(0i32));
-                              // log!("set {}", l);
+                      if let Some(Ok(c)) = cancel_handle.get_untracked() {
+                        c.clear();
+                      }
+
+                      cancel_handle.set(Some(set_timeout_with_handle(
+                        move || {
+                          if let Some(se) = on_scroll_element.get() {
+                            if let Ok(Some(s)) = window().local_storage() {
+                              let mut query_params = query.get();
+                              if let Ok(Some(l)) = s.get_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string())) {
+                                se.set_scroll_left(l.parse().unwrap_or(0i32));
+                                // log!("set {}", l);
+                              }
                             }
+                            scroll_element.set(Some(on_scroll_element));
                           }
-                          scroll_element.set(Some(on_scroll_element));
-                        }
-                      },
-                      std::time::Duration::new(0, 750_000_000),
-                    )));
+                        },
+                        std::time::Duration::new(0, 750_000_000),
+                      )));
+                    }
 
-                    log!("next {}", p.0 + 50usize);
+                    // log!("next {} {:?}", p.0 + 50usize, o.next_page.clone());
                     next_page_cursor.set((p.0 + 50usize, o.next_page.clone()));
                     loading.set(false);
 

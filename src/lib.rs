@@ -29,7 +29,7 @@ use codee::string::FromToStringCodec;
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SortType},
   lemmy_db_views::structs::PaginationCursor,
-  post::GetPostsResponse,
+  post::{GetPosts, GetPostsResponse},
   site::GetSiteResponse,
 };
 use leptos::{html::Div, logging::log, *};
@@ -112,8 +112,7 @@ pub fn App() -> impl IntoView {
 
   // let lot_resources: RwSignal<BTreeMap<(usize, usize, ResourceStatus), Resource<Option<PaginationCursor>, Result<GetPostsResponse, LemmyAppError>>>> =
 
-  let response_cache: RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), LemmyAppResult<GetPostsResponse>>> =
-    RwSignal::new(BTreeMap::new());
+  let response_cache: RwSignal<BTreeMap<(usize, GetPosts), (i64, LemmyAppResult<GetPostsResponse>)>> = RwSignal::new(BTreeMap::new());
   provide_context(response_cache);
 
   // let search_cache: RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>> = RwSignal::new(BTreeMap::new());
