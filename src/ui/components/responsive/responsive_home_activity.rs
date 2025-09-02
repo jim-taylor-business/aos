@@ -269,21 +269,6 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
           // }
         }
 
-        // let form = GetPosts {
-        //   type_: Some(list),
-        //   sort: Some(sort),
-        //   community_name: if name.clone().len() == 0usize { None } else { Some(name.clone()) },
-        //   community_id: None,
-        //   page: None,
-        //   limit: Some(50),
-        //   saved_only: None,
-        //   disliked_only: None,
-        //   liked_only: None,
-        //   page_cursor: if p.0 == 0usize { None } else { Some(PaginationCursor(p.1.clone())) },
-        //   show_hidden: Some(true),
-        //   show_nsfw: Some(false),
-        //   show_read: Some(true),
-        // };
         let result = LemmyClient.list_posts(form.clone()).await;
         new_pages.push((
           p.0,
@@ -295,7 +280,15 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
           result.clone(),
           form,
         ));
+
+        if let Ok(r) = result {
+          log!("int next {}", p.0 + 50usize);
+          next_page_cursor.set((p.0 + 50usize, r.next_page.clone()));
+        }
       }
+
+      loading.set(false);
+
       // }
 
       (new_pages)
@@ -355,10 +348,12 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
           </Transition>
           <Transition fallback={|| {}}>
             <Title text="" />
-            <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| (p.0, p.1.clone())} let:p>
+            <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| p.3.clone() /*(p.0, p.1.clone())*/} let:p>
               {
                 match p.2 {
                   Ok(ref o) => {
+                    loading.set(true);
+
                     #[cfg(not(feature = "ssr"))]
                     {
                       let rw = p.2.clone();
@@ -376,10 +371,6 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                         });
                       });
                     }
-
-                    loading.set(false);
-
-                    log!("next {}", p.0 + 50usize);
 
                     #[cfg(not(feature = "ssr"))]
                     if let Some(Ok(c)) = cancel_handle.get_untracked() {
@@ -402,7 +393,10 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                       std::time::Duration::new(0, 750_000_000),
                     )));
 
+                    log!("next {}", p.0 + 50usize);
                     next_page_cursor.set((p.0 + 50usize, o.next_page.clone()));
+                    loading.set(false);
+
                     view! {
                       <ResponsivePostListings posts={o.posts.clone().into()} ssr_site page_number={p.0.into()} />
                     }.into_view()
