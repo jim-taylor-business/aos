@@ -397,6 +397,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                         >
                           <span class="overflow-y-auto" inner_html={community_title_encoded} />
                         </A>
+                        <span class="overflow-y-auto" inner_html={{ if post_view.get().unwrap().post_view.post.local { "".to_string() } else { if let Some(d) = post_view.get().unwrap().post_view.post.url { format!(" from {}", d.inner().host_str().unwrap_or("")) } else { "".to_string() } } }} />
                       </span>
                     </div>
                     <a

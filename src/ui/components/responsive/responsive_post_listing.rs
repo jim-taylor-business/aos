@@ -462,7 +462,7 @@ pub fn ResponsivePostListing(
           <span class="overflow-y-auto" inner_html={creator_name_encoded} />
           " in "
           <span class="overflow-y-auto" inner_html={community_title_encoded} />
-          <span class="overflow-y-auto" inner_html={{ if let Some(d) = post_view.get().post.url { format!(" from {}", d.inner().host_str().unwrap_or("")) } else { "".to_string() } }} />
+          <span class="overflow-y-auto" inner_html={{ if post_view.get().post.local { "".to_string() } else { if let Some(d) = post_view.get().post.url { format!(" from {}", d.inner().host_str().unwrap_or("")) } else { "".to_string() } } }} />
         </span>
         // </A>
       </div>
@@ -534,7 +534,7 @@ pub fn ResponsivePostListing(
             }}
           // </A>
         </span>
-        <span class={format!("text-base-content{}", if let Some(d) = post_view.get().post.url { "" } else { " hidden" })} title="Archive">
+        <span class={format!("text-base-content{}", if post_view.get().post.local { " hidden" } else { "" })} title="Archive">
           <a target="_blank" href=format!("https://archive.ph/submit/?url={}", { if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { "".to_string() } })>
             <Icon icon={Archive} />
           </a>
