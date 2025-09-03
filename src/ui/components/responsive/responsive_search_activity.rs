@@ -33,8 +33,6 @@ use web_sys::{js_sys::Atomics::wait_async, Event, MouseEvent, WheelEvent};
 pub fn ResponsiveSearchActivity(ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
   let i18n = use_i18n();
 
-  let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
-
   let param = use_params_map();
   let ssr_name = move || param.get().get("name").cloned().unwrap_or("".into());
 
@@ -45,7 +43,6 @@ pub fn ResponsiveSearchActivity(ssr_site: Resource<Option<String>, Result<GetSit
   let ssr_page = move || serde_json::from_str::<Vec<usize>>(&query.get().get("page").cloned().unwrap_or("".into())).unwrap_or(vec![0usize]);
   let ssr_term = move || query.get().get("term").cloned().unwrap_or("".into());
 
-  // let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>>>();
   let next_page_cursor: RwSignal<usize> = RwSignal::new(0);
 
   let loading = RwSignal::new(false);
@@ -69,7 +66,6 @@ pub fn ResponsiveSearchActivity(ssr_site: Resource<Option<String>, Result<GetSit
       if let Some(se) = on_scroll_element.get() {
         if let Ok(Some(s)) = window().local_storage() {
           let mut query_params = query.get();
-          // if let Ok(Some(_)) = s.get_item(&serde_json::to_string(&query_params.to_query_string()).ok().unwrap()) {}
           let _ = s.set_item(
             &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
             &se.scroll_left().to_string(),
@@ -98,13 +94,10 @@ pub fn ResponsiveSearchActivity(ssr_site: Resource<Option<String>, Result<GetSit
       intersection_element,
       move |intersections, _| {
         if intersections[0].is_intersecting() {
-          // log!("trigger");
           if let key = next_page_cursor.get() {
             if key > 0 {
               let mut st = ssr_page();
-              // if let (_) = next_page_cursor.get() {
               st.push(key);
-              // }
               let mut query_params = query.get();
               query_params.insert("page".into(), serde_json::to_string(&st).unwrap_or("[]".into()));
 
@@ -118,14 +111,8 @@ pub fn ResponsiveSearchActivity(ssr_site: Resource<Option<String>, Result<GetSit
                   state: State::default(),
                 },
               );
-            } else {
-              // log!("trigger ignore");
             }
-          } else {
-            // log!("trigger ignore");
           }
-        } else {
-          // log!("trigger ignore");
         }
       },
       UseIntersectionObserverOptions::default(),
@@ -135,13 +122,11 @@ pub fn ResponsiveSearchActivity(ssr_site: Resource<Option<String>, Result<GetSit
   let search_cache_resource = Resource::new(
     move || (refresh.get(), logged_in.get(), ssr_list(), ssr_sort(), ssr_name(), ssr_page(), ssr_term()),
     move |(_refresh, _logged_in, list, sort, name, pages, term)| async move {
-      // let mut rc = response_cache.get();
       let mut new_pages: HashMap<usize, Option<SearchResponse>> = HashMap::new();
       let pages_later = pages.clone();
       let pages_unit = pages_later.eq(&vec![(0usize)]);
       let mut pages_count = 1i64;
       for p in pages {
-        // if pages_unit { // || rc.get(&(p.0, p.1.clone(), list, sort, name.clone())).is_none() {
         let form = Search {
           q: term.clone(),
           type_: Some(SearchType::Posts),
@@ -149,28 +134,11 @@ pub fn ResponsiveSearchActivity(ssr_site: Resource<Option<String>, Result<GetSit
           community_name: None,
           community_id: None,
           page: if pages_count == 0 { None } else { Some(pages_count) },
-          // page: Some(pages_count),
           limit: Some(50),
           creator_id: None,
           listing_type: None,
           post_title_only: None,
         };
-        // let form = GetPosts {
-        //   type_: Some(list),
-        //   sort: Some(sort),
-        //   community_name: if name.clone().len() == 0usize { None } else { Some(name.clone()) },
-        //   community_id: None,
-        //   page: None,
-        //   limit: Some(50),
-        //   saved_only: None,
-        //   disliked_only: None,
-        //   liked_only: None,
-        //   page_cursor: if p.0 == 0usize { None } else { Some(PaginationCursor(p.1.clone())) },
-        //   show_hidden: Some(true),
-        //   show_nsfw: Some(false),
-        //   show_read: Some(true),
-        // };
-        // let result = LemmyClient.list_posts(form.clone()).await;
         let result = LemmyClient.search(form.clone()).await;
         match result {
           Ok(o) => {
@@ -180,8 +148,6 @@ pub fn ResponsiveSearchActivity(ssr_site: Resource<Option<String>, Result<GetSit
         }
         pages_count = pages_count + 1;
       }
-      // }
-
       (new_pages, pages_later, list, sort, name)
     },
   );
@@ -204,33 +170,10 @@ pub fn ResponsiveSearchActivity(ssr_site: Resource<Option<String>, Result<GetSit
           {move || {
             match search_cache_resource.get() {
               Some(mut o) => {
-                // response_cache.update(move |rc| {
-                //   if o.1.eq(&vec![(0usize, "".into())]) {
-                //     rc.clear();
-                //   } else {
-                //     rc.retain(|t, u| o.1.contains(&(t.0, t.1.clone())) && t.2.eq(&o.2) && t.3.eq(&o.3) && t.4.eq(&o.4.clone()));
-                //   }
-                //   // let mut counter = 0usize;
-                //   for n in o.1 {
-                //     if rc.get(&(n.0, n.1.clone(), o.2, o.3, o.4.clone())).is_none() {
-                //       // logging::log!("add");
-                //       if let Some(q) = o.0.remove(&n.0) {
-                //         rc.insert((n.0, n.1.clone(), o.2, o.3, o.4.clone()), q);
-                //       }
-                //     }
-                //     // counter = counter + 1usize;
-                //   }
-                //   if let Some(e) = rc.last_entry() {
-                //     next_page_cursor.set((e.key().0 + 50usize, e.get().as_ref().unwrap().next_page.clone()));
-                //   }
-                //   // log!("after {:#?}", rc.keys());
-                // });
                 next_page_cursor.set(next_page_cursor.get() + 50usize);
-
                 view! {
                   <div>
                     <Title text="" />
-                    // <For each={move || response_cache.get()} key={|r| r.0.clone()} let:r>
                     <For each={move || o.0.clone()} key={|r| r.0.clone()} let:r>
                       <ResponsivePostListings posts={r.1.unwrap().posts.into()} ssr_site page_number={r.0.into()} />
                     </For>
@@ -241,13 +184,13 @@ pub fn ResponsiveSearchActivity(ssr_site: Resource<Option<String>, Result<GetSit
                 view! {
                   <div>
                     <Title text="" />
-                          <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
-                            <div class="py-4 px-8">
-                              <div class="alert">
-                                <span>"Loading"</span>
-                              </div>
-                            </div>
-                          </div>
+                    <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
+                      <div class="py-4 px-8">
+                        <div class="alert">
+                          <span>"Loading"</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 }
               }

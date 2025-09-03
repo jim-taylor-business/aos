@@ -478,12 +478,16 @@ pub fn ResponsivePostToolbar(
           >
             <Icon icon={Reply} />
           </button>
-        // </Show>
-        <span class={format!("text-base-content{}", if post_view.get().post.local { " hidden" } else { "" })} title="Original post">
-          <A href={post_view.get().post.ap_id.inner().to_string()}>
-            <Icon icon={External} />
-          </A>
-        </span>
+          <span class={format!("text-base-content{}", if post_view.get().post.local { " hidden" } else { "" })} title="Original">
+            <A href={post_view.get().post.ap_id.inner().to_string()}>
+              <Icon icon={External} />
+            </A>
+          </span>
+          <span class={format!("text-base-content{}", if let Some(d) = post_view.get().post.url { "" } else { " hidden" })} title="Archive">
+            <a target="_blank" href=format!("https://archive.ph/submit/?url={}", { if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { "".to_string() } })>
+              <Icon icon={Archive} />
+            </a>
+          </span>
           <span
             class="text-base-content/50"
             title="Cross post"

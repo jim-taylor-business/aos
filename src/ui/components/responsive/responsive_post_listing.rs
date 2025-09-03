@@ -462,6 +462,7 @@ pub fn ResponsivePostListing(
           <span class="overflow-y-auto" inner_html={creator_name_encoded} />
           " in "
           <span class="overflow-y-auto" inner_html={community_title_encoded} />
+          <span class="overflow-y-auto" inner_html={{ if let Some(d) = post_view.get().post.url { format!(" from {}", d.inner().host_str().unwrap_or("")) } else { "".to_string() } }} />
         </span>
         // </A>
       </div>
@@ -522,7 +523,7 @@ pub fn ResponsivePostListing(
             )
           }}
         >
-          <A href={move || { format!("/r/p/{}", post_view.get().post.id) }} class="text-sm whitespace-nowrap hover:text-accent">
+          // <A href={move || { format!("/r/p/{}", post_view.get().post.id) }} class="text-sm whitespace-nowrap hover:text-accent">
             <Icon icon={Comments} class={"inline".into()} />
             " "
             {post_view.get().counts.comments}
@@ -531,7 +532,12 @@ pub fn ResponsivePostListing(
             } else {
               "".to_string()
             }}
-          </A>
+          // </A>
+        </span>
+        <span class={format!("text-base-content{}", if let Some(d) = post_view.get().post.url { "" } else { " hidden" })} title="Archive">
+          <a target="_blank" href=format!("https://archive.ph/submit/?url={}", { if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { "".to_string() } })>
+            <Icon icon={Archive} />
+          </a>
         </span>
         <Show when={move || { post_number == 0 }} fallback={|| {}}>
         <ActionForm action={save_post_action} on:submit={on_save_submit} class="flex items-center">
@@ -562,7 +568,7 @@ pub fn ResponsivePostListing(
             <Icon icon={Reply} />
           </span>
         // </Show>
-        <span class={format!("text-base-content{}", if post_view.get().post.local { " hidden" } else { "" })} title="Original post">
+        <span class={format!("text-base-content{}", if post_view.get().post.local { " hidden" } else { "" })} title="Original">
           <A href={post_view.get().post.ap_id.inner().to_string()}>
             <Icon icon={External} />
           </A>

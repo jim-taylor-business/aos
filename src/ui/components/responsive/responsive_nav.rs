@@ -144,6 +144,29 @@ pub fn ResponsiveTopNav(
       //     se.set_scroll_left(0i32);
       //   }
       // }
+      //
+
+      response_cache.update(move |rc| {
+        rc.remove(&(
+          0usize,
+          GetPosts {
+            type_: Some(ssr_list()),
+            sort: Some(s),
+            page: None,
+            limit: Some(50),
+            community_id: None,
+            community_name: None,
+            saved_only: None,
+            liked_only: None,
+            disliked_only: None,
+            show_hidden: Some(true),
+            show_read: Some(true),
+            show_nsfw: Some(false),
+            page_cursor: None,
+          },
+        ));
+      });
+
       navigate(
         &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
         Default::default(),
@@ -169,6 +192,27 @@ pub fn ResponsiveTopNav(
       //     se.set_scroll_left(0i32);
       //   }
       // }
+      response_cache.update(move |rc| {
+        rc.remove(&(
+          0usize,
+          GetPosts {
+            type_: Some(l),
+            sort: Some(ssr_sort()),
+            page: None,
+            limit: Some(50),
+            community_id: None,
+            community_name: None,
+            saved_only: None,
+            liked_only: None,
+            disliked_only: None,
+            show_hidden: Some(true),
+            show_read: Some(true),
+            show_nsfw: Some(false),
+            page_cursor: None,
+          },
+        ));
+      });
+
       navigate(
         &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
         Default::default(),
@@ -573,7 +617,7 @@ pub fn ResponsiveTopNav(
                    //     String::default()
                    //   }
                    // }}
-                   <Icon icon={User} />
+                   <Icon icon={Filter} />
                  </summary>
                  <ul class="z-[1]">
                   <li class="flex z-[1]">
