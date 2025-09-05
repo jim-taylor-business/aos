@@ -26,7 +26,7 @@ use web_sys::{wasm_bindgen::JsCast, HtmlAnchorElement, HtmlImageElement, WheelEv
 use crate::indexed_db::csr_indexed_db::*;
 
 #[component]
-pub fn ResponsivePostActivity(ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
+pub fn ResponsivePostActivity(ssr_site: Resource<(Option<String>, Option<String>), Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
   let params = use_params_map();
   let query = use_query_map();
 

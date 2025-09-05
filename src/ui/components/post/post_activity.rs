@@ -16,7 +16,7 @@ use leptos_router::{use_location, use_params_map, use_query_map};
 use web_sys::{wasm_bindgen::JsCast, HtmlAnchorElement, HtmlImageElement};
 
 #[component]
-pub fn PostActivity(ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
+pub fn PostActivity(ssr_site: Resource<(Option<String>, Option<String>), Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
   let params = use_params_map();
   let query = use_query_map();
 

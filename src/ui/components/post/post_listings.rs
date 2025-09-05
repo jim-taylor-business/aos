@@ -5,7 +5,7 @@ use leptos::*;
 #[component]
 pub fn PostListings(
   posts: MaybeSignal<Vec<PostView>>,
-  ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>,
+  ssr_site: Resource<(Option<String>, Option<String>), Result<GetSiteResponse, LemmyAppError>>,
   page_number: RwSignal<usize>,
   #[prop(into)] on_community_change: Callback<String, ()>,
 ) -> impl IntoView {

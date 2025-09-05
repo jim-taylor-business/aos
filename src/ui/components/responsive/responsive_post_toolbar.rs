@@ -126,7 +126,7 @@ pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostR
 #[component]
 pub fn ResponsivePostToolbar(
   post_view: MaybeSignal<PostView>,
-  ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>,
+  ssr_site: Resource<(Option<String>, Option<String>), Result<GetSiteResponse, LemmyAppError>>,
   post_number: usize,
   reply_show: RwSignal<bool>,
   content: RwSignal<String>,
@@ -144,6 +144,11 @@ pub fn ResponsivePostToolbar(
   // let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
   // let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), LemmyAppResult<GetPostsResponse>>>>();
   // let response_load = expect_context::<RwSignal<ResponseLoad>>();
+
+  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+    "instance",
+    UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+  );
   let online = expect_context::<RwSignal<OnlineSetter>>();
 
   let post_view = RwSignal::new(post_view.get());
@@ -483,7 +488,7 @@ pub fn ResponsivePostToolbar(
               <Icon icon={External} />
             </A>
           </span>
-          <span class={format!("text-base-content{}", if post_view.get().post.local { " hidden" } else { "" })} title="Archive">
+          <span class={format!("text-base-content{}", { if let Some(d) = post_view.get().post.url { if let Some(f) = d.inner().host_str() { if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { "" } else { " hidden" } } else { " hidden" } } else { " hidden" } } )} title="Archive">
             <a target="_blank" href=format!("https://archive.ph/submit/?url={}", { if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { "".to_string() } })>
               <Icon icon={Archive} />
             </a>

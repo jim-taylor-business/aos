@@ -72,7 +72,7 @@ pub async fn change_theme(theme: String) -> Result<(), ServerFnError> {
 
 #[component]
 pub fn ResponsiveTopNav(
-  ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>,
+  ssr_site: Resource<(Option<String>, Option<String>), Result<GetSiteResponse, LemmyAppError>>,
   #[prop(optional)] default_sort: MaybeProp<SortType>,
   #[prop(optional)] post_view: MaybeSignal<Option<GetPostResponse>>,
   // #[prop(optional)] post_name: MaybeSignal<String>,
@@ -1087,7 +1087,7 @@ pub fn ResponsiveTopNav(
 }
 
 #[component]
-pub fn BottomNav(ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
+pub fn BottomNav(ssr_site: Resource<(Option<String>, Option<String>), Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
   let i18n = use_i18n();
   const FE_VERSION: &str = env!("CARGO_PKG_VERSION");
   const GIT_HASH: std::option::Option<&'static str> = option_env!("GIT_HASH");

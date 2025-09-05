@@ -63,7 +63,7 @@ pub async fn change_theme(theme: String) -> Result<(), ServerFnError> {
 }
 
 #[component]
-pub fn TopNav(ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
+pub fn TopNav(ssr_site: Resource<(Option<String>, Option<String>), Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
   let i18n = use_i18n();
 
   let (_, set_theme_cookie) =
@@ -517,7 +517,7 @@ pub fn TopNav(ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAp
 }
 
 #[component]
-pub fn BottomNav(ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
+pub fn BottomNav(ssr_site: Resource<(Option<String>, Option<String>), Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
   let i18n = use_i18n();
   const FE_VERSION: &str = env!("CARGO_PKG_VERSION");
   const GIT_HASH: std::option::Option<&'static str> = option_env!("GIT_HASH");

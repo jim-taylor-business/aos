@@ -22,7 +22,7 @@ use std::{collections::BTreeMap, usize, vec};
 use web_sys::MouseEvent;
 
 #[component]
-pub fn HomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
+pub fn HomeActivity(ssr_site: Resource<(Option<String>, Option<String>), Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
   let i18n = use_i18n();
 
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();

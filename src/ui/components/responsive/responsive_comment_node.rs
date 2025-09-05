@@ -28,7 +28,7 @@ use crate::indexed_db::csr_indexed_db::*;
 
 #[component]
 pub fn ResponsiveCommentNode(
-  ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>,
+  ssr_site: Resource<(Option<String>, Option<String>), Result<GetSiteResponse, LemmyAppError>>,
   comment: MaybeSignal<CommentView>,
   comments: MaybeSignal<Vec<CommentView>>,
   level: usize,

@@ -3,7 +3,7 @@
 
 mod config;
 mod errors;
-mod host;
+// mod host;
 mod indexed_db;
 mod layout;
 mod lemmy_client;
@@ -132,10 +132,29 @@ pub fn App() -> impl IntoView {
   let (get_auth_cookie, set_auth_cookie) =
     use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax));
 
+  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+    "instance",
+    UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+  );
+  #[cfg(feature = "ssr")]
+  if let Some(t) = get_instance_cookie.get() {
+    set_instance_cookie.set(Some(t));
+  } else {
+    set_instance_cookie.set(Some("lemmy.world".to_string()));
+  }
+
+  #[cfg(feature = "ssr")]
+  let (get_theme_cookie, set_theme_cookie) =
+    use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax));
+  #[cfg(feature = "ssr")]
+  if let Some(t) = get_theme_cookie.get() {
+    set_theme_cookie.set(Some(t));
+  }
+
   let ssr_site = Resource::new(
-    move || (get_auth_cookie.get()),
-    move |cookie| async move {
-      // log!("buuuuu {:#?}", cookie);
+    move || (get_auth_cookie.get(), get_instance_cookie.get()),
+    move |(cookie, instance)| async move {
+      // log!("buuuuu {:#?}", instance);
       let result = {
         if let Some(c) = cookie {
           if c.len() > 0 {
@@ -158,14 +177,6 @@ pub fn App() -> impl IntoView {
       }
     },
   );
-
-  #[cfg(feature = "ssr")]
-  let (get_theme_cookie, set_theme_cookie) =
-    use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax));
-  #[cfg(feature = "ssr")]
-  if let Some(t) = get_theme_cookie.get() {
-    set_theme_cookie.set(Some(t));
-  }
 
   let formatter = move |text: String| match ssr_site.get() {
     Some(Ok(site)) => {

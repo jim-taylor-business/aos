@@ -5,7 +5,7 @@ use leptos_router::Outlet;
 use crate::errors::LemmyAppError;
 
 #[component]
-pub fn Root(ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
+pub fn Root(ssr_site: Resource<(Option<String>, Option<String>), Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
   view! {
     <Transition fallback={|| {}}>
       {move || {

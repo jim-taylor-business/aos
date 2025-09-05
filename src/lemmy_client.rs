@@ -3,7 +3,7 @@ use std::str;
 use crate::lemmy_error::LemmyErrorType;
 use crate::{
   errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult},
-  host::{get_host, get_https},
+  // host::{get_host, get_https},
 };
 use codee::string::FromToStringCodec;
 use lemmy_api_common::private_message::PrivateMessagesResponse;
@@ -130,7 +130,20 @@ pub trait LemmyApi: Fetch {
 impl LemmyApi for LemmyClient {}
 
 fn build_route(route: &str) -> String {
-  format!("http{}://{}/api/v3/{}", if get_https() == "true" { "s" } else { "" }, get_host(), route)
+  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+    "instance",
+    UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+  );
+
+  #[cfg(feature = "ssr")]
+  if let Some(t) = get_instance_cookie.get() {
+    set_instance_cookie.set(Some(t));
+  } else {
+    set_instance_cookie.set(Some("lemmy.world".to_string()));
+  }
+
+  format!("https://{}/api/v3/{}", get_instance_cookie.get().unwrap_or("".to_string()), route)
+  // format!("http{}://{}/api/v3/{}", if get_https() == "true" { "s" } else { "" }, get_host(), route)
 }
 
 #[cfg(feature = "ssr")]

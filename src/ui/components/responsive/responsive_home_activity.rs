@@ -32,7 +32,7 @@ use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
 use web_sys::{js_sys::Atomics::wait_async, Event, MouseEvent, ScrollToOptions, TouchEvent, WheelEvent};
 
 #[component]
-pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
+pub fn ResponsiveHomeActivity(ssr_site: Resource<(Option<String>, Option<String>), Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
   let i18n = use_i18n();
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
 
@@ -303,6 +303,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                     }.into_view()
                   }
                   Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
+                    loading.set(false);
                     view! {
                       <div class="py-4 px-8 break-inside-avoid">
                         <div class="flex justify-between alert alert-warning">
@@ -315,6 +316,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<Option<String>, Result<GetSiteR
                     }.into_view()
                   }
                   _ => {
+                    loading.set(false);
                     view! {
                       <div class="py-4 px-8 break-inside-avoid">
                         <div class="flex justify-between alert alert-error">

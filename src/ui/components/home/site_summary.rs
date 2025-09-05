@@ -3,7 +3,7 @@ use lemmy_api_common::site::GetSiteResponse;
 use leptos::*;
 
 #[component]
-pub fn SiteSummary(ssr_site: Resource<Option<String>, Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
+pub fn SiteSummary(ssr_site: Resource<(Option<String>, Option<String>), Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
   let _i18n = use_i18n();
 
   view! {
