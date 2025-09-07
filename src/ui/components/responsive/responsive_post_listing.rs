@@ -539,11 +539,6 @@ pub fn ResponsivePostListing(
             }}
           // </A>
         </span>
-        <span class={format!("text-base-content{}", { if let Some(d) = post_view.get().post.url { if let Some(f) = d.inner().host_str() { if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { "" } else { " hidden" } } else { " hidden" } } else { " hidden" } } )} title="Archive">
-          <a target="_blank" href=format!("https://archive.ph/submit/?url={}", { if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { "".to_string() } })>
-            <Icon icon={Archive} />
-          </a>
-        </span>
         <Show when={move || { post_number == 0 }} fallback={|| {}}>
         <ActionForm action={save_post_action} on:submit={on_save_submit} class="flex items-center">
           <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
@@ -624,7 +619,21 @@ pub fn ResponsivePostListing(
           //   </ul>
           // </div>
         </Show>
-        <span class="text-right grow text-base-content/25">{if post_number != 0 { format!("{}", post_number) } else { "".into() }}</span>
+        <span class="grow">
+        </span>
+        <span class="flex items-center text-base-content/25">
+          <a
+            class={format!("{}", { if let Some(d) = post_view.get().post.url { if let Some(f) = d.inner().host_str() { if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { "" } else { " hidden" } } else { " hidden" } } else { " hidden" } } )}
+            title="Archive"
+            target="_blank"
+            href=format!("https://archive.ph/submit/?url={}", { if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { "".to_string() } })
+          >
+            <Icon icon={History} />
+          </a>
+        </span>
+        <span class="flex items-center text-base-content/25">
+          {if post_number != 0 { format!("{}", post_number) } else { "".into() }}
+        </span>
       </div>
     </div>
   }
