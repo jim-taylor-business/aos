@@ -490,7 +490,7 @@ pub fn ResponsivePostToolbar(
           </span>
           <span class={format!("text-base-content{}", { if let Some(d) = post_view.get().post.url { if let Some(f) = d.inner().host_str() { if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { "" } else { " hidden" } } else { " hidden" } } else { " hidden" } } )} title="Archive">
             <a target="_blank" href=format!("https://archive.ph/submit/?url={}", { if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { "".to_string() } })>
-              <Icon icon={Archive} />
+              <Icon icon={History} />
             </a>
           </span>
           <span

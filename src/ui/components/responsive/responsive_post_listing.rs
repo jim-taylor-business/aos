@@ -496,24 +496,24 @@ pub fn ResponsivePostListing(
           </button>
         </ActionForm>
         <span class="block text-sm">{move || post_view.get().counts.score}</span>
-        <ActionForm action={vote_action} on:submit={on_down_vote_submit} class="flex items-center">
-          <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
-          <input type="hidden" name="score" value={move || if Some(-1) == post_view.get().my_vote { 0 } else { -1 }} />
-          <button
-            type="submit"
-            class={move || {
-              format!(
-                "{}{}",
-                { if Some(-1) == post_view.get().my_vote { "text-primary" } else { "" } },
-                { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-primary/50" } },
-              )
-            }}
-            disabled={move || Some(true) != logged_in.get() || !online.get().0}
-            title="Down vote"
-          >
-            <Icon icon={Downvote} />
-          </button>
-        </ActionForm>
+        // <ActionForm action={vote_action} on:submit={on_down_vote_submit} class="flex items-center">
+        //   <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
+        //   <input type="hidden" name="score" value={move || if Some(-1) == post_view.get().my_vote { 0 } else { -1 }} />
+        //   <button
+        //     type="submit"
+        //     class={move || {
+        //       format!(
+        //         "{}{}",
+        //         { if Some(-1) == post_view.get().my_vote { "text-primary" } else { "" } },
+        //         { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-primary/50" } },
+        //       )
+        //     }}
+        //     disabled={move || Some(true) != logged_in.get() || !online.get().0}
+        //     title="Down vote"
+        //   >
+        //     <Icon icon={Downvote} />
+        //   </button>
+        // </ActionForm>
         <span
           class="flex items-center"
           title={move || {
