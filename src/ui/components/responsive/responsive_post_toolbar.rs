@@ -373,7 +373,7 @@ pub fn ResponsivePostToolbar(
 
   view! {
     <div class="px-4 break-inside-avoid">
-      <div class="pb-2 flex items-center gap-x-2">
+      <div class="pb-2 flex flex-wrap items-center gap-x-2">
         <ActionForm action={vote_action} on:submit={on_up_vote_submit} class="flex items-center">
           <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
           <input type="hidden" name="score" value={move || if Some(1) == post_view.get().my_vote { 0 } else { 1 }} />
@@ -425,7 +425,7 @@ pub fn ResponsivePostToolbar(
             )
           }}
         >
-          <A href={move || { format!("/r/p/{}", post_view.get().post.id) }} class="text-sm whitespace-nowrap hover:text-accent">
+          // <A href={move || { format!("/r/p/{}", post_view.get().post.id) }} class="text-sm whitespace-nowrap hover:text-accent">
             <Icon icon={Comments} class={"inline".into()} />
             " "
             {post_view.get().counts.comments}
@@ -434,7 +434,7 @@ pub fn ResponsivePostToolbar(
             } else {
               "".to_string()
             }}
-          </A>
+          // </A>
         </span>
         <Show when={move || { post_number == 0 }} fallback={|| {}}>
         <ActionForm action={save_post_action} on:submit={on_save_submit} class="flex items-center">
@@ -493,17 +493,19 @@ pub fn ResponsivePostToolbar(
               <Icon icon={History} />
             </a>
           </span>
-          <span
-            class="text-base-content/50"
-            title="Cross post"
-            on:click={move |e: MouseEvent| {
-              if e.ctrl_key() && e.shift_key() {
-                let _ = window().location().set_href(&format!("//lemmy.world/p/{}", post_view.get().post.id));
-              }
-            }}
-          >
-            <Icon icon={Crosspost} />
-          </span>
+          // <span
+          //   class="text-base-content/50"
+          //   title="Cross post"
+          //   on:click={move |e: MouseEvent| {
+          //     if e.ctrl_key() && e.shift_key() {
+          //       let _ = window().location().set_href(&format!("//lemmy.world/p/{}", post_view.get().post.id));
+          //     }
+          //   }}
+          // >
+          //   <Icon icon={Crosspost} />
+          // </span>
+          // <span class="flex grow"></span>
+          <span class="flex item-center ml-auto">
           <div class="dropdown max-sm:dropdown-end">
             <label tabindex="0">
               <Icon icon={VerticalDots} />
@@ -537,8 +539,9 @@ pub fn ResponsivePostToolbar(
               </li>
             </ul>
           </div>
+          </span>
         </Show>
-        <span class="text-right grow text-base-content/25">{if post_number != 0 { format!("{}", post_number) } else { "".into() }}</span>
+        // <span class="text-right grow text-base-content/25">{if post_number != 0 { format!("{}", post_number) } else { "".into() }}</span>
       </div>
     </div>
   }

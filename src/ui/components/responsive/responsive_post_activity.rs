@@ -20,6 +20,7 @@ use lemmy_api_common::{
 use leptos::{html::Div, logging::log, *};
 use leptos_meta::*;
 use leptos_router::{use_location, use_params_map, use_query_map, A};
+use leptos_use::{use_cookie_with_options, FromToStringCodec, SameSite, UseCookieOptions};
 use web_sys::{wasm_bindgen::JsCast, HtmlAnchorElement, HtmlImageElement, WheelEvent};
 
 #[cfg(not(feature = "ssr"))]
@@ -181,6 +182,11 @@ pub fn ResponsivePostActivity(ssr_site: Resource<(Option<String>, Option<String>
 
   let on_scroll_element = NodeRef::<Div>::new();
   let thumbnail = RwSignal::new(String::from(""));
+
+  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+    "instance",
+    UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+  );
 
   view! {
     <main class="flex flex-col">
@@ -397,7 +403,8 @@ pub fn ResponsivePostActivity(ssr_site: Resource<(Option<String>, Option<String>
                         >
                           <span class="overflow-y-auto" inner_html={community_title_encoded} />
                         </A>
-                        <span class="overflow-y-auto" inner_html={{ if post_view.get().unwrap().post_view.post.local { "".to_string() } else { if let Some(d) = post_view.get().unwrap().post_view.post.url { format!(" from {}", d.inner().host_str().unwrap_or("")) } else { "".to_string() } } }} />
+                        <span class="overflow-y-auto" inner_html={ if let Some(d) = post_view.get().unwrap().post_view.post.url { if let Some(f) = d.inner().host_str() { if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { format!(" from {}", f) } else { "".into() } } else { "".into() } } else { "".into() } } />
+                        // <span class="overflow-y-auto" inner_html={{ if post_view.get().unwrap().post_view.post.local { "".to_string() } else { if let Some(d) = post_view.get().unwrap().post_view.post.url { format!(" from {}", d.inner().host_str().unwrap_or("")) } else { "".to_string() } } }} />
                       </span>
                     </div>
                     <a

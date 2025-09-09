@@ -467,13 +467,14 @@ pub fn ResponsivePostListing(
           <span class="overflow-y-auto" inner_html={creator_name_encoded} />
           " in "
           <span class="overflow-y-auto" inner_html={community_title_encoded} />
-          <span class="overflow-y-auto" inner_html={{ if post_view.get().post.local { "".to_string() } else { if let Some(d) = post_view.get().post.url { format!(" from {}", d.inner().host_str().unwrap_or("")) } else { "".to_string() } } }} />
+          <span class="overflow-y-auto" inner_html={ if let Some(d) = post_view.get().post.url { if let Some(f) = d.inner().host_str() { if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { format!(" from {}", f) } else { "".into() } } else { "".into() } } else { "".into() } } />
+          // <span class="overflow-y-auto" inner_html={{ if post_view.get().post.local { "".to_string() } else { if let Some(d) = post_view.get().post.url { format!(" from {}", d.inner().host_str().unwrap_or("")) } else { "".to_string() } } }} />
         </span>
         // </A>
       </div>
       <div class={move || {
         format!(
-          "row-span-1 flex items-center gap-x-2{}",
+          "row-span-1 flex items-center gap-x-1{}",
           if post_view.get().post.thumbnail_url.is_none() && post_view.get().post.url.is_none() { " col-span-2" } else { " col-span-1" },
         )
       }}>
@@ -515,7 +516,7 @@ pub fn ResponsivePostListing(
         //   </button>
         // </ActionForm>
         <span
-          class="flex items-center"
+          class="flex items-center pl-1"
           title={move || {
             format!(
               "{} comments{}",
@@ -532,11 +533,11 @@ pub fn ResponsivePostListing(
             <Icon icon={Comments} class={"inline".into()} />
             " "
             {post_view.get().counts.comments}
-            {if post_view.get().unread_comments != post_view.get().counts.comments && post_view.get().unread_comments > 0 {
-              format!(" ({})", post_view.get().unread_comments)
-            } else {
-              "".to_string()
-            }}
+            // {if post_view.get().unread_comments != post_view.get().counts.comments && post_view.get().unread_comments > 0 {
+            //   format!(" ({})", post_view.get().unread_comments)
+            // } else {
+            //   "".to_string()
+            // }}
           // </A>
         </span>
         <Show when={move || { post_number == 0 }} fallback={|| {}}>
@@ -619,9 +620,8 @@ pub fn ResponsivePostListing(
           //   </ul>
           // </div>
         </Show>
-        <span class="grow">
-        </span>
-        <span class="flex items-center text-base-content/25">
+        // <span class="grow"></span>
+        <span class="flex items-center ml-auto text-base-content/25">
           <a
             class={format!("{}", { if let Some(d) = post_view.get().post.url { if let Some(f) = d.inner().host_str() { if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { "" } else { " hidden" } } else { " hidden" } } else { " hidden" } } )}
             title="Archive"
