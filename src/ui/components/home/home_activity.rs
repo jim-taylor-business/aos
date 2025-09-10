@@ -641,7 +641,7 @@ pub fn HomeActivity(ssr_site: Resource<(Option<String>, Option<String>), Result<
                   }
                 }}
               >
-                <PostListings posts={r.1.clone().1.unwrap().posts.into()} ssr_site page_number={r.0.0.into()} on_community_change={move |s| { /*csr_resources.set(BTreeMap::new()); csr_next_page_cursor.set((0, None));*/ }} />
+                <PostListings posts={r.1.clone().1.unwrap().posts.into()} ssr_site page_number={r.0.0.into()} on_community_change={move |s| {}} />
               </Show>
             }
           }

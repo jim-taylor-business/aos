@@ -373,7 +373,7 @@ pub fn ResponsivePostToolbar(
 
   view! {
     <div class="px-4 break-inside-avoid">
-      <div class="pb-2 flex flex-wrap items-center gap-x-2">
+      <div class="flex flex-wrap gap-x-2 items-center pb-2">
         <ActionForm action={vote_action} on:submit={on_up_vote_submit} class="flex items-center">
           <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
           <input type="hidden" name="score" value={move || if Some(1) == post_view.get().my_vote { 0 } else { 1 }} />
@@ -426,35 +426,35 @@ pub fn ResponsivePostToolbar(
           }}
         >
           // <A href={move || { format!("/r/p/{}", post_view.get().post.id) }} class="text-sm whitespace-nowrap hover:text-accent">
-            <Icon icon={Comments} class={"inline".into()} />
-            " "
-            {post_view.get().counts.comments}
-            {if post_view.get().unread_comments != post_view.get().counts.comments && post_view.get().unread_comments > 0 {
-              format!(" ({})", post_view.get().unread_comments)
-            } else {
-              "".to_string()
-            }}
-          // </A>
+          <Icon icon={Comments} class={"inline".into()} />
+          // " "
+          {post_view.get().counts.comments}
+          {if post_view.get().unread_comments != post_view.get().counts.comments && post_view.get().unread_comments > 0 {
+            format!(" ({})", post_view.get().unread_comments)
+          } else {
+            "".to_string()
+          }}
+        // </A>
         </span>
         <Show when={move || { post_number == 0 }} fallback={|| {}}>
-        <ActionForm action={save_post_action} on:submit={on_save_submit} class="flex items-center">
-          <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
-          <input type="hidden" name="save" value={move || format!("{}", !post_view.get().saved)} />
-          <button
-            type="submit"
-            title="Save post"
-            class={move || {
-              format!(
-                "{}{}",
-                { if post_view.get().saved { "text-accent" } else { "" } },
-                { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
-              )
-            }}
-            disabled={move || Some(true) != logged_in.get() || !online.get().0}
-          >
-            <Icon icon={Save} />
-          </button>
-        </ActionForm>
+          <ActionForm action={save_post_action} on:submit={on_save_submit} class="flex items-center">
+            <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
+            <input type="hidden" name="save" value={move || format!("{}", !post_view.get().saved)} />
+            <button
+              type="submit"
+              title="Save post"
+              class={move || {
+                format!(
+                  "{}{}",
+                  { if post_view.get().saved { "text-accent" } else { "" } },
+                  { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+                )
+              }}
+              disabled={move || Some(true) != logged_in.get() || !online.get().0}
+            >
+              <Icon icon={Save} />
+            </button>
+          </ActionForm>
           <button
             class={move || {
               format!(
@@ -488,60 +488,82 @@ pub fn ResponsivePostToolbar(
               <Icon icon={External} />
             </A>
           </span>
-          <span class={format!("text-base-content{}", { if let Some(d) = post_view.get().post.url { if let Some(f) = d.inner().host_str() { if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { "" } else { " hidden" } } else { " hidden" } } else { " hidden" } } )} title="Archive">
-            <a target="_blank" href=format!("https://archive.ph/submit/?url={}", { if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { "".to_string() } })>
+          <span
+            class={format!(
+              "text-base-content{}",
+              {
+                if let Some(d) = post_view.get().post.url {
+                  if let Some(f) = d.inner().host_str() {
+                    if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { "" } else { " hidden" }
+                  } else {
+                    " hidden"
+                  }
+                } else {
+                  " hidden"
+                }
+              },
+            )}
+            title="Archive"
+          >
+            <a
+              target="_blank"
+              href={format!(
+                "https://archive.ph/submit/?url={}",
+                { if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { "".to_string() } },
+              )}
+            >
               <Icon icon={History} />
             </a>
           </span>
           // <span
-          //   class="text-base-content/50"
-          //   title="Cross post"
-          //   on:click={move |e: MouseEvent| {
-          //     if e.ctrl_key() && e.shift_key() {
-          //       let _ = window().location().set_href(&format!("//lemmy.world/p/{}", post_view.get().post.id));
-          //     }
-          //   }}
+          // class="text-base-content/50"
+          // title="Cross post"
+          // on:click={move |e: MouseEvent| {
+          // if e.ctrl_key() && e.shift_key() {
+          // let _ = window().location().set_href(&format!("//lemmy.world/p/{}", post_view.get().post.id));
+          // }
+          // }}
           // >
-          //   <Icon icon={Crosspost} />
+          // <Icon icon={Crosspost} />
           // </span>
           // <span class="flex grow"></span>
-          <span class="flex item-center ml-auto">
-          <div class="dropdown max-sm:dropdown-end">
-            <label tabindex="0">
-              <Icon icon={VerticalDots} />
-            </label>
-            <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
-              <li>
-                <ActionForm action={report_post_action} on:submit={on_report_submit} class="flex flex-col items-start">
-                  <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
-                  <input
-                    class={move || format!("input input-bordered {}", report_validation.get())}
-                    type="text"
-                    on:input={move |e| update!(| reason | * reason = event_target_value(& e))}
-                    name="reason"
-                    placeholder="Reason for reporting post"
-                  />
-                  <button class="text-xs whitespace-nowrap" title="Report post" type="submit">
-                    <Icon icon={Report} class={"inline-block".into()} />
-                    "Report post"
-                  </button>
-                </ActionForm>
-              </li>
-              <li>
-                <ActionForm action={block_user_action} on:submit={on_block_submit}>
-                  <input type="hidden" name="person_id" value={format!("{}", post_view.get().creator.id.0)} />
-                  <input type="hidden" name="block" value="true" />
-                  <button class="text-xs whitespace-nowrap" title="Block user" type="submit">
-                    <Icon icon={Block} class={"inline-block".into()} />
-                    "Block user"
-                  </button>
-                </ActionForm>
-              </li>
-            </ul>
-          </div>
+          <span class="flex ml-auto item-center">
+            <div class="dropdown max-sm:dropdown-end">
+              <label tabindex="0">
+                <Icon icon={VerticalDots} />
+              </label>
+              <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+                <li>
+                  <ActionForm action={report_post_action} on:submit={on_report_submit} class="flex flex-col items-start">
+                    <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
+                    <input
+                      class={move || format!("input input-bordered {}", report_validation.get())}
+                      type="text"
+                      on:input={move |e| update!(| reason | * reason = event_target_value(& e))}
+                      name="reason"
+                      placeholder="Reason for reporting post"
+                    />
+                    <button class="text-xs whitespace-nowrap" title="Report post" type="submit">
+                      <Icon icon={Report} class={"inline-block".into()} />
+                      "Report post"
+                    </button>
+                  </ActionForm>
+                </li>
+                <li>
+                  <ActionForm action={block_user_action} on:submit={on_block_submit}>
+                    <input type="hidden" name="person_id" value={format!("{}", post_view.get().creator.id.0)} />
+                    <input type="hidden" name="block" value="true" />
+                    <button class="text-xs whitespace-nowrap" title="Block user" type="submit">
+                      <Icon icon={Block} class={"inline-block".into()} />
+                      "Block user"
+                    </button>
+                  </ActionForm>
+                </li>
+              </ul>
+            </div>
           </span>
         </Show>
-        // <span class="text-right grow text-base-content/25">{if post_number != 0 { format!("{}", post_number) } else { "".into() }}</span>
+      // <span class="text-right grow text-base-content/25">{if post_number != 0 { format!("{}", post_number) } else { "".into() }}</span>
       </div>
     </div>
   }

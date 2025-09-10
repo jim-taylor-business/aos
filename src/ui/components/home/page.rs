@@ -43,29 +43,25 @@ pub fn Page(from: (usize, Option<PaginationCursor>)) -> impl IntoView {
   );
 
   view! {
-    <Transition fallback={|| { view! { <span> "Fall" </span> } }}>
-    <span> { format!("tranny {:?}", from.1) } </span>
-    {move || {
-      // view! { <span> "move" </span> }
-      match trending.get() {
-        Some(Ok(o)) => {
-          // logging::log!("wuu wu");
-          view! {
-            <span> "Ok" { format!("{:#?}", o.next_page) } </span>
+    <Transition fallback={|| {
+      view! { <span>"Fall"</span> }
+    }}>
+      <span>{format!("tranny {:?}", from.1)}</span>
+      {move || {
+        match trending.get() {
+          Some(Ok(o)) => {
+            // view! { <span> "move" </span> }
+            // logging::log!("wuu wu");
+            view! { <span>"Ok" {format!("{:#?}", o.next_page)}</span> }
           }
-        },
-        Some(Err(e)) => {
-          view! {
-            <span> "Error" </span>
+          Some(Err(e)) => {
+            view! { <span>"Error"</span> }
           }
-        },
-        _ => {
-          view! {
-            <span> "Error" </span>
+          _ => {
+            view! { <span>"Error"</span> }
           }
         }
-      }
-    }}
+      }}
     </Transition>
   }
 }

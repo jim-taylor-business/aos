@@ -7,7 +7,7 @@ use crate::{
   },
   OnlineSetter,
 };
-use ev::{MouseEvent, SubmitEvent, TouchEvent};
+use ev::{MouseEvent, PointerEvent, SubmitEvent, TouchEvent, WheelEvent};
 use lemmy_api_common::{
   comment::{CreateComment, CreateCommentLike, EditComment, GetComment, SaveComment},
   lemmy_db_schema::newtypes::PersonId,
@@ -21,7 +21,7 @@ use leptos::{
 };
 use leptos_dom::helpers::TimeoutHandle;
 use leptos_router::Form;
-use web_sys::{wasm_bindgen::JsCast, DragEvent, Element, Event, HtmlAnchorElement, HtmlDetailsElement, HtmlImageElement, WheelEvent};
+use web_sys::{wasm_bindgen::JsCast, DragEvent, Element, Event, HtmlAnchorElement, HtmlDetailsElement, HtmlImageElement};
 
 #[cfg(not(feature = "ssr"))]
 use crate::indexed_db::csr_indexed_db::*;
@@ -370,8 +370,7 @@ pub fn ResponsiveCommentNode(
                 let _ = window().open_with_url_and_target(&l.href(), "_blank");
                 e.prevent_default();
               } else if let Some(s) = t.dyn_ref::<web_sys::Element>() {
-                if s.tag_name().eq("SUMMARY") {
-                } else {
+                if s.tag_name().eq("SUMMARY") {} else {
                   on_toggle.call(comment_view.get().comment.id.0);
                 }
               } else {
@@ -380,7 +379,7 @@ pub fn ResponsiveCommentNode(
             }
           }
         }}
-        on:mousedown={move |e: MouseEvent| {
+        on:pointerdown={move |e: PointerEvent| {
           if e.buttons() == 1 {
             still_handle
               .set(
@@ -399,40 +398,68 @@ pub fn ResponsiveCommentNode(
             }
           }
         }}
-        on:mousemove={move |e: MouseEvent| {
-          // log!("{}", e.buttons());
+        on:pointerup={move |e: PointerEvent| {
           if let Some(h) = still_handle.get() {
             h.clear();
           }
         }}
-        on:touchstart={move |_e: TouchEvent| {
-          still_handle
-            .set(
-              set_timeout_with_handle(
-                  move || {
-                    vote_show.set(!vote_show.get());
-                    still_down.set(true);
-                  },
-                  std::time::Duration::from_millis(500),
-                )
-                .ok(),
-            );
-        }}
-        on:touchend={move |_e: TouchEvent| {
+        on:pointerleave={move |e: PointerEvent| {
           if let Some(h) = still_handle.get() {
             h.clear();
           }
         }}
-        on:touchmove={move |_e: TouchEvent| {
-          if let Some(h) = still_handle.get() {
-            h.clear();
-          }
-        }}
-        on:mouseup={move |_e: MouseEvent| {
-          if let Some(h) = still_handle.get() {
-            h.clear();
-          }
-        }}
+        // on:mousedown={move |e: MouseEvent| {
+        //   if e.buttons() == 1 {
+        //     still_handle
+        //       .set(
+        //         set_timeout_with_handle(
+        //             move || {
+        //               vote_show.set(!vote_show.get());
+        //               still_down.set(true);
+        //             },
+        //             std::time::Duration::from_millis(500),
+        //           )
+        //           .ok(),
+        //       );
+        //   } else {
+        //     if let Some(h) = still_handle.get() {
+        //       h.clear();
+        //     }
+        //   }
+        // }}
+        // on:mousemove={move |e: MouseEvent| {
+        //   if let Some(h) = still_handle.get() {
+        //     h.clear();
+        //   }
+        // }}
+        // on:touchstart={move |_e: TouchEvent| {
+        //   still_handle
+        //     .set(
+        //       set_timeout_with_handle(
+        //           move || {
+        //             vote_show.set(!vote_show.get());
+        //             still_down.set(true);
+        //           },
+        //           std::time::Duration::from_millis(500),
+        //         )
+        //         .ok(),
+        //     );
+        // }}
+        // on:touchend={move |_e: TouchEvent| {
+        //   if let Some(h) = still_handle.get() {
+        //     h.clear();
+        //   }
+        // }}
+        // on:touchmove={move |_e: TouchEvent| {
+        //   if let Some(h) = still_handle.get() {
+        //     h.clear();
+        //   }
+        // }}
+        // on:mouseup={move |_e: MouseEvent| {
+        //   if let Some(h) = still_handle.get() {
+        //     h.clear();
+        //   }
+        // }}
         on:dblclick={move |_e: MouseEvent| {
           vote_show.set(!vote_show.get());
         }}
@@ -445,33 +472,23 @@ pub fn ResponsiveCommentNode(
         // e.stop_propagation();
         // highlight_show.set(false);
         // }}
-        <Show when={move || !(
-          comment_view.get().creator_banned_from_community || comment_view.get().creator.banned
-        )} fallback={move || view! {
-          <Icon on:click=on_mod_log_click icon={Hammer} />
-        }}>
-          <Show when={move || !(
-            comment_view.get().comment.removed
-          )} fallback={move || view! {
-            <Icon on:click=on_mod_log_click icon={Block} />
-          }}>
-            <Show when={move || !(
-              comment_view.get().comment.deleted
-            )} fallback={move || view! {
-              <Icon /*on:click=on_get_click*/ icon={Eraser} />
-            }}>
-              <Show when={move || !(
-                comment_view.get().creator_blocked
-              )} fallback={move || view! {
-                <Icon on:click=on_get_click icon={EyeSlash} />
-              }}>
-              { () }
+        <Show
+          when={move || !(comment_view.get().creator_banned_from_community || comment_view.get().creator.banned)}
+          fallback={move || view! { <Icon on:click={on_mod_log_click} icon={Hammer} /> }}
+        >
+          <Show when={move || !(comment_view.get().comment.removed)} fallback={move || view! { <Icon on:click={on_mod_log_click} icon={Block} /> }}>
+            <Show when={move || !(comment_view.get().comment.deleted)} fallback={move || view! { <Icon icon={Eraser} /> }}>
+              <Show
+                when={move || !(comment_view.get().creator_blocked)}
+                fallback={move || view! { <Icon on:click={on_get_click} icon={EyeSlash} /> }}
+              >
+                {()}
               </Show>
             </Show>
           </Show>
         </Show>
 
-        <div class={move || format!("prose{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html} />
+        <div class={move || format!("prose select-none{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html} />
 
         <Show when={move || vote_show.get()} fallback={|| view! {}}>
           <div on:click={cancel} class="flex flex-wrap gap-x-2 items-center break-inside-avoid">
@@ -543,14 +560,12 @@ pub fn ResponsiveCommentNode(
                         reply_content.set(c);
                       }
                     }
-                });
+                  },
+                );
               }}
               title="Reply"
               class={move || {
-                format!(
-                  "{}",
-                  { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
-                )
+                format!("{}", { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } })
               }}
               disabled={move || Some(true) != logged_in.get() || !online.get().0}
             >
@@ -571,7 +586,8 @@ pub fn ResponsiveCommentNode(
                         edit_content.set(comment_view.get_untracked().comment.content);
                       }
                     }
-                });
+                  },
+                );
               }}
               class={move || {
                 format!(
@@ -632,9 +648,9 @@ pub fn ResponsiveCommentNode(
                 placeholder="Comment text"
                 prop:value={move || reply_content.get()}
                 node_ref={_visibility_element}
-                on:wheel=move |e: WheelEvent| {
+                on:wheel={move |e: WheelEvent| {
                   e.stop_propagation();
-                }
+                }}
                 on:input={move |ev| {
                   reply_content.set(event_target_value(&ev));
                   #[cfg(not(feature = "ssr"))]
@@ -642,21 +658,23 @@ pub fn ResponsiveCommentNode(
                     move || (),
                     move |()| async move {
                       if let Ok(d) = build_indexed_database().await {
-                        if let Ok(comment_ids) = set_draft(&d, comment_view.get().comment.id.0, Draft::Reply, reply_content.get()).await {
-                        } else {
-                          if let Err(e) = set_draft(&d, comment_view.get().comment.id.0, Draft::Reply, reply_content.get()).await {
-                          }
+                        if let Ok(comment_ids) = set_draft(&d, comment_view.get().comment.id.0, Draft::Reply, reply_content.get()).await {} else {
+                          if let Err(e) = set_draft(&d, comment_view.get().comment.id.0, Draft::Reply, reply_content.get()).await {}
                         }
                       }
-                  });
+                    },
+                  );
                 }}
               >
                 {reply_content.get_untracked()}
               </textarea>
             </label>
-            <button on:click={on_reply_click} type="button"
+            <button
+              on:click={on_reply_click}
+              type="button"
               disabled={move || Some(true) != logged_in.get() || !online.get().0}
-              class=move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })>
+              class={move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })}
+            >
               "Reply"
             </button>
             <button on:click={move |_| reply_show.set(false)} type="button" class="btn btn-neutral">
@@ -669,9 +687,9 @@ pub fn ResponsiveCommentNode(
                 class="h-24 text-base textarea textarea-bordered"
                 placeholder="Comment text"
                 prop:value={move || edit_content.get()}
-                on:wheel=move |e: WheelEvent| {
+                on:wheel={move |e: WheelEvent| {
                   e.stop_propagation();
-                }
+                }}
                 on:input={move |ev| {
                   edit_content.set(event_target_value(&ev));
                   comment_view.update(|cv| cv.comment.content = event_target_value(&ev));
@@ -680,18 +698,21 @@ pub fn ResponsiveCommentNode(
                     move || (),
                     move |()| async move {
                       if let Ok(d) = build_indexed_database().await {
-                        if let Ok(comment_ids) = set_draft(&d, comment_view.get().comment.id.0, Draft::Edit, edit_content.get()).await {
-                        }
+                        if let Ok(comment_ids) = set_draft(&d, comment_view.get().comment.id.0, Draft::Edit, edit_content.get()).await {}
                       }
-                  });
+                    },
+                  );
                 }}
               >
                 {edit_content.get_untracked()}
               </textarea>
             </label>
-            <button on:click={on_edit_click} type="button"
+            <button
+              on:click={on_edit_click}
+              type="button"
               disabled={move || Some(true) != logged_in.get() || !online.get().0}
-              class=move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })>
+              class={move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })}
+            >
               "Edit"
             </button>
             <button on:click={on_cancel_click} type="button" class="btn btn-neutral">

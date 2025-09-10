@@ -313,10 +313,7 @@ pub fn CommentNode(
                 let _ = window().open_with_url_and_target(&l.href(), "_blank");
                 e.prevent_default();
               } else if let Some(s) = t.dyn_ref::<web_sys::Element>() {
-                // log!("detail {:#?}", s.tag_name());
-                if s.tag_name().eq("SUMMARY") {
-                  // e.prevent_default();
-                } else {
+                if s.tag_name().eq("SUMMARY") {} else {
                   on_toggle.call(comment_view.get().comment.id.0);
                 }
               } else {
@@ -345,7 +342,6 @@ pub fn CommentNode(
           }
         }}
         on:mousemove={move |e: MouseEvent| {
-          // log!("{}", e.buttons());
           if let Some(h) = still_handle.get() {
             h.clear();
           }
@@ -559,7 +555,11 @@ pub fn CommentNode(
                 {reply_content.get_untracked()}
               </textarea>
             </label>
-            <button on:click={on_reply_click} type="button" class=move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })>
+            <button
+              on:click={on_reply_click}
+              type="button"
+              class={move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })}
+            >
               "Reply"
             </button>
             <button on:click={move |_| reply_show.set(false)} type="button" class="btn btn-neutral">
@@ -588,7 +588,11 @@ pub fn CommentNode(
                 {edit_content.get_untracked()}
               </textarea>
             </label>
-            <button on:click={on_edit_click} type="button" class=move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })>
+            <button
+              on:click={on_edit_click}
+              type="button"
+              class={move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })}
+            >
               "Edit"
             </button>
             <button on:click={on_cancel_click} type="button" class="btn btn-neutral">

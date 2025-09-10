@@ -322,7 +322,11 @@ pub fn PostActivity(ssr_site: Resource<(Option<String>, Option<String>), Result<
                               {content.get_untracked()}
                             </textarea>
                           </label>
-                          <button on:click={on_reply_click} type="button" class=move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })>
+                          <button
+                            on:click={on_reply_click}
+                            type="button"
+                            class={move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })}
+                          >
                             "Comment"
                           </button>
                         </div>

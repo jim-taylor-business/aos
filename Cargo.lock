@@ -298,12 +298,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
 
 [[package]]
-name = "android-tzdata"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e999941b234f3131b00bc13c22d06e8c5ff726d1b6318ac7eb276997bbb4fef0"
-
-[[package]]
 name = "android_system_properties"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -429,9 +423,9 @@ checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
 
 [[package]]
 name = "awc"
-version = "3.7.0"
+version = "3.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e76d68b4f02400c2f9110437f254873e8f265b35ea87352f142bc7c8e878115a"
+checksum = "117ec0a30fe956b77d69efff54bce923854df0437874fe4bfa701dfdddca8d5d"
 dependencies = [
  "actix-codec",
  "actix-http",
@@ -624,17 +618,16 @@ checksum = "2fd1289c04a9ea8cb22300a459a72a385d7c73d3259e2ed7dcb2af674838cfa9"
 
 [[package]]
 name = "chrono"
-version = "0.4.41"
+version = "0.4.42"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c469d952047f47f91b68d1cba3f10d63c11d73e4636f24f08daf0278abf01c4d"
+checksum = "145052bdd345b87320e369255277e3fb5152762ad123a901ef5c262dd38fe8d2"
 dependencies = [
- "android-tzdata",
  "iana-time-zone",
  "js-sys",
  "num-traits",
  "serde",
  "wasm-bindgen",
- "windows-link 0.1.3",
+ "windows-link 0.2.0",
 ]
 
 [[package]]
@@ -1306,7 +1299,7 @@ dependencies = [
  "cfg-if",
  "libc",
  "r-efi",
- "wasi 0.14.4+wasi-0.2.4",
+ "wasi 0.14.5+wasi-0.2.4",
 ]
 
 [[package]]
@@ -1393,7 +1386,7 @@ dependencies = [
  "futures-sink",
  "futures-util",
  "http 0.2.12",
- "indexmap 2.11.0",
+ "indexmap 2.11.1",
  "slab",
  "tokio",
  "tokio-util",
@@ -2062,9 +2055,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "2.11.0"
+version = "2.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2481980430f9f78649238835720ddccc57e52df14ffce1c6f37391d61b563e9"
+checksum = "206a8042aec68fa4a62e8d3f7aa4ceb508177d9324faf261e1959e495b7a1921"
 dependencies = [
  "equivalent",
  "hashbrown 0.15.5",
@@ -2344,7 +2337,7 @@ dependencies = [
  "futures",
  "getrandom 0.2.16",
  "html-escape",
- "indexmap 2.11.0",
+ "indexmap 2.11.1",
  "itertools",
  "js-sys",
  "leptos_reactive",
@@ -2370,7 +2363,7 @@ checksum = "6cb53d4794240b684a2f4be224b84bee9e62d2abc498cf2bcd643cd565e01d96"
 dependencies = [
  "anyhow",
  "camino",
- "indexmap 2.11.0",
+ "indexmap 2.11.1",
  "parking_lot",
  "proc-macro2",
  "quote",
@@ -2458,7 +2451,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "25acc2f63cf91932013e400a95bf6e35e5d3dbb44a7b7e25a8e3057d12005b3b"
 dependencies = [
  "cfg-if",
- "indexmap 2.11.0",
+ "indexmap 2.11.1",
  "leptos",
  "tracing",
  "wasm-bindgen",
@@ -2474,7 +2467,7 @@ dependencies = [
  "base64",
  "cfg-if",
  "futures",
- "indexmap 2.11.0",
+ "indexmap 2.11.1",
  "js-sys",
  "oco_ref",
  "paste",
@@ -3503,7 +3496,7 @@ dependencies = [
  "chrono",
  "hex",
  "indexmap 1.9.3",
- "indexmap 2.11.0",
+ "indexmap 2.11.1",
  "schemars 0.9.0",
  "schemars 1.0.4",
  "serde",
@@ -3941,7 +3934,7 @@ version = "0.22.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "41fe8c660ae4257887cf66394862d21dbca4a6ddd26f04a3560410406a2f819a"
 dependencies = [
- "indexmap 2.11.0",
+ "indexmap 2.11.1",
  "serde",
  "serde_spanned",
  "toml_datetime",
@@ -4114,9 +4107,9 @@ checksum = "75b844d17643ee918803943289730bec8aac480150456169e647ed0b576ba539"
 
 [[package]]
 name = "unicode-ident"
-version = "1.0.18"
+version = "1.0.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a5f39404a5da50712a4c1eecf25e90dd62b613502b7e925fd4e4d19b5c96512"
+checksum = "f63a545481291138910575129486daeaf8ac54aee4387fe7906919f7830c7d9d"
 
 [[package]]
 name = "unicode-segmentation"
@@ -4226,9 +4219,18 @@ checksum = "ccf3ec651a847eb01de73ccad15eb7d99f80485de043efb2f370cd654f4ea44b"
 
 [[package]]
 name = "wasi"
-version = "0.14.4+wasi-0.2.4"
+version = "0.14.5+wasi-0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "88a5f4a424faf49c3c2c344f166f0662341d470ea185e939657aaff130f0ec4a"
+checksum = "a4494f6290a82f5fe584817a676a34b9d6763e8d9d18204009fb31dceca98fd4"
+dependencies = [
+ "wasip2",
+]
+
+[[package]]
+name = "wasip2"
+version = "1.0.0+wasi-0.2.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "03fa2761397e5bd52002cd7e73110c71af2109aca4e521a9f40473fe685b0a24"
 dependencies = [
  "wit-bindgen",
 ]

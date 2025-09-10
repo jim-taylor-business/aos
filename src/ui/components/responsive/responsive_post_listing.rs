@@ -369,48 +369,48 @@ pub fn ResponsivePostListing(
   let thumbnail = RwSignal::new(String::from(""));
 
   view! {
-    <div class="grid gap-x-4 pb-6 px-4 grid-cols-[6rem_1fr] grid-rows-[1fr_2rem] break-inside-avoid sm:grid-rows-[1fr_2rem]">
+    <div class="grid gap-x-4 px-4 pb-6 grid-cols-[6rem_1fr] grid-rows-[1fr_2rem] break-inside-avoid sm:grid-rows-[1fr_2rem]">
       // <div class="hidden items-start pt-2">
-      //   <div class="flex flex-col items-center w-8 text-center">
-      //     <ActionForm action={vote_action} on:submit={on_up_vote_submit}>
-      //       <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
-      //       <input type="hidden" name="score" value={move || if Some(1) == post_view.get().my_vote { 0 } else { 1 }} />
-      //       <button
-      //         type="submit"
-      //         class={move || {
-      //           format!(
-      //             "align-bottom{}{}",
-      //             { if Some(true) != logged_in.get() { " text-base-content/50" } else { " hover:text-secondary/50" } },
-      //             { if Some(1) == post_view.get().my_vote { " text-secondary" } else { "" } },
-      //           )
-      //         }}
-      //         disabled={move || Some(true) != logged_in.get()}
-      //         title="Up vote"
-      //       >
-      //         <Icon icon={Upvote} />
-      //       // <Icon icon=Upvote class="absolute animate-ping".into() />
-      //       </button>
-      //     </ActionForm>
-      //     <span class="block text-sm">{move || post_view.get().counts.score}</span>
-      //     <ActionForm action={vote_action} on:submit={on_down_vote_submit}>
-      //       <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
-      //       <input type="hidden" name="score" value={move || if Some(-1) == post_view.get().my_vote { 0 } else { -1 }} />
-      //       <button
-      //         type="submit"
-      //         class={move || {
-      //           format!(
-      //             "align-top{}{}",
-      //             { if Some(true) != logged_in.get() { " text-base-content/50" } else { " hover:text-primary/50" } },
-      //             { if Some(-1) == post_view.get().my_vote { " text-primary" } else { "" } },
-      //           )
-      //         }}
-      //         disabled={move || Some(true) != logged_in.get()}
-      //         title="Down vote"
-      //       >
-      //         <Icon icon={Downvote} />
-      //       </button>
-      //     </ActionForm>
-      //   </div>
+      // <div class="flex flex-col items-center w-8 text-center">
+      // <ActionForm action={vote_action} on:submit={on_up_vote_submit}>
+      // <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
+      // <input type="hidden" name="score" value={move || if Some(1) == post_view.get().my_vote { 0 } else { 1 }} />
+      // <button
+      // type="submit"
+      // class={move || {
+      // format!(
+      // "align-bottom{}{}",
+      // { if Some(true) != logged_in.get() { " text-base-content/50" } else { " hover:text-secondary/50" } },
+      // { if Some(1) == post_view.get().my_vote { " text-secondary" } else { "" } },
+      // )
+      // }}
+      // disabled={move || Some(true) != logged_in.get()}
+      // title="Up vote"
+      // >
+      // <Icon icon={Upvote} />
+      // // <Icon icon=Upvote class="absolute animate-ping".into() />
+      // </button>
+      // </ActionForm>
+      // <span class="block text-sm">{move || post_view.get().counts.score}</span>
+      // <ActionForm action={vote_action} on:submit={on_down_vote_submit}>
+      // <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
+      // <input type="hidden" name="score" value={move || if Some(-1) == post_view.get().my_vote { 0 } else { -1 }} />
+      // <button
+      // type="submit"
+      // class={move || {
+      // format!(
+      // "align-top{}{}",
+      // { if Some(true) != logged_in.get() { " text-base-content/50" } else { " hover:text-primary/50" } },
+      // { if Some(-1) == post_view.get().my_vote { " text-primary" } else { "" } },
+      // )
+      // }}
+      // disabled={move || Some(true) != logged_in.get()}
+      // title="Down vote"
+      // >
+      // <Icon icon={Downvote} />
+      // </button>
+      // </ActionForm>
+      // </div>
       // </div>
       <div class={move || {
         format!(
@@ -421,7 +421,9 @@ pub fn ResponsivePostListing(
         <a
           class="flex flex-col h-full"
           target="_blank"
-          href={move || { if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { format!("/r/post/{}", post_view.get().post.id) } }}
+          href={move || {
+            if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { format!("/r/post/{}", post_view.get().post.id) }
+          }}
         >
           {move || {
             if let Some(t) = post_view.get().post.thumbnail_url {
@@ -459,18 +461,29 @@ pub fn ResponsivePostListing(
         )
       }}>
         <A href={move || format!("/r/p/{}", post_view.get().post.id)} class="block hover:text-accent">
-          <span class="text-lg break-words overflow-y-auto" inner_html={title_encoded} />
+          <span class="overflow-y-auto text-lg break-words" inner_html={title_encoded} />
         </A>
-        <span class="block mb-1 mt-1 text-sm break-words">
+        <span class="block mt-1 mb-1 text-sm break-words">
           <span>{abbr_duration}</span>
           " ago by "
           <span class="overflow-y-auto" inner_html={creator_name_encoded} />
           " in "
           <span class="overflow-y-auto" inner_html={community_title_encoded} />
-          <span class="overflow-y-auto" inner_html={ if let Some(d) = post_view.get().post.url { if let Some(f) = d.inner().host_str() { if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { format!(" from {}", f) } else { "".into() } } else { "".into() } } else { "".into() } } />
-          // <span class="overflow-y-auto" inner_html={{ if post_view.get().post.local { "".to_string() } else { if let Some(d) = post_view.get().post.url { format!(" from {}", d.inner().host_str().unwrap_or("")) } else { "".to_string() } } }} />
+          <span
+            class="overflow-y-auto"
+            inner_html={if let Some(d) = post_view.get().post.url {
+              if let Some(f) = d.inner().host_str() {
+                if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { format!(" from {}", f) } else { "".into() }
+              } else {
+                "".into()
+              }
+            } else {
+              "".into()
+            }}
+          />
+        // <span class="overflow-y-auto" inner_html={{ if post_view.get().post.local { "".to_string() } else { if let Some(d) = post_view.get().post.url { format!(" from {}", d.inner().host_str().unwrap_or("")) } else { "".to_string() } } }} />
         </span>
-        // </A>
+      // </A>
       </div>
       <div class={move || {
         format!(
@@ -498,22 +511,22 @@ pub fn ResponsivePostListing(
         </ActionForm>
         <span class="block text-sm">{move || post_view.get().counts.score}</span>
         // <ActionForm action={vote_action} on:submit={on_down_vote_submit} class="flex items-center">
-        //   <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
-        //   <input type="hidden" name="score" value={move || if Some(-1) == post_view.get().my_vote { 0 } else { -1 }} />
-        //   <button
-        //     type="submit"
-        //     class={move || {
-        //       format!(
-        //         "{}{}",
-        //         { if Some(-1) == post_view.get().my_vote { "text-primary" } else { "" } },
-        //         { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-primary/50" } },
-        //       )
-        //     }}
-        //     disabled={move || Some(true) != logged_in.get() || !online.get().0}
-        //     title="Down vote"
-        //   >
-        //     <Icon icon={Downvote} />
-        //   </button>
+        // <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
+        // <input type="hidden" name="score" value={move || if Some(-1) == post_view.get().my_vote { 0 } else { -1 }} />
+        // <button
+        // type="submit"
+        // class={move || {
+        // format!(
+        // "{}{}",
+        // { if Some(-1) == post_view.get().my_vote { "text-primary" } else { "" } },
+        // { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-primary/50" } },
+        // )
+        // }}
+        // disabled={move || Some(true) != logged_in.get() || !online.get().0}
+        // title="Down vote"
+        // >
+        // <Icon icon={Downvote} />
+        // </button>
         // </ActionForm>
         <span
           class="flex items-center pl-1"
@@ -530,35 +543,35 @@ pub fn ResponsivePostListing(
           }}
         >
           // <A href={move || { format!("/r/p/{}", post_view.get().post.id) }} class="text-sm whitespace-nowrap hover:text-accent">
-            <Icon icon={Comments} class={"inline".into()} />
-            " "
-            {post_view.get().counts.comments}
-            // {if post_view.get().unread_comments != post_view.get().counts.comments && post_view.get().unread_comments > 0 {
-            //   format!(" ({})", post_view.get().unread_comments)
-            // } else {
-            //   "".to_string()
-            // }}
-          // </A>
+          <Icon icon={Comments} class={"inline".into()} />
+          // " "
+          {post_view.get().counts.comments}
+        // {if post_view.get().unread_comments != post_view.get().counts.comments && post_view.get().unread_comments > 0 {
+        // format!(" ({})", post_view.get().unread_comments)
+        // } else {
+        // "".to_string()
+        // }}
+        // </A>
         </span>
         <Show when={move || { post_number == 0 }} fallback={|| {}}>
-        <ActionForm action={save_post_action} on:submit={on_save_submit} class="flex items-center">
-          <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
-          <input type="hidden" name="save" value={move || format!("{}", !post_view.get().saved)} />
-          <button
-            type="submit"
-            title="Save post"
-            class={move || {
-              format!(
-                "{}{}",
-                { if post_view.get().saved { "text-accent" } else { "" } },
-                { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
-              )
-            }}
-            disabled={move || Some(true) != logged_in.get() || !online.get().0}
-          >
-            <Icon icon={Save} />
-          </button>
-        </ActionForm>
+          <ActionForm action={save_post_action} on:submit={on_save_submit} class="flex items-center">
+            <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
+            <input type="hidden" name="save" value={move || format!("{}", !post_view.get().saved)} />
+            <button
+              type="submit"
+              title="Save post"
+              class={move || {
+                format!(
+                  "{}{}",
+                  { if post_view.get().saved { "text-accent" } else { "" } },
+                  { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+                )
+              }}
+              disabled={move || Some(true) != logged_in.get() || !online.get().0}
+            >
+              <Icon icon={Save} />
+            </button>
+          </ActionForm>
           <span
             class="cursor-pointer"
             on:click={move |_| {
@@ -568,72 +581,86 @@ pub fn ResponsivePostListing(
           >
             <Icon icon={Reply} />
           </span>
-        // </Show>
-        <span class={format!("text-base-content{}", if post_view.get().post.local { " hidden" } else { "" })} title="Original">
-          <A href={post_view.get().post.ap_id.inner().to_string()}>
-            <Icon icon={External} />
-          </A>
-        </span>
+          // </Show>
+          <span class={format!("text-base-content{}", if post_view.get().post.local { " hidden" } else { "" })} title="Original">
+            <A href={post_view.get().post.ap_id.inner().to_string()}>
+              <Icon icon={External} />
+            </A>
+          </span>
         // <Show when={move || { post_number == 0 }} fallback={|| {}}>
-          // <span
-          //   class="text-base-content/50"
-          //   title="Cross post"
-          //   on:click={move |e: MouseEvent| {
-          //     if e.ctrl_key() && e.shift_key() {
-          //       let _ = window().location().set_href(&format!("//lemmy.world/p/{}", post_view.get().post.id));
-          //     }
-          //   }}
-          // >
-          //   <Icon icon={Crosspost} />
-          // </span>
-          // <div class="dropdown max-sm:dropdown-end">
-          //   <label tabindex="0">
-          //     <Icon icon={VerticalDots} />
-          //   </label>
-          //   <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
-          //     <li>
-          //       <ActionForm action={report_post_action} on:submit={on_report_submit} class="flex flex-col items-start">
-          //         <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
-          //         <input
-          //           class={move || format!("input input-bordered {}", report_validation.get())}
-          //           type="text"
-          //           on:input={move |e| update!(| reason | * reason = event_target_value(& e))}
-          //           name="reason"
-          //           placeholder="Reason for reporting post"
-          //         />
-          //         <button class="text-xs whitespace-nowrap" title="Report post" type="submit">
-          //           <Icon icon={Report} class={"inline-block".into()} />
-          //           "Report post"
-          //         </button>
-          //       </ActionForm>
-          //     </li>
-          //     <li>
-                // <ActionForm action={block_user_action} on:submit={on_block_submit}>
-                //   <input type="hidden" name="person_id" value={format!("{}", post_view.get().creator.id.0)} />
-                //   <input type="hidden" name="block" value="true" />
-                //   <button class="text-xs whitespace-nowrap" title="Block user" type="submit">
-                //     <Icon icon={Block} class={"inline-block".into()} />
-                //     // "Block user"
-                //   </button>
-                // </ActionForm>
-          //     </li>
-          //   </ul>
-          // </div>
+        // <span
+        // class="text-base-content/50"
+        // title="Cross post"
+        // on:click={move |e: MouseEvent| {
+        // if e.ctrl_key() && e.shift_key() {
+        // let _ = window().location().set_href(&format!("//lemmy.world/p/{}", post_view.get().post.id));
+        // }
+        // }}
+        // >
+        // <Icon icon={Crosspost} />
+        // </span>
+        // <div class="dropdown max-sm:dropdown-end">
+        // <label tabindex="0">
+        // <Icon icon={VerticalDots} />
+        // </label>
+        // <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+        // <li>
+        // <ActionForm action={report_post_action} on:submit={on_report_submit} class="flex flex-col items-start">
+        // <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
+        // <input
+        // class={move || format!("input input-bordered {}", report_validation.get())}
+        // type="text"
+        // on:input={move |e| update!(| reason | * reason = event_target_value(& e))}
+        // name="reason"
+        // placeholder="Reason for reporting post"
+        // />
+        // <button class="text-xs whitespace-nowrap" title="Report post" type="submit">
+        // <Icon icon={Report} class={"inline-block".into()} />
+        // "Report post"
+        // </button>
+        // </ActionForm>
+        // </li>
+        // <li>
+        // <ActionForm action={block_user_action} on:submit={on_block_submit}>
+        // <input type="hidden" name="person_id" value={format!("{}", post_view.get().creator.id.0)} />
+        // <input type="hidden" name="block" value="true" />
+        // <button class="text-xs whitespace-nowrap" title="Block user" type="submit">
+        // <Icon icon={Block} class={"inline-block".into()} />
+        // // "Block user"
+        // </button>
+        // </ActionForm>
+        // </li>
+        // </ul>
+        // </div>
         </Show>
         // <span class="grow"></span>
         <span class="flex items-center ml-auto text-base-content/25">
           <a
-            class={format!("{}", { if let Some(d) = post_view.get().post.url { if let Some(f) = d.inner().host_str() { if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { "" } else { " hidden" } } else { " hidden" } } else { " hidden" } } )}
+            class={format!(
+              "{}",
+              {
+                if let Some(d) = post_view.get().post.url {
+                  if let Some(f) = d.inner().host_str() {
+                    if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { "" } else { " hidden" }
+                  } else {
+                    " hidden"
+                  }
+                } else {
+                  " hidden"
+                }
+              },
+            )}
             title="Archive"
             target="_blank"
-            href=format!("https://archive.ph/submit/?url={}", { if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { "".to_string() } })
+            href={format!(
+              "https://archive.ph/submit/?url={}",
+              { if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { "".to_string() } },
+            )}
           >
             <Icon icon={History} />
           </a>
         </span>
-        <span class="flex items-center text-base-content/25">
-          {if post_number != 0 { format!("{}", post_number) } else { "".into() }}
-        </span>
+        <span class="flex items-center text-base-content/25">{if post_number != 0 { format!("{}", post_number) } else { "".into() }}</span>
       </div>
     </div>
   }

@@ -12,17 +12,13 @@ pub fn ResponsiveLayout(ssr_site: Resource<(Option<String>, Option<String>), Res
 
   view! {
     // <Transition fallback={|| {}}>
-    //   {move || {
-    //     ssr_site
-    //       .get()
-    //       .map(|_| {
-    //         view! {
-              <div class="flex flex-col min-h-screen" data-theme={move || get_theme_cookie.get()}>
-                <Outlet />
-              </div>
-    //         }
-    //       })
-    //   }}
-    // </Transition>
+    // {move || {
+    // ssr_site
+    // .get()
+    // .map(|_| {
+    // view! {
+    <div class="flex flex-col min-h-screen" data-theme={move || get_theme_cookie.get()}>
+      <Outlet />
+    </div>
   }
 }

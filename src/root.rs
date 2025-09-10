@@ -12,9 +12,7 @@ pub fn Root(ssr_site: Resource<(Option<String>, Option<String>), Result<GetSiteR
         ssr_site
           .get()
           .map(|_| {
-            view! {
-              <Outlet />
-            }
+            view! { <Outlet /> }
           })
       }}
     </Transition>

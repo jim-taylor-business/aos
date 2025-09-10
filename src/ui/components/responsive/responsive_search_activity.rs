@@ -153,53 +153,58 @@ pub fn ResponsiveSearchActivity(ssr_site: Resource<(Option<String>, Option<Strin
   );
 
   view! {
-  <main class="flex flex-col">
-    <ResponsiveTopNav ssr_site />
+    <main class="flex flex-col">
+      <ResponsiveTopNav ssr_site />
 
-    <div class="flex flex-grow">
-      <div on:wheel=move |e: WheelEvent| {
-        if let Some(se) = on_scroll_element.get() {
-          // se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
-          se.scroll_by_with_x_and_y(e.delta_y(), 0f64);
-        }
-      } node_ref=on_scroll_element class={move || {
-        format!("sm:h-[calc(100%-4rem)] min-w-full sm:absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-sm sm:px-4 gap-4{}", if loading.get() { " opacity-25" } else { "" })
-      }}>
+      <div class="flex flex-grow">
+        <div
+          on:wheel={move |e: WheelEvent| {
+            if let Some(se) = on_scroll_element.get() {
+              se.scroll_by_with_x_and_y(e.delta_y(), 0f64);
+            }
+          }}
+          node_ref={on_scroll_element}
+          class={move || {
+            format!(
+              "sm:h-[calc(100%-4rem)] min-w-full sm:absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-sm sm:px-4 gap-4{}",
+              if loading.get() { " opacity-25" } else { "" },
+            )
+          }}
+        >
 
-        <Transition fallback={|| {}}>
-          {move || {
-            match search_cache_resource.get() {
-              Some(mut o) => {
-                next_page_cursor.set(next_page_cursor.get() + 50usize);
-                view! {
-                  <div>
-                    <Title text="" />
-                    <For each={move || o.0.clone()} key={|r| r.0.clone()} let:r>
-                      <ResponsivePostListings posts={r.1.unwrap().posts.into()} ssr_site page_number={r.0.into()} />
-                    </For>
-                  </div>
+          <Transition fallback={|| {}}>
+            {move || {
+              match search_cache_resource.get() {
+                Some(mut o) => {
+                  next_page_cursor.set(next_page_cursor.get() + 50usize);
+                  view! {
+                    <div>
+                      <Title text="" />
+                      <For each={move || o.0.clone()} key={|r| r.0.clone()} let:r>
+                        <ResponsivePostListings posts={r.1.unwrap().posts.into()} ssr_site page_number={r.0.into()} />
+                      </For>
+                    </div>
+                  }
                 }
-              }
-              _ => {
-                view! {
-                  <div>
-                    <Title text="" />
-                    <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
-                      <div class="py-4 px-8">
-                        <div class="alert">
-                          <span>"Loading"</span>
+                _ => {
+                  view! {
+                    <div>
+                      <Title text="" />
+                      <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
+                        <div class="py-4 px-8">
+                          <div class="alert">
+                            <span>"Loading"</span>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  }
                 }
               }
-            }
-          }}
-          <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
-        </Transition>
+            }} <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
+          </Transition>
+        </div>
       </div>
-    </div>
-  </main>
+    </main>
   }
 }

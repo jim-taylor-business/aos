@@ -212,137 +212,139 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<(Option<String>, Option<String>
     <main class="flex flex-col">
       <ResponsiveTopNav ssr_site />
       <div class="flex flex-grow">
-        <div on:wheel=move |e: WheelEvent| {
-          e.stop_propagation();
-          // e.prevent_default();
-          if let Some(se) = on_scroll_element.get() {
-            let mut o = ScrollToOptions::new();
-            o.set_left(e.delta_y());
-            o.set_behavior(web_sys::ScrollBehavior::Smooth);
-            se.scroll_by_with_scroll_to_options(&o);
-            // se.scroll_by_with_x_and_y(e.delta_y(), 0f64);
-          }
-        } node_ref=on_scroll_element class={move || {
-          // format!("md:h-[calc(100%-4rem)] min-w-full md:absolute md:overflow-x-auto md:overflow-y-hidden md:columns-sm md:px-4 gap-4{}", if loading.get() { " opacity-25" } else { "" })
-          "md:h-[calc(100%-4rem)] min-w-full md:absolute md:overflow-x-auto md:overflow-y-hidden md:columns-sm md:px-4 gap-4"
-        }}>
+        <div
+          on:wheel={move |e: WheelEvent| {
+            e.stop_propagation();
+            if let Some(se) = on_scroll_element.get() {
+              let mut o = ScrollToOptions::new();
+              o.set_left(e.delta_y());
+              o.set_behavior(web_sys::ScrollBehavior::Smooth);
+              se.scroll_by_with_scroll_to_options(&o);
+            }
+          }}
+          node_ref={on_scroll_element}
+          class={move || { "md:h-[calc(100%-4rem)] min-w-full md:absolute md:overflow-x-auto md:overflow-y-hidden md:columns-sm md:px-4 gap-4" }}
+        >
           <Transition fallback={|| {}}>
-            { move || {
+            {move || {
               match ssr_site.get() {
                 Some(Err(_)) => {
                   view! {
                     <div class="py-4 px-8 break-inside-avoid">
                       <div class="flex justify-between alert alert-error">
-                        <span class="text-lg"> { "Site Error" } </span>
+                        <span class="text-lg">{"Site Error"}</span>
                         <span on:click={on_retry_site_click} class="btn btn-sm">
                           "Retry"
                         </span>
                       </div>
                     </div>
-                  }.into_view()
+                  }
+                    .into_view()
                 }
-                _ => {
-                  view! {
-                  }.into_view()
-                }
+                _ => view! {}.into_view(),
               }
             }}
           </Transition>
           <Transition fallback={|| {}}>
             <Title text="" />
             <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| (p.1.clone(), p.2)} let:p>
-              {
-                match p.3 {
-                  Ok(ref o) => {
-
-                    #[cfg(not(feature = "ssr"))]
-                    {
-                      let rw = p.3.clone();
-                      let fm = p.1.clone();
-                      use crate::indexed_db::csr_indexed_db::*;
-            //           #[cfg(not(feature = "ssr"))]
-                      spawn_local(async move {
-                        if let Ok(d) = build_indexed_database().await {
-                          if let Ok(c) = set_query_get_cache::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&d, &fm, &rw).await {
-                            // log!("store");
-                          }
-                        }
-                        response_cache.update(move |rc| {
-                          //   rc.insert((p.0, if let Some(pc) = fm.page_cursor { pc.0 } else { "".into() } /*if p.0 == 0 { "".into() } else { p.1.clone() }*/, fm.type_.unwrap_or(ListingType::All), fm.sort.unwrap_or(SortType::Active), fm.community_name.unwrap_or("".into())), rw);
+              {match p.3 {
+                Ok(ref o) => {
+                  #[cfg(not(feature = "ssr"))]
+                  {
+                    let rw = p.3.clone();
+                    let fm = p.1.clone();
+                    use crate::indexed_db::csr_indexed_db::*;
+                    spawn_local(async move {
+                      if let Ok(d) = build_indexed_database().await {
+                        if let Ok(c) = set_query_get_cache::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&d, &fm, &rw).await {}
+                      }
+                      response_cache
+                        .update(move |rc| {
                           rc.insert((p.0, fm), (p.2, rw));
                         });
-                      });
-
-                      if let Some(Ok(c)) = cancel_handle.get_untracked() {
-                        c.clear();
-                      }
-
-                      cancel_handle.set(Some(set_timeout_with_handle(
-                        move || {
-                          if let Some(se) = on_scroll_element.get() {
-                            if let Ok(Some(s)) = window().local_storage() {
-                              let mut query_params = query.get();
-                              if let Ok(Some(l)) = s.get_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string())) {
-                                se.set_scroll_left(l.parse().unwrap_or(0i32));
-                                // log!("set {}", l);
-                              }
-                            }
-                            scroll_element.set(Some(on_scroll_element));
-                          }
-                        },
-                        std::time::Duration::new(0, 750_000_000),
-                      )));
+                    });
+                    if let Some(Ok(c)) = cancel_handle.get_untracked() {
+                      c.clear();
                     }
+                    cancel_handle
+                      .set(
+                        Some(
+                          set_timeout_with_handle(
+                            move || {
+                              if let Some(se) = on_scroll_element.get() {
+                                if let Ok(Some(s)) = window().local_storage() {
+                                  let mut query_params = query.get();
+                                  if let Ok(Some(l)) = s.get_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string())) {
+                                    se.set_scroll_left(l.parse().unwrap_or(0i32));
+                                  }
+                                }
+                                scroll_element.set(Some(on_scroll_element));
+                              }
+                            },
+                            std::time::Duration::new(0, 750_000_000),
+                          ),
+                        ),
+                      );
+                  }
+                  next_page_cursor.set((p.0 + 50usize, o.next_page.clone()));
+                  loading.set(false);
 
-                    // log!("next {} {:?}", p.0 + 50usize, o.next_page.clone());
-                    next_page_cursor.set((p.0 + 50usize, o.next_page.clone()));
-                    loading.set(false);
+                  // #[cfg(not(feature = "ssr"))]
+                  // log!("store");
+                  // rc.insert((p.0, if let Some(pc) = fm.page_cursor { pc.0 } else { "".into() } /*if p.0 == 0 { "".into() } else { p.1.clone() }*/, fm.type_.unwrap_or(ListingType::All), fm.sort.unwrap_or(SortType::Active), fm.community_name.unwrap_or("".into())), rw);
 
-                    view! {
-                      <ResponsivePostListings posts={o.posts.clone().into()} ssr_site page_number={p.0.into()} />
-                    }.into_view()
-                  }
-                  Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
-                    loading.set(false);
-                    view! {
-                      <div class="py-4 px-8 break-inside-avoid">
-                        <div class="flex justify-between alert alert-warning">
-                          <span class="text-lg"> { "Offline" } </span>
-                          <span on:click={on_retry_click} class="btn btn-sm">
-                            "Retry"
-                          </span>
-                        </div>
-                      </div>
-                    }.into_view()
-                  }
-                  _ => {
-                    loading.set(false);
-                    view! {
-                      <div class="py-4 px-8 break-inside-avoid">
-                        <div class="flex justify-between alert alert-error">
-                          <span class="text-lg"> { "Error" } </span>
-                          <span on:click={on_retry_click} class="btn btn-sm">
-                            "Retry"
-                          </span>
-                        </div>
-                      </div>
-                    }.into_view()
-                  }
+                  // log!("set {}", l);
+
+                  // log!("next {} {:?}", p.0 + 50usize, o.next_page.clone());
+
+                  view! { <ResponsivePostListings posts={o.posts.clone().into()} ssr_site page_number={p.0.into()} /> }
+                    .into_view()
                 }
-              }
+                Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
+                  loading.set(false);
+                  view! {
+                    <div class="py-4 px-8 break-inside-avoid">
+                      <div class="flex justify-between alert alert-warning">
+                        <span class="text-lg">{"Offline"}</span>
+                        <span on:click={on_retry_click} class="btn btn-sm">
+                          "Retry"
+                        </span>
+                      </div>
+                    </div>
+                  }
+                    .into_view()
+                }
+                _ => {
+                  loading.set(false);
+                  view! {
+                    <div class="py-4 px-8 break-inside-avoid">
+                      <div class="flex justify-between alert alert-error">
+                        <span class="text-lg">{"Error"}</span>
+                        <span on:click={on_retry_click} class="btn btn-sm">
+                          "Retry"
+                        </span>
+                      </div>
+                    </div>
+                  }
+                    .into_view()
+                }
+              }}
             </For>
             <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
             {move || {
               if loading.get() {
-                Some(view! {
-                  <div class="break-inside-avoid overflow-hidden animate-[popdown_1s_step-end_1]">
-                    <div class="py-4 px-8">
-                      <div class="alert">
-                        <span>"Loading..."</span>
+                Some(
+                  view! {
+                    <div class="overflow-hidden break-inside-avoid animate-[popdown_1s_step-end_1]">
+                      <div class="py-4 px-8">
+                        <div class="alert">
+                          <span>"Loading..."</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                })
+                  },
+                )
               } else {
                 None
               }

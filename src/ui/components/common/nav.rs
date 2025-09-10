@@ -233,9 +233,13 @@ pub fn TopNav(ssr_site: Resource<(Option<String>, Option<String>), Result<GetSit
       <div class="navbar-start">
         <ul class="flex-nowrap items-center menu menu-horizontal">
           <li>
-            <A href="/" class="text-xl whitespace-nowrap" on:click={ move |e: MouseEvent| {
-              csr_resources.set(BTreeMap::new());
-            }}>
+            <A
+              href="/"
+              class="text-xl whitespace-nowrap"
+              on:click={move |e: MouseEvent| {
+                csr_resources.set(BTreeMap::new());
+              }}
+            >
               {move || {
                 if let Some(Ok(GetSiteResponse { site_view: SiteView { site: Site { icon: Some(i), .. }, .. }, .. })) = ssr_site.get() {
                   view! { <img class="h-8" src={i.inner().to_string()} /> }
@@ -273,9 +277,7 @@ pub fn TopNav(ssr_site: Resource<(Option<String>, Option<String>), Result<GetSit
       <div class="navbar-end">
         <ul class="flex-nowrap items-center menu menu-horizontal">
           <li class="hidden lg:flex">
-            <A href="/r">
-              "Flow!"
-            </A>
+            <A href="/r">"Flow!"</A>
           </li>
           <li class="hidden lg:flex">
             <A href="/search" class="pointer-events-none text-base-content/50">

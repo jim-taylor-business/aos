@@ -440,11 +440,7 @@ pub fn PostListing(
         <span class="block mb-1">
           <span>{abbr_duration}</span>
           " ago by "
-          <a
-            href={move || format!("{}", post_view.get().creator.actor_id)}
-            target="_blank"
-            class="inline text-sm break-words hover:text-secondary"
-          >
+          <a href={move || format!("{}", post_view.get().creator.actor_id)} target="_blank" class="inline text-sm break-words hover:text-secondary">
             <span inner_html={creator_name_encoded} />
           </a>
           " in "
@@ -455,17 +451,8 @@ pub fn PostListing(
             } else {
               format!("/c/{}@{}", post_view.get().community.name, post_view.get().community.actor_id.inner().host().unwrap().to_string())
             }}
-            on:click={ move |e: MouseEvent| {
+            on:click={move |e: MouseEvent| {
               csr_resources.set(BTreeMap::new());
-
-              // e.prevent_default();
-            //   on_community_change.call(post_view.get().community.name);
-            //   // let navigate = leptos_router::use_navigate();
-            //   // if post_view.get().community.local {
-            //   //   navigate(&format!("/c/{}", post_view.get().community.name), Default::default());
-            //   // } else {
-            //   //   navigate(&format!("/c/{}@{}", post_view.get().community.name, post_view.get().community.actor_id.inner().host().unwrap().to_string()), Default::default());
-            //   // }
             }}
           >
             <span inner_html={community_title_encoded} />
