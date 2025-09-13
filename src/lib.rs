@@ -1,9 +1,7 @@
 // useful in development to only have errors in compiler output
 #![allow(warnings)]
 
-mod config;
 mod errors;
-// mod host;
 mod indexed_db;
 mod layout;
 mod lemmy_client;

@@ -1,10 +1,7 @@
 use std::str;
 
+use crate::errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult};
 use crate::lemmy_error::LemmyErrorType;
-use crate::{
-  errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult},
-  // host::{get_host, get_https},
-};
 use codee::string::FromToStringCodec;
 use lemmy_api_common::private_message::PrivateMessagesResponse;
 use lemmy_api_common::SuccessResponse;
@@ -200,6 +197,7 @@ mod client {
 
           match api_result {
             Ok(LemmyErrorType::IncorrectLogin) => {
+              log!("{:#?}", LemmyErrorType::IncorrectLogin);
               set_auth_cookie.set(None);
               return Err(LemmyAppError {
                 error_type: LemmyAppErrorType::ApiError(LemmyErrorType::IncorrectLogin),
@@ -207,16 +205,18 @@ mod client {
               });
             }
             Ok(le) => {
+              log!("{:#?}", le);
               return Err(LemmyAppError {
                 error_type: LemmyAppErrorType::ApiError(le.clone()),
                 content: format!("{:#?}", le),
-              })
+              });
             }
             Err(e) => {
+              log!("{:#?}", e);
               return Err(LemmyAppError {
                 error_type: LemmyAppErrorType::Unknown,
                 content: format!("{:#?}", e),
-              })
+              });
             }
           }
         }
@@ -310,6 +310,7 @@ mod client {
             let api_result = r.json::<LemmyErrorType>().await;
             match api_result {
               Ok(LemmyErrorType::IncorrectLogin) => {
+                log!("{:#?}", LemmyErrorType::IncorrectLogin);
                 set_auth_cookie.set(None);
                 return Err(LemmyAppError {
                   error_type: LemmyAppErrorType::ApiError(LemmyErrorType::IncorrectLogin),
@@ -317,16 +318,18 @@ mod client {
                 });
               }
               Ok(le) => {
+                log!("{:#?}", le);
                 return Err(LemmyAppError {
                   error_type: LemmyAppErrorType::ApiError(le.clone()),
                   content: format!("{:#?}", le),
-                })
+                });
               }
               Err(e) => {
+                log!("{:#?}", e);
                 return Err(LemmyAppError {
                   error_type: LemmyAppErrorType::Unknown,
                   content: format!("{:#?}", e),
-                })
+                });
               }
             }
           }

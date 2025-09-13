@@ -52,6 +52,20 @@ pub async fn search(term: String) -> Result<(), ServerFnError> {
   Ok(())
 }
 
+#[server(InstanceFn, "/serverfn")]
+pub async fn instance(instance: String) -> Result<(), ServerFnError> {
+  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+    "instance",
+    UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+  );
+  if instance.len() > 0 {
+    set_instance_cookie.set(Some(instance));
+  } else {
+    set_instance_cookie.set(Some("lemmy.world".to_string()));
+  }
+  Ok(())
+}
+
 #[server(ChangeLangFn, "/serverfn")]
 pub async fn change_lang(lang: String) -> Result<(), ServerFnError> {
   let (_, set_locale_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
@@ -252,6 +266,7 @@ pub fn ResponsiveTopNav(
 
   let refresh = RwSignal::new(true);
   let search_show = RwSignal::new(false);
+  let still_pressed = create_rw_signal(false);
 
   // let unread_visibility: RwSignal<Option<Signal<VisibilityState>>> = RwSignal::new(None);
   // let unread_effect: RwSignal<Option<Effect<()>>> = RwSignal::new(None);
@@ -343,6 +358,57 @@ pub fn ResponsiveTopNav(
     use_navigate()(&format!("/r/s/p?term={}", search_term.get()), NavigateOptions::default());
   };
 
+  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+    "instance",
+    UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+  );
+  let instance_term = RwSignal::new(get_instance_cookie.get());
+  let instance_action = create_server_action::<InstanceFn>();
+  let on_instance_submit = move |e: SubmitEvent| {
+    e.prevent_default();
+    still_pressed.set(false);
+    if instance_term.get().unwrap_or("".into()).len() > 0 {
+      set_instance_cookie.set(instance_term.get());
+    } else {
+      set_instance_cookie.set(Some("lemmy.world".to_string()));
+    }
+    if let Some(on_scroll_element) = scroll_element.get() {
+      if let Some(se) = on_scroll_element.get() {
+        se.set_scroll_left(0i32);
+      }
+    }
+    response_cache.update(move |rc| {
+      rc.remove(&(
+        0usize,
+        GetPosts {
+          type_: Some(ListingType::All),
+          sort: Some(SortType::Active),
+          page: None,
+          limit: Some(50),
+          community_id: None,
+          community_name: None,
+          saved_only: None,
+          liked_only: None,
+          disliked_only: None,
+          show_hidden: Some(true),
+          show_read: Some(true),
+          show_nsfw: Some(false),
+          page_cursor: None,
+        },
+      ));
+    });
+    let mut query_params = query.get();
+    query_params.remove("page".into());
+    let navigate = leptos_router::use_navigate();
+    // if let Ok(Some(s)) = window().local_storage() {
+    //   let _ = s.set_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), "0");
+    // }
+    navigate(
+      &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+      Default::default(),
+    );
+  };
+
   let logged_in = Signal::derive(move || {
     if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() {
       Some(true)
@@ -407,12 +473,11 @@ pub fn ResponsiveTopNav(
     use_navigate()("/login", NavigateOptions::default());
   };
 
-  let timer_id = create_rw_signal(None);
+  let instance_timer_handle = create_rw_signal(None);
   // let pressed = create_rw_signal(false);
-  let still_pressed = create_rw_signal(false);
 
   let on_pointer_down = {
-    let timer_id = timer_id.clone();
+    let timer_id = instance_timer_handle.clone();
     // let pressed = pressed.clone();
     // let on_long_press = std::rc::Rc::new(on_long_press);
 
@@ -425,8 +490,8 @@ pub fn ResponsiveTopNav(
           // still_down.set(true);
           // if pressed.get() {
           still_pressed.set(true);
-          log!("long press");
-          log!("{}", still_pressed.get());
+          // log!("long press");
+          // log!("{}", still_pressed.get());
           // }
         },
         std::time::Duration::from_millis(500),
@@ -442,10 +507,10 @@ pub fn ResponsiveTopNav(
   };
 
   let on_pointer_up = {
-    let timer_id = timer_id.clone();
+    let timer_id = instance_timer_handle.clone();
     // let pressed = pressed.clone();
     move |_| {
-      log!("{}", still_pressed.get());
+      // log!("{}", still_pressed.get());
       // pressed.set(false);
       // still_pressed.set(false);
       if let Some(timer) = timer_id.get() {
@@ -459,16 +524,34 @@ pub fn ResponsiveTopNav(
     <nav class="flex flex-row py-0 navbar">
       <div class={move || { (if search_show.get() { "hidden" } else { "flex" }).to_string() }}>
         // class="flex-grow flex"
+        <ActionForm
+          class={move || { if still_pressed.get() { "" } else { "hidden" } }}
+          action={instance_action}
+          on:submit={on_instance_submit}
+        >
+          <input
+            // placeholder=move || display_title.get()
+            // title={move || display_title.get()}
+            class="w-40 input text-xl pl-6"
+            type="text"
+            name="instance"
+            prop:value={move || instance_term.get()}
+            on:input={move |ev| {
+              instance_term.set(Some(event_target_value(&ev)));
+            }}
+          />
+        </ActionForm>
         <ul class="flex-nowrap items-center menu menu-horizontal">
           <li>
             <A
               href="/r"
-              class="text-xl whitespace-nowrap py-1/2"
+              class={move || { if still_pressed.get() { "hidden" } else { "text-xl whitespace-nowrap py-1/2" } }}
+              // class="text-xl whitespace-nowrap py-1/2"
               on:pointerdown=on_pointer_down
               on:pointerup=on_pointer_up
               on:pointerleave=on_pointer_up
               on:click={move |e: MouseEvent| {
-                log!("{}", still_pressed.get());
+                // log!("{}", still_pressed.get());
                 if still_pressed.get() {
                   // pressed.set(false);
                   still_pressed.set(false);
