@@ -125,7 +125,7 @@ pub fn App() -> impl IntoView {
   let scroll_element: RwSignal<Option<NodeRef<Div>>> = RwSignal::new(None);
   provide_context(scroll_element);
 
-  let site_signal: RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>> = RwSignal::new(None);
+  // let site_signal: RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>> = RwSignal::new(None);
 
   let (get_auth_cookie, set_auth_cookie) =
     use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax));
@@ -154,17 +154,17 @@ pub fn App() -> impl IntoView {
     move |(cookie, instance)| async move {
       // log!("buuuuu {:#?}", instance);
       let result = {
-        if let Some(c) = cookie {
-          if c.len() > 0 {
-            return LemmyClient.get_site().await;
-          }
-        }
-        if let Some(Ok(mut s)) = site_signal.get() {
-          s.my_user = None;
-          Ok(s)
-        } else {
-          LemmyClient.get_site().await
-        }
+        // if let Some(c) = cookie {
+        //   if c.len() > 0 {
+        //     return LemmyClient.get_site().await;
+        //   }
+        // }
+        // if let Some(Ok(mut s)) = site_signal.get() {
+        //   s.my_user = None;
+        //   Ok(s)
+        // } else {
+        LemmyClient.get_site().await
+        // }
       };
       match result {
         Ok(o) => Ok(o),
@@ -196,15 +196,15 @@ pub fn App() -> impl IntoView {
   };
 
   view! {
-    <Transition fallback={|| {}}>
-      {move || {
-        ssr_site
-          .get()
-          .map(|m| {
-            site_signal.set(Some(m));
-          });
-      }}
-    </Transition>
+    // <Transition fallback={|| {}}>
+    //   {move || {
+    //     ssr_site
+    //       .get()
+    //       .map(|m| {
+    //         site_signal.set(Some(m));
+    //       });
+    //   }}
+    // </Transition>
     <Stylesheet id="leptos" href="/pkg/aos.css" />
     <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico" />
     <Link rel="manifest" href="/manifest.json" />
