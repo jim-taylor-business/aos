@@ -545,7 +545,7 @@ pub fn ResponsiveTopNav(
           <li>
             <A
               href="/r"
-              class={move || { if still_pressed.get() { "hidden" } else { "text-xl whitespace-nowrap py-1/2" } }}
+              class={move || { if still_pressed.get() { "hidden" } else { "select-none text-xl whitespace-nowrap py-1/2" } }}
               // class="text-xl whitespace-nowrap py-1/2"
               on:pointerdown=on_pointer_down
               on:pointerup=on_pointer_up
