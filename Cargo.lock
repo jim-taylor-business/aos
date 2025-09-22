@@ -1998,8 +1998,7 @@ checksum = "1adcf7b613a268af025bc2a2532b4b9ee294e6051c5c0832d8bff20ac0232e68"
 [[package]]
 name = "idb"
 version = "0.6.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3afe8830d5802f769dc0be20a87f9f116798c896650cb6266eb5c19a3c109eed"
+source = "git+https://github.com/jim-taylor-business/idb.git?branch=deploy_demo#4280ce7da6d0d8ad8786be49f8b9a83687e7177d"
 dependencies = [
  "js-sys",
  "num-traits",
@@ -3245,8 +3244,7 @@ checksum = "caf4aa5b0f434c91fe5c7f1ecb6a5ece2130b02ad2a590589dda5146df959001"
 [[package]]
 name = "rexie"
 version = "0.6.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "887466cfa8a12c08ee4b174998135cea8ff0fd84858627cd793e56535a045bc9"
+source = "git+https://github.com/jim-taylor-business/rexie.git?branch=deploy_demo#d455c62da03ecc625613950737d4f2227f7b7cd7"
 dependencies = [
  "idb",
  "thiserror 1.0.69",

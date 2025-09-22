@@ -11,7 +11,6 @@ use crate::{
   ResourceStatus, ResponseLoad,
 };
 use codee::string::FromToStringCodec;
-// use ev::*;
 use chrono::prelude::*;
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SortType},
@@ -23,6 +22,8 @@ use leptos::{html::*, leptos_dom::helpers::TimeoutHandle, logging::log, svg::vie
 use leptos_meta::*;
 use leptos_router::*;
 use leptos_use::*;
+// #[cfg(not(feature = "ssr"))]
+// use rexie::Rexie;
 use std::{
   collections::{BTreeMap, HashMap},
   usize, vec,
@@ -35,6 +36,19 @@ use web_sys::{js_sys::Atomics::wait_async, Event, MouseEvent, ScrollToOptions, T
 pub fn ResponsiveHomeActivity(ssr_site: Resource<(Option<String>, Option<String>), Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
   let i18n = use_i18n();
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
+  // #[cfg(not(feature = "ssr"))]
+  // let idb_resource = IndexedDb::build_indexed_database();
+  // let mut indexed_db = None;
+  // spawn_local(async move {
+  //   log!("fu");
+  //   // IndexedDbApi::set(&IndexedDbApi::new("db_name", 1).await.unwrap(), &ScrollPositionKey { path: use_location().pathname.get(), query: query_params.to_query_string() }, &se.scroll_left().to_string()).await;
+  //   // IndexedDb::set(&i, &ScrollPositionKey { path: use_location().pathname.get(), query: query_params.to_query_string() }, &se.scroll_left().to_string()).await;
+  // });
+  // log!("2");
+  // #[cfg(not(feature = "ssr"))]
+  // let idb_resource = expect_context::<Option<IndexedDb>>();
+  // let idb_resource = expect_context::<Resource<(), IndexedDb>>();
+
 
   let param = use_params_map();
   let query = use_query_map();
@@ -65,19 +79,60 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<(Option<String>, Option<String>
   let on_scroll_element = NodeRef::<Div>::new();
   let refresh_base = RwSignal::new(0);
 
+  // spawn_local(async move {
+  //   log!("fu");
+  //   indexed_db = Some(IndexedDb::build_indexed_database().await.unwrap());
+
+  //   let mut query_params = query.get();
+  //   if let Some(se) = on_scroll_element.get() {
+  //   // IndexedDbApi::set(&IndexedDbApi::new("db_name", 1).await.unwrap(), &ScrollPositionKey { path: use_location().pathname.get(), query: query_params.to_query_string() }, &se.scroll_left().to_string()).await;
+  //   IndexedDb::set(&indexed_db.unwrap(), &ScrollPositionKey { path: use_location().pathname.get(), query: query_params.to_query_string() }, &se.scroll_left().to_string()).await;
+  //   }
+  // });
+
+  #[cfg(not(feature = "ssr"))]
+  let mut idb_resource = expect_context::<RwSignal<Option<IndexedDb>>>();
+  // #[cfg(not(feature = "ssr"))]
+  // let mut rdb_resource = expect_context::<RwSignal<Option<Rexie>>>();
+
   #[cfg(not(feature = "ssr"))]
   {
     let on_scroll = move |e: Event| {
       if let Some(se) = on_scroll_element.get() {
-        if ssr_page().len() > 0 {
-          if let Ok(Some(s)) = window().local_storage() {
-            let mut query_params = query.get();
-            let _ = s.set_item(
-              &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-              &se.scroll_left().to_string(),
-            );
-          }
-        }
+        // if ssr_page().len() > 0 {
+          // let i = &idb_resource;
+          // if let Some(i) = idb_resource.get() {
+            spawn_local(async move {
+              // log!("fu");
+              let mut query_params = query.get();
+              // // idb_resource.build();
+              // rdb_resource.get();
+              if let Some(i) = idb_resource.get() {
+                i.set(&ScrollPositionKey { path: use_location().pathname.get(), query: query_params.to_query_string() }, &se.scroll_left()).await;
+              }
+              // // IndexedDb::set(&i, &ScrollPositionKey { path: use_location().pathname.get(), query: query_params.to_query_string() }, &se.scroll_left().to_string()).await;
+            });
+
+          // }
+            // spawn_local(async move {
+            //   log!("fu");
+            //   let indexed_db = IndexedDb::new().await.unwrap();
+
+            //   let mut query_params = query.get();
+            //   if let Some(se) = on_scroll_element.get() {
+            //   // IndexedDbApi::set(&IndexedDbApi::new("db_name", 1).await.unwrap(), &ScrollPositionKey { path: use_location().pathname.get(), query: query_params.to_query_string() }, &se.scroll_left().to_string()).await;
+            //   IndexedDb::set(&indexed_db, &ScrollPositionKey { path: use_location().pathname.get(), query: query_params.to_query_string() }, &se.scroll_left().to_string()).await;
+            //   }
+            // });
+
+          // if let Ok(Some(s)) = window().local_storage() {
+          //   let mut query_params = query.get();
+          //   let _ = s.set_item(
+          //     &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+          //     &se.scroll_left().to_string(),
+          //   );
+          // }
+        // }
       }
     };
 
@@ -108,23 +163,32 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<(Option<String>, Option<String>
               let mut query_params = query.get();
               query_params.insert("page".into(), serde_json::to_string(&st).unwrap_or("[]".into()));
               let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-              if iw < 768f64 {
-                if let Ok(Some(s)) = window().local_storage() {
-                  let _ = s.set_item(
-                    &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-                    &window().scroll_y().unwrap_or(0.0).to_string(),
-                  );
-                }
-              } else {
+              // if iw < 768f64 {
+              //   if let Ok(Some(s)) = window().local_storage() {
+              //     let _ = s.set_item(
+              //       &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+              //       &window().scroll_y().unwrap_or(0.0).to_string(),
+              //     );
+              //   }
+              // } else {
                 if let Some(se) = on_scroll_element.get() {
-                  if let Ok(Some(s)) = window().local_storage() {
-                    let _ = s.set_item(
-                      &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-                      &se.scroll_left().to_string(),
-                    );
-                  }
+                  spawn_local(async move {
+                    let mut query_params = query.get();
+                    if let Some(i) = idb_resource.get() {
+                      if let Err(e) = i.set(&ScrollPositionKey { path: use_location().pathname.get(), query: query_params.to_query_string() }, &se.scroll_left()).await {
+                        log!("puu");
+                      }
+                    }
+                  });
+
+                  // if let Ok(Some(s)) = window().local_storage() {
+                  //   let _ = s.set_item(
+                  //     &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+                  //     &se.scroll_left().to_string(),
+                  //   );
+                  // }
                 }
-              }
+              // }
               sleep.set(true);
               let navigate = leptos_router::use_navigate();
               navigate(
@@ -273,12 +337,22 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<(Option<String>, Option<String>
                           set_timeout_with_handle(
                             move || {
                               if let Some(se) = on_scroll_element.get() {
-                                if let Ok(Some(s)) = window().local_storage() {
-                                  let mut query_params = query.get();
-                                  if let Ok(Some(l)) = s.get_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string())) {
-                                    se.set_scroll_left(l.parse().unwrap_or(0i32));
+                                spawn_local(async move {
+                                  if let Some(i) = idb_resource.get() {
+                                    let mut query_params = query.get();
+                                    let l: Result<Option<i32>, Error> = i.get(&ScrollPositionKey { path: use_location().pathname.get(), query: query_params.to_query_string() }).await;
+                                    if let Ok(Some(l)) = l {
+                                      se.set_scroll_left(l);
+                                    };
                                   }
-                                }
+                                });
+
+                                // if let Ok(Some(s)) = window().local_storage() {
+                                //   let mut query_params = query.get();
+                                //   if let Ok(Some(l)) = s.get_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string())) {
+                                //     se.set_scroll_left(l.parse().unwrap_or(0i32));
+                                //   }
+                                // }
                                 scroll_element.set(Some(on_scroll_element));
                               }
                             },

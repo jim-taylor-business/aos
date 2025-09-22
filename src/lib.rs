@@ -34,6 +34,8 @@ use leptos::{html::Div, logging::log, *};
 use leptos_meta::*;
 use leptos_router::*;
 use leptos_use::{use_cookie_with_options, use_service_worker_with_options, SameSite, UseCookieOptions, UseServiceWorkerOptions};
+#[cfg(not(feature = "ssr"))]
+use rexie::{Rexie, RexieBuilder};
 use std::collections::BTreeMap;
 use ui::components::{
   notifications::notifications_activity::NotificationsActivity,
@@ -43,6 +45,8 @@ use web_sys::Event;
 
 #[cfg(not(feature = "ssr"))]
 use leptos_use::{use_document_visibility, use_service_worker, UseServiceWorkerReturn};
+#[cfg(not(feature = "ssr"))]
+use crate::indexed_db::csr_indexed_db::*;
 
 leptos_i18n::load_locales!();
 
@@ -64,6 +68,52 @@ pub struct ResponseLoad(bool);
 #[component]
 pub fn App() -> impl IntoView {
   provide_meta_context();
+
+  #[cfg(not(feature = "ssr"))]
+  let idb_signal: RwSignal<Option<IndexedDb>> = RwSignal::new(None);
+  #[cfg(not(feature = "ssr"))]
+  provide_context(idb_signal);
+  #[cfg(not(feature = "ssr"))]
+  spawn_local(async move {
+    log!("1");
+    idb_signal.set(Some(IndexedDb::new().await.unwrap()));
+    // provide_context(IndexedDb::new().await.unwrap());
+    // provide_context(Rexie::builder("db").build().await.unwrap());
+  });
+
+
+
+  // #[cfg(not(feature = "ssr"))]
+  // let rdb_signal: RwSignal<Option<Rexie>> = RwSignal::new(None);
+
+  // #[cfg(not(feature = "ssr"))]
+  // // leptos::create_local_resource(
+  // //   move || (),
+  // //   move |()| async move {
+  // //     log!("wd");
+  // provide_context(rdb_signal);
+  // #[cfg(not(feature = "ssr"))]
+  // spawn_local(async move {
+  //     let r = Rexie::builder("cache_v5")
+  //       .version(1)
+  //       .add_object_store(rexie::ObjectStore::new("post_closed_comments"))
+  //       .add_object_store(rexie::ObjectStore::new("comment_drafts"))
+  //       .add_object_store(rexie::ObjectStore::new("query_gets"))
+  //       .add_object_store(rexie::ObjectStore::new("scroll_positions"))
+  //       .build()
+  //       .await.ok().unwrap();
+  //     rdb_signal.set(Some(r));
+  // });
+
+      //     // Self { rexie: r }
+  //   },
+  // );
+
+  // #[cfg(not(feature = "ssr"))]
+  // let idb_resource = IndexedDb::build_indexed_database();
+  // #[cfg(not(feature = "ssr"))]
+  // provide_context(idb_resource);
+
 
   let error: RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>> = RwSignal::new(Vec::new());
   provide_context(error);

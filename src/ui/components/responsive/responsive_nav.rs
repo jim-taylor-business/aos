@@ -24,6 +24,8 @@ use web_sys::{KeyboardEvent, SubmitEvent};
 
 #[cfg(not(feature = "ssr"))]
 use web_sys::VisibilityState;
+#[cfg(not(feature = "ssr"))]
+use crate::indexed_db::csr_indexed_db::*;
 
 #[server(LogoutFn, "/serverfn")]
 pub async fn logout() -> Result<(), ServerFnError> {
@@ -311,11 +313,6 @@ pub fn ResponsiveTopNav(
               UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
             );
             set_auth_cookie.set(None);
-            let (get_auth_cookie, set_auth_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
-              "jwt",
-              UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
-            );
-            set_theme_cookie.set(None);
           }
           Err(e) => {
             logging::warn!("logout error {:#?}", e);
@@ -520,6 +517,9 @@ pub fn ResponsiveTopNav(
     }
   };
 
+  #[cfg(not(feature = "ssr"))]
+  let mut idb_resource = expect_context::<RwSignal<Option<IndexedDb>>>();
+
   view! {
     <nav class="flex flex-row py-0 navbar">
       <div class={move || { (if search_show.get() { "hidden" } else { "flex" }).to_string() }}>
@@ -557,6 +557,12 @@ pub fn ResponsiveTopNav(
                   still_pressed.set(false);
                   e.prevent_default();
                 } else {
+                  #[cfg(not(feature = "ssr"))]
+                  spawn_local(async move {
+                    if let Some(i) = idb_resource.get() {
+                      i.set(&ScrollPositionKey { path: "/r".into(), query: "".into() }, &0i32).await;
+                    }
+                  });
                   if let Some(on_scroll_element) = scroll_element.get() {
                     if let Some(se) = on_scroll_element.get() {
                       se.set_scroll_left(0i32);
