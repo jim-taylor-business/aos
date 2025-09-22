@@ -50,7 +50,7 @@ uuid = { version = "1", default-features = false, features = ["js"] }
 
 
 # specific version required for cargo-leptos wasm compatibility
-wasm-bindgen = { version = "=0.2.101", optional = true }
+wasm-bindgen = { version = "=0.2.103", optional = true }
 
 # dependencies for csr or hydrate features
 gloo-net = { version = "0", optional = true, features = ["http"] }
