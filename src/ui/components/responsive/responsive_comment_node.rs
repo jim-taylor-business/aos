@@ -408,6 +408,11 @@ pub fn ResponsiveCommentNode(
             h.clear();
           }
         }}
+        on:pointermove={move |e: PointerEvent| {
+          if let Some(h) = still_handle.get() {
+            h.clear();
+          }
+        }}
         // on:mousedown={move |e: MouseEvent| {
         //   if e.buttons() == 1 {
         //     still_handle

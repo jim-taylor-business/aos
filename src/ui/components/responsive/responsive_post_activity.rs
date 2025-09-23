@@ -185,7 +185,7 @@ pub fn ResponsivePostActivity(ssr_site: Resource<(Option<String>, Option<String>
 
   let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
     "instance",
-    UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
   );
 
   view! {

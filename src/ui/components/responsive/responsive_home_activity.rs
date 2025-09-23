@@ -163,20 +163,20 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<(Option<String>, Option<String>
               let mut query_params = query.get();
               query_params.insert("page".into(), serde_json::to_string(&st).unwrap_or("[]".into()));
               let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-              // if iw < 768f64 {
+              if iw < 768f64 {
               //   if let Ok(Some(s)) = window().local_storage() {
               //     let _ = s.set_item(
               //       &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
               //       &window().scroll_y().unwrap_or(0.0).to_string(),
               //     );
               //   }
-              // } else {
+              } else {
                 if let Some(se) = on_scroll_element.get() {
                   spawn_local(async move {
                     let mut query_params = query.get();
                     if let Some(i) = idb_resource.get() {
                       if let Err(e) = i.set(&ScrollPositionKey { path: use_location().pathname.get(), query: query_params.to_query_string() }, &se.scroll_left()).await {
-                        log!("puu");
+                        // log!("puu");
                       }
                     }
                   });
@@ -188,7 +188,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<(Option<String>, Option<String>
                   //   );
                   // }
                 }
-              // }
+              }
               sleep.set(true);
               let navigate = leptos_router::use_navigate();
               navigate(
@@ -328,11 +328,13 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<(Option<String>, Option<String>
                           rc.insert((p.0, fm), (p.2, rw));
                         });
                     });
-                    if let Some(Ok(c)) = cancel_handle.get_untracked() {
-                      c.clear();
-                    }
-                    cancel_handle
-                      .set(
+                    let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
+                    if iw < 768f64 {
+                    } else {
+                      if let Some(Ok(c)) = cancel_handle.get_untracked() {
+                        c.clear();
+                      }
+                      cancel_handle.set(
                         Some(
                           set_timeout_with_handle(
                             move || {
@@ -360,6 +362,7 @@ pub fn ResponsiveHomeActivity(ssr_site: Resource<(Option<String>, Option<String>
                           ),
                         ),
                       );
+                    }
                   }
                   next_page_cursor.set((p.0 + 50usize, o.next_page.clone()));
                   loading.set(false);

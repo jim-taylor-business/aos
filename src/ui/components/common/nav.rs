@@ -32,7 +32,7 @@ pub async fn logout() -> Result<(), ServerFnError> {
     Ok(_o) => {
       let (_, set_auth_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
         "jwt",
-        UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+        UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
       );
       set_auth_cookie.set(None);
       Ok(())
@@ -48,7 +48,7 @@ pub async fn logout() -> Result<(), ServerFnError> {
 pub async fn change_lang(lang: String) -> Result<(), ServerFnError> {
   let (_, set_locale_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
     "i18n_pref_locale",
-    UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
   );
   set_locale_cookie.set(Some(lang.to_lowercase()));
   Ok(())
@@ -57,7 +57,7 @@ pub async fn change_lang(lang: String) -> Result<(), ServerFnError> {
 #[server(ChangeThemeFn, "/serverfn")]
 pub async fn change_theme(theme: String) -> Result<(), ServerFnError> {
   let (_, set_theme_cookie) =
-    use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax));
+    use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
   set_theme_cookie.set(Some(theme));
   Ok(())
 }
@@ -67,7 +67,7 @@ pub fn TopNav(ssr_site: Resource<(Option<String>, Option<String>), Result<GetSit
   let i18n = use_i18n();
 
   let (_, set_theme_cookie) =
-    use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax));
+    use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
 
   let online = expect_context::<RwSignal<OnlineSetter>>();
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
@@ -151,7 +151,7 @@ pub fn TopNav(ssr_site: Resource<(Option<String>, Option<String>), Result<GetSit
           Ok(_o) => {
             let (_, set_auth_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
               "jwt",
-              UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+              UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
             );
             set_auth_cookie.set(None);
           }

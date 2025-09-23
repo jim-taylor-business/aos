@@ -129,7 +129,7 @@ impl LemmyApi for LemmyClient {}
 fn build_route(route: &str) -> String {
   let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
     "instance",
-    UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
   );
 
   #[cfg(feature = "ssr")]
@@ -173,7 +173,7 @@ mod client {
     {
       let (get_auth_cookie, set_auth_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
         "jwt",
-        UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+        UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
       );
       let jwt = get_auth_cookie.get();
       let route = build_route(path);
@@ -269,7 +269,7 @@ mod client {
       let route = &build_route(path);
       let (get_auth_cookie, set_auth_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
         "jwt",
-        UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+        UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
       );
       let jwt = get_auth_cookie.get();
 

@@ -60,7 +60,7 @@ pub async fn login(username_or_email: String, password: String, uri: String) -> 
     Ok(LoginResponse { jwt, .. }) => {
       let (_, set_auth_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
         "jwt",
-        UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+        UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
       );
       set_auth_cookie.set(Some(jwt.unwrap_or_default().into_inner()));
       if uri.len() > 0 {
@@ -126,7 +126,8 @@ pub fn LoginForm() -> impl IntoView {
             let (_, set_auth_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
               "jwt",
               UseCookieOptions::default()
-                .max_age(604800000)
+                // .max_age(10000)
+                .max_age(691200000)
                 .path("/")
                 .secure(true)
                 .same_site(SameSite::Lax),

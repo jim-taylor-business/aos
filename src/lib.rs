@@ -75,12 +75,21 @@ pub fn App() -> impl IntoView {
   provide_context(idb_signal);
   #[cfg(not(feature = "ssr"))]
   spawn_local(async move {
-    log!("1");
+    // log!("1");
     idb_signal.set(Some(IndexedDb::new().await.unwrap()));
     // provide_context(IndexedDb::new().await.unwrap());
     // provide_context(Rexie::builder("db").build().await.unwrap());
+    if let Some(i) = idb_signal.get() {
+      i.set(&ScrollPositionKey { path: "/r".into(), query: "".into() }, &0i32).await;
+    }
   });
 
+  // #[cfg(not(feature = "ssr"))]
+  // spawn_local(async move {
+  //   if let Some(i) = idb_resource.get() {
+  //     i.set(&ScrollPositionKey { path: "/r".into(), query: "".into() }, &0i32).await;
+  //   }
+  // });
 
 
   // #[cfg(not(feature = "ssr"))]
@@ -178,11 +187,11 @@ pub fn App() -> impl IntoView {
   // let site_signal: RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>> = RwSignal::new(None);
 
   let (get_auth_cookie, set_auth_cookie) =
-    use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax));
+    use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
 
   let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
     "instance",
-    UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
   );
   #[cfg(feature = "ssr")]
   if let Some(t) = get_instance_cookie.get() {
@@ -193,11 +202,20 @@ pub fn App() -> impl IntoView {
 
   #[cfg(feature = "ssr")]
   let (get_theme_cookie, set_theme_cookie) =
-    use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax));
+    use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
   #[cfg(feature = "ssr")]
   if let Some(t) = get_theme_cookie.get() {
     set_theme_cookie.set(Some(t));
   }
+
+  #[cfg(feature = "ssr")]
+  let (get_jwt, set_jwt) =
+    use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").secure(true).same_site(SameSite::Lax));
+  #[cfg(feature = "ssr")]
+  if let Some(t) = get_jwt.get() {
+    set_jwt.set(Some(t));
+  }
+
 
   let ssr_site = Resource::new(
     move || (get_auth_cookie.get(), get_instance_cookie.get()),
@@ -260,7 +278,7 @@ pub fn App() -> impl IntoView {
     <Link rel="manifest" href="/manifest.json" />
     <Title formatter />
     <Meta name="description" content={formatter("".into())} />
-    <I18nContextProvider cookie_options={leptos_i18n::context::CookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax)}>
+    <I18nContextProvider cookie_options={leptos_i18n::context::CookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax)}>
       <Router>
         <Routes>
           <Route path="/" view={move || view! { <Root ssr_site /> }} ssr={SsrMode::Async}>

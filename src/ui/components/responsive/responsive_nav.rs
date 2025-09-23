@@ -35,7 +35,7 @@ pub async fn logout() -> Result<(), ServerFnError> {
     Ok(_o) => {
       let (_, set_auth_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
         "jwt",
-        UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+        UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
       );
       set_auth_cookie.set(None);
       Ok(())
@@ -58,7 +58,7 @@ pub async fn search(term: String) -> Result<(), ServerFnError> {
 pub async fn instance(instance: String) -> Result<(), ServerFnError> {
   let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
     "instance",
-    UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
   );
   if instance.len() > 0 {
     set_instance_cookie.set(Some(instance));
@@ -72,7 +72,7 @@ pub async fn instance(instance: String) -> Result<(), ServerFnError> {
 pub async fn change_lang(lang: String) -> Result<(), ServerFnError> {
   let (_, set_locale_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
     "i18n_pref_locale",
-    UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
   );
   set_locale_cookie.set(Some(lang.to_lowercase()));
   Ok(())
@@ -81,7 +81,7 @@ pub async fn change_lang(lang: String) -> Result<(), ServerFnError> {
 #[server(ChangeThemeFn, "/serverfn")]
 pub async fn change_theme(theme: String) -> Result<(), ServerFnError> {
   let (_, set_theme_cookie) =
-    use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax));
+    use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
   set_theme_cookie.set(Some(theme));
   Ok(())
 }
@@ -98,7 +98,7 @@ pub fn ResponsiveTopNav(
   let i18n = use_i18n();
 
   let (_, set_theme_cookie) =
-    use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax));
+    use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
 
   let online = expect_context::<RwSignal<OnlineSetter>>();
   let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
@@ -131,7 +131,7 @@ pub fn ResponsiveTopNav(
   // #[cfg(not(feature = "ssr"))]
   // let (get_scroll_cookie, set_scroll_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
   //   "scroll",
-  //   UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+  //   UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
   // );
 
   let on_sort_click = move |s: SortType| {
@@ -310,7 +310,7 @@ pub fn ResponsiveTopNav(
           Ok(_o) => {
             let (_, set_auth_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
               "jwt",
-              UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+              UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
             );
             set_auth_cookie.set(None);
           }
@@ -357,7 +357,7 @@ pub fn ResponsiveTopNav(
 
   let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
     "instance",
-    UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
   );
   let instance_term = RwSignal::new(get_instance_cookie.get());
   let instance_action = create_server_action::<InstanceFn>();

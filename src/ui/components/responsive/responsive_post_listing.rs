@@ -145,7 +145,7 @@ pub fn ResponsivePostListing(
 
   let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
     "instance",
-    UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
   );
 
   let post_view = RwSignal::new(post_view.get());
@@ -232,7 +232,7 @@ pub fn ResponsivePostListing(
   // #[cfg(not(feature = "ssr"))]
   // let (get_scroll_cookie, set_scroll_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
   //   "scroll",
-  //   UseCookieOptions::default().max_age(604800000).path("/").same_site(SameSite::Lax),
+  //   UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
   // );
 
   let report_post_action = create_server_action::<ReportPostFn>();
