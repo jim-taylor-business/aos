@@ -1,6 +1,6 @@
-use crate::{i18n::*, lemmy_error::LemmyErrorType};
 use core::num::ParseIntError;
-use leptos::*;
+use lemmy_api_common::LemmyErrorType;
+use leptos::prelude::*;
 use serde::{Deserialize, Serialize};
 use serde_urlencoded::ser;
 use strum_macros::Display;
@@ -29,25 +29,25 @@ pub enum LemmyAppErrorType {
 }
 
 pub fn message_from_error(error: &LemmyAppError) -> String {
-  let i18n = use_i18n();
+  // let i18n = use_i18n();
 
   let s = match error.error_type {
-    LemmyAppErrorType::ApiError(LemmyErrorType::IncorrectLogin) => t!(i18n, invalid_login)().to_string(),
-    LemmyAppErrorType::EmptyUsername => t!(i18n, empty_username)().to_string(),
-    LemmyAppErrorType::EmptyPassword => t!(i18n, empty_password)().to_string(),
-    LemmyAppErrorType::MissingReason => t!(i18n, empty_reason)().to_string(),
-    LemmyAppErrorType::InternalServerError => t!(i18n, internal)().to_string(),
-    LemmyAppErrorType::Unknown => t!(i18n, unknown)().to_string(),
+    // LemmyAppErrorType::ApiError(LemmyErrorType::IncorrectLogin) => t!(i18n, invalid_login)().into_any().to_s,
+    // LemmyAppErrorType::EmptyUsername => t!(i18n, empty_username),
+    // LemmyAppErrorType::EmptyPassword => t!(i18n, empty_password),
+    // LemmyAppErrorType::MissingReason => t!(i18n, empty_reason),
+    // LemmyAppErrorType::InternalServerError => t!(i18n, internal),
+    // LemmyAppErrorType::Unknown => t!(i18n, unknown),
     LemmyAppErrorType::OfflineError => "App is offline at the moment".to_string(),
     _ => "An error without description".to_string(),
   };
 
-  logging::error!("{}\n{:#?}", s, error);
+  leptos::logging::error!("{}\n{:#?}", s, error);
 
   s
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, PartialEq)]
 pub struct LemmyAppError {
   pub error_type: LemmyAppErrorType,
   pub content: String,
@@ -146,16 +146,6 @@ impl From<gloo_net::Error> for LemmyAppError {
   }
 }
 
-// #[cfg(not(feature = "ssr"))]
-// impl From<wasm_cookies::FromUrlEncodingError> for LemmyAppError {
-//   fn from(value: wasm_cookies::FromUrlEncodingError) -> Self {
-//     Self {
-//       error_type: LemmyAppErrorType::InternalServerError,
-//       content: format!("{:#?}", value),
-//     }
-//   }
-// }
-
 #[cfg(feature = "ssr")]
 impl From<awc::error::JsonPayloadError> for LemmyAppError {
   fn from(value: awc::error::JsonPayloadError) -> Self {
@@ -178,8 +168,8 @@ impl From<awc::error::SendRequestError> for LemmyAppError {
 }
 
 #[cfg(feature = "ssr")]
-impl From<actix_http::error::PayloadError> for LemmyAppError {
-  fn from(value: actix_http::error::PayloadError) -> Self {
+impl From<awc::error::PayloadError> for LemmyAppError {
+  fn from(value: awc::error::PayloadError) -> Self {
     Self {
       error_type: LemmyAppErrorType::InternalServerError,
       content: format!("{:#?}", value),

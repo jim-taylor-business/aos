@@ -1,34 +1,27 @@
 use crate::{
+  client::*,
+  db::csr_indexed_db::*,
   errors::LemmyAppError,
-  lemmy_client::*,
-  ui::components::{
-    comment::comment_node::CommentNode,
-    common::icon::{Icon, IconType::*},
-  },
+  icon::{Icon, IconType::*},
   OnlineSetter,
 };
-use ev::{MouseEvent, PointerEvent, SubmitEvent, TouchEvent, WheelEvent};
 use lemmy_api_common::{
   comment::{CreateComment, CreateCommentLike, EditComment, GetComment, SaveComment},
   lemmy_db_schema::newtypes::PersonId,
   lemmy_db_views::structs::{CommentView, LocalUserView},
   site::{GetModlog, GetSiteResponse, MyUserInfo},
 };
-use leptos::{
-  html::{ElementDescriptor, Summary},
-  logging::log,
-  *,
-};
+use leptos::{html::Textarea, logging::log, prelude::*, task::*, *};
 use leptos_dom::helpers::TimeoutHandle;
-use leptos_router::Form;
-use web_sys::{wasm_bindgen::JsCast, DragEvent, Element, Event, HtmlAnchorElement, HtmlDetailsElement, HtmlImageElement};
-
-#[cfg(not(feature = "ssr"))]
-use crate::indexed_db::csr_indexed_db::*;
+use leptos_router::components::Form;
+use leptos_use::{use_intersection_observer_with_options, UseIntersectionObserverOptions};
+use web_sys::{
+  wasm_bindgen::JsCast, DragEvent, Element, Event, HtmlAnchorElement, HtmlDetailsElement, HtmlImageElement, MouseEvent, PointerEvent, SubmitEvent,
+  WheelEvent,
+};
 
 #[component]
-pub fn ResponsiveCommentNode(
-  ssr_site: Resource<(Option<String>, Option<String>), Result<GetSiteResponse, LemmyAppError>>,
+pub fn Comment(
   comment: MaybeSignal<CommentView>,
   comments: MaybeSignal<Vec<CommentView>>,
   level: usize,
@@ -36,16 +29,34 @@ pub fn ResponsiveCommentNode(
   now_in_millis: RwSignal<u64>,
   hidden_comments: RwSignal<Vec<i32>>,
   highlight_user_id: RwSignal<Option<PersonId>>,
-  #[prop(into)] on_toggle: Callback<i32>,
+  post_id: Signal<Option<i32>>,
 ) -> impl IntoView {
+  let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
+
   let logged_in = Signal::derive(move || {
-    if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() {
+    if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() {
       Some(true)
     } else {
       Some(false)
     }
   });
   let online = expect_context::<RwSignal<OnlineSetter>>();
+
+  let on_toggle = move |i: i32| {
+    if hidden_comments.get().contains(&i) {
+      hidden_comments.update(|hc| hc.retain(|c| i != *c));
+    } else {
+      hidden_comments.update(|hc| hc.push(i));
+    }
+    #[cfg(not(feature = "ssr"))]
+    spawn_local_scoped_with_cancellation(async move {
+      if let Some(p) = post_id.get() {
+        if let Ok(d) = IndexedDb::new().await {
+          if let Ok(_) = d.set(&p, &hidden_comments.get()).await {}
+        }
+      }
+    });
+  };
 
   let current_person = Signal::derive(move || {
     if let Some(Ok(GetSiteResponse {
@@ -54,7 +65,7 @@ pub fn ResponsiveCommentNode(
         ..
       }),
       ..
-    })) = ssr_site.get()
+    })) = ssr_site_signal.get()
     {
       Some(person)
     } else {
@@ -141,198 +152,180 @@ pub fn ResponsiveCommentNode(
   .0
   .to_string();
 
-  let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
-
-  let cancel = move |ev: MouseEvent| {
-    ev.stop_propagation();
+  let cancel = move |e: MouseEvent| {
+    e.stop_propagation();
   };
 
-  let on_vote_submit = move |ev: SubmitEvent, score: i16| {
-    ev.prevent_default();
-    create_local_resource(
-      move || (),
-      move |()| async move {
-        let form = CreateCommentLike {
-          comment_id: comment_view.get().comment.id,
-          score,
-        };
-        let result = LemmyClient.like_comment(form).await;
-        match result {
-          Ok(o) => {
-            comment_view.set(o.comment_view);
-          }
-          Err(e) => {
-            error.update(|es| es.push(Some((e, None))));
-          }
+  let on_vote_submit = move |e: MouseEvent, score: i16| {
+    e.prevent_default();
+    spawn_local_scoped_with_cancellation(async move {
+      let form = CreateCommentLike {
+        comment_id: comment_view.get().comment.id,
+        score,
+      };
+      let result = LemmyClient.like_comment(form).await;
+      match result {
+        Ok(o) => {
+          comment_view.set(o.comment_view);
         }
-      },
-    );
+        Err(e) => {}
+      }
+    });
   };
 
-  let on_up_vote_submit = move |ev: SubmitEvent| {
+  let on_up_vote_submit = move |e: MouseEvent| {
     let score = if Some(1) == comment_view.get().my_vote { 0 } else { 1 };
-    on_vote_submit(ev, score);
+    on_vote_submit(e, score);
   };
 
-  let on_down_vote_submit = move |ev: SubmitEvent| {
+  let on_down_vote_submit = move |e: MouseEvent| {
     let score = if Some(-1) == comment_view.get().my_vote { 0 } else { -1 };
-    on_vote_submit(ev, score);
+    on_vote_submit(e, score);
   };
 
-  let on_save_submit = move |ev: SubmitEvent| {
-    ev.prevent_default();
-    create_local_resource(
-      move || (),
-      move |()| async move {
-        let form = SaveComment {
-          comment_id: comment_view.get().comment.id,
-          save: !comment_view.get().saved,
-        };
-        let result = LemmyClient.save_comment(form).await;
-        match result {
-          Ok(o) => {
-            comment_view.set(o.comment_view);
-          }
-          Err(e) => {
-            error.update(|es| es.push(Some((e, None))));
+  let on_save_submit = move |e: MouseEvent| {
+    e.prevent_default();
+    spawn_local_scoped_with_cancellation(async move {
+      let form = SaveComment {
+        comment_id: comment_view.get().comment.id,
+        save: !comment_view.get().saved,
+      };
+      let result = LemmyClient.save_comment(form).await;
+      match result {
+        Ok(o) => {
+          comment_view.set(o.comment_view);
+        }
+        Err(e) => {}
+      }
+    });
+  };
+
+  let on_get_click = move |e: MouseEvent| {
+    e.stop_propagation();
+    spawn_local_scoped_with_cancellation(async move {
+      let form = GetComment {
+        id: comment_view.get().comment.id,
+      };
+      let result = LemmyClient.get_comment(form).await;
+      match result {
+        Ok(o) => {
+          comment_view.set(o.comment_view);
+        }
+        Err(e) => {}
+      }
+    });
+  };
+
+  let on_mod_log_click = move |e: MouseEvent| {
+    e.stop_propagation();
+    spawn_local_scoped_with_cancellation(async move {
+      let form = GetModlog {
+        comment_id: Some(comment_view.get().comment.id),
+        community_id: None,
+        limit: None,
+        mod_person_id: None,
+        other_person_id: None,
+        page: None,
+        post_id: None,
+        type_: None,
+      };
+      let result = LemmyClient.get_mod_log(form).await;
+      match result {
+        Ok(o) => {
+          if let Some(c) = o.removed_comments.get(0) {
+            comment_view.update(|u| {
+              u.comment = c.comment.clone();
+            });
           }
         }
-      },
-    );
+        Err(e) => {}
+      }
+    });
   };
 
-  let on_get_click = move |ev: MouseEvent| {
-    ev.stop_propagation();
-    create_local_resource(
-      move || (),
-      move |()| async move {
-        let form = GetComment {
-          id: comment_view.get().comment.id,
-        };
-        let result = LemmyClient.get_comment(form).await;
-        match result {
-          Ok(o) => {
-            comment_view.set(o.comment_view);
-          }
-          Err(e) => {
-            error.update(|es| es.push(Some((e, None))));
+  let on_reply_click = move |e: MouseEvent| {
+    e.prevent_default();
+    spawn_local_scoped_with_cancellation(async move {
+      loading.set(true);
+      let form = CreateComment {
+        content: reply_content.get(),
+        post_id: comment_view.get().comment.post_id,
+        parent_id: Some(comment_view.get().comment.id),
+        language_id: None,
+      };
+      let result = LemmyClient.reply_comment(form).await;
+      match result {
+        Ok(o) => {
+          loading.set(false);
+          now_in_millis.set(chrono::offset::Utc::now().timestamp_millis() as u64);
+          children.update(|cs| cs.push(o.comment_view));
+          reply_show.set(false);
+          #[cfg(not(feature = "ssr"))]
+          if let Ok(d) = IndexedDb::new().await {
+            if let Ok(c) = d
+              .del(&CommentDraftKey {
+                comment_id: comment_view.get().comment.id.0,
+                draft: Draft::Reply,
+              })
+              .await
+            {}
           }
         }
-      },
-    );
+        Err(e) => {
+          loading.set(false);
+        }
+      }
+    });
   };
 
-  let on_mod_log_click = move |ev: MouseEvent| {
-    ev.stop_propagation();
-    create_local_resource(
-      move || (),
-      move |()| async move {
-        let form = GetModlog {
-          comment_id: Some(comment_view.get().comment.id),
-          community_id: None,
-          limit: None,
-          mod_person_id: None,
-          other_person_id: None,
-          page: None,
-          post_id: None,
-          type_: None,
-        };
-        let result = LemmyClient.get_mod_log(form).await;
-        match result {
-          Ok(o) => {
-            if let Some(c) = o.removed_comments.get(0) {
-              comment_view.update(|u| {
-                u.comment = c.comment.clone();
-              });
-            }
-          }
-          Err(e) => {
-            error.update(|es| es.push(Some((e, None))));
+  let on_edit_click = move |e: MouseEvent| {
+    e.prevent_default();
+    spawn_local_scoped_with_cancellation(async move {
+      loading.set(true);
+      let form = EditComment {
+        content: Some(edit_content.get()),
+        comment_id: comment_view.get().comment.id,
+        language_id: None,
+      };
+      let result = LemmyClient.edit_comment(form).await;
+      match result {
+        Ok(_o) => {
+          loading.set(false);
+          edit_show.set(false);
+          #[cfg(not(feature = "ssr"))]
+          if let Ok(d) = IndexedDb::new().await {
+            if let Ok(c) = d
+              .del(&CommentDraftKey {
+                comment_id: comment_view.get().comment.id.0,
+                draft: Draft::Edit,
+              })
+              .await
+            {}
           }
         }
-      },
-    );
-  };
-
-  let on_reply_click = move |ev: MouseEvent| {
-    ev.prevent_default();
-    create_local_resource(
-      move || (),
-      move |()| async move {
-        loading.set(true);
-        let form = CreateComment {
-          content: reply_content.get(),
-          post_id: comment_view.get().comment.post_id,
-          parent_id: Some(comment_view.get().comment.id),
-          language_id: None,
-        };
-        let result = LemmyClient.reply_comment(form).await;
-        match result {
-          Ok(o) => {
-            loading.set(false);
-            now_in_millis.set(chrono::offset::Utc::now().timestamp_millis() as u64);
-            children.update(|cs| cs.push(o.comment_view));
-            reply_show.set(false);
-            #[cfg(not(feature = "ssr"))]
-            if let Ok(d) = build_indexed_database().await {
-              if let Ok(c) = del_draft(&d, comment_view.get().comment.id.0, Draft::Reply).await {}
-            }
-          }
-          Err(e) => {
-            loading.set(false);
-            error.update(|es| es.push(Some((e, None))));
-          }
+        Err(e) => {
+          loading.set(false);
         }
-      },
-    );
+      }
+    });
   };
 
-  let on_edit_click = move |ev: MouseEvent| {
-    ev.prevent_default();
-    create_local_resource(
-      move || (),
-      move |()| async move {
-        loading.set(true);
-        let form = EditComment {
-          content: Some(edit_content.get()),
-          comment_id: comment_view.get().comment.id,
-          language_id: None,
-        };
-        let result = LemmyClient.edit_comment(form).await;
-        match result {
-          Ok(_o) => {
-            loading.set(false);
-            edit_show.set(false);
-            #[cfg(not(feature = "ssr"))]
-            if let Ok(d) = build_indexed_database().await {
-              if let Ok(c) = del_draft(&d, comment_view.get().comment.id.0, Draft::Reply).await {}
-            }
-          }
-          Err(e) => {
-            loading.set(false);
-            error.update(|es| es.push(Some((e, None))));
-          }
-        }
-      },
-    );
-  };
-
-  let on_cancel_click = move |ev: MouseEvent| {
-    ev.prevent_default();
+  let on_cancel_click = move |e: MouseEvent| {
+    e.prevent_default();
     comment_view.update(|cv| cv.comment.content = comment_copy.get().comment.content);
     edit_show.set(false);
   };
 
-  let _visibility_element = create_node_ref::<leptos_dom::html::Textarea>();
+  let _visibility_element = create_node_ref::<Textarea>();
 
   #[cfg(not(feature = "ssr"))]
   {
-    leptos_use::use_intersection_observer_with_options(
+    use_intersection_observer_with_options(
       _visibility_element,
       move |_entries, _io| {
         let _ = _visibility_element.get().unwrap().focus();
       },
-      leptos_use::UseIntersectionObserverOptions::default(),
+      UseIntersectionObserverOptions::default(),
     );
   }
 
@@ -371,10 +364,10 @@ pub fn ResponsiveCommentNode(
                 e.prevent_default();
               } else if let Some(s) = t.dyn_ref::<web_sys::Element>() {
                 if s.tag_name().eq("SUMMARY") {} else {
-                  on_toggle.call(comment_view.get().comment.id.0);
+                  on_toggle(comment_view.get().comment.id.0);
                 }
               } else {
-                on_toggle.call(comment_view.get().comment.id.0);
+                on_toggle(comment_view.get().comment.id.0);
               }
             }
           }
@@ -409,74 +402,15 @@ pub fn ResponsiveCommentNode(
           }
         }}
         on:pointermove={move |e: PointerEvent| {
+          // log!("move");
           if let Some(h) = still_handle.get() {
             h.clear();
           }
         }}
-        // on:mousedown={move |e: MouseEvent| {
-        //   if e.buttons() == 1 {
-        //     still_handle
-        //       .set(
-        //         set_timeout_with_handle(
-        //             move || {
-        //               vote_show.set(!vote_show.get());
-        //               still_down.set(true);
-        //             },
-        //             std::time::Duration::from_millis(500),
-        //           )
-        //           .ok(),
-        //       );
-        //   } else {
-        //     if let Some(h) = still_handle.get() {
-        //       h.clear();
-        //     }
-        //   }
-        // }}
-        // on:mousemove={move |e: MouseEvent| {
-        //   if let Some(h) = still_handle.get() {
-        //     h.clear();
-        //   }
-        // }}
-        // on:touchstart={move |_e: TouchEvent| {
-        //   still_handle
-        //     .set(
-        //       set_timeout_with_handle(
-        //           move || {
-        //             vote_show.set(!vote_show.get());
-        //             still_down.set(true);
-        //           },
-        //           std::time::Duration::from_millis(500),
-        //         )
-        //         .ok(),
-        //     );
-        // }}
-        // on:touchend={move |_e: TouchEvent| {
-        //   if let Some(h) = still_handle.get() {
-        //     h.clear();
-        //   }
-        // }}
-        // on:touchmove={move |_e: TouchEvent| {
-        //   if let Some(h) = still_handle.get() {
-        //     h.clear();
-        //   }
-        // }}
-        // on:mouseup={move |_e: MouseEvent| {
-        //   if let Some(h) = still_handle.get() {
-        //     h.clear();
-        //   }
-        // }}
         on:dblclick={move |_e: MouseEvent| {
           vote_show.set(!vote_show.get());
         }}
       >
-        // on:mouseover={move |e: MouseEvent| {
-        // e.stop_propagation();
-        // highlight_show.set(true);
-        // }}
-        // on:mouseout={move |e: MouseEvent| {
-        // e.stop_propagation();
-        // highlight_show.set(false);
-        // }}
         <Show
           when={move || !(comment_view.get().creator_banned_from_community || comment_view.get().creator.banned)}
           fallback={move || view! { <Icon on:click={on_mod_log_click} icon={Hammer} /> }}
@@ -497,7 +431,7 @@ pub fn ResponsiveCommentNode(
 
         <Show when={move || vote_show.get()} fallback={|| view! {}}>
           <div on:click={cancel} class="flex flex-wrap gap-x-2 items-center break-inside-avoid">
-            <Form on:submit={on_up_vote_submit} action="POST" class="flex items-center">
+            <Form on:click={on_up_vote_submit} action="POST" attr:class="flex items-center">
               <input type="hidden" name="post_id" value={format!("{}", comment_view.get().post.id)} />
               <input type="hidden" name="score" value={move || if Some(1) == comment_view.get().my_vote { 0 } else { 1 }} />
               <button
@@ -516,7 +450,7 @@ pub fn ResponsiveCommentNode(
               </button>
             </Form>
             <span class="text-sm">{move || comment_view.get().counts.score}</span>
-            <Form on:submit={on_down_vote_submit} action="POST" class="flex items-center">
+            <Form on:click={on_down_vote_submit} action="POST" attr:class="flex items-center">
               <input type="hidden" name="post_id" value={format!("{}", comment_view.get().post.id)} />
               <input type="hidden" name="score" value={move || if Some(-1) == comment_view.get().my_vote { 0 } else { -1 }} />
               <button
@@ -534,7 +468,7 @@ pub fn ResponsiveCommentNode(
                 <Icon icon={Downvote} />
               </button>
             </Form>
-            <Form action="POST" on:submit={on_save_submit} class="flex items-center">
+            <Form action="POST" on:click={on_save_submit} attr:class="flex items-center">
               <input type="hidden" name="post_id" value={format!("{}", comment_view.get().post.id)} />
               <input type="hidden" name="save" value={move || format!("{}", !comment_view.get().saved)} />
               <button
@@ -556,17 +490,23 @@ pub fn ResponsiveCommentNode(
               on:click={move |_| {
                 edit_show.set(false);
                 reply_show.update(|b| *b = !*b);
-                #[cfg(not(feature = "ssr"))]
-                create_local_resource(
-                  move || (),
-                  move |()| async move {
-                    if let Ok(d) = build_indexed_database().await {
-                      if let Ok(Some(c)) = get_draft(&d, comment_view.get().comment.id.0, Draft::Reply).await {
-                        reply_content.set(c);
-                      }
+                spawn_local_scoped_with_cancellation(async move {
+                  #[cfg(not(feature = "ssr"))]
+                  if let Ok(d) = IndexedDb::new().await {
+                    if let Ok(Some(c)) = d
+                      .get(
+                        &CommentDraftKey {
+                          comment_id: comment_view.get().comment.id.0,
+                          draft: Draft::Reply,
+                        },
+                      )
+                      .await
+                    {
+                      log!("goo");
+                      reply_content.set(c);
                     }
-                  },
-                );
+                  }
+                });
               }}
               title="Reply"
               class={move || {
@@ -580,19 +520,24 @@ pub fn ResponsiveCommentNode(
               on:click={move |_| {
                 reply_show.set(false);
                 edit_show.update(|b| *b = !*b);
-                #[cfg(not(feature = "ssr"))]
-                create_local_resource(
-                  move || (),
-                  move |()| async move {
-                    if let Ok(d) = build_indexed_database().await {
-                      if let Ok(Some(c)) = get_draft(&d, comment_view.get().comment.id.0, Draft::Edit).await {
-                        edit_content.set(c);
-                      } else {
-                        edit_content.set(comment_view.get_untracked().comment.content);
-                      }
+                spawn_local_scoped_with_cancellation(async move {
+                  #[cfg(not(feature = "ssr"))]
+                  if let Ok(d) = IndexedDb::new().await {
+                    if let Ok(Some(c)) = d
+                      .get(
+                        &CommentDraftKey {
+                          comment_id: comment_view.get().comment.id.0,
+                          draft: Draft::Edit,
+                        },
+                      )
+                      .await
+                    {
+                      edit_content.set(c);
+                    } else {
+                      edit_content.set(comment_view.get_untracked().comment.content);
                     }
-                  },
-                );
+                  }
+                });
               }}
               class={move || {
                 format!(
@@ -618,7 +563,7 @@ pub fn ResponsiveCommentNode(
             >
               <Icon icon={Highlighter} />
             </span>
-            <span class="overflow-hidden break-words">
+            <span class="overflow-hidden wrap-anywhere">
               <span>{abbr_duration.clone()}</span>
               " ago, by "
               <a href={move || format!("{}", comment_view.get().creator.actor_id)} target="_blank" class="text-sm hover:text-secondary">
@@ -627,27 +572,17 @@ pub fn ResponsiveCommentNode(
             </span>
           </div>
         </Show>
-        <span class={move || {
-          format!(
-            "badge badge-neutral inline-block whitespace-nowrap{}",
-            if hidden_comments.get().contains(&comment_view.get().comment.id.0) && children.get().len() > 0 { "" } else { " hidden" },
-          )
-        }}>{children.get().len() + descendants.get().len()} " replies"</span>
+        <Show
+          when={move || hidden_comments.get().contains(&comment_view.get().comment.id.0) && (children.get().len() + descendants.get().len()) > 0}
+          fallback={|| {}}
+        >
+          <span class="inline-block whitespace-nowrap badge badge-neutral">{children.get().len() + descendants.get().len()} " replies"</span>
+        </Show>
       </div>
       <Show when={move || reply_show.get() || edit_show.get()} fallback={|| {}}>
         <div class="mb-3 space-y-3 break-inside-avoid">
-          // <label class="form-control">
-          // <textarea
-          // class="h-24 text-base textarea textarea-bordered"
-          // placeholder="Comment text"
-          // prop:value={move || content.get()}
-          // on:input={move |ev| content.set(event_target_value(&ev))}
-          // >
-          // {content.get_untracked()}
-          // </textarea>
-          // </label>
           <Show when={move || reply_show.get()} fallback={|| {}}>
-            <label class="form-control">
+            <div class="form-control">
               <textarea
                 class="h-24 text-base textarea textarea-bordered"
                 placeholder="Comment text"
@@ -658,36 +593,42 @@ pub fn ResponsiveCommentNode(
                 }}
                 on:input={move |ev| {
                   reply_content.set(event_target_value(&ev));
-                  #[cfg(not(feature = "ssr"))]
-                  create_local_resource(
-                    move || (),
-                    move |()| async move {
-                      if let Ok(d) = build_indexed_database().await {
-                        if let Ok(comment_ids) = set_draft(&d, comment_view.get().comment.id.0, Draft::Reply, reply_content.get()).await {} else {
-                          if let Err(e) = set_draft(&d, comment_view.get().comment.id.0, Draft::Reply, reply_content.get()).await {}
-                        }
-                      }
-                    },
-                  );
+                  spawn_local_scoped_with_cancellation(async move {
+                    #[cfg(not(feature = "ssr"))]
+                    if let Ok(d) = IndexedDb::new().await {
+                      if let Ok(comment_ids) = d
+                        .set(
+                          &CommentDraftKey {
+                            comment_id: comment_view.get().comment.id.0,
+                            draft: Draft::Reply,
+                          },
+                          &reply_content.get(),
+                        )
+                        .await
+                      {} else {}
+                    }
+                  });
                 }}
               >
                 {reply_content.get_untracked()}
               </textarea>
-            </label>
-            <button
-              on:click={on_reply_click}
-              type="button"
-              disabled={move || Some(true) != logged_in.get() || !online.get().0}
-              class={move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })}
-            >
-              "Reply"
-            </button>
-            <button on:click={move |_| reply_show.set(false)} type="button" class="btn btn-neutral">
-              "Cancel"
-            </button>
+            </div>
+            <div class="form-control">
+              <button
+                on:click={on_reply_click}
+                type="button"
+                disabled={move || Some(true) != logged_in.get() || !online.get().0}
+                class={move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })}
+              >
+                "Reply"
+              </button>
+              <button on:click={move |_| reply_show.set(false)} type="button" class="btn btn-neutral">
+                "Cancel"
+              </button>
+            </div>
           </Show>
           <Show when={move || edit_show.get()} fallback={|| {}}>
-            <label class="form-control">
+            <div class="form-control">
               <textarea
                 class="h-24 text-base textarea textarea-bordered"
                 placeholder="Comment text"
@@ -698,47 +639,55 @@ pub fn ResponsiveCommentNode(
                 on:input={move |ev| {
                   edit_content.set(event_target_value(&ev));
                   comment_view.update(|cv| cv.comment.content = event_target_value(&ev));
-                  #[cfg(not(feature = "ssr"))]
-                  create_local_resource(
-                    move || (),
-                    move |()| async move {
-                      if let Ok(d) = build_indexed_database().await {
-                        if let Ok(comment_ids) = set_draft(&d, comment_view.get().comment.id.0, Draft::Edit, edit_content.get()).await {}
-                      }
-                    },
-                  );
+                  spawn_local_scoped_with_cancellation(async move {
+                    #[cfg(not(feature = "ssr"))]
+                    if let Ok(d) = IndexedDb::new().await {
+                      if let Ok(comment_ids) = d
+                        .set(
+                          &CommentDraftKey {
+                            comment_id: comment_view.get().comment.id.0,
+                            draft: Draft::Edit,
+                          },
+                          &edit_content.get(),
+                        )
+                        .await
+                      {}
+                    }
+                  });
                 }}
               >
                 {edit_content.get_untracked()}
               </textarea>
-            </label>
-            <button
-              on:click={on_edit_click}
-              type="button"
-              disabled={move || Some(true) != logged_in.get() || !online.get().0}
-              class={move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })}
-            >
-              "Edit"
-            </button>
-            <button on:click={on_cancel_click} type="button" class="btn btn-neutral">
-              "Cancel"
-            </button>
+            </div>
+            <div class="form-control">
+              <button
+                on:click={on_edit_click}
+                type="button"
+                disabled={move || Some(true) != logged_in.get() || !online.get().0}
+                class={move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })}
+              >
+                "Edit"
+              </button>
+              <button on:click={on_cancel_click} type="button" class="btn btn-neutral">
+                "Cancel"
+              </button>
+            </div>
           </Show>
         </div>
       </Show>
       <For each={move || children.get()} key={|cv| cv.comment.id} let:cv>
-        <ResponsiveCommentNode
-          ssr_site
+        <Comment
           parent_comment_id={comment_view.get().comment.id.0}
           hidden_comments={hidden_comments}
-          on_toggle
           comment={cv.into()}
           comments={descendants.get().into()}
           level={level + 1usize}
           now_in_millis
           highlight_user_id
+          post_id
         />
       </For>
     </div>
   }
+  .into_any()
 }

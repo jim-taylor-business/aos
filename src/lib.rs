@@ -1,57 +1,55 @@
-// useful in development to only have errors in compiler output
+#![recursion_limit = "512"]
 #![allow(warnings)]
 
-mod errors;
-mod indexed_db;
-mod layout;
-mod lemmy_client;
-mod lemmy_error;
-mod root;
-mod ui;
+pub mod client;
+pub mod comment;
+pub mod comments;
+pub mod db;
+pub mod errors;
+pub mod home;
+pub mod icon;
+pub mod listing;
+pub mod listings;
+pub mod login;
+pub mod nav;
+pub mod post;
+pub mod root;
+pub mod search;
+pub mod toolbar;
 
 use crate::{
+  client::{LemmyApi, LemmyClient},
+  db::csr_indexed_db::*,
   errors::{LemmyAppError, LemmyAppResult},
-  i18n::*,
-  layout::Layout,
-  lemmy_client::*,
-  root::Root,
-  ui::components::{
-    communities::communities_activity::CommunitiesActivity,
-    home::home_activity::HomeActivity,
-    login::login_activity::LoginActivity,
-    post::post_activity::PostActivity,
-    responsive::{responsive_layout::ResponsiveLayout, responsive_search_activity::ResponsiveSearchActivity},
-  },
+  login::Login,
+  post::Post,
+  search::Search,
 };
 use codee::string::FromToStringCodec;
+use home::Home;
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SortType},
   lemmy_db_views::structs::PaginationCursor,
   post::{GetPosts, GetPostsResponse},
   site::GetSiteResponse,
 };
-use leptos::{html::Div, logging::log, *};
-use leptos_meta::*;
-use leptos_router::*;
-use leptos_use::{use_cookie_with_options, use_service_worker_with_options, SameSite, UseCookieOptions, UseServiceWorkerOptions};
-#[cfg(not(feature = "ssr"))]
-use rexie::{Rexie, RexieBuilder};
-use std::collections::BTreeMap;
-use ui::components::{
-  notifications::notifications_activity::NotificationsActivity,
-  responsive::{responsive_home_activity::ResponsiveHomeActivity, responsive_post_activity::ResponsivePostActivity},
+use leptos::{html::Div, logging::log, prelude::*, *};
+use leptos_meta::{provide_meta_context, Link, Meta, MetaTags, Stylesheet, *};
+use leptos_router::{
+  components::{FlatRoutes, ParentRoute, Route, Router, Routes},
+  StaticSegment, *,
 };
-use web_sys::Event;
-
+use leptos_use::{use_cookie_with_options, use_service_worker_with_options, SameSite, UseCookieOptions, UseServiceWorkerOptions};
 #[cfg(not(feature = "ssr"))]
 use leptos_use::{use_document_visibility, use_service_worker, UseServiceWorkerReturn};
 #[cfg(not(feature = "ssr"))]
-use crate::indexed_db::csr_indexed_db::*;
+use rexie::{Rexie, RexieBuilder};
+use root::Root;
+use std::collections::BTreeMap;
+use web_sys::Event;
 
-leptos_i18n::load_locales!();
+// leptos_i18n::load_locales!();
 
-// #[derive(Clone)]
-// pub struct UriSetter(String);
 #[derive(Clone)]
 pub struct OnlineSetter(bool);
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
@@ -65,85 +63,72 @@ pub struct NotificationsRefresh(bool);
 #[derive(Clone, PartialEq)]
 pub struct ResponseLoad(bool);
 
+#[derive(Clone)]
+pub struct ReadAuthCookie(Signal<Option<String>>);
+#[derive(Clone)]
+pub struct WriteAuthCookie(WriteSignal<Option<String>>);
+#[derive(Clone)]
+pub struct ReadInstanceCookie(Signal<Option<String>>);
+#[derive(Clone)]
+pub struct WriteInstanceCookie(WriteSignal<Option<String>>);
+#[derive(Clone)]
+pub struct ReadThemeCookie(Signal<Option<String>>);
+#[derive(Clone)]
+pub struct WriteThemeCookie(WriteSignal<Option<String>>);
+
+pub fn html_template(options: LeptosOptions) -> impl IntoView {
+  view! {
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <AutoReload options={options.clone()} />
+        <HydrationScripts options />
+        <MetaTags />
+      </head>
+      <body>
+        <App />
+      </body>
+    </html>
+  }
+}
+
+#[component]
+fn NotFound() -> impl IntoView {
+  #[cfg(feature = "ssr")]
+  {
+    let resp = expect_context::<leptos_axum::ResponseOptions>();
+    resp.set_status(http::StatusCode::NOT_FOUND);
+  }
+  let ReadThemeCookie(get_theme_cookie) = expect_context::<ReadThemeCookie>();
+  view! {
+    <div class="flex flex-col min-h-screen" data-theme={move || get_theme_cookie.get()}>
+      <div class="py-4 px-8 break-inside-avoid">
+        <div class="flex justify-between alert alert-warning alert-soft">
+          <span class="text-lg">"Not Found"</span>
+        // <span on:click={on_retry_click} class="btn btn-sm">
+        // "Retry"
+        // </span>
+        </div>
+      </div>
+    </div>
+  }
+}
+
 #[component]
 pub fn App() -> impl IntoView {
   provide_meta_context();
-
-  #[cfg(not(feature = "ssr"))]
-  let idb_signal: RwSignal<Option<IndexedDb>> = RwSignal::new(None);
-  #[cfg(not(feature = "ssr"))]
-  provide_context(idb_signal);
-  #[cfg(not(feature = "ssr"))]
-  spawn_local(async move {
-    // log!("1");
-    idb_signal.set(Some(IndexedDb::new().await.unwrap()));
-    // provide_context(IndexedDb::new().await.unwrap());
-    // provide_context(Rexie::builder("db").build().await.unwrap());
-    if let Some(i) = idb_signal.get() {
-      i.set(&ScrollPositionKey { path: "/r".into(), query: "".into() }, &0i32).await;
-    }
-  });
-
-  // #[cfg(not(feature = "ssr"))]
-  // spawn_local(async move {
-  //   if let Some(i) = idb_resource.get() {
-  //     i.set(&ScrollPositionKey { path: "/r".into(), query: "".into() }, &0i32).await;
-  //   }
-  // });
-
-
-  // #[cfg(not(feature = "ssr"))]
-  // let rdb_signal: RwSignal<Option<Rexie>> = RwSignal::new(None);
-
-  // #[cfg(not(feature = "ssr"))]
-  // // leptos::create_local_resource(
-  // //   move || (),
-  // //   move |()| async move {
-  // //     log!("wd");
-  // provide_context(rdb_signal);
-  // #[cfg(not(feature = "ssr"))]
-  // spawn_local(async move {
-  //     let r = Rexie::builder("cache_v5")
-  //       .version(1)
-  //       .add_object_store(rexie::ObjectStore::new("post_closed_comments"))
-  //       .add_object_store(rexie::ObjectStore::new("comment_drafts"))
-  //       .add_object_store(rexie::ObjectStore::new("query_gets"))
-  //       .add_object_store(rexie::ObjectStore::new("scroll_positions"))
-  //       .build()
-  //       .await.ok().unwrap();
-  //     rdb_signal.set(Some(r));
-  // });
-
-      //     // Self { rexie: r }
-  //   },
-  // );
-
-  // #[cfg(not(feature = "ssr"))]
-  // let idb_resource = IndexedDb::build_indexed_database();
-  // #[cfg(not(feature = "ssr"))]
-  // provide_context(idb_resource);
-
-
-  let error: RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>> = RwSignal::new(Vec::new());
-  provide_context(error);
   let online = RwSignal::new(OnlineSetter(true));
   provide_context(online);
   let notifications_refresh = RwSignal::new(NotificationsRefresh(true));
   provide_context(notifications_refresh);
-  // let uri: RwSignal<UriSetter> = RwSignal::new(UriSetter("".into()));
-  // provide_context(uri);
 
   #[cfg(not(feature = "ssr"))]
-  let UseServiceWorkerReturn {
-    // registration,
-    // installing,
-    // waiting,
-    // active,
-    // skip_waiting,
-    ..
-  } = use_service_worker_with_options(UseServiceWorkerOptions::default()
-    .script_url("/service-worker.js")
-    .skip_waiting_message("skipWaiting"),
+  let UseServiceWorkerReturn { .. } = use_service_worker_with_options(
+    UseServiceWorkerOptions::default()
+      .script_url("/service-worker.js")
+      .skip_waiting_message("skipWaiting"),
   );
   #[cfg(not(feature = "ssr"))]
   let visibility = use_document_visibility();
@@ -155,44 +140,32 @@ pub fn App() -> impl IntoView {
       online.set(OnlineSetter(b));
     }
   };
-
   let _offline_handle = window_event_listener_untyped("offline", on_online(false));
   let _online_handle = window_event_listener_untyped("online", on_online(true));
 
-  let csr_resources: RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>> =
-    RwSignal::new(BTreeMap::new());
-  provide_context(csr_resources);
-  // let csr_sort: RwSignal<SortType> = RwSignal::new(SortType::Active);
-  // provide_context(csr_sort);
-  let csr_next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
-  provide_context(csr_next_page_cursor);
-
-  // let lot_resources: RwSignal<BTreeMap<(usize, usize, ResourceStatus), Resource<Option<PaginationCursor>, Result<GetPostsResponse, LemmyAppError>>>> =
-
-  let response_cache: RwSignal<BTreeMap<(usize, GetPosts), (i64, LemmyAppResult<GetPostsResponse>)>> = RwSignal::new(BTreeMap::new());
+  let response_cache: RwSignal<BTreeMap<(usize, GetPosts, Option<bool>), (i64, LemmyAppResult<GetPostsResponse>)>> = RwSignal::new(BTreeMap::new());
   provide_context(response_cache);
-
   // let search_cache: RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>> = RwSignal::new(BTreeMap::new());
   // provide_context(response_cache);
-
-  // let response_load: RwSignal<ResponseLoad> = RwSignal::new(ResponseLoad(true));
-  // provide_context(response_load);
-
-  let lot_next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
-  provide_context(lot_next_page_cursor);
 
   let scroll_element: RwSignal<Option<NodeRef<Div>>> = RwSignal::new(None);
   provide_context(scroll_element);
 
-  // let site_signal: RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>> = RwSignal::new(None);
-
   let (get_auth_cookie, set_auth_cookie) =
     use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
+  provide_context(ReadAuthCookie(get_auth_cookie));
+  provide_context(WriteAuthCookie(set_auth_cookie));
+  #[cfg(feature = "ssr")]
+  if let Some(t) = get_auth_cookie.get() {
+    set_auth_cookie.set(Some(t));
+  }
 
   let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
     "instance",
     UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
   );
+  provide_context(ReadInstanceCookie(get_instance_cookie));
+  provide_context(WriteInstanceCookie(set_instance_cookie));
   #[cfg(feature = "ssr")]
   if let Some(t) = get_instance_cookie.get() {
     set_instance_cookie.set(Some(t));
@@ -200,51 +173,34 @@ pub fn App() -> impl IntoView {
     set_instance_cookie.set(Some("lemmy.world".to_string()));
   }
 
-  #[cfg(feature = "ssr")]
+  // #[cfg(feature = "ssr")]
   let (get_theme_cookie, set_theme_cookie) =
     use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
+  provide_context(ReadThemeCookie(get_theme_cookie));
+  provide_context(WriteThemeCookie(set_theme_cookie));
   #[cfg(feature = "ssr")]
   if let Some(t) = get_theme_cookie.get() {
     set_theme_cookie.set(Some(t));
   }
 
-  #[cfg(feature = "ssr")]
-  let (get_jwt, set_jwt) =
-    use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").secure(true).same_site(SameSite::Lax));
-  #[cfg(feature = "ssr")]
-  if let Some(t) = get_jwt.get() {
-    set_jwt.set(Some(t));
-  }
-
+  let ssr_site_signal: RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>> = RwSignal::new(None);
 
   let ssr_site = Resource::new(
-    move || (get_auth_cookie.get(), get_instance_cookie.get()),
-    move |(cookie, instance)| async move {
-      // log!("buuuuu {:#?}", instance);
-      let result = {
-        // if let Some(c) = cookie {
-        //   if c.len() > 0 {
-        //     return LemmyClient.get_site().await;
-        //   }
-        // }
-        // if let Some(Ok(mut s)) = site_signal.get() {
-        //   s.my_user = None;
-        //   Ok(s)
-        // } else {
-        LemmyClient.get_site().await
-        // }
-      };
+    move || (),
+    move |()| async move {
+      let result: Result<GetSiteResponse, LemmyAppError> = { LemmyClient.get_site().await };
+      // ssr_site_signal.set(Some(result.clone()));
       match result {
         Ok(o) => Ok(o),
-        Err(e) => {
-          error.update(|es| es.push(Some((e.clone(), None))));
-          Err(e)
-        }
+        Err(e) => Err(e),
       }
     },
   );
 
-  let formatter = move |text: String| match ssr_site.get() {
+  provide_context(ssr_site);
+  provide_context(ssr_site_signal);
+
+  let formatter = move |text: String| match ssr_site_signal.get() {
     Some(Ok(site)) => {
       if text.len() > 0 {
         if let Some(d) = site.site_view.site.description {
@@ -264,73 +220,28 @@ pub fn App() -> impl IntoView {
   };
 
   view! {
-    // <Transition fallback={|| {}}>
-    //   {move || {
-    //     ssr_site
-    //       .get()
-    //       .map(|m| {
-    //         site_signal.set(Some(m));
-    //       });
-    //   }}
-    // </Transition>
     <Stylesheet id="leptos" href="/pkg/aos.css" />
     <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico" />
     <Link rel="manifest" href="/manifest.json" />
-    <Title formatter />
     <Meta name="description" content={formatter("".into())} />
-    <I18nContextProvider cookie_options={leptos_i18n::context::CookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax)}>
-      <Router>
-        <Routes>
-          <Route path="/" view={move || view! { <Root ssr_site /> }} ssr={SsrMode::Async}>
-            <Route path="/*any" view={NotFound} />
-            <Route path="login" methods={&[Method::Get, Method::Post]} view={LoginActivity} />
-            <Route path="" view={move || view! { <Layout ssr_site /> }}>
-              <Route path="" view={move || view! { <HomeActivity ssr_site /> }} />
-              <Route path="create_post" view={CommunitiesActivity} />
-              <Route path="p/:id" view={move || view! { <PostActivity ssr_site /> }} />
-
-              <Route path="search" view={CommunitiesActivity} />
-              <Route path="communities" view={CommunitiesActivity} />
-              <Route path="create_community" view={CommunitiesActivity} />
-              <Route path="c/:name" view={move || view! { <HomeActivity ssr_site /> }} />
-
-              <Route path="logout" view={CommunitiesActivity} />
-              <Route path="signup" view={CommunitiesActivity} />
-
-              <Route path="inbox" view={CommunitiesActivity} />
-              <Route path="settings" view={CommunitiesActivity} />
-              <Route path="notifications" view={move || view! { <NotificationsActivity ssr_site /> }} />
-              <Route path="u/:id" view={CommunitiesActivity} />
-
-              <Route path="modlog" view={CommunitiesActivity} />
-              <Route path="instances" view={CommunitiesActivity} />
-            </Route>
-            <Route path="r" view={move || view! { <ResponsiveLayout ssr_site /> }}>
-              <Route path="" view={move || view! { <ResponsiveHomeActivity ssr_site /> }} />
-              <Route path="p/:id" view={move || view! { <ResponsivePostActivity ssr_site /> }} />
-              <Route path="c/:name" view={move || view! { <ResponsiveHomeActivity ssr_site /> }} />
-              <Route path="s/p" view={move || view! { <ResponsiveSearchActivity ssr_site /> }} />
-            </Route>
-          </Route>
-        </Routes>
-      </Router>
-    </I18nContextProvider>
+    <Title formatter />
+    <Router>
+      <Routes fallback={NotFound}>
+        <ParentRoute path={(StaticSegment(""))} view={Root} ssr={SsrMode::Async}>
+          <Route path={StaticSegment("")} view={Home} />
+          <Route path={(StaticSegment("l"))} view={Login} />
+          <Route path={(StaticSegment("p"), ParamSegment("id"))} view={Post} />
+          <Route path={(StaticSegment("c"), ParamSegment("name"))} view={Home} />
+          <Route path={(StaticSegment("s"))} view={Search} />
+        </ParentRoute>
+      </Routes>
+    </Router>
   }
-}
-
-#[component]
-fn NotFound() -> impl IntoView {
-  #[cfg(feature = "ssr")]
-  {
-    let resp = expect_context::<leptos_actix::ResponseOptions>();
-    resp.set_status(actix_web::http::StatusCode::NOT_FOUND);
-  }
-  view! { <h1>"Not Found"</h1> }
 }
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]
 pub fn hydrate() {
   console_error_panic_hook::set_once();
-  mount_to_body(App);
+  leptos::mount::hydrate_body(App);
 }

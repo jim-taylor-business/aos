@@ -1,13 +1,14 @@
-use std::collections::BTreeMap;
-
 use crate::{
+  client::*,
+  db::csr_indexed_db::*,
   errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult},
-  lemmy_client::*,
-  ui::components::common::icon::{Icon, IconType::*},
-  OnlineSetter, ResourceStatus, ResponseLoad,
+  icon::{IconType::*, *},
+  OnlineSetter,
+  ReadInstanceCookie,
+  ResourceStatus,
+  ResponseLoad,
+  WriteInstanceCookie,
 };
-use codee::string::FromToStringCodec;
-use ev::MouseEvent;
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SortType},
   lemmy_db_views::structs::*,
@@ -15,16 +16,11 @@ use lemmy_api_common::{
   post::*,
   site::GetSiteResponse,
 };
-use leptos::*;
+use leptos::{html::Img, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local_scoped_with_cancellation};
+use leptos_router::{components::A, hooks::*};
 use leptos_use::*;
-
-use leptos_router::*;
-use web_sys::SubmitEvent;
-
-#[cfg(not(feature = "ssr"))]
-use crate::indexed_db::csr_indexed_db::*;
-#[cfg(not(feature = "ssr"))]
-use leptos::html::Img;
+use std::collections::BTreeMap;
+use web_sys::MouseEvent;
 
 #[server(VotePostFn, "/serverfn")]
 pub async fn vote_post_fn(post_id: i32, score: i16) -> Result<Option<PostResponse>, ServerFnError> {
@@ -34,7 +30,7 @@ pub async fn vote_post_fn(post_id: i32, score: i16) -> Result<Option<PostRespons
     score,
   };
   let result = LemmyClient.like_post(form).await;
-  use leptos_actix::redirect;
+  use leptos_axum::redirect;
   match result {
     Ok(o) => Ok(Some(o)),
     Err(e) => {
@@ -52,7 +48,7 @@ pub async fn save_post_fn(post_id: i32, save: bool) -> Result<Option<PostRespons
     save,
   };
   let result = LemmyClient.save_post(form).await;
-  use leptos_actix::redirect;
+  use leptos_axum::redirect;
   match result {
     Ok(o) => Ok(Some(o)),
     Err(e) => {
@@ -70,7 +66,7 @@ pub async fn block_user_fn(person_id: i32, block: bool) -> Result<Option<BlockPe
     block,
   };
   let result = LemmyClient.block_user(form).await;
-  use leptos_actix::redirect;
+  use leptos_axum::redirect;
   match result {
     Ok(o) => Ok(Some(o)),
     Err(e) => {
@@ -113,7 +109,7 @@ pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostR
     reason,
   };
   let result = try_report(form).await;
-  use leptos_actix::redirect;
+  use leptos_axum::redirect;
   match result {
     Ok(o) => Ok(Some(o)),
     Err(e) => {
@@ -126,123 +122,95 @@ pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostR
 #[component]
 pub fn ResponsivePostToolbar(
   post_view: MaybeSignal<PostView>,
-  ssr_site: Resource<(Option<String>, Option<String>), Result<GetSiteResponse, LemmyAppError>>,
   post_number: usize,
   reply_show: RwSignal<bool>,
   content: RwSignal<String>,
   post_id: Signal<Option<i32>>,
 ) -> impl IntoView {
-  let error = expect_context::<RwSignal<Vec<Option<(LemmyAppError, Option<RwSignal<bool>>)>>>>();
+  let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
   let logged_in = Signal::derive(move || {
-    if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() {
+    if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() {
       Some(true)
     } else {
       Some(false)
     }
   });
-  // let csr_resources = expect_context::<RwSignal<BTreeMap<(usize, ResourceStatus), (Option<PaginationCursor>, Option<GetPostsResponse>)>>>();
-  // let csr_next_page_cursor = expect_context::<RwSignal<(usize, Option<PaginationCursor>)>>();
-  // let response_cache = expect_context::<RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), LemmyAppResult<GetPostsResponse>>>>();
-  // let response_load = expect_context::<RwSignal<ResponseLoad>>();
-
-  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
-    "instance",
-    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
-  );
+  let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
+  let WriteInstanceCookie(set_instance_cookie) = expect_context::<WriteInstanceCookie>();
   let online = expect_context::<RwSignal<OnlineSetter>>();
-
   let post_view = RwSignal::new(post_view.get());
-  let vote_action = create_server_action::<VotePostFn>();
+  let vote_action = ServerAction::<VotePostFn>::new();
 
-  let on_vote_submit = move |ev: SubmitEvent, score: i16| {
-    ev.prevent_default();
-    create_local_resource(
-      move || (),
-      move |()| async move {
-        let form = CreatePostLike {
-          post_id: post_view.get().post.id,
-          score,
-        };
-        let result = LemmyClient.like_post(form).await;
-        match result {
-          Ok(o) => {
-            post_view.set(o.post_view);
-          }
-          Err(e) => {
-            error.update(|es| es.push(Some((e, None))));
-          }
+  let on_vote_submit = move |e: MouseEvent, score: i16| {
+    e.prevent_default();
+    // LocalResource::new(move || async move {
+    spawn_local_scoped_with_cancellation(async move {
+      let form = CreatePostLike {
+        post_id: post_view.get().post.id,
+        score,
+      };
+      let result = LemmyClient.like_post(form).await;
+      match result {
+        Ok(o) => {
+          post_view.set(o.post_view);
         }
-      },
-    );
+        Err(e) => {}
+      }
+    });
   };
 
-  let on_up_vote_submit = move |ev: SubmitEvent| {
+  let on_up_vote_submit = move |e: MouseEvent| {
     let score = if Some(1) == post_view.get().my_vote { 0 } else { 1 };
-    on_vote_submit(ev, score);
+    on_vote_submit(e, score);
   };
 
-  let on_down_vote_submit = move |ev: SubmitEvent| {
+  let on_down_vote_submit = move |e: MouseEvent| {
     let score = if Some(-1) == post_view.get().my_vote { 0 } else { -1 };
-    on_vote_submit(ev, score);
+    on_vote_submit(e, score);
   };
 
-  let save_post_action = create_server_action::<SavePostFn>();
+  let save_post_action = ServerAction::<SavePostFn>::new();
 
-  let on_save_submit = move |ev: SubmitEvent| {
-    ev.prevent_default();
-    create_local_resource(
-      move || (),
-      move |()| async move {
-        let form = SavePost {
-          post_id: post_view.get().post.id,
-          save: !post_view.get().saved,
-        };
-        let result = LemmyClient.save_post(form).await;
-        match result {
-          Ok(o) => {
-            post_view.set(o.post_view);
-          }
-          Err(e) => {
-            error.update(|es| es.push(Some((e, None))));
-          }
+  let on_save_submit = move |e: MouseEvent| {
+    e.prevent_default();
+    // LocalResource::new(move || async move {
+    spawn_local_scoped_with_cancellation(async move {
+      let form = SavePost {
+        post_id: post_view.get().post.id,
+        save: !post_view.get().saved,
+      };
+      let result = LemmyClient.save_post(form).await;
+      match result {
+        Ok(o) => {
+          post_view.set(o.post_view);
         }
-      },
-    );
+        Err(e) => {}
+      }
+    });
   };
 
-  let block_user_action = create_server_action::<BlockUserFn>();
+  let block_user_action = ServerAction::<BlockUserFn>::new();
 
-  let on_block_submit = move |ev: SubmitEvent| {
-    ev.prevent_default();
-    create_local_resource(
-      move || (),
-      move |()| async move {
-        let form = BlockPerson {
-          person_id: post_view.get().creator.id,
-          block: true,
-        };
-        let result = LemmyClient.block_user(form).await;
-        match result {
-          Ok(_o) => {}
-          Err(e) => {
-            error.update(|es| es.push(Some((e, None))));
-          }
-        }
-      },
-    );
+  let on_block_submit = move |e: MouseEvent| {
+    e.prevent_default();
+    spawn_local_scoped_with_cancellation(async move {
+      let form = BlockPerson {
+        person_id: post_view.get().creator.id,
+        block: true,
+      };
+      let result = LemmyClient.block_user(form).await;
+      match result {
+        Ok(_o) => {}
+        Err(e) => {}
+      }
+    });
   };
 
-  // #[cfg(not(feature = "ssr"))]
-  // let (get_scroll_cookie, set_scroll_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
-  //   "scroll",
-  //   UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
-  // );
-
-  let report_post_action = create_server_action::<ReportPostFn>();
+  let report_post_action = ServerAction::<ReportPostFn>::new();
   let report_validation = RwSignal::new(String::from(""));
 
   let query = use_query_map();
-  let ssr_error = move || query.with(|params| params.get("error").cloned());
+  let ssr_error = move || query.with(|params| params.get("error"));
 
   if let Some(e) = ssr_error() {
     let le = serde_json::from_str::<LemmyAppError>(&e[..]);
@@ -261,50 +229,41 @@ pub fn ResponsivePostToolbar(
           report_validation.set("".to_string());
         }
       },
-      Err(_) => {
-        logging::error!("error decoding error - log and ignore in UI?");
-      }
+      Err(_) => {}
     }
   }
 
   let reason = RwSignal::new(String::new());
 
-  let on_report_submit = move |ev: SubmitEvent| {
-    ev.prevent_default();
-    create_local_resource(
-      move || (),
-      move |()| async move {
-        let form = CreatePostReport {
-          post_id: post_view.get().post.id,
-          reason: reason.get(),
-        };
-        let result = try_report(form).await;
-        match result {
-          Ok(_o) => {}
-          Err(e) => {
-            error.update(|es| es.push(Some((e.clone(), None))));
-
-            let _id = format!("{}", post_view.get().post.id);
-
-            match e {
-              LemmyAppError {
-                error_type: LemmyAppErrorType::MissingReason,
-                content: _id,
-              } => {
-                report_validation.set("input-error".to_string());
-              }
-              _ => {
-                report_validation.set("".to_string());
-              }
+  let on_report_submit = move |e: MouseEvent| {
+    e.prevent_default();
+    spawn_local_scoped_with_cancellation(async move {
+      let form = CreatePostReport {
+        post_id: post_view.get().post.id,
+        reason: reason.get(),
+      };
+      let result = try_report(form).await;
+      match result {
+        Ok(_o) => {}
+        Err(e) => {
+          let _id = format!("{}", post_view.get().post.id);
+          match e {
+            LemmyAppError {
+              error_type: LemmyAppErrorType::MissingReason,
+              content: _id,
+            } => {
+              report_validation.set("input-error".to_string());
+            }
+            _ => {
+              report_validation.set("".to_string());
             }
           }
         }
-      },
-    );
+      }
+    });
   };
 
   let title = post_view.get().post.name.clone();
-  // let title_encoded = html_escape::encode_safe(&title).to_string();
   let mut options = pulldown_cmark::Options::empty();
   options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
   options.insert(pulldown_cmark::Options::ENABLE_TABLES);
@@ -327,7 +286,6 @@ pub fn ResponsivePostToolbar(
   let mut title_encoded = String::new();
   pulldown_cmark::html::push_html(&mut title_encoded, custom);
 
-  // let community_title = post_view.get().community.title.clone();
   let community_title = if post_view.get().community.local {
     format!("{}", post_view.get().community.name)
   } else {
@@ -374,11 +332,12 @@ pub fn ResponsivePostToolbar(
   view! {
     <div class="px-4 break-inside-avoid">
       <div class="flex flex-wrap gap-x-2 items-center pb-2">
-        <ActionForm action={vote_action} on:submit={on_up_vote_submit} class="flex items-center">
+        <ActionForm action={vote_action} attr:class="flex items-center">
           <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
           <input type="hidden" name="score" value={move || if Some(1) == post_view.get().my_vote { 0 } else { 1 }} />
           <button
             type="submit"
+            on:click={on_up_vote_submit}
             class={move || {
               format!(
                 "{}{}",
@@ -393,11 +352,12 @@ pub fn ResponsivePostToolbar(
           </button>
         </ActionForm>
         <span class="block text-sm">{move || post_view.get().counts.score}</span>
-        <ActionForm action={vote_action} on:submit={on_down_vote_submit} class="flex items-center">
+        <ActionForm action={vote_action} attr:class="flex items-center">
           <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
           <input type="hidden" name="score" value={move || if Some(-1) == post_view.get().my_vote { 0 } else { -1 }} />
           <button
             type="submit"
+            on:click={on_down_vote_submit}
             class={move || {
               format!(
                 "{}{}",
@@ -425,23 +385,21 @@ pub fn ResponsivePostToolbar(
             )
           }}
         >
-          // <A href={move || { format!("/r/p/{}", post_view.get().post.id) }} class="text-sm whitespace-nowrap hover:text-accent">
           <Icon icon={Comments} class={"inline".into()} />
-          // " "
           {post_view.get().counts.comments}
           {if post_view.get().unread_comments != post_view.get().counts.comments && post_view.get().unread_comments > 0 {
             format!(" ({})", post_view.get().unread_comments)
           } else {
             "".to_string()
           }}
-        // </A>
         </span>
         <Show when={move || { post_number == 0 }} fallback={|| {}}>
-          <ActionForm action={save_post_action} on:submit={on_save_submit} class="flex items-center">
+          <ActionForm action={save_post_action} attr:class="flex items-center">
             <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
             <input type="hidden" name="save" value={move || format!("{}", !post_view.get().saved)} />
             <button
               type="submit"
+              on:click={on_save_submit}
               title="Save post"
               class={move || {
                 format!(
@@ -465,16 +423,21 @@ pub fn ResponsivePostToolbar(
             on:click={move |_| {
               if let Some(id) = post_id.get() {
                 #[cfg(not(feature = "ssr"))]
-                create_local_resource(
-                  move || (),
-                  move |()| async move {
-                    if let Ok(d) = build_indexed_database().await {
-                      if let Ok(Some(c)) = get_draft(&d, id, Draft::Post).await {
-                        content.set(c);
-                      }
+                spawn_local_scoped_with_cancellation(async move {
+                  if let Ok(d) = IndexedDb::new().await {
+                    if let Ok(Some(c)) = d
+                      .get(
+                        &CommentDraftKey {
+                          comment_id: id,
+                          draft: Draft::Post,
+                        },
+                      )
+                      .await
+                    {
+                      content.set(c);
                     }
-                  },
-                );
+                  }
+                });
               }
               reply_show.update(|b| *b = !*b);
             }}
@@ -515,18 +478,6 @@ pub fn ResponsivePostToolbar(
               <Icon icon={History} />
             </a>
           </span>
-          // <span
-          // class="text-base-content/50"
-          // title="Cross post"
-          // on:click={move |e: MouseEvent| {
-          // if e.ctrl_key() && e.shift_key() {
-          // let _ = window().location().set_href(&format!("//lemmy.world/p/{}", post_view.get().post.id));
-          // }
-          // }}
-          // >
-          // <Icon icon={Crosspost} />
-          // </span>
-          // <span class="flex grow"></span>
           <span class="flex ml-auto item-center">
             <div class="dropdown max-sm:dropdown-end">
               <label tabindex="0">
@@ -534,12 +485,13 @@ pub fn ResponsivePostToolbar(
               </label>
               <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
                 <li>
-                  <ActionForm action={report_post_action} on:submit={on_report_submit} class="flex flex-col items-start">
+                  <ActionForm action={report_post_action} attr:class="flex flex-col items-start">
                     <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
                     <input
                       class={move || format!("input input-bordered {}", report_validation.get())}
                       type="text"
-                      on:input={move |e| update!(| reason | * reason = event_target_value(& e))}
+                      on:click={on_report_submit}
+                      on:input={move |e| reason.update(|r| *r = event_target_value(&e))}
                       name="reason"
                       placeholder="Reason for reporting post"
                     />
@@ -550,10 +502,10 @@ pub fn ResponsivePostToolbar(
                   </ActionForm>
                 </li>
                 <li>
-                  <ActionForm action={block_user_action} on:submit={on_block_submit}>
+                  <ActionForm action={block_user_action}>
                     <input type="hidden" name="person_id" value={format!("{}", post_view.get().creator.id.0)} />
                     <input type="hidden" name="block" value="true" />
-                    <button class="text-xs whitespace-nowrap" title="Block user" type="submit">
+                    <button on:click={on_block_submit} class="text-xs whitespace-nowrap" title="Block user" type="submit">
                       <Icon icon={Block} class={"inline-block".into()} />
                       "Block user"
                     </button>
@@ -563,7 +515,6 @@ pub fn ResponsivePostToolbar(
             </div>
           </span>
         </Show>
-      // <span class="text-right grow text-base-content/25">{if post_number != 0 { format!("{}", post_number) } else { "".into() }}</span>
       </div>
     </div>
   }

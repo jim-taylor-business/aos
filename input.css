@@ -1,0 +1,87 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: light, dark --prefersdark, retro --default;
+}
+@plugin "@tailwindcss/typography";
+
+@theme {
+  --default-font-family: 'AdwaitaSans', 'sans-serif';
+  --breakpoint-4xl: 2560px;
+  --breakpoint-5xl: 3840px;
+  --breakpoint-3xl: 1920px;
+  --breakpoint-6xl: 5120px;
+  --breakpoint-7xl: 8640px;
+  --animate-popdown: popdown 1s step-end 1;
+  @keyframes popdown {
+    0% {
+      height: 0rem;
+    }
+    100% {
+      height: 3rem;
+    }
+  }
+}
+
+@layer base {
+  @font-face {
+    font-family: 'AdwaitaSans';
+    src: url('/AdwaitaSans-Regular.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'AdwaitaSans';
+    src: url('/AdwaitaSans-Italic.ttf') format('truetype');
+    font-weight: normal;
+    font-style: italic;
+  }
+}
+
+.prose p {
+    @apply wrap-anywhere leading-6 mt-0 mb-1;
+}
+.prose h1 {
+    @apply mt-4 mb-4;
+}
+.prose h2 {
+    @apply mt-3 mb-3;
+}
+.prose h3 {
+    @apply mt-2 mb-2;
+}
+.prose h4 {
+    @apply mt-0 mb-1;
+  }
+.prose h5 {
+    @apply my-0 mb-1;
+}
+.prose ol {
+    @apply list-inside pl-0 mt-0 mb-1;
+}
+.prose ul {
+    @apply my-0;
+}
+.prose li {
+    @apply my-0 wrap-anywhere;
+}
+.prose pre {
+    @apply relative h-40 overflow-auto;
+}
+.prose hr {
+    @apply my-2;
+}
+.prose img {
+    @apply my-2 max-w-24 inline-block;
+}
+.prose blockquote {
+    @apply my-0 mb-1 pl-2 not-italic font-normal;
+}
+.prose pre > code {
+    @apply absolute;
+}
+.prose ol > li > p {
+    @apply inline pl-3;
+}
+.prose blockquote > p:before, .prose blockquote > p:after {
+    @apply content-none;
+}

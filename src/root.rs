@@ -1,21 +1,22 @@
+use crate::{errors::LemmyAppError, ReadThemeCookie};
 use lemmy_api_common::site::GetSiteResponse;
-use leptos::*;
-use leptos_router::Outlet;
+use leptos::{prelude::*, server::codee::string::FromToStringCodec};
+use leptos_router::components::Outlet;
 use leptos_use::*;
 
-use crate::errors::LemmyAppError;
-
 #[component]
-pub fn Root(ssr_site: Resource<(Option<String>, Option<String>), Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
-  let (get_theme_cookie, _) =
-    use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
+pub fn Root() -> impl IntoView {
+  let ReadThemeCookie(get_theme_cookie) = expect_context::<ReadThemeCookie>();
+  let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
+  let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
 
   view! {
     <Transition fallback={|| {}}>
       {move || {
         ssr_site
           .get()
-          .map(|_| {
+          .map(|s| {
+            ssr_site_signal.set(Some(s));
             view! {
               <div class="flex flex-col min-h-screen" data-theme={move || get_theme_cookie.get()}>
                 <Outlet />

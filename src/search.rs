@@ -1,55 +1,55 @@
 use crate::{
+  client::*,
   errors::{message_from_error, LemmyAppError},
-  i18n::*,
-  lemmy_client::*,
-  ui::components::{
-    common::about::About,
-    home::{site_summary::SiteSummary, trending::Trending},
-    post::post_listings::PostListings,
-    responsive::{responsive_nav::ResponsiveTopNav, responsive_post_listings::ResponsivePostListings},
-  },
-  ResourceStatus, ResponseLoad,
+  listings::Listings,
+  nav::TopNav,
+  // i18n::*,
+  ResourceStatus,
+  ResponseLoad,
 };
-use codee::string::FromToStringCodec;
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SearchType, SortType},
   lemmy_db_views::structs::PaginationCursor,
   post::{GetPosts, GetPostsResponse},
   site::{GetSiteResponse, Search, SearchResponse},
 };
-use leptos::{html::*, logging::log, *};
-use leptos_meta::*;
-use leptos_router::*;
+use leptos::{
+  html::Div,
+  logging::{error, log},
+  prelude::*,
+  *,
+};
+use leptos_meta::Title;
+use leptos_router::{hooks::*, location::State, *};
 use leptos_use::*;
 use std::{
   collections::{BTreeMap, HashMap},
   usize, vec,
 };
-#[cfg(not(feature = "ssr"))]
-use wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::{js_sys::Atomics::wait_async, Event, MouseEvent, WheelEvent};
 
 #[component]
-pub fn ResponsiveSearchActivity(ssr_site: Resource<(Option<String>, Option<String>), Result<GetSiteResponse, LemmyAppError>>) -> impl IntoView {
-  let i18n = use_i18n();
+pub fn Search() -> impl IntoView {
+  // let i18n = use_i18n();
+  let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
 
   let param = use_params_map();
-  let ssr_name = move || param.get().get("name").cloned().unwrap_or("".into());
+  let ssr_name = move || param.get().get("name").unwrap_or("".into());
 
   let query = use_query_map();
 
-  let ssr_list = move || serde_json::from_str::<ListingType>(&query.get().get("list").cloned().unwrap_or("".into())).unwrap_or(ListingType::All);
-  let ssr_sort = move || serde_json::from_str::<SortType>(&query.get().get("sort").cloned().unwrap_or("".into())).unwrap_or(SortType::Active);
-  let ssr_page = move || serde_json::from_str::<Vec<usize>>(&query.get().get("page").cloned().unwrap_or("".into())).unwrap_or(vec![0usize]);
-  let ssr_term = move || query.get().get("term").cloned().unwrap_or("".into());
+  let ssr_list = move || serde_json::from_str::<ListingType>(&query.get().get("list").unwrap_or("".into())).unwrap_or(ListingType::All);
+  let ssr_sort = move || serde_json::from_str::<SortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(SortType::Active);
+  let ssr_page = move || serde_json::from_str::<Vec<u32>>(&query.get().get("page").unwrap_or("".into())).unwrap_or(vec![1u32]);
+  let ssr_term = move || query.get().get("term").unwrap_or("".into());
 
-  let next_page_cursor: RwSignal<usize> = RwSignal::new(0);
+  let next_page_cursor: RwSignal<u32> = RwSignal::new(0);
 
   let loading = RwSignal::new(false);
   let refresh = RwSignal::new(false);
 
   let logged_in = Signal::derive(move || {
-    if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() {
+    if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() {
       Some(true)
     } else {
       Some(false)
@@ -57,7 +57,6 @@ pub fn ResponsiveSearchActivity(ssr_site: Resource<(Option<String>, Option<Strin
   });
 
   let intersection_element = create_node_ref::<Div>();
-
   let on_scroll_element = NodeRef::<Div>::new();
 
   #[cfg(not(feature = "ssr"))]
@@ -74,17 +73,7 @@ pub fn ResponsiveSearchActivity(ssr_site: Resource<(Option<String>, Option<Strin
       }
     };
 
-    let UseScrollReturn {
-      x,
-      y,
-      set_x,
-      set_y,
-      is_scrolling,
-      arrived_state,
-      directions,
-      ..
-    } = use_scroll_with_options(on_scroll_element, UseScrollOptions::default().on_scroll(on_scroll));
-
+    let UseScrollReturn { .. } = use_scroll_with_options(on_scroll_element, UseScrollOptions::default().on_scroll(on_scroll));
     let UseIntersectionObserverReturn {
       pause,
       resume,
@@ -97,11 +86,11 @@ pub fn ResponsiveSearchActivity(ssr_site: Resource<(Option<String>, Option<Strin
           if let key = next_page_cursor.get() {
             if key > 0 {
               let mut st = ssr_page();
-              st.push(key);
+              st.push(key as u32);
               let mut query_params = query.get();
-              query_params.insert("page".into(), serde_json::to_string(&st).unwrap_or("[]".into()));
+              query_params.insert("page".to_string(), serde_json::to_string(&st).unwrap_or("[]".into()));
 
-              let navigate = leptos_router::use_navigate();
+              let navigate = use_navigate();
               navigate(
                 &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
                 NavigateOptions {
@@ -120,12 +109,9 @@ pub fn ResponsiveSearchActivity(ssr_site: Resource<(Option<String>, Option<Strin
   }
 
   let search_cache_resource = Resource::new(
-    move || (refresh.get(), logged_in.get(), ssr_list(), ssr_sort(), ssr_name(), ssr_page(), ssr_term()),
-    move |(_refresh, _logged_in, list, sort, name, pages, term)| async move {
-      let mut new_pages: HashMap<usize, Option<SearchResponse>> = HashMap::new();
-      let pages_later = pages.clone();
-      let pages_unit = pages_later.eq(&vec![(0usize)]);
-      let mut pages_count = 1i64;
+    move || (logged_in.get(), ssr_list(), ssr_sort(), ssr_name(), ssr_page(), ssr_term()),
+    move |(_logged_in, list, sort, name, pages, term)| async move {
+      let mut new_pages: Vec<(u32, Option<SearchResponse>)> = Vec::new();
       for p in pages {
         let form = Search {
           q: term.clone(),
@@ -133,7 +119,7 @@ pub fn ResponsiveSearchActivity(ssr_site: Resource<(Option<String>, Option<Strin
           sort: Some(sort),
           community_name: None,
           community_id: None,
-          page: if pages_count == 0 { None } else { Some(pages_count) },
+          page: Some(p as i64),
           limit: Some(50),
           creator_id: None,
           listing_type: None,
@@ -142,20 +128,21 @@ pub fn ResponsiveSearchActivity(ssr_site: Resource<(Option<String>, Option<Strin
         let result = LemmyClient.search(form.clone()).await;
         match result {
           Ok(o) => {
-            new_pages.insert(p, Some(o));
+            log!("src {}", o.posts.len());
+            new_pages.push((p, Some(o)));
           }
-          Err(e) => {}
+          Err(e) => {
+            error!("err {:#?}", e);
+          }
         }
-        pages_count = pages_count + 1;
       }
-      (new_pages, pages_later, list, sort, name)
+      (new_pages)
     },
   );
 
   view! {
     <main class="flex flex-col">
-      <ResponsiveTopNav ssr_site />
-
+      <TopNav />
       <div class="flex flex-grow">
         <div
           on:wheel={move |e: WheelEvent| {
@@ -171,20 +158,22 @@ pub fn ResponsiveSearchActivity(ssr_site: Resource<(Option<String>, Option<Strin
             )
           }}
         >
-
           <Transition fallback={|| {}}>
             {move || {
               match search_cache_resource.get() {
-                Some(mut o) => {
-                  next_page_cursor.set(next_page_cursor.get() + 50usize);
+                Some(o) => {
                   view! {
                     <div>
-                      <Title text="" />
-                      <For each={move || o.0.clone()} key={|r| r.0.clone()} let:r>
-                        <ResponsivePostListings posts={r.1.unwrap().posts.into()} ssr_site page_number={r.0.into()} />
+                      <Title text="Search" />
+                      <For each={move || o.clone()} key={|r| r.0.clone()} let:r>
+                        <Listings posts={r.1.unwrap().posts.into()} page_number={RwSignal::new(((r.0 - 1) * 50) as usize)} />
+                        {
+                          next_page_cursor.set(r.0 + 1);
+                        }
                       </For>
                     </div>
                   }
+                    .into_any()
                 }
                 _ => {
                   view! {
@@ -192,13 +181,14 @@ pub fn ResponsiveSearchActivity(ssr_site: Resource<(Option<String>, Option<Strin
                       <Title text="" />
                       <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
                         <div class="py-4 px-8">
-                          <div class="alert">
+                          <div class="alert alert-info alert-soft">
                             <span>"Loading"</span>
                           </div>
                         </div>
                       </div>
                     </div>
                   }
+                    .into_any()
                 }
               }
             }} <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
