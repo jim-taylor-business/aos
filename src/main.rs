@@ -4,12 +4,12 @@
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() {
-  use aos::{/*handler::*, */ html_template, App};
+  use aos::{html_template, App};
   use axum::{routing::get, Router};
   use leptos::{config::get_configuration, logging::log};
   use leptos_axum::{generate_route_list, LeptosRoutes};
 
-  let conf = get_configuration(Some("Cargo.toml")).unwrap();
+  let conf = get_configuration(None).unwrap();
   let leptos_options = conf.leptos_options;
   let addr = leptos_options.site_addr;
   let routes = generate_route_list(App);

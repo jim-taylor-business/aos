@@ -87,18 +87,15 @@ ssr = [
   # "leptos_i18n/axum",
   "leptos-use/ssr",
   "leptos-use/axum",
-  # "dep:actix-web",
   "dep:awc",
 ]
 
 [profile.release]
-# codegen-units = 1
 opt-level = 3
 lto = true
 
 [profile.wasm-release]
 inherits = "release"
-# codegen-units = 1
 opt-level = 3
 lto = true
 
