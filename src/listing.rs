@@ -2,20 +2,11 @@ use crate::{
   client::*,
   errors::{LemmyAppError, LemmyAppErrorType},
   icon::{IconType::*, *},
-  OnlineSetter, ReadInstanceCookie, ResourceStatus, ResponseLoad,
+  OnlineSetter, ReadInstanceCookie,
 };
-use codee::string::FromToStringCodec;
-use lemmy_api_common::{
-  lemmy_db_schema::{ListingType, SortType},
-  lemmy_db_views::structs::*,
-  person::*,
-  post::*,
-  site::GetSiteResponse,
-};
+use lemmy_api_common::{lemmy_db_views::structs::*, person::*, post::*, site::GetSiteResponse};
 use leptos::{html::Img, logging::*, prelude::*};
-use leptos_router::{components::*, hooks::*, *};
-use leptos_use::*;
-use std::collections::BTreeMap;
+use leptos_router::{components::*, hooks::*};
 use web_sys::MouseEvent;
 
 #[server(VotePostFn, "/serverfn")]
@@ -144,7 +135,7 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
           Ok(o) => {
             post_view.set(o.post_view);
           }
-          Err(e) => {}
+          Err(_e) => {}
         }
       },
     );
@@ -155,7 +146,7 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
     on_vote_submit(e, score);
   };
 
-  let on_down_vote_submit = move |e: MouseEvent| {
+  let _on_down_vote_submit = move |e: MouseEvent| {
     let score = if Some(-1) == post_view.get().my_vote { 0 } else { -1 };
     on_vote_submit(e, score);
   };
@@ -176,15 +167,15 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
           Ok(o) => {
             post_view.set(o.post_view);
           }
-          Err(e) => {}
+          Err(_e) => {}
         }
       },
     );
   };
 
-  let block_user_action = ServerAction::<BlockUserFn>::new();
+  let _block_user_action = ServerAction::<BlockUserFn>::new();
 
-  let on_block_submit = move |e: MouseEvent| {
+  let _on_block_submit = move |e: MouseEvent| {
     e.prevent_default();
     Resource::new(
       move || (),
@@ -196,13 +187,13 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
         let result = LemmyClient.block_user(form).await;
         match result {
           Ok(_o) => {}
-          Err(e) => {}
+          Err(_e) => {}
         }
       },
     );
   };
 
-  let report_post_action = ServerAction::<ReportPostFn>::new();
+  let _report_post_action = ServerAction::<ReportPostFn>::new();
   let report_validation = RwSignal::new(String::from(""));
 
   let query = use_query_map();
@@ -233,7 +224,7 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
 
   let reason = RwSignal::new(String::new());
 
-  let on_report_submit = move |e: MouseEvent| {
+  let _on_report_submit = move |e: MouseEvent| {
     e.prevent_default();
     Resource::new(
       move || (),

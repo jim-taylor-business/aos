@@ -15,15 +15,12 @@ use leptos::{html::Textarea, logging::log, prelude::*, task::*, *};
 use leptos_dom::helpers::TimeoutHandle;
 use leptos_router::components::Form;
 use leptos_use::{use_intersection_observer_with_options, UseIntersectionObserverOptions};
-use web_sys::{
-  wasm_bindgen::JsCast, DragEvent, Element, Event, HtmlAnchorElement, HtmlDetailsElement, HtmlImageElement, MouseEvent, PointerEvent, SubmitEvent,
-  WheelEvent,
-};
+use web_sys::{wasm_bindgen::JsCast, HtmlAnchorElement, HtmlImageElement, MouseEvent, PointerEvent, WheelEvent};
 
 #[component]
 pub fn Comment(
-  comment: MaybeSignal<CommentView>,
-  comments: MaybeSignal<Vec<CommentView>>,
+  comment: Signal<CommentView>,
+  comments: Signal<Vec<CommentView>>,
   level: usize,
   parent_comment_id: i32,
   now_in_millis: RwSignal<u64>,
@@ -168,7 +165,7 @@ pub fn Comment(
         Ok(o) => {
           comment_view.set(o.comment_view);
         }
-        Err(e) => {}
+        Err(_e) => {}
       }
     });
   };
@@ -195,7 +192,7 @@ pub fn Comment(
         Ok(o) => {
           comment_view.set(o.comment_view);
         }
-        Err(e) => {}
+        Err(_e) => {}
       }
     });
   };
@@ -211,7 +208,7 @@ pub fn Comment(
         Ok(o) => {
           comment_view.set(o.comment_view);
         }
-        Err(e) => {}
+        Err(_e) => {}
       }
     });
   };
@@ -238,7 +235,7 @@ pub fn Comment(
             });
           }
         }
-        Err(e) => {}
+        Err(_e) => {}
       }
     });
   };
@@ -262,7 +259,7 @@ pub fn Comment(
           reply_show.set(false);
           #[cfg(not(feature = "ssr"))]
           if let Ok(d) = IndexedDb::new().await {
-            if let Ok(c) = d
+            if let Ok(_c) = d
               .del(&CommentDraftKey {
                 comment_id: comment_view.get().comment.id.0,
                 draft: Draft::Reply,
@@ -271,7 +268,7 @@ pub fn Comment(
             {}
           }
         }
-        Err(e) => {
+        Err(_e) => {
           loading.set(false);
         }
       }
@@ -294,7 +291,7 @@ pub fn Comment(
           edit_show.set(false);
           #[cfg(not(feature = "ssr"))]
           if let Ok(d) = IndexedDb::new().await {
-            if let Ok(c) = d
+            if let Ok(_c) = d
               .del(&CommentDraftKey {
                 comment_id: comment_view.get().comment.id.0,
                 draft: Draft::Edit,
@@ -303,7 +300,7 @@ pub fn Comment(
             {}
           }
         }
-        Err(e) => {
+        Err(_e) => {
           loading.set(false);
         }
       }
@@ -316,7 +313,7 @@ pub fn Comment(
     edit_show.set(false);
   };
 
-  let _visibility_element = create_node_ref::<Textarea>();
+  let _visibility_element = NodeRef::<Textarea>::new();
 
   #[cfg(not(feature = "ssr"))]
   {
@@ -391,17 +388,17 @@ pub fn Comment(
             }
           }
         }}
-        on:pointerup={move |e: PointerEvent| {
+        on:pointerup={move |_e: PointerEvent| {
           if let Some(h) = still_handle.get() {
             h.clear();
           }
         }}
-        on:pointerleave={move |e: PointerEvent| {
+        on:pointerleave={move |_e: PointerEvent| {
           if let Some(h) = still_handle.get() {
             h.clear();
           }
         }}
-        on:pointermove={move |e: PointerEvent| {
+        on:pointermove={move |_e: PointerEvent| {
           // log!("move");
           if let Some(h) = still_handle.get() {
             h.clear();
@@ -596,7 +593,7 @@ pub fn Comment(
                   spawn_local_scoped_with_cancellation(async move {
                     #[cfg(not(feature = "ssr"))]
                     if let Ok(d) = IndexedDb::new().await {
-                      if let Ok(comment_ids) = d
+                      if let Ok(_comment_ids) = d
                         .set(
                           &CommentDraftKey {
                             comment_id: comment_view.get().comment.id.0,
@@ -642,7 +639,7 @@ pub fn Comment(
                   spawn_local_scoped_with_cancellation(async move {
                     #[cfg(not(feature = "ssr"))]
                     if let Ok(d) = IndexedDb::new().await {
-                      if let Ok(comment_ids) = d
+                      if let Ok(_comment_ids) = d
                         .set(
                           &CommentDraftKey {
                             comment_id: comment_view.get().comment.id.0,

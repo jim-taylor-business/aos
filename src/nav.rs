@@ -1,27 +1,19 @@
 use crate::{
   client::*,
   db::csr_indexed_db::*,
-  errors::{message_from_error, LemmyAppError, LemmyAppResult},
+  errors::{LemmyAppError, LemmyAppResult},
   icon::{IconType::*, *},
-  NotificationsRefresh,
-  OnlineSetter,
-  ReadInstanceCookie,
-  ResourceStatus,
-  ResponseLoad,
-  WriteAuthCookie,
-  WriteInstanceCookie,
-  WriteThemeCookie,
+  OnlineSetter, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
 };
 use lemmy_api_common::{
   lemmy_db_schema::{source::site::Site, ListingType, SortType},
-  lemmy_db_views::structs::{PaginationCursor, SiteView},
-  person::GetUnreadCountResponse,
+  lemmy_db_views::structs::SiteView,
   post::{GetPostResponse, GetPosts, GetPostsResponse},
   site::GetSiteResponse,
 };
 use leptos::{html::Div, logging::log, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local_scoped_with_cancellation, *};
 use leptos_router::{components::*, hooks::*, *};
-use leptos_use::{use_cookie_with_options, SameSite, UseCookieOptions, *};
+use leptos_use::{use_cookie_with_options, SameSite, UseCookieOptions};
 use std::collections::BTreeMap;
 use web_sys::{KeyboardEvent, MouseEvent, SubmitEvent, VisibilityState};
 
@@ -80,19 +72,16 @@ pub async fn change_theme(theme: String) -> Result<(), ServerFnError> {
 }
 
 #[component]
-pub fn TopNav(
-  #[prop(optional)] default_sort: MaybeProp<SortType>,
-  #[prop(optional)] post_view: MaybeSignal<Option<GetPostResponse>>,
-) -> impl IntoView {
+pub fn TopNav(#[prop(optional)] default_sort: MaybeProp<SortType>, #[prop(optional)] post_view: Signal<Option<GetPostResponse>>) -> impl IntoView {
   // let i18n = use_i18n();
 
   let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
   let WriteThemeCookie(set_theme_cookie) = expect_context::<WriteThemeCookie>();
-  let online = expect_context::<RwSignal<OnlineSetter>>();
+  let _online = expect_context::<RwSignal<OnlineSetter>>();
   let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<bool>), (i64, LemmyAppResult<GetPostsResponse>)>>>();
   let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
   let query = use_query_map();
-  let ssr_query_error = move || {
+  let _ssr_query_error = move || {
     serde_json::from_str::<LemmyAppError>(&query.get().get("error").unwrap_or("".into()))
       .ok()
       .map(|e| (e, None::<Option<RwSignal<bool>>>))
@@ -116,7 +105,7 @@ pub fn TopNav(
         Ok(o) => {
           query_params.insert("sort".to_string(), o);
         }
-        Err(e) => {}
+        Err(_e) => {}
       }
       if default_sort.get().unwrap_or(SortType::Active) == s {
         query_params.remove("sort".into());
@@ -206,12 +195,10 @@ pub fn TopNav(
     }
   };
 
-  let notifications_refresh = expect_context::<RwSignal<NotificationsRefresh>>();
-
   let logout_action = ServerAction::<LogoutFn>::new();
 
   let search_show = RwSignal::new(false);
-  let still_pressed = create_rw_signal(false);
+  let still_pressed = RwSignal::new(false);
 
   #[cfg(not(feature = "ssr"))]
   let visibility = expect_context::<Signal<VisibilityState>>();
@@ -236,7 +223,7 @@ pub fn TopNav(
             }
           });
         }
-        Err(e) => {}
+        Err(_e) => {}
       }
     });
   };
@@ -268,7 +255,7 @@ pub fn TopNav(
     s
   });
 
-  let on_search_submit = move |e: SubmitEvent| {
+  let _on_search_submit = move |e: SubmitEvent| {
     e.prevent_default();
     use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
   };
@@ -329,7 +316,7 @@ pub fn TopNav(
     }
   });
 
-  let online = expect_context::<RwSignal<OnlineSetter>>();
+  let _online = expect_context::<RwSignal<OnlineSetter>>();
   let change_theme = ServerAction::<ChangeTheme>::new();
 
   let on_theme_submit = move |theme_name: &'static str| {
@@ -353,7 +340,7 @@ pub fn TopNav(
     use_navigate()("/l", NavigateOptions::default());
   };
 
-  let instance_timer_handle = create_rw_signal(None);
+  let instance_timer_handle = RwSignal::new(None);
 
   let on_pointer_down = {
     let timer_id = instance_timer_handle.clone();
@@ -409,7 +396,7 @@ pub fn TopNav(
                   #[cfg(not(feature = "ssr"))]
                   spawn_local_scoped_with_cancellation(async move {
                     if let Ok(d) = IndexedDb::new().await {
-                      d.set(
+                      let _ = d.set(
                           &ScrollPositionKey {
                             path: "/".into(),
                             query: "".into(),

@@ -8,10 +8,9 @@ use lemmy_api_common::{
   person::{Login, LoginResponse},
   site::GetSiteResponse,
 };
-use leptos::{prelude::*, server::codee::string::FromToStringCodec, task::spawn_local_scoped_with_cancellation};
+use leptos::{prelude::*, task::spawn_local_scoped_with_cancellation};
 use leptos_meta::Title;
 use leptos_router::{hooks::*, *};
-use leptos_use::{use_cookie_with_options, SameSite, UseCookieOptions};
 use web_sys::MouseEvent;
 
 fn validate_login(form: &Login) -> Option<LemmyAppErrorType> {
@@ -180,7 +179,7 @@ pub fn TextInput(
   #[prop(into)] label: TextProp,
   #[prop(into)] input_value: RwSignal<String>,
   #[prop(default = InputType::Text)] input_type: InputType,
-  #[prop(optional)] validation_class: MaybeSignal<String>,
+  #[prop(optional)] validation_class: Signal<String>,
 ) -> impl IntoView {
   let show_password = RwSignal::new(false);
   let eye_icon = Signal::derive(move || if show_password.get() { EyeSlash } else { Eye });

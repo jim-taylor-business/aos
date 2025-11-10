@@ -1,9 +1,9 @@
-use crate::{comment::Comment, db::csr_indexed_db::*, errors::LemmyAppError};
-use lemmy_api_common::{lemmy_db_views::structs::CommentView, site::GetSiteResponse};
+use crate::{comment::Comment, db::csr_indexed_db::*};
+use lemmy_api_common::lemmy_db_views::structs::CommentView;
 use leptos::{prelude::*, task::spawn_local_scoped_with_cancellation};
 
 #[component]
-pub fn Comments(comments: MaybeSignal<Vec<CommentView>>, post_id: Signal<Option<i32>>) -> impl IntoView {
+pub fn Comments(comments: Signal<Vec<CommentView>>, post_id: Signal<Option<i32>>) -> impl IntoView {
   let mut comments_clone = comments.get().clone();
   comments_clone.retain(|ct| ct.comment.path.chars().filter(|c| *c == '.').count() == 1);
   let com_sig = RwSignal::new(comments_clone);

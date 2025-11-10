@@ -1,19 +1,7 @@
 pub mod csr_indexed_db {
-  use lemmy_api_common::{
-    comment::*,
-    community::*,
-    person::*,
-    post::*,
-    private_message::GetPrivateMessages,
-    site::*,
-    LemmyErrorType,
-    SuccessResponse,
-  };
-  use leptos::logging::log;
+  use lemmy_api_common::{comment::*, community::*, person::*, post::*, private_message::GetPrivateMessages, site::*};
   use serde::{de::DeserializeOwned, Deserialize, Serialize};
-  use strum_macros::Display;
   use thiserror::Error;
-  use tsify::JsValueSerdeExt;
 
   #[derive(Debug, Serialize, Deserialize)]
   pub struct CommentDraft {
@@ -188,10 +176,7 @@ pub mod csr_indexed_db {
   }
 
   #[cfg(not(feature = "ssr"))]
-  use rexie::{ObjectStore, Rexie, Transaction, TransactionMode};
-  #[cfg(not(feature = "ssr"))]
-  use wasm_bindgen::JsValue;
-
+  use rexie::{ObjectStore, Rexie, TransactionMode};
   #[cfg(not(feature = "ssr"))]
   #[derive(Debug, Error)]
   pub enum Error {
@@ -249,7 +234,7 @@ pub mod csr_indexed_db {
       let posts = transaction.store(key.store_name())?;
       let post_meta_value = serde_wasm_bindgen::to_value(t)?;
       let post_meta_key = serde_wasm_bindgen::to_value(&serde_json::to_string(key)?)?;
-      let post_id = posts.put(&post_meta_value, Some(&post_meta_key)).await?;
+      let _id = posts.put(&post_meta_value, Some(&post_meta_key)).await?;
       transaction.done().await?;
       Ok(())
     }
@@ -261,7 +246,7 @@ pub mod csr_indexed_db {
       let transaction = self.rexie.transaction(&[key.store_name()], TransactionMode::ReadWrite)?;
       let posts = transaction.store(key.store_name())?;
       let post_meta_key = serde_wasm_bindgen::to_value(&serde_json::to_string(key)?)?;
-      let post_id = posts.delete(post_meta_key).await?;
+      let _id = posts.delete(post_meta_key).await?;
       transaction.done().await?;
       Ok(())
     }

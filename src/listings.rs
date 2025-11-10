@@ -1,9 +1,9 @@
-use crate::{errors::LemmyAppError, listing::Listing};
-use lemmy_api_common::{lemmy_db_views::structs::PostView, site::GetSiteResponse};
+use crate::listing::Listing;
+use lemmy_api_common::lemmy_db_views::structs::PostView;
 use leptos::prelude::*;
 
 #[component]
-pub fn Listings(posts: MaybeSignal<Vec<PostView>>, page_number: RwSignal<usize>) -> impl IntoView {
+pub fn Listings(posts: Signal<Vec<PostView>>, page_number: RwSignal<usize>) -> impl IntoView {
   let post_number = RwSignal::new(page_number.get());
   view! {
     <For each={move || posts.get()} key={|pv| pv.post.id} let:pv>

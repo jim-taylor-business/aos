@@ -2,7 +2,7 @@ use crate::{
   client::*,
   comments::Comments,
   db::csr_indexed_db::*,
-  errors::{message_from_error, LemmyAppError, LemmyAppErrorType},
+  errors::{LemmyAppError, LemmyAppErrorType},
   nav::TopNav,
   toolbar::ResponsivePostToolbar,
   OnlineSetter, ReadInstanceCookie, WriteInstanceCookie,
@@ -16,15 +16,13 @@ use lemmy_api_common::{
 };
 use leptos::{
   html::{Div, Textarea},
-  logging::log,
   prelude::*,
-  server::codee::string::FromToStringCodec,
   task::spawn_local_scoped_with_cancellation,
   *,
 };
 use leptos_meta::*;
 use leptos_router::{components::A, hooks::*};
-use leptos_use::{use_cookie_with_options, use_intersection_observer_with_options, SameSite, UseCookieOptions, UseIntersectionObserverOptions};
+use leptos_use::{use_intersection_observer_with_options, UseIntersectionObserverOptions};
 use web_sys::{wasm_bindgen::JsCast, HtmlAnchorElement, HtmlImageElement, WheelEvent};
 
 #[component]
@@ -56,8 +54,8 @@ pub fn Post() -> impl IntoView {
   let post_view = RwSignal::new(None::<GetPostResponse>);
 
   let post_resource = Resource::new(
-    move || (post_id.get()),
-    move |(id_string)| async move {
+    move || post_id.get(),
+    move |id_string| async move {
       if let Some(id) = id_string {
         let form = GetPost {
           id: Some(PostId(id)),
@@ -96,7 +94,7 @@ pub fn Post() -> impl IntoView {
         let result = LemmyClient.get_comments(form.clone()).await;
         match result {
           Ok(o) => Some((form, o)),
-          Err(e) => None,
+          Err(_e) => None,
         }
       } else {
         None
@@ -104,7 +102,7 @@ pub fn Post() -> impl IntoView {
     },
   );
 
-  let on_sort_click = move |s: CommentSortType| {
+  let _on_sort_click = move |s: CommentSortType| {
     move |_e: MouseEvent| {
       let r = serde_json::to_string::<CommentSortType>(&s);
       let mut query_params = query.get();
@@ -142,7 +140,7 @@ pub fn Post() -> impl IntoView {
             reply_show.update(|b| *b = !*b);
             #[cfg(not(feature = "ssr"))]
             if let Ok(d) = IndexedDb::new().await {
-              if let Ok(c) = d
+              if let Ok(_c) = d
                 .del(&CommentDraftKey {
                   comment_id: id,
                   draft: Draft::Post,
@@ -151,13 +149,13 @@ pub fn Post() -> impl IntoView {
               {}
             }
           }
-          Err(e) => {}
+          Err(_e) => {}
         }
       }
     });
   };
 
-  let _visibility_element = create_node_ref::<Textarea>();
+  let _visibility_element = NodeRef::<Textarea>::new();
 
   #[cfg(not(feature = "ssr"))]
   {
@@ -173,7 +171,6 @@ pub fn Post() -> impl IntoView {
   let on_scroll_element = NodeRef::<Div>::new();
   let thumbnail = RwSignal::new(String::from(""));
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
-  let WriteInstanceCookie(set_instance_cookie) = expect_context::<WriteInstanceCookie>();
 
   view! {
     <main class="flex flex-col">
@@ -246,7 +243,7 @@ pub fn Post() -> impl IntoView {
                       use crate::db::csr_indexed_db::*;
                       spawn_local_scoped_with_cancellation(async move {
                         if let Ok(d) = IndexedDb::new().await {
-                          if let Ok(c) = d.set(&fm, &rw).await {}
+                          if let Ok(_c) = d.set(&fm, &rw).await {}
                         }
                       });
                     }
@@ -344,7 +341,7 @@ pub fn Post() -> impl IntoView {
                             }}
                             on:click={move |e: MouseEvent| {
                               if let Ok(Some(s)) = window().local_storage() {
-                                let mut query_params = query.get();
+                                let query_params = query.get();
                                 let _ = s.set_item(&format!("/c/{}", post_view.get().unwrap().post_view.community.name), "0");
                               }
                             }}
@@ -482,7 +479,7 @@ pub fn Post() -> impl IntoView {
                                   #[cfg(not(feature = "ssr"))]
                                   spawn_local_scoped_with_cancellation(async move {
                                     if let Ok(d) = IndexedDb::new().await {
-                                      if let Ok(c) = d
+                                      if let Ok(_c) = d
                                         .set(
                                           &CommentDraftKey {
                                             comment_id: id,
@@ -554,7 +551,7 @@ pub fn Post() -> impl IntoView {
                       use crate::db::csr_indexed_db::*;
                       spawn_local_scoped_with_cancellation(async move {
                         if let Ok(d) = IndexedDb::new().await {
-                          if let Ok(c) = d.set(&fm, &rw).await {}
+                          if let Ok(_c) = d.set(&fm, &rw).await {}
                         }
                       });
                     }

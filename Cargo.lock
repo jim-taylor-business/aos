@@ -80,9 +80,9 @@ dependencies = [
 
 [[package]]
 name = "actix-tls"
-version = "3.4.0"
+version = "3.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac453898d866cdbecdbc2334fe1738c747b4eba14a677261f2b768ba05329389"
+checksum = "6176099de3f58fbddac916a7f8c6db297e021d706e7a6b99947785fee14abe9f"
 dependencies = [
  "actix-rt",
  "actix-service",
@@ -204,14 +204,13 @@ dependencies = [
  "serde-wasm-bindgen",
  "serde_json",
  "serde_urlencoded",
- "strum",
- "strum_macros",
+ "strum 0.27.2",
+ "strum_macros 0.27.2",
  "thiserror 2.0.17",
  "tokio",
  "tower",
  "tower-http",
  "tracing",
- "tsify",
  "uuid",
  "wasm-bindgen",
  "web-sys",
@@ -1814,7 +1813,7 @@ dependencies = [
  "moka",
  "serde",
  "serde_with",
- "strum",
+ "strum 0.26.3",
  "tracing",
  "typed-builder 0.19.1",
  "url",
@@ -1841,7 +1840,7 @@ dependencies = [
  "lemmy_db_schema",
  "serde",
  "serde_with",
- "strum",
+ "strum 0.26.3",
 ]
 
 [[package]]
@@ -1864,7 +1863,7 @@ dependencies = [
  "git-version",
  "rosetta-build",
  "serde",
- "strum",
+ "strum 0.26.3",
 ]
 
 [[package]]
@@ -3093,17 +3092,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "serde_derive_internals"
-version = "0.29.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18d26a20a969b9e3fdf2fc2d9f21eda6c40e2de84c9408bb5d3b05d499aae711"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
 name = "serde_json"
 version = "1.0.145"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3353,8 +3341,14 @@ version = "0.26.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8fec0f0aef304996cf250b31b5a10dee7980c85da9d759361292b8bca5a18f06"
 dependencies = [
- "strum_macros",
+ "strum_macros 0.26.4",
 ]
+
+[[package]]
+name = "strum"
+version = "0.27.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "af23d6f6c1a224baef9d3f61e287d2761385a5b88fdab4eb4c6f11aeb54c4bcf"
 
 [[package]]
 name = "strum_macros"
@@ -3370,6 +3364,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "strum_macros"
+version = "0.27.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7695ce3845ea4b33927c055a39dc438a45b059f7c1b3d91d38d10355fb8cbca7"
+dependencies = [
+ "heck",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "subtle"
 version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3377,9 +3383,9 @@ checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
 
 [[package]]
 name = "syn"
-version = "2.0.109"
+version = "2.0.110"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2f17c7e013e88258aa9543dcbe81aca68a667a9ac37cd69c9fbc07858bfe0e2f"
+checksum = "a99801b5bd34ede4cf3fc688c5919368fea4e4814a4664359503e6015b280aea"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3797,31 +3803,6 @@ name = "try-lock"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
-
-[[package]]
-name = "tsify"
-version = "0.5.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ec5505497c87f1c050b4392d3f11b49a04537fcb9dc0da57bc0af168a6331f2"
-dependencies = [
- "gloo-utils",
- "serde",
- "serde_json",
- "tsify-macros",
- "wasm-bindgen",
-]
-
-[[package]]
-name = "tsify-macros"
-version = "0.5.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9fc2c44dc9fe4baf55b88e032621b7a11b215a1f0a7de8d0aa04367207d915bc"
-dependencies = [
- "proc-macro2",
- "quote",
- "serde_derive_internals",
- "syn",
-]
 
 [[package]]
 name = "tungstenite"

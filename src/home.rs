@@ -2,11 +2,10 @@ use crate::db::csr_indexed_db::*;
 use crate::{
   // i18n::*,
   client::*,
-  errors::{message_from_error, LemmyAppError, LemmyAppErrorType, LemmyAppResult},
+  errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult},
   listings::Listings,
   nav::TopNav,
 };
-use chrono::prelude::*;
 use hooks::*;
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SortType},
@@ -14,26 +13,12 @@ use lemmy_api_common::{
   post::{GetPosts, GetPostsResponse},
   site::GetSiteResponse,
 };
-use leptos::{
-  html::Div,
-  leptos_dom::helpers::TimeoutHandle,
-  logging::{error, log},
-  prelude::*,
-  reactive::*,
-  server::codee::string::FromToStringCodec,
-  svg::view,
-  *,
-};
+use leptos::{html::Div, leptos_dom::helpers::TimeoutHandle, logging::error, prelude::*, reactive::*, *};
 use leptos_meta::*;
 use leptos_router::*;
 use leptos_use::*;
-use std::{
-  collections::{BTreeMap, HashMap},
-  usize, vec,
-};
-#[cfg(not(feature = "ssr"))]
-use wasm_bindgen::{prelude::Closure, JsCast, JsValue};
-use web_sys::{js_sys::Atomics::wait_async, Event, MouseEvent, ScrollToOptions, TouchEvent, WheelEvent};
+use std::{collections::BTreeMap, usize, vec};
+use web_sys::{Event, MouseEvent, ScrollToOptions, WheelEvent};
 
 #[component]
 pub fn Home() -> impl IntoView {
@@ -53,7 +38,6 @@ pub fn Home() -> impl IntoView {
   let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
 
   let loading = RwSignal::new(false);
-  let refresh = RwSignal::new(false);
 
   let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
   let logged_in = Signal::derive(move || {
@@ -64,25 +48,25 @@ pub fn Home() -> impl IntoView {
     }
   });
 
-  let intersection_element = create_node_ref::<Div>();
+  let intersection_element = NodeRef::<Div>::new();
   let on_scroll_element = NodeRef::<Div>::new();
-  let refresh_base = RwSignal::new(0);
 
   #[cfg(not(feature = "ssr"))]
   {
-    let on_scroll = move |e: Event| {
+    let on_scroll = move |_e: Event| {
       if let Some(se) = on_scroll_element.get() {
         spawn_local_scoped_with_cancellation(async move {
-          let mut query_params = query.get();
+          let query_params = query.get();
           if let Ok(d) = IndexedDb::new().await {
-            d.set(
-              &ScrollPositionKey {
-                path: use_location().pathname.get(),
-                query: query_params.to_query_string(),
-              },
-              &se.scroll_left(),
-            )
-            .await;
+            let _ = d
+              .set(
+                &ScrollPositionKey {
+                  path: use_location().pathname.get(),
+                  query: query_params.to_query_string(),
+                },
+                &se.scroll_left(),
+              )
+              .await;
           }
         });
       }
@@ -94,53 +78,52 @@ pub fn Home() -> impl IntoView {
       intersection_element,
       move |intersections, _| {
         if intersections[0].is_intersecting() {
-          if let (key, _) = next_page_cursor.get() {
-            if key > 0 {
-              use leptos_router::location::State;
+          let (key, _) = next_page_cursor.get();
+          if key > 0 {
+            use leptos_router::location::State;
 
-              let mut st = ssr_page();
-              if let (_, Some(PaginationCursor(next_page))) = next_page_cursor.get() {
-                if st.len() == 0 {
-                  st.push((0usize, "".into()));
-                }
-                if st.iter().find(|s| s.0 == key).is_none() {
-                  st.push((key, next_page));
-                }
+            let mut st = ssr_page();
+            if let (_, Some(PaginationCursor(next_page))) = next_page_cursor.get() {
+              if st.len() == 0 {
+                st.push((0usize, "".into()));
               }
-              let mut query_params = query.get();
-              query_params.insert("page".to_string(), serde_json::to_string(&st).unwrap_or("[]".into()));
-              let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-              if iw < 768f64 {
-              } else {
-                if let Some(se) = on_scroll_element.get() {
-                  let params = query_params.clone();
-                  spawn_local_scoped_with_cancellation(async move {
-                    if let Ok(d) = IndexedDb::new().await {
-                      if let Err(e) = d
-                        .set(
-                          &ScrollPositionKey {
-                            path: use_location().pathname.get(),
-                            query: params.to_query_string(),
-                          },
-                          &se.scroll_left(),
-                        )
-                        .await
-                      {}
-                    }
-                  });
-                }
+              if st.iter().find(|s| s.0 == key).is_none() {
+                st.push((key, next_page));
               }
-              let navigate = use_navigate();
-              navigate(
-                &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-                NavigateOptions {
-                  resolve: false,
-                  replace: true,
-                  scroll: false,
-                  state: State::default(),
-                },
-              );
             }
+            let mut query_params = query.get();
+            query_params.insert("page".to_string(), serde_json::to_string(&st).unwrap_or("[]".into()));
+            let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
+            if iw < 768f64 {
+            } else {
+              if let Some(se) = on_scroll_element.get() {
+                let params = query_params.clone();
+                spawn_local_scoped_with_cancellation(async move {
+                  if let Ok(d) = IndexedDb::new().await {
+                    if let Err(_e) = d
+                      .set(
+                        &ScrollPositionKey {
+                          path: use_location().pathname.get(),
+                          query: params.to_query_string(),
+                        },
+                        &se.scroll_left(),
+                      )
+                      .await
+                    {}
+                  }
+                });
+              }
+            }
+            let navigate = use_navigate();
+            navigate(
+              &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+              NavigateOptions {
+                resolve: false,
+                replace: true,
+                scroll: false,
+                state: State::default(),
+              },
+            );
           }
         }
       },
@@ -152,7 +135,7 @@ pub fn Home() -> impl IntoView {
     move || (logged_in.get(), ssr_list(), ssr_sort(), ssr_name(), ssr_page()),
     move |(_logged_in, list, sort, name, mut pages)| async move {
       loading.set(true);
-      let mut rc = response_cache.get_untracked();
+      let rc = response_cache.get_untracked();
       let mut new_pages: Vec<(usize, GetPosts, i64, LemmyAppResult<GetPostsResponse>, Option<bool>)> = vec![];
       if pages.len() == 0 {
         pages = vec![(0usize, "".to_string())];
@@ -189,7 +172,7 @@ pub fn Home() -> impl IntoView {
         let result = LemmyClient.list_posts(form.clone()).await;
         new_pages.push((p.0, form.clone(), chrono::Utc::now().timestamp_millis(), result, _logged_in));
       }
-      (new_pages)
+      new_pages
     },
   );
 
@@ -204,7 +187,7 @@ pub fn Home() -> impl IntoView {
   };
 
   #[cfg(not(feature = "ssr"))]
-  let mut cancel_handle: RwSignal<Option<TimeoutHandle>> = RwSignal::new(None);
+  let cancel_handle: RwSignal<Option<TimeoutHandle>> = RwSignal::new(None);
 
   view! {
     <main class="flex flex-col">
@@ -214,7 +197,7 @@ pub fn Home() -> impl IntoView {
           on:wheel={move |e: WheelEvent| {
             e.stop_propagation();
             if let Some(se) = on_scroll_element.get() {
-              let mut o = ScrollToOptions::new();
+              let o = ScrollToOptions::new();
               o.set_left(e.delta_y());
               o.set_behavior(web_sys::ScrollBehavior::Smooth);
               se.scroll_by_with_scroll_to_options(&o);
@@ -255,7 +238,7 @@ pub fn Home() -> impl IntoView {
                     use crate::db::csr_indexed_db::*;
                     spawn_local_scoped_with_cancellation(async move {
                       if let Ok(d) = IndexedDb::new().await {
-                        if let Ok(c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&fm, &rw).await {}
+                        if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&fm, &rw).await {}
                       }
                       response_cache
                         .update(move |rc| {

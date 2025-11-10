@@ -1,25 +1,13 @@
 use crate::{
   client::*,
   db::csr_indexed_db::*,
-  errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult},
+  errors::{LemmyAppError, LemmyAppErrorType},
   icon::{IconType::*, *},
-  OnlineSetter,
-  ReadInstanceCookie,
-  ResourceStatus,
-  ResponseLoad,
-  WriteInstanceCookie,
+  OnlineSetter, ReadInstanceCookie,
 };
-use lemmy_api_common::{
-  lemmy_db_schema::{ListingType, SortType},
-  lemmy_db_views::structs::*,
-  person::*,
-  post::*,
-  site::GetSiteResponse,
-};
-use leptos::{html::Img, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local_scoped_with_cancellation};
+use lemmy_api_common::{lemmy_db_views::structs::*, person::*, post::*, site::GetSiteResponse};
+use leptos::{html::Img, prelude::*, task::spawn_local_scoped_with_cancellation};
 use leptos_router::{components::A, hooks::*};
-use leptos_use::*;
-use std::collections::BTreeMap;
 use web_sys::MouseEvent;
 
 #[server(VotePostFn, "/serverfn")]
@@ -121,7 +109,7 @@ pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostR
 
 #[component]
 pub fn ResponsivePostToolbar(
-  post_view: MaybeSignal<PostView>,
+  post_view: Signal<PostView>,
   post_number: usize,
   reply_show: RwSignal<bool>,
   content: RwSignal<String>,
@@ -136,14 +124,12 @@ pub fn ResponsivePostToolbar(
     }
   });
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
-  let WriteInstanceCookie(set_instance_cookie) = expect_context::<WriteInstanceCookie>();
   let online = expect_context::<RwSignal<OnlineSetter>>();
   let post_view = RwSignal::new(post_view.get());
   let vote_action = ServerAction::<VotePostFn>::new();
 
   let on_vote_submit = move |e: MouseEvent, score: i16| {
     e.prevent_default();
-    // LocalResource::new(move || async move {
     spawn_local_scoped_with_cancellation(async move {
       let form = CreatePostLike {
         post_id: post_view.get().post.id,
@@ -154,7 +140,7 @@ pub fn ResponsivePostToolbar(
         Ok(o) => {
           post_view.set(o.post_view);
         }
-        Err(e) => {}
+        Err(_e) => {}
       }
     });
   };
@@ -173,7 +159,6 @@ pub fn ResponsivePostToolbar(
 
   let on_save_submit = move |e: MouseEvent| {
     e.prevent_default();
-    // LocalResource::new(move || async move {
     spawn_local_scoped_with_cancellation(async move {
       let form = SavePost {
         post_id: post_view.get().post.id,
@@ -184,7 +169,7 @@ pub fn ResponsivePostToolbar(
         Ok(o) => {
           post_view.set(o.post_view);
         }
-        Err(e) => {}
+        Err(_e) => {}
       }
     });
   };
@@ -201,7 +186,7 @@ pub fn ResponsivePostToolbar(
       let result = LemmyClient.block_user(form).await;
       match result {
         Ok(_o) => {}
-        Err(e) => {}
+        Err(_e) => {}
       }
     });
   };
@@ -295,9 +280,9 @@ pub fn ResponsivePostToolbar(
       post_view.get().community.actor_id.inner().host().unwrap().to_string()
     )
   };
-  let community_title_encoded = html_escape::encode_safe(&community_title).to_string();
+  let _community_title_encoded = html_escape::encode_safe(&community_title).to_string();
   let creator_name = &post_view.get().creator.actor_id.to_string()[8..];
-  let creator_name_encoded = html_escape::encode_safe(creator_name).to_string();
+  let _creator_name_encoded = html_escape::encode_safe(creator_name).to_string();
 
   let now_in_millis = {
     #[cfg(not(feature = "ssr"))]
@@ -317,7 +302,7 @@ pub fn ResponsivePostToolbar(
       plural_labels: None,
     }),
   );
-  let abbr_duration = if let Some((index, _)) = duration_in_text.match_indices(' ').nth(1) {
+  let _abbr_duration = if let Some((index, _)) = duration_in_text.match_indices(' ').nth(1) {
     duration_in_text.split_at(index)
   } else {
     (&duration_in_text[..], "")
@@ -326,8 +311,8 @@ pub fn ResponsivePostToolbar(
   .to_string();
 
   #[cfg(not(feature = "ssr"))]
-  let thumbnail_element = create_node_ref::<Img>();
-  let thumbnail = RwSignal::new(String::from(""));
+  let _thumbnail_element = NodeRef::<Img>::new();
+  let _thumbnail = RwSignal::new(String::from(""));
 
   view! {
     <div class="px-4 break-inside-avoid">

@@ -1,10 +1,7 @@
 use crate::{
   db::csr_indexed_db::*,
   errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult},
-  ReadAuthCookie,
-  ReadInstanceCookie,
-  WriteAuthCookie,
-  WriteInstanceCookie,
+  ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie,
 };
 use lemmy_api_common::{
   comment::*,
@@ -13,8 +10,7 @@ use lemmy_api_common::{
   post::*,
   private_message::{GetPrivateMessages, PrivateMessagesResponse},
   site::*,
-  LemmyErrorType,
-  SuccessResponse,
+  LemmyErrorType, SuccessResponse,
 };
 use leptos::{logging::log, prelude::*};
 use send_wrapper::SendWrapper;
@@ -258,7 +254,7 @@ mod client {
 
       let client = reqwest::Client::new();
 
-      let mut r = match method {
+      let r = match method {
         HttpType::Get => client.get(&route).maybe_bearer_auth(jwt.clone()).query(&form).send(), //reqwest::get(&route), //client.get(&route).maybe_bearer_auth(jwt.clone()).query(&form).unwrap().send(),
         HttpType::Post => client.post(&route).maybe_bearer_auth(jwt.clone()).form(&form).send(),
         HttpType::Put => client.put(&route).maybe_bearer_auth(jwt.clone()).form(&form).send(), //client.put(&route).maybe_bearer_auth(jwt.clone()).send_json(&form),
@@ -271,6 +267,14 @@ mod client {
           let api_result = r.json::<LemmyErrorType>().await;
 
           match api_result {
+            Ok(LemmyErrorType::IncorrectLogin) => {
+              log!("{:#?}", LemmyErrorType::IncorrectLogin);
+              set_auth_cookie.set(None);
+              return Err(LemmyAppError {
+                error_type: LemmyAppErrorType::ApiError(LemmyErrorType::IncorrectLogin),
+                content: format!("{:#?}", LemmyErrorType::IncorrectLogin),
+              });
+            }
             Ok(le) => {
               log!("{:#?}", le);
               return Err(LemmyAppError {

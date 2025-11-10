@@ -70,7 +70,7 @@ impl IconType {
 }
 
 #[component]
-pub fn Icon(#[prop(into)] icon: MaybeSignal<IconType>, #[prop(optional)] class: Option<TextProp>) -> impl IntoView {
+pub fn Icon(#[prop(into)] icon: Signal<IconType>, #[prop(optional)] class: Option<TextProp>) -> impl IntoView {
   let href = Signal::derive(move || format!("/icons.svg#{}", icon.get().as_str()));
   view! {
     <svg attr:class={class.unwrap_or("".into())} width="1.5em" height="1.5em">

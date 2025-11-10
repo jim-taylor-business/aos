@@ -1,5 +1,5 @@
 #![recursion_limit = "512"]
-#![allow(warnings)]
+// #![allow(warnings)]
 
 pub mod client;
 pub mod comment;
@@ -19,7 +19,6 @@ pub mod toolbar;
 
 use crate::{
   client::{LemmyApi, LemmyClient},
-  db::csr_indexed_db::*,
   errors::{LemmyAppError, LemmyAppResult},
   login::Login,
   post::Post,
@@ -28,36 +27,25 @@ use crate::{
 use codee::string::FromToStringCodec;
 use home::Home;
 use lemmy_api_common::{
-  lemmy_db_schema::{ListingType, SortType},
-  lemmy_db_views::structs::PaginationCursor,
   post::{GetPosts, GetPostsResponse},
   site::GetSiteResponse,
 };
-use leptos::{html::Div, logging::log, prelude::*, *};
+use leptos::{html::Div, prelude::*};
 use leptos_meta::{provide_meta_context, Link, Meta, MetaTags, Stylesheet, *};
 use leptos_router::{
-  components::{FlatRoutes, ParentRoute, Route, Router, Routes},
+  components::{ParentRoute, Route, Router, Routes},
   StaticSegment, *,
 };
 use leptos_use::{use_cookie_with_options, use_service_worker_with_options, SameSite, UseCookieOptions, UseServiceWorkerOptions};
 #[cfg(not(feature = "ssr"))]
-use leptos_use::{use_document_visibility, use_service_worker, UseServiceWorkerReturn};
-#[cfg(not(feature = "ssr"))]
-use rexie::{Rexie, RexieBuilder};
+use leptos_use::{use_document_visibility, UseServiceWorkerReturn};
 use root::Root;
 use std::collections::BTreeMap;
-use web_sys::Event;
 
 // leptos_i18n::load_locales!();
 
 #[derive(Clone)]
 pub struct OnlineSetter(bool);
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-enum ResourceStatus {
-  Loading,
-  Ok,
-  Err,
-}
 #[derive(Clone, Debug, PartialEq)]
 pub struct NotificationsRefresh(bool);
 #[derive(Clone, PartialEq)]
@@ -228,7 +216,7 @@ pub fn App() -> impl IntoView {
     <Router>
       <Routes fallback={NotFound}>
         <ParentRoute path={(StaticSegment(""))} view={Root} ssr={SsrMode::Async}>
-          <Route path={StaticSegment("")} view={Home} />
+          <Route path={(StaticSegment(""))} view={Home} />
           <Route path={(StaticSegment("l"))} view={Login} />
           <Route path={(StaticSegment("p"), ParamSegment("id"))} view={Post} />
           <Route path={(StaticSegment("c"), ParamSegment("name"))} view={Home} />

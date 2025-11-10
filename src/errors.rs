@@ -1,6 +1,7 @@
 use core::num::ParseIntError;
 use lemmy_api_common::LemmyErrorType;
-use leptos::prelude::*;
+#[cfg(feature = "ssr")]
+use leptos::prelude::ServerFnError;
 use serde::{Deserialize, Serialize};
 use serde_urlencoded::ser;
 use strum_macros::Display;

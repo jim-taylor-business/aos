@@ -1,8 +1,7 @@
 use crate::{errors::LemmyAppError, ReadThemeCookie};
 use lemmy_api_common::site::GetSiteResponse;
-use leptos::{prelude::*, server::codee::string::FromToStringCodec};
+use leptos::prelude::*;
 use leptos_router::components::Outlet;
-use leptos_use::*;
 
 #[component]
 pub fn Root() -> impl IntoView {

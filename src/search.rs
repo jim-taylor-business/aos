@@ -1,16 +1,12 @@
 use crate::{
   client::*,
-  errors::{message_from_error, LemmyAppError},
+  errors::LemmyAppError,
   listings::Listings,
   nav::TopNav,
   // i18n::*,
-  ResourceStatus,
-  ResponseLoad,
 };
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SearchType, SortType},
-  lemmy_db_views::structs::PaginationCursor,
-  post::{GetPosts, GetPostsResponse},
   site::{GetSiteResponse, Search, SearchResponse},
 };
 use leptos::{
@@ -20,13 +16,9 @@ use leptos::{
   *,
 };
 use leptos_meta::Title;
-use leptos_router::{hooks::*, location::State, *};
-use leptos_use::*;
-use std::{
-  collections::{BTreeMap, HashMap},
-  usize, vec,
-};
-use web_sys::{js_sys::Atomics::wait_async, Event, MouseEvent, WheelEvent};
+use leptos_router::hooks::*;
+use std::{usize, vec};
+use web_sys::WheelEvent;
 
 #[component]
 pub fn Search() -> impl IntoView {
@@ -46,7 +38,6 @@ pub fn Search() -> impl IntoView {
   let next_page_cursor: RwSignal<u32> = RwSignal::new(0);
 
   let loading = RwSignal::new(false);
-  let refresh = RwSignal::new(false);
 
   let logged_in = Signal::derive(move || {
     if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() {
@@ -56,15 +47,22 @@ pub fn Search() -> impl IntoView {
     }
   });
 
-  let intersection_element = create_node_ref::<Div>();
+  let intersection_element = NodeRef::<Div>::new();
   let on_scroll_element = NodeRef::<Div>::new();
 
   #[cfg(not(feature = "ssr"))]
   {
-    let on_scroll = move |e: Event| {
+    use leptos_router::{location::State, NavigateOptions};
+    use leptos_use::{
+      use_intersection_observer_with_options, use_scroll_with_options, UseIntersectionObserverOptions, UseIntersectionObserverReturn,
+      UseScrollOptions, UseScrollReturn,
+    };
+    use web_sys::Event;
+
+    let on_scroll = move |_e: Event| {
       if let Some(se) = on_scroll_element.get() {
         if let Ok(Some(s)) = window().local_storage() {
-          let mut query_params = query.get();
+          let query_params = query.get();
           let _ = s.set_item(
             &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
             &se.scroll_left().to_string(),
@@ -74,33 +72,27 @@ pub fn Search() -> impl IntoView {
     };
 
     let UseScrollReturn { .. } = use_scroll_with_options(on_scroll_element, UseScrollOptions::default().on_scroll(on_scroll));
-    let UseIntersectionObserverReturn {
-      pause,
-      resume,
-      stop,
-      is_active,
-    } = use_intersection_observer_with_options(
+    let UseIntersectionObserverReturn { .. } = use_intersection_observer_with_options(
       intersection_element,
       move |intersections, _| {
         if intersections[0].is_intersecting() {
-          if let key = next_page_cursor.get() {
-            if key > 0 {
-              let mut st = ssr_page();
-              st.push(key as u32);
-              let mut query_params = query.get();
-              query_params.insert("page".to_string(), serde_json::to_string(&st).unwrap_or("[]".into()));
+          let key = next_page_cursor.get();
+          if key > 0 {
+            let mut st = ssr_page();
+            st.push(key as u32);
+            let mut query_params = query.get();
+            query_params.insert("page".to_string(), serde_json::to_string(&st).unwrap_or("[]".into()));
 
-              let navigate = use_navigate();
-              navigate(
-                &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-                NavigateOptions {
-                  resolve: true,
-                  replace: false,
-                  scroll: false,
-                  state: State::default(),
-                },
-              );
-            }
+            let navigate = use_navigate();
+            navigate(
+              &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+              NavigateOptions {
+                resolve: true,
+                replace: false,
+                scroll: false,
+                state: State::default(),
+              },
+            );
           }
         }
       },
@@ -110,7 +102,7 @@ pub fn Search() -> impl IntoView {
 
   let search_cache_resource = Resource::new(
     move || (logged_in.get(), ssr_list(), ssr_sort(), ssr_name(), ssr_page(), ssr_term()),
-    move |(_logged_in, list, sort, name, pages, term)| async move {
+    move |(_logged_in, _list, sort, _name, pages, term)| async move {
       let mut new_pages: Vec<(u32, Option<SearchResponse>)> = Vec::new();
       for p in pages {
         let form = Search {
@@ -136,7 +128,7 @@ pub fn Search() -> impl IntoView {
           }
         }
       }
-      (new_pages)
+      new_pages
     },
   );
 

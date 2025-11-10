@@ -28,28 +28,22 @@ html-escape = "0"
 pretty-duration = { branch = "main", git = "https://github.com/jim-taylor-business/pretty-duration.git" }
 chrono = "0"
 thiserror = "2"
-
 uuid = { version = "1", default-features = false, features = ["js"] }
 
 gloo-net = { version = "0", optional = true, features = ["http"] }
 console_error_panic_hook = { version = "0", optional = true }
 rexie = { branch = "deploy_demo", git = "https://github.com/jim-taylor-business/rexie.git", optional = true }
 serde-wasm-bindgen = { version = "0", optional = true }
-tsify = "0"
 wasm-bindgen = { version = "0", optional = true }
 
+http = "1"
 axum = { version = "0", optional = true }
-tokio = { version = "1", features = [
-  "rt-multi-thread",
-  "macros",
-], optional = true }
+tokio = { version = "1", features = ["rt-multi-thread", "macros"], optional = true }
 tower = { version = "0", optional = true }
 tower-http = { version = "0", features = ["fs"], optional = true }
 tracing = { version = "0", optional = true }
-http = "1"
 send_wrapper = { version = "0", features = ["futures"] }
 reqwest = { version = "0", features = ["json"] }
-
 awc = { version = "3", features = ["openssl"], optional = true }
 
 [features]
