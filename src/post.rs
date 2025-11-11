@@ -340,9 +340,25 @@ pub fn Post() -> impl IntoView {
                               )
                             }}
                             on:click={move |e: MouseEvent| {
-                              if let Ok(Some(s)) = window().local_storage() {
-                                let query_params = query.get();
-                                let _ = s.set_item(&format!("/c/{}", post_view.get().unwrap().post_view.community.name), "0");
+                              // let params = use_q.clone();
+                              #[cfg(not(feature = "ssr"))]
+                              spawn_local_scoped_with_cancellation(async move {
+                                if let Ok(d) = IndexedDb::new().await {
+                                  let _ = d
+                                    .set(
+                                      &ScrollPositionKey {
+                                        path: use_location().pathname.get(),
+                                        query: use_query_map().get().to_query_string(),
+                                      },
+                                      &0i32,
+                                    )
+                                    .await;
+                                }
+                              });
+                              if let Some(on_scroll_element) = scroll_element.get() {
+                                if let Some(se) = on_scroll_element.get() {
+                                  se.set_scroll_left(0i32);
+                                }
                               }
                             }}
                           >

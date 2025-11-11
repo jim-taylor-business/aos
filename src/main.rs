@@ -1,5 +1,5 @@
 #![recursion_limit = "512"]
-// #![allow(warnings)]
+#![allow(warnings)]
 
 #[cfg(feature = "ssr")]
 // #[tokio::main]

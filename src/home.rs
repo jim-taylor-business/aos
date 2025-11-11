@@ -13,7 +13,7 @@ use lemmy_api_common::{
   post::{GetPosts, GetPostsResponse},
   site::GetSiteResponse,
 };
-use leptos::{html::Div, leptos_dom::helpers::TimeoutHandle, logging::error, prelude::*, reactive::*, *};
+use leptos::{html::Div, leptos_dom::helpers::TimeoutHandle, logging::error, prelude::*, task::*, *};
 use leptos_meta::*;
 use leptos_router::*;
 use leptos_use::*;
@@ -282,9 +282,6 @@ pub fn Home() -> impl IntoView {
                   }
                   next_page_cursor.set((p.0 + 50usize, o.next_page.clone()));
                   loading.set(false);
-                  // Some(
-                  // ),
-
                   view! { <Listings posts={o.posts.clone().into()} page_number={RwSignal::new(p.0)} /> }
                     .into_any()
                 }

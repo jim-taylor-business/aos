@@ -1,3 +1,4 @@
+use crate::db::csr_indexed_db::*;
 use crate::{
   client::*,
   errors::LemmyAppError,
@@ -13,6 +14,7 @@ use leptos::{
   html::Div,
   logging::{error, log},
   prelude::*,
+  task::*,
   *,
 };
 use leptos_meta::Title;
@@ -61,13 +63,21 @@ pub fn Search() -> impl IntoView {
 
     let on_scroll = move |_e: Event| {
       if let Some(se) = on_scroll_element.get() {
-        if let Ok(Some(s)) = window().local_storage() {
+        #[cfg(not(feature = "ssr"))]
+        spawn_local_scoped_with_cancellation(async move {
           let query_params = query.get();
-          let _ = s.set_item(
-            &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-            &se.scroll_left().to_string(),
-          );
-        }
+          if let Ok(d) = IndexedDb::new().await {
+            let _ = d
+              .set(
+                &ScrollPositionKey {
+                  path: use_location().pathname.get(),
+                  query: query_params.to_query_string(),
+                },
+                &se.scroll_left(),
+              )
+              .await;
+          }
+        });
       }
     };
 

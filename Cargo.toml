@@ -47,7 +47,7 @@ reqwest = { version = "0", features = ["json"] }
 awc = { version = "3", features = ["openssl"], optional = true }
 
 [features]
-default = ["ssr"]
+default = ["csr"]
 csr = [
   "leptos/csr",
   # "leptos_i18n/csr",

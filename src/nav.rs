@@ -99,21 +99,32 @@ pub fn TopNav(#[prop(optional)] default_sort: MaybeProp<SortType>, #[prop(option
 
   let on_sort_click = move |s: SortType| {
     move |_e: MouseEvent| {
-      let r = serde_json::to_string::<SortType>(&s);
+      let o = serde_json::to_string::<SortType>(&s).unwrap_or("Active".into());
       let mut query_params = query.get();
-      match r {
-        Ok(o) => {
-          query_params.insert("sort".to_string(), o);
-        }
-        Err(_e) => {}
-      }
-      if default_sort.get().unwrap_or(SortType::Active) == s {
-        query_params.remove("sort".into());
-      }
+      query_params.remove("sort".into());
       query_params.remove("page".into());
-      let navigate = use_navigate();
-      if let Ok(Some(s)) = window().local_storage() {
-        let _ = s.set_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), "0");
+      if default_sort.get().unwrap_or(SortType::Active) != s {
+        query_params.insert("sort".to_string(), o);
+      }
+      let params = query_params.clone();
+      #[cfg(not(feature = "ssr"))]
+      spawn_local_scoped_with_cancellation(async move {
+        if let Ok(d) = IndexedDb::new().await {
+          let _ = d
+            .set(
+              &ScrollPositionKey {
+                path: use_location().pathname.get(),
+                query: params.to_query_string(),
+              },
+              &0i32,
+            )
+            .await;
+        }
+      });
+      if let Some(on_scroll_element) = scroll_element.get() {
+        if let Some(se) = on_scroll_element.get() {
+          se.set_scroll_left(0i32);
+        }
       }
 
       response_cache.update(move |rc| {
@@ -138,7 +149,7 @@ pub fn TopNav(#[prop(optional)] default_sort: MaybeProp<SortType>, #[prop(option
         ));
       });
 
-      navigate(
+      use_navigate()(
         &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
         Default::default(),
       );
@@ -149,15 +160,32 @@ pub fn TopNav(#[prop(optional)] default_sort: MaybeProp<SortType>, #[prop(option
     move |_e: MouseEvent| {
       let mut query_params = query.get();
       query_params.remove("page".into());
+      query_params.remove("list".into());
       let navigate = use_navigate();
-      if l == ListingType::All {
-        query_params.remove("list".into());
-      } else {
+      if l != ListingType::All {
         query_params.insert("list".to_string(), serde_json::to_string(&l).ok().unwrap());
       }
-      if let Ok(Some(s)) = window().local_storage() {
-        let _ = s.set_item(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), "0");
+      let params = query_params.clone();
+      #[cfg(not(feature = "ssr"))]
+      spawn_local_scoped_with_cancellation(async move {
+        if let Ok(d) = IndexedDb::new().await {
+          let _ = d
+            .set(
+              &ScrollPositionKey {
+                path: use_location().pathname.get(),
+                query: params.to_query_string(),
+              },
+              &0i32,
+            )
+            .await;
+        }
+      });
+      if let Some(on_scroll_element) = scroll_element.get() {
+        if let Some(se) = on_scroll_element.get() {
+          se.set_scroll_left(0i32);
+        }
       }
+
       response_cache.update(move |rc| {
         rc.remove(&(
           0usize,
@@ -180,7 +208,7 @@ pub fn TopNav(#[prop(optional)] default_sort: MaybeProp<SortType>, #[prop(option
         ));
       });
 
-      navigate(
+      use_navigate()(
         &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
         Default::default(),
       );
@@ -189,7 +217,7 @@ pub fn TopNav(#[prop(optional)] default_sort: MaybeProp<SortType>, #[prop(option
 
   let highlight_csr_filter = move |l: ListingType| {
     if l == ssr_list() {
-      "btn-active"
+      "menu-active"
     } else {
       ""
     }
@@ -484,43 +512,43 @@ pub fn TopNav(#[prop(optional)] default_sort: MaybeProp<SortType>, #[prop(option
               </summary>
               <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
                 <li
-                  class={move || { (if SortType::Active == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                  class={move || { (if SortType::Active == ssr_sort() { "menu-active" } else { "" }).to_string() }}
                   on:click={on_sort_click(SortType::Active)}
                 >
                   <span>"Active"</span>
                 </li>
                 <li
-                  class={move || { (if SortType::TopAll == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                  class={move || { (if SortType::TopAll == ssr_sort() { "menu-active" } else { "" }).to_string() }}
                   on:click={on_sort_click(SortType::TopAll)}
                 >
                   <span>"Top"</span>
                 </li>
                 <li
-                  class={move || { (if SortType::Hot == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                  class={move || { (if SortType::Hot == ssr_sort() { "menu-active" } else { "" }).to_string() }}
                   on:click={on_sort_click(SortType::Hot)}
                 >
                   <span>"Hot"</span>
                 </li>
                 <li
-                  class={move || { (if SortType::New == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                  class={move || { (if SortType::New == ssr_sort() { "menu-active" } else { "" }).to_string() }}
                   on:click={on_sort_click(SortType::New)}
                 >
                   <span>"New"</span>
                 </li>
                 <li
-                  class={move || { (if SortType::Old == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                  class={move || { (if SortType::Old == ssr_sort() { "menu-active" } else { "" }).to_string() }}
                   on:click={on_sort_click(SortType::Old)}
                 >
                   <span>"Old"</span>
                 </li>
                 <li
-                  class={move || { (if SortType::Controversial == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                  class={move || { (if SortType::Controversial == ssr_sort() { "menu-active" } else { "" }).to_string() }}
                   on:click={on_sort_click(SortType::Controversial)}
                 >
                   <span>"Controversial"</span>
                 </li>
                 <li
-                  class={move || { (if SortType::Scaled == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                  class={move || { (if SortType::Scaled == ssr_sort() { "menu-active" } else { "" }).to_string() }}
                   on:click={on_sort_click(SortType::Scaled)}
                 >
                   <span>{"Scaled"}</span>
@@ -568,43 +596,43 @@ pub fn TopNav(#[prop(optional)] default_sort: MaybeProp<SortType>, #[prop(option
                     </summary>
                     <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
                       <li
-                        class={move || { (if SortType::Active == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                        class={move || { (if SortType::Active == ssr_sort() { "menu-active" } else { "" }).to_string() }}
                         on:click={on_sort_click(SortType::Active)}
                       >
                         <span>"Active"</span>
                       </li>
                       <li
-                        class={move || { (if SortType::TopAll == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                        class={move || { (if SortType::TopAll == ssr_sort() { "menu-active" } else { "" }).to_string() }}
                         on:click={on_sort_click(SortType::TopAll)}
                       >
                         <span>"Top"</span>
                       </li>
                       <li
-                        class={move || { (if SortType::Hot == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                        class={move || { (if SortType::Hot == ssr_sort() { "menu-active" } else { "" }).to_string() }}
                         on:click={on_sort_click(SortType::Hot)}
                       >
                         <span>"Hot"</span>
                       </li>
                       <li
-                        class={move || { (if SortType::New == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                        class={move || { (if SortType::New == ssr_sort() { "menu-active" } else { "" }).to_string() }}
                         on:click={on_sort_click(SortType::New)}
                       >
                         <span>"New"</span>
                       </li>
                       <li
-                        class={move || { (if SortType::Old == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                        class={move || { (if SortType::Old == ssr_sort() { "menu-active" } else { "" }).to_string() }}
                         on:click={on_sort_click(SortType::Old)}
                       >
                         <span>"Old"</span>
                       </li>
                       <li
-                        class={move || { (if SortType::Controversial == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                        class={move || { (if SortType::Controversial == ssr_sort() { "menu-active" } else { "" }).to_string() }}
                         on:click={on_sort_click(SortType::Controversial)}
                       >
                         <span>"Controversial"</span>
                       </li>
                       <li
-                        class={move || { (if SortType::Scaled == ssr_sort() { "btn-active" } else { "" }).to_string() }}
+                        class={move || { (if SortType::Scaled == ssr_sort() { "menu-active" } else { "" }).to_string() }}
                         on:click={on_sort_click(SortType::Scaled)}
                       >
                         <span>{"Scaled"}</span>
@@ -690,7 +718,7 @@ pub fn TopNav(#[prop(optional)] default_sort: MaybeProp<SortType>, #[prop(option
                 <Icon icon={Palette} />
               </summary>
               <ul class="z-[1] [inset-inline-end:0]">
-                <li>
+                <li data-theme="dark">
                   <ActionForm attr:class="p-0" action={change_theme}>
                     <input type="hidden" name="theme" value="dark" />
                     <button class="py-2 px-4" type="submit" on:click={on_theme_submit("dark")}>
@@ -698,7 +726,7 @@ pub fn TopNav(#[prop(optional)] default_sort: MaybeProp<SortType>, #[prop(option
                     </button>
                   </ActionForm>
                 </li>
-                <li>
+                <li data-theme="light">
                   <ActionForm attr:class="p-0" action={change_theme}>
                     <input type="hidden" name="theme" value="light" />
                     <button class="py-2 px-4" type="submit" on:click={on_theme_submit("light")}>
@@ -706,7 +734,7 @@ pub fn TopNav(#[prop(optional)] default_sort: MaybeProp<SortType>, #[prop(option
                     </button>
                   </ActionForm>
                 </li>
-                <li>
+                <li data-theme="retro">
                   <ActionForm attr:class="p-0" action={change_theme}>
                     <input type="hidden" name="theme" value="retro" />
                     <button class="py-2 px-4" type="submit" on:click={on_theme_submit("retro")}>
@@ -743,26 +771,26 @@ pub fn TopNav(#[prop(optional)] default_sort: MaybeProp<SortType>, #[prop(option
                         <Icon icon={Palette} />
                       </summary>
                       <ul class="z-[1] [inset-inline-end:0]">
-                        <li>
+                        <li data-theme="dark">
                           <ActionForm attr:class="p-0" action={change_theme}>
                             <input type="hidden" name="theme" value="dark" />
-                            <button class="py-2 px-4" type="submit" on:click={on_theme_submit("dark")}>
+                            <button data-theme="dark" class="py-2 px-4" type="submit" on:click={on_theme_submit("dark")}>
                               "Dark"
                             </button>
                           </ActionForm>
                         </li>
-                        <li>
+                        <li data-theme="light">
                           <ActionForm attr:class="p-0" action={change_theme}>
                             <input type="hidden" name="theme" value="light" />
-                            <button class="py-2 px-4" type="submit" on:click={on_theme_submit("light")}>
+                            <button data-theme="light" class="py-2 px-4" type="submit" on:click={on_theme_submit("light")}>
                               "Light"
                             </button>
                           </ActionForm>
                         </li>
-                        <li>
+                        <li data-theme="retro">
                           <ActionForm attr:class="p-0" action={change_theme}>
                             <input type="hidden" name="theme" value="retro" />
-                            <button class="py-2 px-4" type="submit" on:click={on_theme_submit("retro")}>
+                            <button data-theme="retro" class="py-2 px-4" type="submit" on:click={on_theme_submit("retro")}>
                               "Retro"
                             </button>
                           </ActionForm>
@@ -771,43 +799,43 @@ pub fn TopNav(#[prop(optional)] default_sort: MaybeProp<SortType>, #[prop(option
                     </details>
                   </li>
                   <div class="flex my-0 sm:hidden divider" />
-                  <li>
-                    <A href="/notifications">"Notifications"</A>
-                  </li>
-                  <li>
-                    <A
-                      on:click={move |e: MouseEvent| {
-                        if e.ctrl_key() && e.shift_key() {
-                          e.stop_propagation();
-                          if let Some(Ok(GetSiteResponse { my_user: Some(m), .. })) = ssr_site_signal.get() {
-                            let _ = window().location().set_href(&format!("//lemmy.world/u/{}", m.local_user_view.person.name));
-                          }
-                        }
-                      }}
-                      href={move || {
-                        format!(
-                          "/u/{}",
-                          if let Some(Ok(GetSiteResponse { my_user: Some(m), .. })) = ssr_site_signal.get() {
-                            m.local_user_view.person.name
-                          } else {
-                            String::default()
-                          },
-                        )
-                      }}
-                    >
-                      "Profile"
-                    </A>
-                  </li>
-                  <li>
-                    <A attr:class="pointer-events-none text-base-content/50" href="/settings">
-                      "Settings"
-                    </A>
-                  </li>
-                  <div class="my-0 divider" />
+                  // <li>
+                  //   <A href="/notifications">"Notifications"</A>
+                  // </li>
+                  // <li>
+                  //   <A
+                  //     on:click={move |e: MouseEvent| {
+                  //       if e.ctrl_key() && e.shift_key() {
+                  //         e.stop_propagation();
+                  //         if let Some(Ok(GetSiteResponse { my_user: Some(m), .. })) = ssr_site_signal.get() {
+                  //           let _ = window().location().set_href(&format!("//lemmy.world/u/{}", m.local_user_view.person.name));
+                  //         }
+                  //       }
+                  //     }}
+                  //     href={move || {
+                  //       format!(
+                  //         "/u/{}",
+                  //         if let Some(Ok(GetSiteResponse { my_user: Some(m), .. })) = ssr_site_signal.get() {
+                  //           m.local_user_view.person.name
+                  //         } else {
+                  //           String::default()
+                  //         },
+                  //       )
+                  //     }}
+                  //   >
+                  //     "Profile"
+                  //   </A>
+                  // </li>
+                  // <li>
+                  //   <A attr:class="pointer-events-none text-base-content/50" href="/settings">
+                  //     "Settings"
+                  //   </A>
+                  // </li>
+                  // <div class="my-0 divider" />
                   <li>
                     <ActionForm action={logout_action}>
                       <button type="submit" on:click={on_logout_submit}>
-                        "Logout"
+                        <Icon icon={SignOut} />
                       </button>
                     </ActionForm>
                   </li>

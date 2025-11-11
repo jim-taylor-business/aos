@@ -1,5 +1,5 @@
 #![recursion_limit = "512"]
-// #![allow(warnings)]
+#![allow(warnings)]
 
 pub mod client;
 pub mod comment;
