@@ -9,7 +9,7 @@ use leptos::{html::Img, logging::*, prelude::*};
 use leptos_router::{components::*, hooks::*};
 use web_sys::MouseEvent;
 
-#[server(VotePostFn, "/serverfn")]
+#[server]
 pub async fn vote_post_fn(post_id: i32, score: i16) -> Result<Option<PostResponse>, ServerFnError> {
   use lemmy_api_common::lemmy_db_schema::newtypes::PostId;
   let form = CreatePostLike {
@@ -27,7 +27,7 @@ pub async fn vote_post_fn(post_id: i32, score: i16) -> Result<Option<PostRespons
   }
 }
 
-#[server(SavePostFn, "/serverfn")]
+#[server]
 pub async fn save_post_fn(post_id: i32, save: bool) -> Result<Option<PostResponse>, ServerFnError> {
   use lemmy_api_common::lemmy_db_schema::newtypes::PostId;
   let form = SavePost {
@@ -45,7 +45,7 @@ pub async fn save_post_fn(post_id: i32, save: bool) -> Result<Option<PostRespons
   }
 }
 
-#[server(BlockUserFn, "/serverfn")]
+#[server]
 pub async fn block_user_fn(person_id: i32, block: bool) -> Result<Option<BlockPersonResponse>, ServerFnError> {
   use lemmy_api_common::lemmy_db_schema::newtypes::PersonId;
   let form = BlockPerson {
@@ -87,7 +87,7 @@ async fn try_report(form: CreatePostReport) -> Result<PostReportResponse, LemmyA
   }
 }
 
-#[server(ReportPostFn, "/serverfn")]
+#[server]
 pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostReportResponse>, ServerFnError> {
   use lemmy_api_common::lemmy_db_schema::newtypes::PostId;
 
@@ -284,7 +284,11 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
     format!(
       "{}@{}",
       post_view.get().community.name,
-      post_view.get().community.actor_id.inner().host().unwrap().to_string()
+      if let Some(h) = post_view.get().community.actor_id.inner().host() {
+        h.to_string()
+      } else {
+        "".to_string()
+      }
     )
   };
   let community_title_encoded = html_escape::encode_safe(&community_title).to_string();
@@ -298,7 +302,10 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
     }
     #[cfg(feature = "ssr")]
     {
-      std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64
+      std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or(std::time::Duration::new(1000, 0))
+        .as_millis() as u64
     }
   };
   let duration_in_text = pretty_duration::pretty_duration(
@@ -467,7 +474,6 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
           >
             <Icon icon={Reply} />
           </span>
-          // </Show>
           <span class={format!("text-base-content{}", if post_view.get().post.local { " hidden" } else { "" })} title="Original">
             <A href={post_view.get().post.ap_id.inner().to_string()}>
               <Icon icon={External} />

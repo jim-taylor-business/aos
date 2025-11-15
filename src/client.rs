@@ -254,56 +254,65 @@ mod client {
 
       let client = reqwest::Client::new();
 
-      let r = match method {
-        HttpType::Get => client.get(&route).maybe_bearer_auth(jwt.clone()).query(&form).send(), //reqwest::get(&route), //client.get(&route).maybe_bearer_auth(jwt.clone()).query(&form).unwrap().send(),
+      let m = match method {
+        HttpType::Get => client.get(&route).maybe_bearer_auth(jwt.clone()).query(&form).send(),
         HttpType::Post => client.post(&route).maybe_bearer_auth(jwt.clone()).form(&form).send(),
-        HttpType::Put => client.put(&route).maybe_bearer_auth(jwt.clone()).form(&form).send(), //client.put(&route).maybe_bearer_auth(jwt.clone()).send_json(&form),
+        HttpType::Put => client.put(&route).maybe_bearer_auth(jwt.clone()).form(&form).send(),
       }
-      .await
-      .unwrap();
+      .await;
 
-      match r.status().as_u16() {
-        400..=599 => {
-          let api_result = r.json::<LemmyErrorType>().await;
+      match m {
+        Err(re) => {
+          return Err(LemmyAppError {
+            error_type: LemmyAppErrorType::ApiError(LemmyErrorType::Unknown("reqwest error".into())),
+            content: format!("{:#?}", re),
+          });
+        }
+        Ok(r) => {
+          match r.status().as_u16() {
+            400..=599 => {
+              let api_result = r.json::<LemmyErrorType>().await;
 
-          match api_result {
-            Ok(LemmyErrorType::IncorrectLogin) => {
-              log!("{:#?}", LemmyErrorType::IncorrectLogin);
-              set_auth_cookie.set(None);
-              return Err(LemmyAppError {
-                error_type: LemmyAppErrorType::ApiError(LemmyErrorType::IncorrectLogin),
-                content: format!("{:#?}", LemmyErrorType::IncorrectLogin),
-              });
+              match api_result {
+                Ok(LemmyErrorType::IncorrectLogin) => {
+                  log!("{:#?}", LemmyErrorType::IncorrectLogin);
+                  set_auth_cookie.set(None);
+                  return Err(LemmyAppError {
+                    error_type: LemmyAppErrorType::ApiError(LemmyErrorType::IncorrectLogin),
+                    content: format!("{:#?}", LemmyErrorType::IncorrectLogin),
+                  });
+                }
+                Ok(le) => {
+                  log!("{:#?}", le);
+                  return Err(LemmyAppError {
+                    error_type: LemmyAppErrorType::ApiError(le.clone()),
+                    content: format!("{:#?}", le),
+                  });
+                }
+                Err(e) => {
+                  log!("{:#?}", e);
+                  return Err(LemmyAppError {
+                    error_type: LemmyAppErrorType::Unknown,
+                    content: format!("{:#?}", e),
+                  });
+                }
+              }
             }
-            Ok(le) => {
-              log!("{:#?}", le);
-              return Err(LemmyAppError {
-                error_type: LemmyAppErrorType::ApiError(le.clone()),
-                content: format!("{:#?}", le),
-              });
-            }
-            Err(e) => {
-              log!("{:#?}", e);
-              return Err(LemmyAppError {
-                error_type: LemmyAppErrorType::Unknown,
-                content: format!("{:#?}", e),
-              });
-            }
+            _ => {}
+          };
+
+          // Ok(r.json::<Response>().await.unwrap_or()) //.limit(10485760).await.map_err(Into::into)
+
+          // let s = r.body().limit(10485760).await?;
+          let t = r.text().await.ok().unwrap_or("".to_string());
+          let s = t; //.limit(10485760).await?;
+
+          if s.len() == 0 {
+            serde_json::from_str::<Response>("{}").map_err(Into::into)
+          } else {
+            serde_json::from_str::<Response>(&s).map_err(Into::into)
           }
         }
-        _ => {}
-      };
-
-      // Ok(r.json::<Response>().await.unwrap()) //.limit(10485760).await.map_err(Into::into)
-
-      // let s = r.body().limit(10485760).await?;
-      let t = r.text().await.ok().unwrap_or("".to_string());
-      let s = t; //.limit(10485760).await?;
-
-      if s.len() == 0 {
-        serde_json::from_str::<Response>("{}").map_err(Into::into)
-      } else {
-        serde_json::from_str::<Response>(&s).map_err(Into::into)
       }
     }
   }
@@ -316,8 +325,6 @@ mod client {
   use crate::OnlineSetter;
   use gloo_net::{http, http::RequestBuilder};
   use leptos::wasm_bindgen::UnwrapThrowExt;
-  // use leptos::*;
-  // use leptos::{expect_context, RwSignal, SignalSet};
   use web_sys::{AbortController, RequestCache};
 
   trait MaybeBearerAuth {
@@ -348,7 +355,7 @@ mod client {
 
       let online = expect_context::<RwSignal<OnlineSetter>>();
 
-      SendWrapper::new(async move {
+      let s = SendWrapper::new(async move {
         let abort_controller = SendWrapper::new(web_sys::AbortController::new().ok());
         let abort_signal = abort_controller.as_ref().map(|a| a.signal());
         on_cleanup(move || {
@@ -442,7 +449,9 @@ mod client {
           Err(e)
         }
       })
-      .await
+      .await;
+
+      s
     }
   }
 

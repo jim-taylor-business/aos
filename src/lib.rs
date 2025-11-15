@@ -161,7 +161,6 @@ pub fn App() -> impl IntoView {
     set_instance_cookie.set(Some("lemmy.world".to_string()));
   }
 
-  // #[cfg(feature = "ssr")]
   let (get_theme_cookie, set_theme_cookie) =
     use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
   provide_context(ReadThemeCookie(get_theme_cookie));
@@ -177,7 +176,6 @@ pub fn App() -> impl IntoView {
     move || (),
     move |()| async move {
       let result: Result<GetSiteResponse, LemmyAppError> = { LemmyClient.get_site().await };
-      // ssr_site_signal.set(Some(result.clone()));
       match result {
         Ok(o) => Ok(o),
         Err(e) => Err(e),

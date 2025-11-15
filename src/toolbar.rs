@@ -6,11 +6,14 @@ use crate::{
   OnlineSetter, ReadInstanceCookie,
 };
 use lemmy_api_common::{lemmy_db_views::structs::*, person::*, post::*, site::GetSiteResponse};
-use leptos::{html::Img, prelude::*, task::spawn_local_scoped_with_cancellation};
-use leptos_router::{components::A, hooks::*};
+use leptos::{html::Img, logging::log, prelude::*, task::*};
+use leptos_router::{
+  components::{Form, A},
+  hooks::*,
+};
 use web_sys::MouseEvent;
 
-#[server(VotePostFn, "/serverfn")]
+#[server]
 pub async fn vote_post_fn(post_id: i32, score: i16) -> Result<Option<PostResponse>, ServerFnError> {
   use lemmy_api_common::lemmy_db_schema::newtypes::PostId;
   let form = CreatePostLike {
@@ -28,7 +31,7 @@ pub async fn vote_post_fn(post_id: i32, score: i16) -> Result<Option<PostRespons
   }
 }
 
-#[server(SavePostFn, "/serverfn")]
+#[server]
 pub async fn save_post_fn(post_id: i32, save: bool) -> Result<Option<PostResponse>, ServerFnError> {
   use lemmy_api_common::lemmy_db_schema::newtypes::PostId;
   let form = SavePost {
@@ -46,7 +49,7 @@ pub async fn save_post_fn(post_id: i32, save: bool) -> Result<Option<PostRespons
   }
 }
 
-#[server(BlockUserFn, "/serverfn")]
+#[server]
 pub async fn block_user_fn(person_id: i32, block: bool) -> Result<Option<BlockPersonResponse>, ServerFnError> {
   use lemmy_api_common::lemmy_db_schema::newtypes::PersonId;
   let form = BlockPerson {
@@ -88,7 +91,7 @@ async fn try_report(form: CreatePostReport) -> Result<PostReportResponse, LemmyA
   }
 }
 
-#[server(ReportPostFn, "/serverfn")]
+#[server]
 pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostReportResponse>, ServerFnError> {
   use lemmy_api_common::lemmy_db_schema::newtypes::PostId;
 
@@ -108,9 +111,8 @@ pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostR
 }
 
 #[component]
-pub fn ResponsivePostToolbar(
+pub fn PostToolbar(
   post_view: Signal<PostView>,
-  post_number: usize,
   reply_show: RwSignal<bool>,
   content: RwSignal<String>,
   post_id: Signal<Option<i32>>,
@@ -164,6 +166,7 @@ pub fn ResponsivePostToolbar(
         post_id: post_view.get().post.id,
         save: !post_view.get().saved,
       };
+
       let result = LemmyClient.save_post(form).await;
       match result {
         Ok(o) => {
@@ -277,7 +280,11 @@ pub fn ResponsivePostToolbar(
     format!(
       "{}@{}",
       post_view.get().community.name,
-      post_view.get().community.actor_id.inner().host().unwrap().to_string()
+      if let Some(h) = post_view.get().community.actor_id.inner().host() {
+        h.to_string()
+      } else {
+        "".to_string()
+      }
     )
   };
   let _community_title_encoded = html_escape::encode_safe(&community_title).to_string();
@@ -291,7 +298,10 @@ pub fn ResponsivePostToolbar(
     }
     #[cfg(feature = "ssr")]
     {
-      std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64
+      std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or(std::time::Duration::new(1000, 0))
+        .as_millis() as u64
     }
   };
   let duration_in_text = pretty_duration::pretty_duration(
@@ -378,8 +388,7 @@ pub fn ResponsivePostToolbar(
             "".to_string()
           }}
         </span>
-        <Show when={move || { post_number == 0 }} fallback={|| {}}>
-          <ActionForm action={save_post_action} attr:class="flex items-center">
+          <Form action="PUT"/*{save_post_action}*/ attr:class="flex items-center">
             <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
             <input type="hidden" name="save" value={move || format!("{}", !post_view.get().saved)} />
             <button
@@ -397,7 +406,7 @@ pub fn ResponsivePostToolbar(
             >
               <Icon icon={Save} />
             </button>
-          </ActionForm>
+          </Form>
           <button
             class={move || {
               format!(
@@ -499,7 +508,6 @@ pub fn ResponsivePostToolbar(
               </ul>
             </div>
           </span>
-        </Show>
       </div>
     </div>
   }

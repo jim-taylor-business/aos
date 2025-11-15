@@ -73,7 +73,7 @@ impl core::fmt::Display for LemmyAppError {
           f,
           "{{\"error_type\":{{\"{}\": {}}}}}",
           &self.error_type,
-          serde_json::to_string(inner).ok().unwrap()
+          serde_json::to_string(inner).unwrap_or("".to_string())
         )
       }
       _ => {

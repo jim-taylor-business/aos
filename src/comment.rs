@@ -320,7 +320,9 @@ pub fn Comment(
     use_intersection_observer_with_options(
       _visibility_element,
       move |_entries, _io| {
-        let _ = _visibility_element.get().unwrap().focus();
+        if let Some(v) = _visibility_element.get() {
+          v.focus();
+        }
       },
       UseIntersectionObserverOptions::default(),
     );
@@ -399,7 +401,6 @@ pub fn Comment(
           }
         }}
         on:pointermove={move |_e: PointerEvent| {
-          // log!("move");
           if let Some(h) = still_handle.get() {
             h.clear();
           }
@@ -428,7 +429,7 @@ pub fn Comment(
 
         <Show when={move || vote_show.get()} fallback={|| view! {}}>
           <div on:click={cancel} class="flex flex-wrap gap-x-2 items-center break-inside-avoid">
-            <Form on:click={on_up_vote_submit} action="POST" attr:class="flex items-center">
+            <Form action="POST" attr:class="flex items-center">
               <input type="hidden" name="post_id" value={format!("{}", comment_view.get().post.id)} />
               <input type="hidden" name="score" value={move || if Some(1) == comment_view.get().my_vote { 0 } else { 1 }} />
               <button
@@ -442,12 +443,13 @@ pub fn Comment(
                 }}
                 title="Up vote"
                 disabled={move || Some(true) != logged_in.get() || !online.get().0}
+                on:click={on_up_vote_submit}
               >
                 <Icon icon={Upvote} />
               </button>
             </Form>
             <span class="text-sm">{move || comment_view.get().counts.score}</span>
-            <Form on:click={on_down_vote_submit} action="POST" attr:class="flex items-center">
+            <Form action="POST" attr:class="flex items-center">
               <input type="hidden" name="post_id" value={format!("{}", comment_view.get().post.id)} />
               <input type="hidden" name="score" value={move || if Some(-1) == comment_view.get().my_vote { 0 } else { -1 }} />
               <button
@@ -461,11 +463,12 @@ pub fn Comment(
                 }}
                 title="Down vote"
                 disabled={move || Some(true) != logged_in.get() || !online.get().0}
+                on:click={on_down_vote_submit}
               >
                 <Icon icon={Downvote} />
               </button>
             </Form>
-            <Form action="POST" on:click={on_save_submit} attr:class="flex items-center">
+            <Form action="POST" attr:class="flex items-center">
               <input type="hidden" name="post_id" value={format!("{}", comment_view.get().post.id)} />
               <input type="hidden" name="save" value={move || format!("{}", !comment_view.get().saved)} />
               <button
@@ -479,6 +482,7 @@ pub fn Comment(
                   )
                 }}
                 disabled={move || Some(true) != logged_in.get() || !online.get().0}
+                on:click={on_save_submit}
               >
                 <Icon icon={Save} />
               </button>
@@ -499,7 +503,6 @@ pub fn Comment(
                       )
                       .await
                     {
-                      log!("goo");
                       reply_content.set(c);
                     }
                   }

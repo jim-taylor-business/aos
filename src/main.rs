@@ -17,23 +17,33 @@ fn main() {
     use aos::{html_template, App};
     use axum::Router;
     use leptos::config::get_configuration;
+    use leptos::logging::log;
     use leptos_axum::{generate_route_list, LeptosRoutes};
 
-    let conf = get_configuration(None).unwrap();
-    let leptos_options = conf.leptos_options;
-    let addr = leptos_options.site_addr;
-    let routes = generate_route_list(App);
+    if let Ok(conf) = get_configuration(None) {
+      let leptos_options = conf.leptos_options;
+      let addr = leptos_options.site_addr;
+      let routes = generate_route_list(App);
 
-    let app = Router::new()
-      .leptos_routes(&leptos_options, routes, {
-        let leptos_options = leptos_options.clone();
-        move || html_template(leptos_options.clone())
-      })
-      .fallback(leptos_axum::file_and_error_handler(html_template))
-      .with_state(leptos_options);
+      let app = Router::new()
+        .leptos_routes(&leptos_options, routes, {
+          let leptos_options = leptos_options.clone();
+          move || html_template(leptos_options.clone())
+        })
+        .fallback(leptos_axum::file_and_error_handler(html_template))
+        .with_state(leptos_options);
 
-    let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
-    axum::serve(listener, app.into_make_service()).await.unwrap();
+      if let Ok(listener) = tokio::net::TcpListener::bind(&addr).await {
+        if let Ok(a) = axum::serve(listener, app.into_make_service()).await {
+        } else {
+          log!("server did not start");
+        }
+      } else {
+        log!("listener did not bind");
+      }
+    } else {
+      log!("configuration not found");
+    }
   });
 }
 

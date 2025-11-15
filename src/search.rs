@@ -113,7 +113,7 @@ pub fn Search() -> impl IntoView {
   let search_cache_resource = Resource::new(
     move || (logged_in.get(), ssr_list(), ssr_sort(), ssr_name(), ssr_page(), ssr_term()),
     move |(_logged_in, _list, sort, _name, pages, term)| async move {
-      let mut new_pages: Vec<(u32, Option<SearchResponse>)> = Vec::new();
+      let mut new_pages: Vec<(u32, SearchResponse)> = Vec::new();
       for p in pages {
         let form = Search {
           q: term.clone(),
@@ -130,8 +130,7 @@ pub fn Search() -> impl IntoView {
         let result = LemmyClient.search(form.clone()).await;
         match result {
           Ok(o) => {
-            log!("src {}", o.posts.len());
-            new_pages.push((p, Some(o)));
+            new_pages.push((p, o));
           }
           Err(e) => {
             error!("err {:#?}", e);
@@ -168,7 +167,7 @@ pub fn Search() -> impl IntoView {
                     <div>
                       <Title text="Search" />
                       <For each={move || o.clone()} key={|r| r.0.clone()} let:r>
-                        <Listings posts={r.1.unwrap().posts.into()} page_number={RwSignal::new(((r.0 - 1) * 50) as usize)} />
+                        <Listings posts={r.1.posts.into()} page_number={RwSignal::new(((r.0 - 1) * 50) as usize)} />
                         {
                           next_page_cursor.set(r.0 + 1);
                         }

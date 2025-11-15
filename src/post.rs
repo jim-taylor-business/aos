@@ -4,7 +4,7 @@ use crate::{
   db::csr_indexed_db::*,
   errors::{LemmyAppError, LemmyAppErrorType},
   nav::TopNav,
-  toolbar::ResponsivePostToolbar,
+  toolbar::PostToolbar,
   OnlineSetter, ReadInstanceCookie, WriteInstanceCookie,
 };
 use ev::MouseEvent;
@@ -16,8 +16,9 @@ use lemmy_api_common::{
 };
 use leptos::{
   html::{Div, Textarea},
+  logging::log,
   prelude::*,
-  task::spawn_local_scoped_with_cancellation,
+  task::*,
   *,
 };
 use leptos_meta::*;
@@ -162,7 +163,9 @@ pub fn Post() -> impl IntoView {
     use_intersection_observer_with_options(
       _visibility_element,
       move |_entries, _io| {
-        let _ = _visibility_element.get().unwrap().focus();
+        if let Some(v) = _visibility_element.get() {
+          v.focus();
+        }
       },
       UseIntersectionObserverOptions::default(),
     );
@@ -174,7 +177,7 @@ pub fn Post() -> impl IntoView {
 
   view! {
     <main class="flex flex-col">
-      <TopNav default_sort={SortType::TopAll.into()} post_view={post_view.into()} />
+      <TopNav default_sort={SortType::TopAll.into()} post_view />//={post_view.into()} />
       <div class="flex flex-grow">
         <div
           on:wheel={move |e: WheelEvent| {
@@ -206,7 +209,6 @@ pub fn Post() -> impl IntoView {
                             >
                               "Retry"
                             </button>
-                          // </Show>
                           </div>
                         </div>
                       </div>
@@ -247,14 +249,16 @@ pub fn Post() -> impl IntoView {
                         }
                       });
                     }
+                    let res2 = res.1.clone();
                     let res = res.1.clone();
-                    post_view.set(Some(res.clone()));
-                    let text = if let Some(b) = res.post_view.post.body.clone() {
-                      if b.len() > 0 { Some(b) } else { res.post_view.post.embed_description.clone() }
+                    post_view.set(Some(res));
+                    let post_response = RwSignal::new(res2);
+                    let text = if let Some(b) = post_response.get().post_view.post.body.clone() {
+                      if b.len() > 0 { Some(b) } else { post_response.get().post_view.post.embed_description.clone() }
                     } else {
                       None
                     };
-                    let title = post_view.get().unwrap().post_view.post.name.clone();
+                    let title = post_response.get().post_view.post.name.clone();
                     let mut options = pulldown_cmark::Options::empty();
                     options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
                     options.insert(pulldown_cmark::Options::ENABLE_TABLES);
@@ -276,24 +280,24 @@ pub fn Post() -> impl IntoView {
                       });
                     let mut title_encoded = String::new();
                     pulldown_cmark::html::push_html(&mut title_encoded, custom);
-                    let community_title = if post_view.get().unwrap().post_view.community.local {
-                      format!("{}", post_view.get().unwrap().post_view.community.name)
+                    let community_title = if post_response.get().post_view.community.local {
+                      format!("{}", post_response.get().post_view.community.name)
                     } else {
                       format!(
                         "{}@{}",
-                        post_view.get().unwrap().post_view.community.name,
-                        post_view.get().unwrap().post_view.community.actor_id.inner().host().unwrap().to_string(),
+                        post_response.get().post_view.community.name,
+                        post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
                       )
                     };
                     let community_title_encoded = html_escape::encode_safe(&community_title).to_string();
-                    let creator_name = &post_view.get().unwrap().post_view.creator.actor_id.to_string()[8..];
+                    let creator_name = &post_response.get().post_view.creator.actor_id.to_string()[8..];
                     let creator_name_encoded = html_escape::encode_safe(creator_name).to_string();
                     let now_in_millis = {
                       #[cfg(not(feature = "ssr"))] { chrono::offset::Utc::now().timestamp_millis() as u64 }
                       #[cfg(feature = "ssr")] { std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64 }
                     };
                     let duration_in_text = pretty_duration::pretty_duration(
-                      &std::time::Duration::from_millis(now_in_millis - post_view.get().unwrap().post_view.post.published.timestamp_millis() as u64),
+                      &std::time::Duration::from_millis(now_in_millis - post_response.get().post_view.post.published.timestamp_millis() as u64),
                       Some(pretty_duration::PrettyDurationOptions {
                         output_format: Some(pretty_duration::PrettyDurationOutputFormat::Compact),
                         singular_labels: None,
@@ -307,21 +311,21 @@ pub fn Post() -> impl IntoView {
                     }
                       .0
                       .to_string();
+                    let url = Memo::new(move |_| post_response.get().post_view.post.url);
+                    let thumbnail_url = Memo::new(move |_| post_response.get().post_view.post.thumbnail_url);
 
                     view! {
-                      <Title text={res.post_view.post.name.clone()} />
+                      <Title text={post_response.get().post_view.post.name} />
                       <div>
-                        <ResponsivePostToolbar post_view={res.post_view.into()} post_number=0 reply_show content post_id />
+                        <PostToolbar post_view={post_response.get().post_view.into()} reply_show content post_id />
                       </div>
                       <div class="py-2 px-4">
-                        // <A href={move || format!("/responsive/p/{}", post_view.get().unwrap().post_view.post.id)} class="pb-1 block hover:text-accent">
                         <span class="overflow-y-auto text-xl wrap-anywhere" inner_html={title_encoded} />
-                        // </A>
                         <span class="block mb-1 wrap-anywhere text-md">
                           <span>{abbr_duration}</span>
                           " ago by "
                           <a
-                            href={move || format!("{}", post_view.get().unwrap().post_view.creator.actor_id)}
+                            href={move || format!("{}", post_response.get().post_view.creator.actor_id)}
                             target="_blank"
                             class="inline wrap-anywhere hover:text-secondary"
                           >
@@ -330,17 +334,16 @@ pub fn Post() -> impl IntoView {
                           " in "
                           <A
                             attr:class="inline wrap-anywhere hover:text-secondary"
-                            href={if post_view.get().unwrap().post_view.community.local {
-                              format!("/c/{}", post_view.get().unwrap().post_view.community.name)
+                            href={if post_response.get().post_view.community.local {
+                              format!("/c/{}", post_response.get().post_view.community.name)
                             } else {
                               format!(
                                 "/c/{}@{}",
-                                post_view.get().unwrap().post_view.community.name,
-                                post_view.get().unwrap().post_view.community.actor_id.inner().host().unwrap().to_string(),
+                                post_response.get().post_view.community.name,
+                                post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
                               )
                             }}
                             on:click={move |e: MouseEvent| {
-                              // let params = use_q.clone();
                               #[cfg(not(feature = "ssr"))]
                               spawn_local_scoped_with_cancellation(async move {
                                 if let Ok(d) = IndexedDb::new().await {
@@ -366,14 +369,14 @@ pub fn Post() -> impl IntoView {
                           </A>
                           <span
                             class="overflow-y-auto"
-                            inner_html={if let Some(d) = post_view.get().unwrap().post_view.post.url {
+                            inner_html={move || if let Some(d) = url.get() {
                               if let Some(f) = d.inner().host_str() {
-                                if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { format!(" from {}", f) } else { "".into() }
+                                if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { format!(" from {}", f) } else { "".to_owned() }
                               } else {
-                                "".into()
+                                "".to_owned()
                               }
                             } else {
-                              "".into()
+                              "".to_owned()
                             }}
                           />
                         </span>
@@ -382,8 +385,8 @@ pub fn Post() -> impl IntoView {
                         class={move || {
                           format!(
                             "float-left{}",
-                            if post_view.get().unwrap().post_view.post.thumbnail_url.is_none()
-                              && post_view.get().unwrap().post_view.post.url.is_none()
+                            if thumbnail_url.get().is_none()
+                              && url.get().is_none()
                             {
                               " hidden"
                             } else {
@@ -393,15 +396,15 @@ pub fn Post() -> impl IntoView {
                         }}
                         target="_blank"
                         href={move || {
-                          if let Some(d) = post_view.get().unwrap().post_view.post.url {
+                          if let Some(d) = url.get() {
                             d.inner().to_string()
                           } else {
-                            format!("/post/{}", post_view.get().unwrap().post_view.post.id)
+                            format!("/post/{}", post_response.get().post_view.post.id)
                           }
                         }}
                       >
                         {move || {
-                          if let Some(t) = post_view.get().unwrap().post_view.post.thumbnail_url {
+                          if let Some(t) = thumbnail_url.get() {
                             let h = t.inner().to_string();
                             thumbnail.set(h);
                             view! {
@@ -539,7 +542,6 @@ pub fn Post() -> impl IntoView {
                       .into_any()
                   }
                   Some(None) | None => {
-                    // )
                     view! {
                       <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
                         <div class="py-4 px-8">

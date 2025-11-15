@@ -17,8 +17,8 @@ use leptos_use::{use_cookie_with_options, SameSite, UseCookieOptions};
 use std::collections::BTreeMap;
 use web_sys::{KeyboardEvent, MouseEvent, SubmitEvent, VisibilityState};
 
-#[server(LogoutFn, "/serverfn")]
-pub async fn logout() -> Result<(), ServerFnError> {
+#[server]
+pub async fn logout_fn() -> Result<(), ServerFnError> {
   use leptos_axum::redirect;
   let result = LemmyClient.logout().await;
   match result {
@@ -34,15 +34,15 @@ pub async fn logout() -> Result<(), ServerFnError> {
   }
 }
 
-#[server(SearchFn, "/serverfn")]
-pub async fn search(term: String) -> Result<(), ServerFnError> {
+#[server]
+pub async fn search_fn(term: String) -> Result<(), ServerFnError> {
   use leptos_axum::redirect;
   redirect(&format!("/s?term={}", &term));
   Ok(())
 }
 
-#[server(InstanceFn, "/serverfn")]
-pub async fn instance(instance: String) -> Result<(), ServerFnError> {
+#[server]
+pub async fn instance_fn(instance: String) -> Result<(), ServerFnError> {
   let WriteInstanceCookie(set_instance_cookie) = expect_context::<WriteInstanceCookie>();
   if instance.len() > 0 {
     set_instance_cookie.set(Some(instance));
@@ -52,8 +52,8 @@ pub async fn instance(instance: String) -> Result<(), ServerFnError> {
   Ok(())
 }
 
-#[server(ChangeLangFn, "/serverfn")]
-pub async fn change_lang(lang: String) -> Result<(), ServerFnError> {
+#[server]
+pub async fn change_lang_fn(lang: String) -> Result<(), ServerFnError> {
   let (_, set_locale_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
     "i18n_pref_locale",
     UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
@@ -72,7 +72,10 @@ pub async fn change_theme(theme: String) -> Result<(), ServerFnError> {
 }
 
 #[component]
-pub fn TopNav(#[prop(optional)] default_sort: MaybeProp<SortType>, #[prop(optional)] post_view: Signal<Option<GetPostResponse>>) -> impl IntoView {
+pub fn TopNav(
+  #[prop(optional)] default_sort: Signal<Option<SortType>>,
+  #[prop(optional)] post_view: RwSignal<Option<GetPostResponse>>,
+) -> impl IntoView {
   // let i18n = use_i18n();
 
   let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
@@ -96,6 +99,7 @@ pub fn TopNav(#[prop(optional)] default_sort: MaybeProp<SortType>, #[prop(option
       Some(false)
     }
   });
+  let ssr_term = move || query.get().get("term").unwrap_or("".into());
 
   let on_sort_click = move |s: SortType| {
     move |_e: MouseEvent| {
@@ -163,7 +167,7 @@ pub fn TopNav(#[prop(optional)] default_sort: MaybeProp<SortType>, #[prop(option
       query_params.remove("list".into());
       let navigate = use_navigate();
       if l != ListingType::All {
-        query_params.insert("list".to_string(), serde_json::to_string(&l).ok().unwrap());
+        query_params.insert("list".to_string(), serde_json::to_string(&l).ok().unwrap_or("All".into()));
       }
       let params = query_params.clone();
       #[cfg(not(feature = "ssr"))]
@@ -260,24 +264,32 @@ pub fn TopNav(#[prop(optional)] default_sort: MaybeProp<SortType>, #[prop(option
   let search_term = RwSignal::new("".to_string());
 
   let display_title = Signal::derive(move || {
-    let s = if let Some(pv) = post_view.get() {
-      let community_title = if pv.post_view.community.local {
-        format!("{}", pv.post_view.community.name)
-      } else {
-        format!(
-          "{}@{}",
-          pv.post_view.community.name,
-          pv.post_view.community.actor_id.inner().host().unwrap().to_string()
-        )
-      };
-      format!(
-        "{} by {} in {}",
-        pv.post_view.post.name,
-        pv.post_view.creator.actor_id.to_string()[8..].to_string(),
-        community_title
-      )
+    let s = if ssr_term().len() > 0 {
+      ssr_term()
     } else {
-      "".to_string()
+      if let Some(pv) = post_view.get() {
+        let community_title = if pv.post_view.community.local {
+          format!("{}", pv.post_view.community.name)
+        } else {
+          format!(
+            "{}@{}",
+            pv.post_view.community.name,
+            if let Some(h) = pv.post_view.community.actor_id.inner().host() {
+              h.to_string()
+            } else {
+              "".to_string()
+            }
+          )
+        };
+        format!(
+          "{} by {} in {}",
+          pv.post_view.post.name,
+          pv.post_view.creator.actor_id.to_string()[8..].to_string(),
+          community_title
+        )
+      } else {
+        "".to_string()
+      }
     };
     search_term.set(s.clone());
     s

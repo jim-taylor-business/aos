@@ -50,8 +50,8 @@ async fn try_login(form: Login) -> Result<LoginResponse, LemmyAppError> {
   }
 }
 
-#[server(LoginFn, "/serverfn")]
-pub async fn login(username_or_email: String, password: String, uri: String) -> Result<(), ServerFnError> {
+#[server]
+pub async fn login_fn(username_or_email: String, password: String, uri: String) -> Result<(), ServerFnError> {
   use leptos_axum::redirect;
   let req = Login {
     username_or_email: username_or_email.into(),
