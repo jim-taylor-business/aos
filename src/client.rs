@@ -1,20 +1,20 @@
 use crate::{
+  ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie,
   db::csr_indexed_db::*,
   errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult},
-  ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie,
 };
 use lemmy_api_common::{
+  LemmyErrorType, SuccessResponse,
   comment::*,
   community::*,
   person::*,
   post::*,
   private_message::{GetPrivateMessages, PrivateMessagesResponse},
   site::*,
-  LemmyErrorType, SuccessResponse,
 };
 use leptos::{logging::log, prelude::*};
 use send_wrapper::SendWrapper;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::str;
 
 #[derive(Clone, PartialEq)]
@@ -139,10 +139,10 @@ fn build_route(route: &str) -> String {
   if let Some(t) = get_instance_cookie.get() {
     set_instance_cookie.set(Some(t));
   } else {
-    set_instance_cookie.set(Some("lemmy.world".to_string()));
+    set_instance_cookie.set(Some("lemmy.world".to_owned()));
   }
 
-  format!("https://{}/api/v3/{}", get_instance_cookie.get().unwrap_or("".to_string()), route)
+  format!("https://{}/api/v3/{}", get_instance_cookie.get().unwrap_or("".to_owned()), route)
 }
 
 #[cfg(feature = "ssr")]
@@ -160,21 +160,13 @@ mod client {
 
   impl MaybeBearerAuth for ClientRequest {
     fn maybe_bearer_auth(self, token: Option<impl core::fmt::Display>) -> Self {
-      if let Some(token) = token {
-        self.bearer_auth(token)
-      } else {
-        self
-      }
+      if let Some(token) = token { self.bearer_auth(token) } else { self }
     }
   }
 
   impl MaybeBearerAuth for reqwest::RequestBuilder {
     fn maybe_bearer_auth(self, token: Option<impl core::fmt::Display>) -> Self {
-      if let Some(token) = token {
-        self.bearer_auth(token)
-      } else {
-        self
-      }
+      if let Some(token) = token { self.bearer_auth(token) } else { self }
     }
   }
 
@@ -189,10 +181,7 @@ mod client {
       let jwt = get_auth_cookie.get();
       let route = build_route(path);
 
-      log!(
-        "{}",
-        format!("{}?{}", route, serde_urlencoded::to_string(&form).unwrap_or("".to_string()))
-      );
+      log!("{}", format!("{}?{}", route, serde_urlencoded::to_string(&form).unwrap_or("".to_owned())));
 
       // SendWrapper::new(async move {
 
@@ -284,17 +273,11 @@ mod client {
                 }
                 Ok(le) => {
                   log!("{:#?}", le);
-                  return Err(LemmyAppError {
-                    error_type: LemmyAppErrorType::ApiError(le.clone()),
-                    content: format!("{:#?}", le),
-                  });
+                  return Err(LemmyAppError { error_type: LemmyAppErrorType::ApiError(le.clone()), content: format!("{:#?}", le) });
                 }
                 Err(e) => {
                   log!("{:#?}", e);
-                  return Err(LemmyAppError {
-                    error_type: LemmyAppErrorType::Unknown,
-                    content: format!("{:#?}", e),
-                  });
+                  return Err(LemmyAppError { error_type: LemmyAppErrorType::Unknown, content: format!("{:#?}", e) });
                 }
               }
             }
@@ -304,7 +287,7 @@ mod client {
           // Ok(r.json::<Response>().await.unwrap_or()) //.limit(10485760).await.map_err(Into::into)
 
           // let s = r.body().limit(10485760).await?;
-          let t = r.text().await.ok().unwrap_or("".to_string());
+          let t = r.text().await.ok().unwrap_or("".to_owned());
           let s = t; //.limit(10485760).await?;
 
           if s.len() == 0 {
@@ -333,11 +316,7 @@ mod client {
 
   impl MaybeBearerAuth for RequestBuilder {
     fn maybe_bearer_auth(self, token: Option<&str>) -> Self {
-      if let Some(token) = token {
-        self.header("Authorization", format!("Bearer {token}").as_str())
-      } else {
-        self
-      }
+      if let Some(token) = token { self.header("Authorization", format!("Bearer {token}").as_str()) } else { self }
     }
   }
 
@@ -400,17 +379,11 @@ mod client {
                 }
                 Ok(le) => {
                   log!("{:#?}", le);
-                  return Err(LemmyAppError {
-                    error_type: LemmyAppErrorType::ApiError(le.clone()),
-                    content: format!("{:#?}", le),
-                  });
+                  return Err(LemmyAppError { error_type: LemmyAppErrorType::ApiError(le.clone()), content: format!("{:#?}", le) });
                 }
                 Err(e) => {
                   log!("{:#?}", e);
-                  return Err(LemmyAppError {
-                    error_type: LemmyAppErrorType::Unknown,
-                    content: format!("{:#?}", e),
-                  });
+                  return Err(LemmyAppError { error_type: LemmyAppErrorType::Unknown, content: format!("{:#?}", e) });
                 }
               }
             }
@@ -442,10 +415,7 @@ mod client {
               }
             }
           }
-          let e = LemmyAppError {
-            error_type: LemmyAppErrorType::OfflineError,
-            content: String::from(""),
-          };
+          let e = LemmyAppError { error_type: LemmyAppErrorType::OfflineError, content: String::from("") };
           Err(e)
         }
       })
@@ -456,7 +426,7 @@ mod client {
   }
 
   fn build_fetch_query<T: Serialize>(path: &str, form: T) -> String {
-    let form_str = serde_urlencoded::to_string(&form).unwrap_or("".to_string());
+    let form_str = serde_urlencoded::to_string(&form).unwrap_or("".to_owned());
     format!("{}?{}", build_route(path), form_str)
   }
 }

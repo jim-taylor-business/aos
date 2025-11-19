@@ -1,8 +1,8 @@
 use crate::{
+  OnlineSetter, ReadInstanceCookie,
   client::*,
   errors::{LemmyAppError, LemmyAppErrorType},
   icon::{IconType::*, *},
-  OnlineSetter, ReadInstanceCookie,
 };
 use lemmy_api_common::{lemmy_db_views::structs::*, person::*, post::*, site::GetSiteResponse};
 use leptos::{html::Img, logging::*, prelude::*};
@@ -12,10 +12,7 @@ use web_sys::MouseEvent;
 #[server]
 pub async fn vote_post_fn(post_id: i32, score: i16) -> Result<Option<PostResponse>, ServerFnError> {
   use lemmy_api_common::lemmy_db_schema::newtypes::PostId;
-  let form = CreatePostLike {
-    post_id: PostId(post_id),
-    score,
-  };
+  let form = CreatePostLike { post_id: PostId(post_id), score };
   let result = LemmyClient.like_post(form).await;
   use leptos_axum::redirect;
   match result {
@@ -30,10 +27,7 @@ pub async fn vote_post_fn(post_id: i32, score: i16) -> Result<Option<PostRespons
 #[server]
 pub async fn save_post_fn(post_id: i32, save: bool) -> Result<Option<PostResponse>, ServerFnError> {
   use lemmy_api_common::lemmy_db_schema::newtypes::PostId;
-  let form = SavePost {
-    post_id: PostId(post_id),
-    save,
-  };
+  let form = SavePost { post_id: PostId(post_id), save };
   let result = LemmyClient.save_post(form).await;
   use leptos_axum::redirect;
   match result {
@@ -48,10 +42,7 @@ pub async fn save_post_fn(post_id: i32, save: bool) -> Result<Option<PostRespons
 #[server]
 pub async fn block_user_fn(person_id: i32, block: bool) -> Result<Option<BlockPersonResponse>, ServerFnError> {
   use lemmy_api_common::lemmy_db_schema::newtypes::PersonId;
-  let form = BlockPerson {
-    person_id: PersonId(person_id),
-    block,
-  };
+  let form = BlockPerson { person_id: PersonId(person_id), block };
   let result = LemmyClient.block_user(form).await;
   use leptos_axum::redirect;
   match result {
@@ -80,10 +71,7 @@ async fn try_report(form: CreatePostReport) -> Result<PostReportResponse, LemmyA
         Err(e) => Err(e),
       }
     }
-    Some(e) => Err(LemmyAppError {
-      error_type: e.clone(),
-      content: format!("{}", form.post_id.0),
-    }),
+    Some(e) => Err(LemmyAppError { error_type: e.clone(), content: format!("{}", form.post_id.0) }),
   }
 }
 
@@ -91,10 +79,7 @@ async fn try_report(form: CreatePostReport) -> Result<PostReportResponse, LemmyA
 pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostReportResponse>, ServerFnError> {
   use lemmy_api_common::lemmy_db_schema::newtypes::PostId;
 
-  let form = CreatePostReport {
-    post_id: PostId(post_id),
-    reason,
-  };
+  let form = CreatePostReport { post_id: PostId(post_id), reason };
   let result = try_report(form).await;
   use leptos_axum::redirect;
   match result {
@@ -109,13 +94,8 @@ pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostR
 #[component]
 pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<bool>) -> impl IntoView {
   let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
-  let logged_in = Signal::derive(move || {
-    if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() {
-      Some(true)
-    } else {
-      Some(false)
-    }
-  });
+  let logged_in =
+    Signal::derive(move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) });
   let online = expect_context::<RwSignal<OnlineSetter>>();
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
   let post_view = RwSignal::new(post_view);
@@ -126,10 +106,7 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
     Resource::new(
       move || (),
       move |()| async move {
-        let form = CreatePostLike {
-          post_id: post_view.get().post.id,
-          score,
-        };
+        let form = CreatePostLike { post_id: post_view.get().post.id, score };
         let result = LemmyClient.like_post(form).await;
         match result {
           Ok(o) => {
@@ -158,10 +135,7 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
     Resource::new(
       move || (),
       move |()| async move {
-        let form = SavePost {
-          post_id: post_view.get().post.id,
-          save: !post_view.get().saved,
-        };
+        let form = SavePost { post_id: post_view.get().post.id, save: !post_view.get().saved };
         let result = LemmyClient.save_post(form).await;
         match result {
           Ok(o) => {
@@ -180,10 +154,7 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
     Resource::new(
       move || (),
       move |()| async move {
-        let form = BlockPerson {
-          person_id: post_view.get().creator.id,
-          block: true,
-        };
+        let form = BlockPerson { person_id: post_view.get().creator.id, block: true };
         let result = LemmyClient.block_user(form).await;
         match result {
           Ok(_o) => {}
@@ -203,17 +174,14 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
     let le = serde_json::from_str::<LemmyAppError>(&e[..]);
     match le {
       Ok(e) => match e {
-        LemmyAppError {
-          error_type: LemmyAppErrorType::MissingReason,
-          content: c,
-        } => {
+        LemmyAppError { error_type: LemmyAppErrorType::MissingReason, content: c } => {
           let id = format!("{}", post_view.get().post.id);
           if c.eq(&id) {
-            report_validation.set("input-error".to_string());
+            report_validation.set("input-error".to_owned());
           }
         }
         _ => {
-          report_validation.set("".to_string());
+          report_validation.set("".to_owned());
         }
       },
       Err(_) => {
@@ -229,24 +197,18 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
     Resource::new(
       move || (),
       move |()| async move {
-        let form = CreatePostReport {
-          post_id: post_view.get().post.id,
-          reason: reason.get(),
-        };
+        let form = CreatePostReport { post_id: post_view.get().post.id, reason: reason.get() };
         let result = try_report(form).await;
         match result {
           Ok(_o) => {}
           Err(e) => {
             let _id = format!("{}", post_view.get().post.id);
             match e {
-              LemmyAppError {
-                error_type: LemmyAppErrorType::MissingReason,
-                content: _id,
-              } => {
-                report_validation.set("input-error".to_string());
+              LemmyAppError { error_type: LemmyAppErrorType::MissingReason, content: _id } => {
+                report_validation.set("input-error".to_owned());
               }
               _ => {
-                report_validation.set("".to_string());
+                report_validation.set("".to_owned());
               }
             }
           }
@@ -284,11 +246,7 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
     format!(
       "{}@{}",
       post_view.get().community.name,
-      if let Some(h) = post_view.get().community.actor_id.inner().host() {
-        h.to_string()
-      } else {
-        "".to_string()
-      }
+      if let Some(h) = post_view.get().community.actor_id.inner().host() { h.to_string() } else { "".to_owned() }
     )
   };
   let community_title_encoded = html_escape::encode_safe(&community_title).to_string();
@@ -302,10 +260,7 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
     }
     #[cfg(feature = "ssr")]
     {
-      std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or(std::time::Duration::new(1000, 0))
-        .as_millis() as u64
+      std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or(std::time::Duration::new(1000, 0)).as_millis() as u64
     }
   };
   let duration_in_text = pretty_duration::pretty_duration(
@@ -316,13 +271,10 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
       plural_labels: None,
     }),
   );
-  let abbr_duration = if let Some((index, _)) = duration_in_text.match_indices(' ').nth(1) {
-    duration_in_text.split_at(index)
-  } else {
-    (&duration_in_text[..], "")
-  }
-  .0
-  .to_string();
+  let abbr_duration =
+    if let Some((index, _)) = duration_in_text.match_indices(' ').nth(1) { duration_in_text.split_at(index) } else { (&duration_in_text[..], "") }
+      .0
+      .to_string();
 
   let thumbnail_element = NodeRef::<Img>::new();
   let thumbnail = RwSignal::new(String::from(""));
@@ -351,7 +303,7 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
                   <div class="shrink grow basis-0 truncate">
                     <img
                       loading="lazy"
-                      class={move || format!("w-24{}", if thumbnail.get().eq(&"/lemmy.svg".to_string()) { " h-16" } else { "" })}
+                      class={move || format!("w-24{}", if thumbnail.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" })}
                       src={move || thumbnail.get()}
                       node_ref={thumbnail_element}
                       on:error={move |_e| {
@@ -437,7 +389,7 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
               if post_view.get().unread_comments != post_view.get().counts.comments && post_view.get().unread_comments > 0 {
                 format!(" ({} unread)", post_view.get().unread_comments)
               } else {
-                "".to_string()
+                "".to_owned()
               },
             )
           }}
@@ -501,7 +453,7 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
             target="_blank"
             href={format!(
               "https://archive.ph/submit/?url={}",
-              { if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { "".to_string() } },
+              { if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { "".to_owned() } },
             )}
           >
             <Icon icon={History} />

@@ -1,8 +1,8 @@
 use crate::{
+  WriteAuthCookie,
   client::*,
   errors::{LemmyAppError, LemmyAppErrorType},
   icon::{Icon, IconType::*},
-  WriteAuthCookie,
 };
 use lemmy_api_common::{
   person::{Login, LoginResponse},
@@ -34,30 +34,20 @@ async fn try_login(form: Login) -> Result<LoginResponse, LemmyAppError> {
           if let Some(_jwt_string) = jwt {
             result
           } else {
-            Err(LemmyAppError {
-              error_type: LemmyAppErrorType::MissingToken,
-              content: format!("{:#?}", LemmyAppErrorType::MissingToken),
-            })
+            Err(LemmyAppError { error_type: LemmyAppErrorType::MissingToken, content: format!("{:#?}", LemmyAppErrorType::MissingToken) })
           }
         }
         Err(e) => Err(e),
       }
     }
-    Some(e) => Err(LemmyAppError {
-      error_type: e.clone(),
-      content: format!("{:#?}", e),
-    }),
+    Some(e) => Err(LemmyAppError { error_type: e.clone(), content: format!("{:#?}", e) }),
   }
 }
 
 #[server]
 pub async fn login_fn(username_or_email: String, password: String, uri: String) -> Result<(), ServerFnError> {
   use leptos_axum::redirect;
-  let req = Login {
-    username_or_email: username_or_email.into(),
-    password: password.into(),
-    totp_2fa_token: None,
-  };
+  let req = Login { username_or_email: username_or_email.into(), password: password.into(), totp_2fa_token: None };
   let result = try_login(req).await;
   match result {
     Ok(LoginResponse { jwt, .. }) => {
@@ -85,8 +75,8 @@ pub fn LoginForm() -> impl IntoView {
   let name = RwSignal::new(String::new());
   let password = RwSignal::new(String::new());
   let login = ServerAction::<LoginFn>::new();
-  let username_validation = RwSignal::new("".to_string());
-  let password_validation = RwSignal::new("".to_string());
+  let username_validation = RwSignal::new("".to_owned());
+  let password_validation = RwSignal::new("".to_owned());
   let ssr_error = move || query.with(|params| params.get("error"));
   let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
 
@@ -95,8 +85,8 @@ pub fn LoginForm() -> impl IntoView {
 
     match le {
       Ok(e) => match e.error_type {
-        LemmyAppErrorType::EmptyUsername => username_validation.set("input-error".to_string()),
-        LemmyAppErrorType::EmptyPassword => password_validation.set("input-error".to_string()),
+        LemmyAppErrorType::EmptyUsername => username_validation.set("input-error".to_owned()),
+        LemmyAppErrorType::EmptyPassword => password_validation.set("input-error".to_owned()),
         _ => {}
       },
       Err(_) => {}
@@ -106,11 +96,7 @@ pub fn LoginForm() -> impl IntoView {
   let on_login_submit = move |e: MouseEvent| {
     e.prevent_default();
     spawn_local_scoped_with_cancellation(async move {
-      let req = Login {
-        username_or_email: name.get().into(),
-        password: password.get().into(),
-        totp_2fa_token: None,
-      };
+      let req = Login { username_or_email: name.get().into(), password: password.get().into(), totp_2fa_token: None };
       let result = try_login(req.clone()).await;
       match result {
         Ok(LoginResponse { jwt: Some(jwt), .. }) => {
@@ -121,20 +107,14 @@ pub fn LoginForm() -> impl IntoView {
         }
         Ok(LoginResponse { jwt: None, .. }) => {}
         Err(e) => {
-          password_validation.set("".to_string());
-          username_validation.set("".to_string());
+          password_validation.set("".to_owned());
+          username_validation.set("".to_owned());
           match e {
-            LemmyAppError {
-              error_type: LemmyAppErrorType::EmptyUsername,
-              ..
-            } => {
-              username_validation.set("input-error".to_string());
+            LemmyAppError { error_type: LemmyAppErrorType::EmptyUsername, .. } => {
+              username_validation.set("input-error".to_owned());
             }
-            LemmyAppError {
-              error_type: LemmyAppErrorType::EmptyPassword,
-              ..
-            } => {
-              password_validation.set("input-error".to_string());
+            LemmyAppError { error_type: LemmyAppErrorType::EmptyPassword, .. } => {
+              password_validation.set("input-error".to_owned());
             }
             _ => {}
           }

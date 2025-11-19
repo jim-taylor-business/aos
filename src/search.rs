@@ -41,23 +41,18 @@ pub fn Search() -> impl IntoView {
 
   let loading = RwSignal::new(false);
 
-  let logged_in = Signal::derive(move || {
-    if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() {
-      Some(true)
-    } else {
-      Some(false)
-    }
-  });
+  let logged_in =
+    Signal::derive(move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) });
 
   let intersection_element = NodeRef::<Div>::new();
   let on_scroll_element = NodeRef::<Div>::new();
 
   #[cfg(not(feature = "ssr"))]
   {
-    use leptos_router::{location::State, NavigateOptions};
+    use leptos_router::{NavigateOptions, location::State};
     use leptos_use::{
-      use_intersection_observer_with_options, use_scroll_with_options, UseIntersectionObserverOptions, UseIntersectionObserverReturn,
-      UseScrollOptions, UseScrollReturn,
+      UseIntersectionObserverOptions, UseIntersectionObserverReturn, UseScrollOptions, UseScrollReturn, use_intersection_observer_with_options,
+      use_scroll_with_options,
     };
     use web_sys::Event;
 
@@ -67,15 +62,7 @@ pub fn Search() -> impl IntoView {
         spawn_local_scoped_with_cancellation(async move {
           let query_params = query.get();
           if let Ok(d) = IndexedDb::new().await {
-            let _ = d
-              .set(
-                &ScrollPositionKey {
-                  path: use_location().pathname.get(),
-                  query: query_params.to_query_string(),
-                },
-                &se.scroll_left(),
-              )
-              .await;
+            let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: query_params.to_query_string() }, &se.scroll_left()).await;
           }
         });
       }
@@ -91,17 +78,12 @@ pub fn Search() -> impl IntoView {
             let mut st = ssr_page();
             st.push(key as u32);
             let mut query_params = query.get();
-            query_params.insert("page".to_string(), serde_json::to_string(&st).unwrap_or("[]".into()));
+            query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
 
             let navigate = use_navigate();
             navigate(
               &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-              NavigateOptions {
-                resolve: true,
-                replace: false,
-                scroll: false,
-                state: State::default(),
-              },
+              NavigateOptions { resolve: true, replace: false, scroll: false, state: State::default() },
             );
           }
         }
@@ -143,7 +125,7 @@ pub fn Search() -> impl IntoView {
 
   view! {
     <main class="flex flex-col">
-      <TopNav />
+      <TopNav scroll_element=on_scroll_element.into() />
       <div class="flex flex-grow">
         <div
           on:wheel={move |e: WheelEvent| {

@@ -31,14 +31,15 @@ use lemmy_api_common::{
   site::GetSiteResponse,
 };
 use leptos::{html::Div, prelude::*};
-use leptos_meta::{provide_meta_context, Link, Meta, MetaTags, Stylesheet, *};
+use leptos_meta::{Link, Meta, MetaTags, Stylesheet, provide_meta_context, *};
 use leptos_router::{
+  StaticSegment,
   components::{ParentRoute, Route, Router, Routes},
-  StaticSegment, *,
+  *,
 };
-use leptos_use::{use_cookie_with_options, use_service_worker_with_options, SameSite, UseCookieOptions, UseServiceWorkerOptions};
+use leptos_use::{SameSite, UseCookieOptions, UseServiceWorkerOptions, use_cookie_with_options, use_service_worker_with_options};
 #[cfg(not(feature = "ssr"))]
-use leptos_use::{use_document_visibility, UseServiceWorkerReturn};
+use leptos_use::{UseServiceWorkerReturn, use_document_visibility};
 use root::Root;
 use std::collections::BTreeMap;
 
@@ -113,11 +114,8 @@ pub fn App() -> impl IntoView {
   provide_context(notifications_refresh);
 
   #[cfg(not(feature = "ssr"))]
-  let UseServiceWorkerReturn { .. } = use_service_worker_with_options(
-    UseServiceWorkerOptions::default()
-      .script_url("/service-worker.js")
-      .skip_waiting_message("skipWaiting"),
-  );
+  let UseServiceWorkerReturn { .. } =
+    use_service_worker_with_options(UseServiceWorkerOptions::default().script_url("/service-worker.js").skip_waiting_message("skipWaiting"));
   #[cfg(not(feature = "ssr"))]
   let visibility = use_document_visibility();
   #[cfg(not(feature = "ssr"))]
@@ -136,8 +134,8 @@ pub fn App() -> impl IntoView {
   // let search_cache: RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>> = RwSignal::new(BTreeMap::new());
   // provide_context(response_cache);
 
-  let scroll_element: RwSignal<Option<NodeRef<Div>>> = RwSignal::new(None);
-  provide_context(scroll_element);
+  // let scroll_element: RwSignal<Option<NodeRef<Div>>> = RwSignal::new(None);
+  // provide_context(scroll_element);
 
   let (get_auth_cookie, set_auth_cookie) =
     use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
@@ -158,7 +156,7 @@ pub fn App() -> impl IntoView {
   if let Some(t) = get_instance_cookie.get() {
     set_instance_cookie.set(Some(t));
   } else {
-    set_instance_cookie.set(Some("lemmy.world".to_string()));
+    set_instance_cookie.set(Some("lemmy.world".to_owned()));
   }
 
   let (get_theme_cookie, set_theme_cookie) =
@@ -202,7 +200,7 @@ pub fn App() -> impl IntoView {
         }
       }
     }
-    _ => "AOS".to_string(),
+    _ => "AOS".to_owned(),
   };
 
   view! {

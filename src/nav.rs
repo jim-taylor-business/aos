@@ -1,19 +1,19 @@
 use crate::{
+  OnlineSetter, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
   client::*,
   db::csr_indexed_db::*,
   errors::{LemmyAppError, LemmyAppResult},
   icon::{IconType::*, *},
-  OnlineSetter, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
 };
 use lemmy_api_common::{
-  lemmy_db_schema::{source::site::Site, ListingType, SortType},
+  lemmy_db_schema::{ListingType, SortType, source::site::Site},
   lemmy_db_views::structs::SiteView,
   post::{GetPostResponse, GetPosts, GetPostsResponse},
   site::GetSiteResponse,
 };
 use leptos::{html::Div, logging::log, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local_scoped_with_cancellation, *};
 use leptos_router::{components::*, hooks::*, *};
-use leptos_use::{use_cookie_with_options, SameSite, UseCookieOptions};
+use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options};
 use std::collections::BTreeMap;
 use web_sys::{KeyboardEvent, MouseEvent, SubmitEvent, VisibilityState};
 
@@ -47,7 +47,7 @@ pub async fn instance_fn(instance: String) -> Result<(), ServerFnError> {
   if instance.len() > 0 {
     set_instance_cookie.set(Some(instance));
   } else {
-    set_instance_cookie.set(Some("lemmy.world".to_string()));
+    set_instance_cookie.set(Some("lemmy.world".to_owned()));
   }
   Ok(())
 }
@@ -73,64 +73,31 @@ pub async fn change_theme(theme: String) -> Result<(), ServerFnError> {
 
 #[component]
 pub fn TopNav(
+  scroll_element: Signal<Option<NodeRef<Div>>>,
   #[prop(optional)] default_sort: Signal<Option<SortType>>,
   #[prop(optional)] post_view: RwSignal<Option<GetPostResponse>>,
 ) -> impl IntoView {
   // let i18n = use_i18n();
 
+  // let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
   let WriteThemeCookie(set_theme_cookie) = expect_context::<WriteThemeCookie>();
   let _online = expect_context::<RwSignal<OnlineSetter>>();
   let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<bool>), (i64, LemmyAppResult<GetPostsResponse>)>>>();
-  let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
+  // let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
   let query = use_query_map();
-  let _ssr_query_error = move || {
-    serde_json::from_str::<LemmyAppError>(&query.get().get("error").unwrap_or("".into()))
-      .ok()
-      .map(|e| (e, None::<Option<RwSignal<bool>>>))
-  };
+  let _ssr_query_error =
+    move || serde_json::from_str::<LemmyAppError>(&query.get().get("error").unwrap_or("".into())).ok().map(|e| (e, None::<Option<RwSignal<bool>>>));
   let ssr_list = move || serde_json::from_str::<ListingType>(&query.get().get("list").unwrap_or("".into())).unwrap_or(ListingType::All);
   let ssr_sort =
     move || serde_json::from_str::<SortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(default_sort.get().unwrap_or(SortType::Active));
-  let logged_in = Signal::derive(move || {
-    if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() {
-      Some(true)
-    } else {
-      Some(false)
-    }
-  });
+  let logged_in =
+    Signal::derive(move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) });
   let ssr_term = move || query.get().get("term").unwrap_or("".into());
 
   let on_sort_click = move |s: SortType| {
     move |_e: MouseEvent| {
       let o = serde_json::to_string::<SortType>(&s).unwrap_or("Active".into());
-      let mut query_params = query.get();
-      query_params.remove("sort".into());
-      query_params.remove("page".into());
-      if default_sort.get().unwrap_or(SortType::Active) != s {
-        query_params.insert("sort".to_string(), o);
-      }
-      let params = query_params.clone();
-      #[cfg(not(feature = "ssr"))]
-      spawn_local_scoped_with_cancellation(async move {
-        if let Ok(d) = IndexedDb::new().await {
-          let _ = d
-            .set(
-              &ScrollPositionKey {
-                path: use_location().pathname.get(),
-                query: params.to_query_string(),
-              },
-              &0i32,
-            )
-            .await;
-        }
-      });
-      if let Some(on_scroll_element) = scroll_element.get() {
-        if let Some(se) = on_scroll_element.get() {
-          se.set_scroll_left(0i32);
-        }
-      }
-
       response_cache.update(move |rc| {
         rc.remove(&(
           0usize,
@@ -152,44 +119,30 @@ pub fn TopNav(
           logged_in.get(),
         ));
       });
-
-      use_navigate()(
-        &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-        Default::default(),
-      );
-    }
-  };
-
-  let on_csr_filter_click = move |l: ListingType| {
-    move |_e: MouseEvent| {
       let mut query_params = query.get();
-      query_params.remove("page".into());
-      query_params.remove("list".into());
-      let navigate = use_navigate();
-      if l != ListingType::All {
-        query_params.insert("list".to_string(), serde_json::to_string(&l).ok().unwrap_or("All".into()));
+      query_params.remove("sort");
+      query_params.remove("page");
+      if default_sort.get().unwrap_or(SortType::Active) != s {
+        query_params.insert("sort", o);
       }
       let params = query_params.clone();
       #[cfg(not(feature = "ssr"))]
       spawn_local_scoped_with_cancellation(async move {
         if let Ok(d) = IndexedDb::new().await {
-          let _ = d
-            .set(
-              &ScrollPositionKey {
-                path: use_location().pathname.get(),
-                query: params.to_query_string(),
-              },
-              &0i32,
-            )
-            .await;
+          let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &0i32).await;
         }
+        use_navigate()(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), Default::default());
       });
       if let Some(on_scroll_element) = scroll_element.get() {
         if let Some(se) = on_scroll_element.get() {
           se.set_scroll_left(0i32);
         }
       }
+    }
+  };
 
+  let on_csr_filter_click = move |l: ListingType| {
+    move |_e: MouseEvent| {
       response_cache.update(move |rc| {
         rc.remove(&(
           0usize,
@@ -211,20 +164,31 @@ pub fn TopNav(
           logged_in.get(),
         ));
       });
-
-      use_navigate()(
-        &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-        Default::default(),
-      );
+      let mut query_params = query.get();
+      query_params.remove("page");
+      query_params.remove("list");
+      let navigate = use_navigate();
+      if l != ListingType::All {
+        query_params.insert("list", serde_json::to_string(&l).ok().unwrap_or("All".into()));
+      }
+      let params = query_params.clone();
+      #[cfg(not(feature = "ssr"))]
+      spawn_local_scoped_with_cancellation(async move {
+        if let Ok(d) = IndexedDb::new().await {
+          let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &0i32).await;
+        }
+        use_navigate()(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), Default::default());
+      });
+      if let Some(on_scroll_element) = scroll_element.get() {
+        if let Some(se) = on_scroll_element.get() {
+          se.set_scroll_left(0i32);
+        }
+      }
     }
   };
 
   let highlight_csr_filter = move |l: ListingType| {
-    if l == ssr_list() {
-      "menu-active"
-    } else {
-      ""
-    }
+    if l == ssr_list() { "menu-active" } else { "" }
   };
 
   let logout_action = ServerAction::<LogoutFn>::new();
@@ -261,7 +225,7 @@ pub fn TopNav(
   };
 
   let search_action = ServerAction::<SearchFn>::new();
-  let search_term = RwSignal::new("".to_string());
+  let search_term = RwSignal::new("".to_owned());
 
   let display_title = Signal::derive(move || {
     let s = if ssr_term().len() > 0 {
@@ -274,21 +238,12 @@ pub fn TopNav(
           format!(
             "{}@{}",
             pv.post_view.community.name,
-            if let Some(h) = pv.post_view.community.actor_id.inner().host() {
-              h.to_string()
-            } else {
-              "".to_string()
-            }
+            if let Some(h) = pv.post_view.community.actor_id.inner().host() { h.to_string() } else { "".to_owned() }
           )
         };
-        format!(
-          "{} by {} in {}",
-          pv.post_view.post.name,
-          pv.post_view.creator.actor_id.to_string()[8..].to_string(),
-          community_title
-        )
+        format!("{} by {} in {}", pv.post_view.post.name, pv.post_view.creator.actor_id.to_string()[8..].to_string(), community_title)
       } else {
-        "".to_string()
+        "".to_owned()
       }
     };
     search_term.set(s.clone());
@@ -305,13 +260,13 @@ pub fn TopNav(
 
   let instance_term = RwSignal::new(get_instance_cookie.get());
   let instance_action = ServerAction::<InstanceFn>::new();
-  let on_instance_submit = move |e: SubmitEvent| {
-    e.prevent_default();
+  let on_instance_submit = move || {
+    // e.prevent_default();
     still_pressed.set(false);
     if instance_term.get().unwrap_or("".into()).len() > 0 {
       set_instance_cookie.set(instance_term.get());
     } else {
-      set_instance_cookie.set(Some("lemmy.world".to_string()));
+      set_instance_cookie.set(Some("lemmy.world".to_owned()));
     }
     if let Some(on_scroll_element) = scroll_element.get() {
       if let Some(se) = on_scroll_element.get() {
@@ -339,22 +294,23 @@ pub fn TopNav(
         logged_in.get(),
       ));
     });
-    let mut query_params = query.get();
-    query_params.remove("page".into());
-    let navigate = use_navigate();
-    navigate(
-      &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-      Default::default(),
-    );
+    #[cfg(not(feature = "ssr"))]
+    spawn_local_scoped_with_cancellation(async move {
+      if let Ok(d) = IndexedDb::new().await {
+        let _ = d.set(&ScrollPositionKey { path: "/".into(), query: "".into() }, &0i32).await;
+        ssr_site_signal.set(Some(LemmyClient.get_site().await));
+        // ssr_site.refetch();
+        // let mut query_params = query.get();
+        // query_params.remove("page".into());
+        // let navigate = ;
+        // &format!("{}{}", use_location().pathname.get(), "".to_owned())
+        use_navigate()("/", Default::default());
+      }
+    });
   };
 
-  let logged_in = Signal::derive(move || {
-    if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() {
-      Some(true)
-    } else {
-      Some(false)
-    }
-  });
+  let logged_in =
+    Signal::derive(move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) });
 
   let _online = expect_context::<RwSignal<OnlineSetter>>();
   let change_theme = ServerAction::<ChangeTheme>::new();
@@ -409,12 +365,21 @@ pub fn TopNav(
   view! {
     <nav class="flex flex-row py-0 navbar">
       <div class={move || { (if search_show.get() { "hidden" } else { "flex" }).to_string() }}>
-        <ActionForm attr:class={move || { if still_pressed.get() { "" } else { "hidden" } }} action={instance_action} on:submit={on_instance_submit}>
+        <ActionForm attr:class={move || { if still_pressed.get() { "" } else { "hidden" } }} action={instance_action}>
           <input
             class="pl-6 w-40 text-xl input"
             type="text"
             name="instance"
             prop:value={move || instance_term.get()}
+            // on:submit={on_instance_submit}
+            on:keypress={move |e: KeyboardEvent| {
+              log!("{}", e.key());
+              if e.key() == "Enter" {
+                e.prevent_default();
+                on_instance_submit()
+                // use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
+              }
+            }}
             on:input={move |ev| {
               instance_term.set(Some(event_target_value(&ev)));
             }}
@@ -429,10 +394,34 @@ pub fn TopNav(
               on:pointerup={on_pointer_up}
               on:pointerleave={on_pointer_up}
               on:click={move |e: MouseEvent| {
+                e.prevent_default();
                 if still_pressed.get() {
                   still_pressed.set(false);
-                  e.prevent_default();
+                  // e.prevent_default();
                 } else {
+                  response_cache.update(move |rc| {
+                    rc.remove(
+                      &(
+                        0usize,
+                        GetPosts {
+                          type_: Some(ListingType::All),
+                          sort: Some(SortType::Active),
+                          page: None,
+                          limit: Some(50),
+                          community_id: None,
+                          community_name: None,
+                          saved_only: None,
+                          liked_only: None,
+                          disliked_only: None,
+                          show_hidden: Some(true),
+                          show_read: Some(true),
+                          show_nsfw: Some(false),
+                          page_cursor: None,
+                        },
+                        logged_in.get(),
+                      ),
+                    );
+                  });
                   #[cfg(not(feature = "ssr"))]
                   spawn_local_scoped_with_cancellation(async move {
                     if let Ok(d) = IndexedDb::new().await {
@@ -445,36 +434,13 @@ pub fn TopNav(
                         )
                         .await;
                     }
+                    use_navigate()("/", Default::default());
                   });
                   if let Some(on_scroll_element) = scroll_element.get() {
                     if let Some(se) = on_scroll_element.get() {
                       se.set_scroll_left(0i32);
                     }
                   }
-                  response_cache
-                    .update(move |rc| {
-                      rc.remove(
-                        &(
-                          0usize,
-                          GetPosts {
-                            type_: Some(ListingType::All),
-                            sort: Some(SortType::Active),
-                            page: None,
-                            limit: Some(50),
-                            community_id: None,
-                            community_name: None,
-                            saved_only: None,
-                            liked_only: None,
-                            disliked_only: None,
-                            show_hidden: Some(true),
-                            show_read: Some(true),
-                            show_nsfw: Some(false),
-                            page_cursor: None,
-                          },
-                          logged_in.get(),
-                        ),
-                      );
-                    });
                 }
               }}
             >
@@ -486,7 +452,7 @@ pub fn TopNav(
                 }
               }}
               <span class="hidden sm:flex">
-                {move || { if let Some(Ok(m)) = ssr_site_signal.get() { m.site_view.site.name } else { "A.O.S".to_string() } }}
+                {move || { if let Some(Ok(m)) = ssr_site_signal.get() { m.site_view.site.name } else { "A.O.S".to_owned() } }}
               </span>
             </A>
           </li>

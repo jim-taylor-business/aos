@@ -16,10 +16,7 @@ pub fn Comments(comments: Signal<Vec<CommentView>>, post_id: Signal<Option<i32>>
     }
     #[cfg(feature = "ssr")]
     {
-      std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or(std::time::Duration::new(1000, 0))
-        .as_millis() as u64
+      std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or(std::time::Duration::new(1000, 0)).as_millis() as u64
     }
   });
 

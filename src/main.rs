@@ -14,11 +14,10 @@ fn main() {
     .expect("failed to build Tokio runtime with custom stack size");
 
   runtime.block_on(async {
-    use aos::{html_template, App};
+    use aos::{App, html_template};
     use axum::Router;
-    use leptos::config::get_configuration;
-    use leptos::logging::log;
-    use leptos_axum::{generate_route_list, LeptosRoutes};
+    use leptos::{config::get_configuration, logging::log};
+    use leptos_axum::{LeptosRoutes, generate_route_list};
 
     if let Ok(conf) = get_configuration(None) {
       let leptos_options = conf.leptos_options;

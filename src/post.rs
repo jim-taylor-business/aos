@@ -1,16 +1,16 @@
 use crate::{
+  OnlineSetter, ReadInstanceCookie, WriteInstanceCookie,
   client::*,
   comments::Comments,
   db::csr_indexed_db::*,
   errors::{LemmyAppError, LemmyAppErrorType},
   nav::TopNav,
   toolbar::PostToolbar,
-  OnlineSetter, ReadInstanceCookie, WriteInstanceCookie,
 };
 use ev::MouseEvent;
 use lemmy_api_common::{
   comment::{CreateComment, GetComments},
-  lemmy_db_schema::{newtypes::PostId, CommentSortType, SortType},
+  lemmy_db_schema::{CommentSortType, SortType, newtypes::PostId},
   post::{GetPost, GetPostResponse},
   site::GetSiteResponse,
 };
@@ -23,8 +23,8 @@ use leptos::{
 };
 use leptos_meta::*;
 use leptos_router::{components::A, hooks::*};
-use leptos_use::{use_intersection_observer_with_options, UseIntersectionObserverOptions};
-use web_sys::{wasm_bindgen::JsCast, HtmlAnchorElement, HtmlImageElement, WheelEvent};
+use leptos_use::{UseIntersectionObserverOptions, use_intersection_observer_with_options};
+use web_sys::{HtmlAnchorElement, HtmlImageElement, WheelEvent, wasm_bindgen::JsCast};
 
 #[component]
 pub fn Post() -> impl IntoView {
@@ -34,17 +34,12 @@ pub fn Post() -> impl IntoView {
   let query = use_query_map();
 
   let post_id = Signal::derive(move || params.get().get("id").unwrap_or_default().parse::<i32>().ok());
-  let logged_in = Signal::derive(move || {
-    if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() {
-      Some(true)
-    } else {
-      Some(false)
-    }
-  });
+  let logged_in =
+    Signal::derive(move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) });
   let online = expect_context::<RwSignal<OnlineSetter>>();
 
-  let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
-  scroll_element.set(None);
+  // let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
+  // scroll_element.set(None);
 
   let ssr_sort = move || serde_json::from_str::<CommentSortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(CommentSortType::Top);
 
@@ -58,10 +53,7 @@ pub fn Post() -> impl IntoView {
     move || post_id.get(),
     move |id_string| async move {
       if let Some(id) = id_string {
-        let form = GetPost {
-          id: Some(PostId(id)),
-          comment_id: None,
-        };
+        let form = GetPost { id: Some(PostId(id)), comment_id: None };
         let result = LemmyClient.get_post(form.clone()).await;
         loading.set(false);
         match result {
@@ -109,18 +101,15 @@ pub fn Post() -> impl IntoView {
       let mut query_params = query.get();
       match r {
         Ok(o) => {
-          query_params.insert("sort".to_string(), o);
+          query_params.insert("sort", o);
         }
         Err(e) => {}
       }
       if CommentSortType::Top == s {
-        query_params.remove("sort".into());
+        query_params.remove("sort");
       }
       let navigate = use_navigate();
-      navigate(
-        &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-        Default::default(),
-      );
+      navigate(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), Default::default());
     }
   };
 
@@ -128,12 +117,7 @@ pub fn Post() -> impl IntoView {
     e.prevent_default();
     spawn_local_scoped_with_cancellation(async move {
       if let Some(id) = post_id.get() {
-        let form = CreateComment {
-          content: content.get(),
-          post_id: PostId(id),
-          parent_id: None,
-          language_id: None,
-        };
+        let form = CreateComment { content: content.get(), post_id: PostId(id), parent_id: None, language_id: None };
         let result = LemmyClient.reply_comment(form).await;
         match result {
           Ok(_o) => {
@@ -141,13 +125,7 @@ pub fn Post() -> impl IntoView {
             reply_show.update(|b| *b = !*b);
             #[cfg(not(feature = "ssr"))]
             if let Ok(d) = IndexedDb::new().await {
-              if let Ok(_c) = d
-                .del(&CommentDraftKey {
-                  comment_id: id,
-                  draft: Draft::Post,
-                })
-                .await
-              {}
+              if let Ok(_c) = d.del(&CommentDraftKey { comment_id: id, draft: Draft::Post }).await {}
             }
           }
           Err(_e) => {}
@@ -177,7 +155,7 @@ pub fn Post() -> impl IntoView {
 
   view! {
     <main class="flex flex-col">
-      <TopNav default_sort={SortType::TopAll.into()} post_view />//={post_view.into()} />
+      <TopNav scroll_element=on_scroll_element.into() default_sort={SortType::TopAll.into()} post_view />//={post_view.into()} />
       <div class="flex flex-grow">
         <div
           on:wheel={move |e: WheelEvent| {
@@ -358,11 +336,11 @@ pub fn Post() -> impl IntoView {
                                     .await;
                                 }
                               });
-                              if let Some(on_scroll_element) = scroll_element.get() {
-                                if let Some(se) = on_scroll_element.get() {
-                                  se.set_scroll_left(0i32);
-                                }
-                              }
+                              // if let Some(on_scroll_element) = scroll_element.get() {
+                              //   if let Some(se) = on_scroll_element.get() {
+                              //     se.set_scroll_left(0i32);
+                              //   }
+                              // }
                             }}
                           >
                             <span class="overflow-y-auto" inner_html={community_title_encoded} />
@@ -412,7 +390,7 @@ pub fn Post() -> impl IntoView {
                                 <div class="block">
                                   <img
                                     loading="lazy"
-                                    class={move || { format!("w-auto{}", if thumbnail.get().eq(&"/lemmy.svg".to_string()) { " h-16" } else { "" }) }}
+                                    class={move || { format!("w-auto{}", if thumbnail.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" }) }}
                                     src={move || thumbnail.get()}
                                     on:error={move |_e| {
                                       thumbnail.set("/lemmy.svg".into());

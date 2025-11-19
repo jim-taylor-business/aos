@@ -1,9 +1,9 @@
 use crate::{
+  OnlineSetter,
   client::*,
   db::csr_indexed_db::*,
   errors::LemmyAppError,
   icon::{Icon, IconType::*},
-  OnlineSetter,
 };
 use lemmy_api_common::{
   comment::{CreateComment, CreateCommentLike, EditComment, GetComment, SaveComment},
@@ -14,8 +14,8 @@ use lemmy_api_common::{
 use leptos::{html::Textarea, logging::log, prelude::*, task::*, *};
 use leptos_dom::helpers::TimeoutHandle;
 use leptos_router::components::Form;
-use leptos_use::{use_intersection_observer_with_options, UseIntersectionObserverOptions};
-use web_sys::{wasm_bindgen::JsCast, HtmlAnchorElement, HtmlImageElement, MouseEvent, PointerEvent, WheelEvent};
+use leptos_use::{UseIntersectionObserverOptions, use_intersection_observer_with_options};
+use web_sys::{HtmlAnchorElement, HtmlImageElement, MouseEvent, PointerEvent, WheelEvent, wasm_bindgen::JsCast};
 
 #[component]
 pub fn Comment(
@@ -30,13 +30,8 @@ pub fn Comment(
 ) -> impl IntoView {
   let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
 
-  let logged_in = Signal::derive(move || {
-    if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() {
-      Some(true)
-    } else {
-      Some(false)
-    }
-  });
+  let logged_in =
+    Signal::derive(move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) });
   let online = expect_context::<RwSignal<OnlineSetter>>();
 
   let on_toggle = move |i: i32| {
@@ -56,14 +51,7 @@ pub fn Comment(
   };
 
   let current_person = Signal::derive(move || {
-    if let Some(Ok(GetSiteResponse {
-      my_user: Some(MyUserInfo {
-        local_user_view: LocalUserView { person, .. },
-        ..
-      }),
-      ..
-    })) = ssr_site_signal.get()
-    {
+    if let Some(Ok(GetSiteResponse { my_user: Some(MyUserInfo { local_user_view: LocalUserView { person, .. }, .. }), .. })) = ssr_site_signal.get() {
       Some(person)
     } else {
       None
@@ -141,13 +129,10 @@ pub fn Comment(
       plural_labels: None,
     }),
   );
-  let abbr_duration = if let Some((index, _)) = duration_in_text.match_indices(' ').nth(1) {
-    duration_in_text.split_at(index)
-  } else {
-    (&duration_in_text[..], "")
-  }
-  .0
-  .to_string();
+  let abbr_duration =
+    if let Some((index, _)) = duration_in_text.match_indices(' ').nth(1) { duration_in_text.split_at(index) } else { (&duration_in_text[..], "") }
+      .0
+      .to_string();
 
   let cancel = move |e: MouseEvent| {
     e.stop_propagation();
@@ -156,10 +141,7 @@ pub fn Comment(
   let on_vote_submit = move |e: MouseEvent, score: i16| {
     e.prevent_default();
     spawn_local_scoped_with_cancellation(async move {
-      let form = CreateCommentLike {
-        comment_id: comment_view.get().comment.id,
-        score,
-      };
+      let form = CreateCommentLike { comment_id: comment_view.get().comment.id, score };
       let result = LemmyClient.like_comment(form).await;
       match result {
         Ok(o) => {
@@ -183,10 +165,7 @@ pub fn Comment(
   let on_save_submit = move |e: MouseEvent| {
     e.prevent_default();
     spawn_local_scoped_with_cancellation(async move {
-      let form = SaveComment {
-        comment_id: comment_view.get().comment.id,
-        save: !comment_view.get().saved,
-      };
+      let form = SaveComment { comment_id: comment_view.get().comment.id, save: !comment_view.get().saved };
       let result = LemmyClient.save_comment(form).await;
       match result {
         Ok(o) => {
@@ -200,9 +179,7 @@ pub fn Comment(
   let on_get_click = move |e: MouseEvent| {
     e.stop_propagation();
     spawn_local_scoped_with_cancellation(async move {
-      let form = GetComment {
-        id: comment_view.get().comment.id,
-      };
+      let form = GetComment { id: comment_view.get().comment.id };
       let result = LemmyClient.get_comment(form).await;
       match result {
         Ok(o) => {
@@ -259,13 +236,7 @@ pub fn Comment(
           reply_show.set(false);
           #[cfg(not(feature = "ssr"))]
           if let Ok(d) = IndexedDb::new().await {
-            if let Ok(_c) = d
-              .del(&CommentDraftKey {
-                comment_id: comment_view.get().comment.id.0,
-                draft: Draft::Reply,
-              })
-              .await
-            {}
+            if let Ok(_c) = d.del(&CommentDraftKey { comment_id: comment_view.get().comment.id.0, draft: Draft::Reply }).await {}
           }
         }
         Err(_e) => {
@@ -279,11 +250,7 @@ pub fn Comment(
     e.prevent_default();
     spawn_local_scoped_with_cancellation(async move {
       loading.set(true);
-      let form = EditComment {
-        content: Some(edit_content.get()),
-        comment_id: comment_view.get().comment.id,
-        language_id: None,
-      };
+      let form = EditComment { content: Some(edit_content.get()), comment_id: comment_view.get().comment.id, language_id: None };
       let result = LemmyClient.edit_comment(form).await;
       match result {
         Ok(_o) => {
@@ -291,13 +258,7 @@ pub fn Comment(
           edit_show.set(false);
           #[cfg(not(feature = "ssr"))]
           if let Ok(d) = IndexedDb::new().await {
-            if let Ok(_c) = d
-              .del(&CommentDraftKey {
-                comment_id: comment_view.get().comment.id.0,
-                draft: Draft::Edit,
-              })
-              .await
-            {}
+            if let Ok(_c) = d.del(&CommentDraftKey { comment_id: comment_view.get().comment.id.0, draft: Draft::Edit }).await {}
           }
         }
         Err(_e) => {

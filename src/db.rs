@@ -1,6 +1,6 @@
 pub mod csr_indexed_db {
   use lemmy_api_common::{comment::*, community::*, person::*, post::*, private_message::GetPrivateMessages, site::*};
-  use serde::{de::DeserializeOwned, Deserialize, Serialize};
+  use serde::{Deserialize, Serialize, de::DeserializeOwned};
   use thiserror::Error;
 
   #[derive(Debug, Serialize, Deserialize)]
@@ -177,20 +177,23 @@ pub mod csr_indexed_db {
 
   #[cfg(not(feature = "ssr"))]
   use rexie::{ObjectStore, Rexie, TransactionMode};
-  #[cfg(not(feature = "ssr"))]
+
   #[derive(Debug, Error)]
   pub enum Error {
+    #[cfg(not(feature = "ssr"))]
     #[error("rexie error: {0}")]
     Rexie(#[from] rexie::Error),
+    #[cfg(not(feature = "ssr"))]
     #[error("serde wasm bindgen error: {0}")]
     SerdeWasmBindgen(#[from] serde_wasm_bindgen::Error),
+    // #[cfg(not(feature = "ssr"))]
     #[error("serde json error: {0}")]
     SerdeJson(#[from] serde_json::Error),
   }
 
-  #[cfg(not(feature = "ssr"))]
   #[derive(Clone)]
   pub struct IndexedDb {
+    #[cfg(not(feature = "ssr"))]
     pub rexie: Rexie,
   }
 
@@ -206,6 +209,21 @@ pub mod csr_indexed_db {
         .build()
         .await?;
       Ok(Self { rexie })
+    }
+  }
+
+  #[cfg(feature = "ssr")]
+  impl IndexedDb {
+    pub async fn new() -> Result<Self, Error> {
+      // let rexie = Rexie::builder("cache_v5")
+      //   .version(1)
+      //   .add_object_store(ObjectStore::new("post_closed_comments"))
+      //   .add_object_store(ObjectStore::new("comment_drafts"))
+      //   .add_object_store(ObjectStore::new("query_gets"))
+      //   .add_object_store(ObjectStore::new("scroll_positions"))
+      //   .build()
+      //   .await?;
+      Ok(Self {})
     }
   }
 

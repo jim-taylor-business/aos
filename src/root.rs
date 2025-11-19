@@ -1,4 +1,4 @@
-use crate::{errors::LemmyAppError, ReadThemeCookie};
+use crate::{ReadThemeCookie, errors::LemmyAppError};
 use lemmy_api_common::site::GetSiteResponse;
 use leptos::prelude::*;
 use leptos_router::components::Outlet;
