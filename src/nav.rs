@@ -66,7 +66,7 @@ pub async fn change_lang_fn(lang: String) -> Result<(), ServerFnError> {
 pub async fn change_theme(theme: String) -> Result<(), ServerFnError> {
   let (_, set_theme_cookie) =
     use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
-  log!("{}", theme);
+  // log!("{}", theme);
   set_theme_cookie.set(Some(theme));
   Ok(())
 }
@@ -373,7 +373,7 @@ pub fn TopNav(
             prop:value={move || instance_term.get()}
             // on:submit={on_instance_submit}
             on:keypress={move |e: KeyboardEvent| {
-              log!("{}", e.key());
+              // log!("{}", e.key());
               if e.key() == "Enter" {
                 e.prevent_default();
                 on_instance_submit()

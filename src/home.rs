@@ -77,7 +77,7 @@ pub fn Home() -> impl IntoView {
           if scroll_save.get() {
             //   log!("  SAVE 4 {}", scroll_save.get());
             let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: query_params.to_query_string() }, &se.scroll_left()).await;
-            log!("stash {} {} {}", se.scroll_left(), use_location().pathname.get(), query_params.to_query_string(),);
+            // log!("stash {} {} {}", se.scroll_left(), use_location().pathname.get(), query_params.to_query_string(),);
           }
         }
       });
@@ -155,7 +155,7 @@ pub fn Home() -> impl IntoView {
               spawn_local_scoped_with_cancellation(async move {
                 if let Ok(d) = IndexedDb::new().await {
                   let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &se.scroll_left()).await;
-                  log!("inter {} {} {}", se.scroll_left(), use_location().pathname.get(), params.to_query_string(),);
+                  // log!("inter {} {} {}", se.scroll_left(), use_location().pathname.get(), params.to_query_string(),);
                 }
                 // log!("  SAVE 1 {}", scroll_save.get());
                 scroll_save.set(false);
@@ -163,9 +163,9 @@ pub fn Home() -> impl IntoView {
                   &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
                   NavigateOptions { resolve: false, replace: true, scroll: false, state: State::default() },
                 );
-                if let Some(se) = on_scroll_element.get() {
-                  log!("navigate {} {} {}", se.scroll_left(), use_location().pathname.get(), params.to_query_string(),);
-                }
+                // if let Some(se) = on_scroll_element.get() {
+                //   log!("navigate {} {} {}", se.scroll_left(), use_location().pathname.get(), params.to_query_string(),);
+                // }
               });
             }
           }
@@ -179,9 +179,14 @@ pub fn Home() -> impl IntoView {
   let post_list_resource = Resource::new(
     move || (logged_in.get(), ssr_list(), ssr_sort(), ssr_name(), ssr_page()),
     move |(_logged_in, list, sort, name, mut pages)| async move {
+      #[cfg(feature = "ssr")]
+      let render_scroll = true && pages.len() == 0;
+      #[cfg(not(feature = "ssr"))]
+      let render_scroll = false;
+
       loading.set(true);
       let rc = response_cache.get_untracked();
-      let mut new_pages: Vec<(usize, GetPosts, i64, LemmyAppResult<GetPostsResponse>, Option<bool>)> = vec![];
+      let mut new_pages: Vec<(usize, GetPosts, i64, LemmyAppResult<GetPostsResponse>, Option<bool>, bool)> = vec![];
       if pages.len() == 0 {
         pages = vec![(0usize, "".to_owned())];
       }
@@ -205,17 +210,17 @@ pub fn Home() -> impl IntoView {
         if let Some((t, r)) = rc.get(&(p.0, form.clone(), _logged_in)) {
           match r {
             Ok(_) => {
-              new_pages.push((p.0, form.clone(), t.clone(), r.clone(), _logged_in));
+              new_pages.push((p.0, form.clone(), t.clone(), r.clone(), _logged_in, render_scroll));
             }
             _ => {
               let result = LemmyClient.list_posts(form.clone()).await;
-              new_pages.push((p.0, form.clone(), chrono::Utc::now().timestamp_millis(), result, _logged_in));
+              new_pages.push((p.0, form.clone(), chrono::Utc::now().timestamp_millis(), result, _logged_in, render_scroll));
             }
           }
           continue;
         }
         let result = LemmyClient.list_posts(form.clone()).await;
-        new_pages.push((p.0, form.clone(), chrono::Utc::now().timestamp_millis(), result, _logged_in));
+        new_pages.push((p.0, form.clone(), chrono::Utc::now().timestamp_millis(), result, _logged_in, render_scroll));
       }
       new_pages
     },
@@ -234,12 +239,9 @@ pub fn Home() -> impl IntoView {
   #[cfg(not(feature = "ssr"))]
   let cancel_handle: RwSignal<Option<TimeoutHandle>> = RwSignal::new(None);
 
-  // let render_signal = RwSignal::new(true);
+  let ssr_render_signal = RwSignal::new(false);
 
-  // #[cfg(feature = "ssr")]
-  // if ssr_page().len() > 0 {
-  //   render_signal.set(false);
-  // }
+  let csr_render_signal = RwSignal::new(false);
 
   view! {
     <main class="flex flex-col">
@@ -289,7 +291,20 @@ pub fn Home() -> impl IntoView {
             <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| (p.1.clone(), p.2, p.4)} let:p>
               {match p.3 {
                 Ok(ref o) => {
-                  log!("RENDER {}", p.0);
+                  // #[cfg(feature = "ssr")]
+                  // log!("HOMEYY ssr");
+                  // #[cfg(feature = "ssr")]
+                  // let ssr_render_signal = RwSignal::new(true);
+
+                  // #[cfg(not(feature = "ssr"))]
+                  // log!("HOMEYY csr");
+                  // #[cfg(not(feature = "ssr"))]
+                  // let csr_render_signal = RwSignal::new(true);
+
+                  // log!(" SIDE  ? {} {} {}", ssr_render_signal.get(), csr_render_signal.get(), p.5);
+
+
+                  // log!("RENDER {}", p.0);
                   #[cfg(not(feature = "ssr"))]
                   {
                     let rw = p.3.clone();
@@ -305,7 +320,7 @@ pub fn Home() -> impl IntoView {
                         });
                     });
                     let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-                    if iw < 768f64 {} else {
+                    if iw < 768f64 || p.5 {} else {
                       if let Some(c) = cancel_handle.get_untracked() {
                         c.clear();
                       }
@@ -324,7 +339,7 @@ pub fn Home() -> impl IntoView {
                                   )
                                   .await;
                                 if let Ok(Some(l)) = l {
-                                  log!("set {} {} {}", l, use_location().pathname.get(), query_params.to_query_string());
+                                  // log!("set {} {} {}", l, use_location().pathname.get(), query_params.to_query_string());
                                   s.set_scroll_left(l);
                                 }
                                 scroll_save.set(true);
