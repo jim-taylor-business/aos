@@ -146,29 +146,29 @@ pub fn Home() -> impl IntoView {
 
           // let params = query_params.clone();
 
-          let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-          if iw < 768f64 {
-          } else {
-            #[cfg(not(feature = "ssr"))]
-            if let Some(se) = on_scroll_element.get() {
-              let params = query_params.clone();
-              spawn_local_scoped_with_cancellation(async move {
-                if let Ok(d) = IndexedDb::new().await {
-                  let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &se.scroll_left()).await;
-                  // log!("inter {} {} {}", se.scroll_left(), use_location().pathname.get(), params.to_query_string(),);
-                }
-                // log!("  SAVE 1 {}", scroll_save.get());
-                scroll_save.set(false);
-                use_navigate()(
-                  &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-                  NavigateOptions { resolve: false, replace: true, scroll: false, state: State::default() },
-                );
-                // if let Some(se) = on_scroll_element.get() {
-                //   log!("navigate {} {} {}", se.scroll_left(), use_location().pathname.get(), params.to_query_string(),);
-                // }
-              });
-            }
+          // let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
+          // if iw < 768f64 {
+          // } else {
+          #[cfg(not(feature = "ssr"))]
+          if let Some(se) = on_scroll_element.get() {
+            let params = query_params.clone();
+            spawn_local_scoped_with_cancellation(async move {
+              if let Ok(d) = IndexedDb::new().await {
+                let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &se.scroll_left()).await;
+                // log!("inter {} {} {}", se.scroll_left(), use_location().pathname.get(), params.to_query_string(),);
+              }
+              // log!("  SAVE 1 {}", scroll_save.get());
+              scroll_save.set(false);
+              use_navigate()(
+                &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+                NavigateOptions { resolve: false, replace: true, scroll: false, state: State::default() },
+              );
+              // if let Some(se) = on_scroll_element.get() {
+              //   log!("navigate {} {} {}", se.scroll_left(), use_location().pathname.get(), params.to_query_string(),);
+              // }
+            });
           }
+          // }
         }
       }
     },
@@ -210,6 +210,7 @@ pub fn Home() -> impl IntoView {
         if let Some((t, r)) = rc.get(&(p.0, form.clone(), _logged_in)) {
           match r {
             Ok(_) => {
+              // log!("cache");
               new_pages.push((p.0, form.clone(), t.clone(), r.clone(), _logged_in, render_scroll));
             }
             _ => {
@@ -239,184 +240,190 @@ pub fn Home() -> impl IntoView {
   #[cfg(not(feature = "ssr"))]
   let cancel_handle: RwSignal<Option<TimeoutHandle>> = RwSignal::new(None);
 
-  let ssr_render_signal = RwSignal::new(false);
+  // let ssr_render_signal = RwSignal::new(false);
 
-  let csr_render_signal = RwSignal::new(false);
+  // let csr_render_signal = RwSignal::new(false);
+
+  // log!("COMPONENT");
 
   view! {
-    <main class="flex flex-col">
-      <TopNav scroll_element=on_scroll_element.into() />
-      <div class="flex flex-grow">
-        <div
-          on:wheel={move |e: WheelEvent| {
-            e.stop_propagation();
-            if let Some(se) = on_scroll_element.get() {
-              // let o = ScrollToOptions::new();
-              // o.set_left(e.delta_y());
-              // o.set_behavior(web_sys::ScrollBehavior::Smooth);
-              // log!("{:#?}", o);
-              // se.scroll_by_with_scroll_to_options(&o);
+  // {
+  //   log!("VIEW");
 
-              se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+  // }
+      <main class="flex flex-col">
+        <TopNav scroll_element=on_scroll_element.into() />
+        <div class="flex flex-grow">
+          <div
+            on:wheel={move |e: WheelEvent| {
+              e.stop_propagation();
+              if let Some(se) = on_scroll_element.get() {
+                // let o = ScrollToOptions::new();
+                // o.set_left(e.delta_y());
+                // o.set_behavior(web_sys::ScrollBehavior::Smooth);
+                // log!("{:#?}", o);
+                // se.scroll_by_with_scroll_to_options(&o);
 
-            }
-          }}
-          on:scroll=on_scroll
-          node_ref={on_scroll_element}
-          class={move || { "md:h-[calc(100%-4rem)] min-w-full md:absolute md:overflow-x-auto md:overflow-y-hidden md:columns-sm md:px-4 gap-4" }}
-        >
-          <Transition fallback={|| {}}>
-            {move || {
-              match ssr_site_signal.get() {
-                Some(Err(_)) => {
-                  view! {
-                    <div class="py-4 px-8 break-inside-avoid">
-                      <div class="flex justify-between alert alert-error alert-soft">
-                        <span class="text-lg">{"Site Error"}</span>
-                        <span on:click={on_retry_site_click} class="btn btn-sm">
-                          "Retry"
-                        </span>
-                      </div>
-                    </div>
-                  }
-                    .into_any()
-                }
-                _ => view! {}.into_any(),
+                se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+
               }
             }}
-          </Transition>
-      // <Show when={move || render_signal.get()} fallback={|| {}}>
-          <Transition fallback={|| {}}>
-            <Title text="" />
-            <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| (p.1.clone(), p.2, p.4)} let:p>
-              {match p.3 {
-                Ok(ref o) => {
-                  // #[cfg(feature = "ssr")]
-                  // log!("HOMEYY ssr");
-                  // #[cfg(feature = "ssr")]
-                  // let ssr_render_signal = RwSignal::new(true);
-
-                  // #[cfg(not(feature = "ssr"))]
-                  // log!("HOMEYY csr");
-                  // #[cfg(not(feature = "ssr"))]
-                  // let csr_render_signal = RwSignal::new(true);
-
-                  // log!(" SIDE  ? {} {} {}", ssr_render_signal.get(), csr_render_signal.get(), p.5);
-
-
-                  // log!("RENDER {}", p.0);
-                  #[cfg(not(feature = "ssr"))]
-                  {
-                    let rw = p.3.clone();
-                    let fm = p.1.clone();
-                    use crate::db::csr_indexed_db::*;
-                    spawn_local_scoped_with_cancellation(async move {
-                      if let Ok(d) = IndexedDb::new().await {
-                        if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&fm, &rw).await {}
-                      }
-                      response_cache
-                        .update(move |rc| {
-                          rc.insert((p.0, fm, p.4), (p.2, rw));
-                        });
-                    });
-                    let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-                    if iw < 768f64 || p.5 {} else {
-                      if let Some(c) = cancel_handle.get_untracked() {
-                        c.clear();
-                      }
-                      cancel_handle.set(set_timeout_with_handle(
-                        move || {
-                          if let Some(s) = on_scroll_element.get() {
-                            spawn_local_scoped_with_cancellation(async move {
-                              if let Ok(d) = IndexedDb::new().await {
-                                let query_params = query.get();
-                                let l: Result<Option<i32>, Error> = d
-                                  .get(
-                                    &ScrollPositionKey {
-                                      path: use_location().pathname.get(),
-                                      query: query_params.to_query_string(),
-                                    },
-                                  )
-                                  .await;
-                                if let Ok(Some(l)) = l {
-                                  // log!("set {} {} {}", l, use_location().pathname.get(), query_params.to_query_string());
-                                  s.set_scroll_left(l);
-                                }
-                                scroll_save.set(true);
-                              }
-                              // log!("  SAVE 2 {}", scroll_save.get());
-                            });
-                            // scroll_element.set(Some(on_scroll_element));
-                          }
-                        },
-                        std::time::Duration::new(0, 750_000_000),
-                      ).ok());
-                    }
-                  }
-                  next_page_cursor.set((p.0 + 50usize, o.next_page.clone()));
-                  loading.set(false);
-                  view! { <Listings posts={o.posts.clone().into()} page_number={RwSignal::new(p.0)} /> }
-                    .into_any()
-                }
-                Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
-                  loading.set(false);
-                  view! {
-                    <div class="py-4 px-8 break-inside-avoid">
-                      <div class="flex justify-between alert alert-warning alert-soft">
-                        <span class="text-lg">{"Offline"}</span>
-                        <span on:click={on_retry_click} class="btn btn-sm">
-                          "Retry"
-                        </span>
-                      </div>
-                    </div>
-                  }
-                    .into_any()
-                }
-                Err(e) => {
-                  loading.set(false);
-                  error!("{:#?}", e);
-                  view! {
-                    <div class="py-4 px-8 break-inside-avoid">
-                      <div class="flex justify-between alert alert-error alert-soft">
-                        <span class="text-lg">{"Error"}</span>
-                        <span on:click={on_retry_click} class="btn btn-sm">
-                          "Retry"
-                        </span>
-                      </div>
-                    </div>
-                  }
-                    .into_any()
-                }
-              }}
-            </For>
-            <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
-            {move || {
-              if loading.get() {
-                Some(
-                  view! {
-                    <div class="overflow-hidden break-inside-avoid animate-[popdown_1s_step-end_1]">
-                      <div class="py-4 px-8">
-                        <div class="alert alert-info alert-soft">
-                          <span>"Loading..."</span>
+            on:scroll=on_scroll
+            node_ref={on_scroll_element}
+            class={move || { "md:h-[calc(100%-4rem)] min-w-full md:absolute md:overflow-x-auto md:overflow-y-hidden md:columns-sm md:px-4 gap-4" }}
+          >
+            <Transition fallback={|| {}}>
+              {move || {
+                match ssr_site_signal.get() {
+                  Some(Err(_)) => {
+                    view! {
+                      <div class="py-4 px-8 break-inside-avoid">
+                        <div class="flex justify-between alert alert-error alert-soft">
+                          <span class="text-lg">{"Site Error"}</span>
+                          <span on:click={on_retry_site_click} class="btn btn-sm">
+                            "Retry"
+                          </span>
                         </div>
                       </div>
-                    </div>
-                  },
-                )
-              } else {
-                None
-              }
-            }}
-          </Transition>
-      // </Show>
-      // {
-      //   // #[cfg(not(feature = "ssr"))]
-      //   if ssr_page().len() > 0 {
-      //     render_signal.set(true);
-      //   }
-      // }
+                    }
+                      .into_any()
+                  }
+                  _ => view! {}.into_any(),
+                }
+              }}
+            </Transition>
+        // <Show when={move || render_signal.get()} fallback={|| {}}>
+            <Transition fallback={|| {}}>
+              <Title text="" />
+              <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| (p.1.clone(), p.2, p.4)} let:p>
+                {match p.3 {
+                  Ok(ref o) => {
+                    // #[cfg(feature = "ssr")]
+                    // log!("HOMEYY ssr");
+                    // #[cfg(feature = "ssr")]
+                    // let ssr_render_signal = RwSignal::new(true);
+
+                    // #[cfg(not(feature = "ssr"))]
+                    // log!("HOMEYY csr");
+                    // #[cfg(not(feature = "ssr"))]
+                    // let csr_render_signal = RwSignal::new(true);
+
+                    // log!(" SIDE  ? {} {} {}", ssr_render_signal.get(), csr_render_signal.get(), p.5);
+
+
+                    // log!("RENDER {}", p.0);
+                    #[cfg(not(feature = "ssr"))]
+                    {
+                      let rw = p.3.clone();
+                      let fm = p.1.clone();
+                      use crate::db::csr_indexed_db::*;
+                      spawn_local_scoped_with_cancellation(async move {
+                        if let Ok(d) = IndexedDb::new().await {
+                          if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&fm, &rw).await {}
+                        }
+                        response_cache
+                          .update(move |rc| {
+                            rc.insert((p.0, fm, p.4), (p.2, rw));
+                          });
+                      });
+                      let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
+                      if iw < 768f64 || p.5 {} else {
+                        if let Some(c) = cancel_handle.get_untracked() {
+                          c.clear();
+                        }
+                        cancel_handle.set(set_timeout_with_handle(
+                          move || {
+                            if let Some(s) = on_scroll_element.get() {
+                              spawn_local_scoped_with_cancellation(async move {
+                                if let Ok(d) = IndexedDb::new().await {
+                                  let query_params = query.get();
+                                  let l: Result<Option<i32>, Error> = d
+                                    .get(
+                                      &ScrollPositionKey {
+                                        path: use_location().pathname.get(),
+                                        query: query_params.to_query_string(),
+                                      },
+                                    )
+                                    .await;
+                                  if let Ok(Some(l)) = l {
+                                    // log!("set {} {} {}", l, use_location().pathname.get(), query_params.to_query_string());
+                                    s.set_scroll_left(l);
+                                  }
+                                  scroll_save.set(true);
+                                }
+                                // log!("  SAVE 2 {}", scroll_save.get());
+                              });
+                              // scroll_element.set(Some(on_scroll_element));
+                            }
+                          },
+                          std::time::Duration::new(0, 750_000_000),
+                        ).ok());
+                      }
+                    }
+                    next_page_cursor.set((p.0 + 50usize, o.next_page.clone()));
+                    loading.set(false);
+                    view! { <Listings posts={o.posts.clone().into()} page_number={RwSignal::new(p.0)} /> }
+                      .into_any()
+                  }
+                  Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
+                    loading.set(false);
+                    view! {
+                      <div class="py-4 px-8 break-inside-avoid">
+                        <div class="flex justify-between alert alert-warning alert-soft">
+                          <span class="text-lg">{"Offline"}</span>
+                          <span on:click={on_retry_click} class="btn btn-sm">
+                            "Retry"
+                          </span>
+                        </div>
+                      </div>
+                    }
+                      .into_any()
+                  }
+                  Err(e) => {
+                    loading.set(false);
+                    error!("{:#?}", e);
+                    view! {
+                      <div class="py-4 px-8 break-inside-avoid">
+                        <div class="flex justify-between alert alert-error alert-soft">
+                          <span class="text-lg">{"Error"}</span>
+                          <span on:click={on_retry_click} class="btn btn-sm">
+                            "Retry"
+                          </span>
+                        </div>
+                      </div>
+                    }
+                      .into_any()
+                  }
+                }}
+              </For>
+              <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
+              {move || {
+                if loading.get() {
+                  Some(
+                    view! {
+                      <div class="overflow-hidden break-inside-avoid animate-[popdown_1s_step-end_1]">
+                        <div class="py-4 px-8">
+                          <div class="alert alert-info alert-soft">
+                            <span>"Loading..."</span>
+                          </div>
+                        </div>
+                      </div>
+                    },
+                  )
+                } else {
+                  None
+                }
+              }}
+            </Transition>
+        // </Show>
+        // {
+        //   // #[cfg(not(feature = "ssr"))]
+        //   if ssr_page().len() > 0 {
+        //     render_signal.set(true);
+        //   }
+        // }
+          </div>
         </div>
-      </div>
-    </main>
-  }
+      </main>
+    }
 }
