@@ -19,8 +19,8 @@ importers:
         specifier: ^4.1.17
         version: 4.1.17
       daisyui:
-        specifier: ^5.4.7
-        version: 5.4.7
+        specifier: ^5.5.5
+        version: 5.5.5
 
 packages:
 
@@ -225,8 +225,8 @@ packages:
     engines: {node: '>=4'}
     hasBin: true
 
-  daisyui@5.4.7:
-    resolution: {integrity: sha512-2wYO61vTPCXk7xEBgnzLZAYoE0xS5IRLu/GSq0vORpB+cTrtubdx69NnA0loc0exvCY1s2fYL4lGZtFHe2ohNQ==}
+  daisyui@5.5.5:
+    resolution: {integrity: sha512-ekvI93ZkWIJoCOtDl0D2QMxnWvTejk9V5nWBqRv+7t0xjiBXqAK5U6o6JE2RPvlIC3EqwNyUoIZSdHX9MZK3nw==}
 
   detect-libc@1.0.3:
     resolution: {integrity: sha512-pGjwhsmsp4kL2RTz08wcOlGN83otlqHeD/Z5T8GXZB+/YcpQ/dgo+lbU8ZsGxV0HIvqqxo9l7mqYwyYMD9bKDg==}
@@ -540,7 +540,7 @@ snapshots:
 
   cssesc@3.0.0: {}
 
-  daisyui@5.4.7: {}
+  daisyui@5.5.5: {}
 
   detect-libc@1.0.3: {}
 
