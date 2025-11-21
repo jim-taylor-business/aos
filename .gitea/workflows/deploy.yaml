@@ -33,6 +33,8 @@ jobs:
           ls -la .
           uname -a
           export GIT_HASH=$(git rev-parse --short HEAD)
+          export LEPTOS_WASM_OPT_VERSION=version_125
+          export LEPTOS_TAILWIND_VERSION=v4.1.17
           cargo binstall -y cargo-leptos
           cargo leptos build --release
           ls -la .
