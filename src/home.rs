@@ -47,9 +47,9 @@ pub fn Home() -> impl IntoView {
   let loading = RwSignal::new(false);
   let scroll_save = RwSignal::new(true);
 
+  let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
-  let logged_in =
-    Signal::derive(move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) });
+  let logged_in = move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { true } else { false };
 
   let intersection_element = NodeRef::<Div>::new();
   let on_scroll_element = NodeRef::<Div>::new();
@@ -177,7 +177,7 @@ pub fn Home() -> impl IntoView {
   // }
 
   let post_list_resource = Resource::new(
-    move || (logged_in.get(), ssr_list(), ssr_sort(), ssr_name(), ssr_page()),
+    move || (logged_in(), ssr_list(), ssr_sort(), ssr_name(), ssr_page()),
     move |(_logged_in, list, sort, name, mut pages)| async move {
       #[cfg(feature = "ssr")]
       let render_scroll = true && pages.len() == 0;
@@ -186,7 +186,7 @@ pub fn Home() -> impl IntoView {
 
       loading.set(true);
       let rc = response_cache.get_untracked();
-      let mut new_pages: Vec<(usize, GetPosts, i64, LemmyAppResult<GetPostsResponse>, Option<bool>, bool)> = vec![];
+      let mut new_pages: Vec<(usize, GetPosts, i64, LemmyAppResult<GetPostsResponse>, bool, bool)> = vec![];
       if pages.len() == 0 {
         pages = vec![(0usize, "".to_owned())];
       }
@@ -207,7 +207,7 @@ pub fn Home() -> impl IntoView {
           show_read: Some(true),
         };
         #[cfg(not(feature = "ssr"))]
-        if let Some((t, r)) = rc.get(&(p.0, form.clone(), _logged_in)) {
+        if let Some((t, r)) = rc.get(&(p.0, form.clone(), Some(_logged_in))) {
           match r {
             Ok(_) => {
               // log!("cache");
@@ -236,6 +236,8 @@ pub fn Home() -> impl IntoView {
       ssr_site_signal.set(Some(LemmyClient.get_site().await));
     });
   };
+
+  log!("PAGE");
 
   #[cfg(not(feature = "ssr"))]
   let cancel_handle: RwSignal<Option<TimeoutHandle>> = RwSignal::new(None);
@@ -294,7 +296,7 @@ pub fn Home() -> impl IntoView {
             </Transition>
         // <Show when={move || render_signal.get()} fallback={|| {}}>
             <Transition fallback={|| {}}>
-              <Title text="" />
+              // <Title text="" />
               <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| (p.1.clone(), p.2, p.4)} let:p>
                 {match p.3 {
                   Ok(ref o) => {
@@ -323,7 +325,7 @@ pub fn Home() -> impl IntoView {
                         }
                         response_cache
                           .update(move |rc| {
-                            rc.insert((p.0, fm, p.4), (p.2, rw));
+                            rc.insert((p.0, fm, Some(p.4)), (p.2, rw));
                           });
                       });
                       let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);

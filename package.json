@@ -2,15 +2,15 @@
   "author": "",
   "dependencies": {
     "@tailwindcss/typography": "^0.5.19",
-    "tailwindcss": "^4.1.17"
+    "tailwindcss": "^4.1.18"
   },
   "description": "A.O.S",
   "devDependencies": {
-    "@tailwindcss/cli": "^4.1.17",
-    "daisyui": "^5.5.5"
+    "@tailwindcss/cli": "^4.1.18",
+    "daisyui": "^5.5.14"
   },
   "keywords": [],
-  "license": "ISC",
+  "license": "MIT",
   "main": "index.js",
   "name": "aos",
   "scripts": {

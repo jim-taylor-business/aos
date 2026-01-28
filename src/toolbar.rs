@@ -102,9 +102,10 @@ pub fn PostToolbar(
   content: RwSignal<String>,
   post_id: Signal<Option<i32>>,
 ) -> impl IntoView {
+  // let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
+
   let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
-  let logged_in =
-    Signal::derive(move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) });
+  let logged_in = move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { true } else { false };
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
   let online = expect_context::<RwSignal<OnlineSetter>>();
   let post_view = RwSignal::new(post_view.get());
@@ -289,10 +290,10 @@ pub fn PostToolbar(
               format!(
                 "{}{}",
                 { if Some(1) == post_view.get().my_vote { "text-secondary" } else { "" } },
-                { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
+                { if !logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
               )
             }}
-            disabled={move || Some(true) != logged_in.get() || !online.get().0}
+            disabled={move || !logged_in() || !online.get().0}
             title="Up vote"
           >
             <Icon icon={Upvote} />
@@ -309,10 +310,10 @@ pub fn PostToolbar(
               format!(
                 "{}{}",
                 { if Some(-1) == post_view.get().my_vote { "text-primary" } else { "" } },
-                { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-primary/50" } },
+                { if !logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-primary/50" } },
               )
             }}
-            disabled={move || Some(true) != logged_in.get() || !online.get().0}
+            disabled={move || !logged_in() || !online.get().0}
             title="Down vote"
           >
             <Icon icon={Downvote} />
@@ -351,10 +352,10 @@ pub fn PostToolbar(
                 format!(
                   "{}{}",
                   { if post_view.get().saved { "text-accent" } else { "" } },
-                  { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+                  { if !logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
                 )
               }}
-              disabled={move || Some(true) != logged_in.get() || !online.get().0}
+              disabled={move || !logged_in() || !online.get().0}
             >
               <Icon icon={Save} />
             </button>
@@ -363,7 +364,7 @@ pub fn PostToolbar(
             class={move || {
               format!(
                 "cursor-pointer{}",
-                { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+                { if !logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
               )
             }}
             on:click={move |_| {
@@ -388,7 +389,7 @@ pub fn PostToolbar(
               reply_show.update(|b| *b = !*b);
             }}
             title="Reply"
-            disabled={move || Some(true) != logged_in.get() || !online.get().0}
+            disabled={move || !logged_in() || !online.get().0}
           >
             <Icon icon={Reply} />
           </button>

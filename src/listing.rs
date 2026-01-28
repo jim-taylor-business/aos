@@ -291,7 +291,7 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
           class="flex flex-col h-full"
           target="_blank"
           href={move || {
-            if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { format!("/post/{}", post_view.get().post.id) }
+            if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { format!("/p/{}", post_view.get().post.id) }
           }}
         >
           {move || {

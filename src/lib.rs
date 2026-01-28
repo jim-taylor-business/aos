@@ -6,6 +6,8 @@ pub mod comment;
 pub mod comments;
 pub mod db;
 pub mod errors;
+pub mod fold;
+pub mod hero;
 pub mod home;
 pub mod icon;
 pub mod listing;
@@ -30,7 +32,7 @@ use lemmy_api_common::{
   post::{GetPosts, GetPostsResponse},
   site::GetSiteResponse,
 };
-use leptos::{html::Div, prelude::*};
+use leptos::{html::Div, logging::log, prelude::*};
 use leptos_meta::{Link, Meta, MetaTags, Stylesheet, provide_meta_context, *};
 use leptos_router::{
   StaticSegment,
@@ -175,11 +177,18 @@ pub fn App() -> impl IntoView {
     move |()| async move {
       let result: Result<GetSiteResponse, LemmyAppError> = { LemmyClient.get_site().await };
       match result {
-        Ok(o) => Ok(o),
+        Ok(o) => {
+          log!("SET");
+          // ssr_site_signal.set(Some(Ok(o.clone())));
+          Ok(o)
+        }
         Err(e) => Err(e),
       }
     },
   );
+
+  // let s = LemmyClient.get_site_blocking();
+  // ssr_site_signal.set(Some(s));
 
   provide_context(ssr_site);
   provide_context(ssr_site_signal);
@@ -203,12 +212,37 @@ pub fn App() -> impl IntoView {
     _ => "AOS".to_owned(),
   };
 
+  log!("APP");
+
+  // ssr_site.get_untracked().map(|s| {
+  //   ssr_site_signal.set(Some(s));
+  // });
+
   view! {
+    <Transition fallback={|| {}}>
+      {move || {
+        ssr_site
+          .get()
+          .map(|s| {
+            ssr_site_signal.set(Some(s));
+            // log!("SET");
+            view! {
+              <Title formatter text="" />
+            }
+          })
+      }}
+    </Transition>
     <Stylesheet id="leptos" href="/pkg/aos.css" />
     <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico" />
     <Link rel="manifest" href="/manifest.json" />
     <Meta name="description" content={formatter("".into())} />
-    <Title formatter />
+    // <Transition fallback={|| {}}>
+    //   {move || {
+    //     ssr_site
+    //       .get_untracked()
+    //       .map(|s| {
+    //         ssr_site_signal.set(Some(s));
+    //         view! {
     <Router>
       <Routes fallback={NotFound}>
         <ParentRoute path={(StaticSegment(""))} view={Root} ssr={SsrMode::Async}>
@@ -220,6 +254,10 @@ pub fn App() -> impl IntoView {
         </ParentRoute>
       </Routes>
     </Router>
+    //         }
+    //       })
+    //   }}
+    // </Transition>
   }
 }
 

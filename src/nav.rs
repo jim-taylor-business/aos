@@ -79,20 +79,21 @@ pub fn TopNav(
 ) -> impl IntoView {
   // let i18n = use_i18n();
 
-  // let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
+  let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
+  let logged_in = move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) };
+
   let WriteThemeCookie(set_theme_cookie) = expect_context::<WriteThemeCookie>();
   let _online = expect_context::<RwSignal<OnlineSetter>>();
   let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<bool>), (i64, LemmyAppResult<GetPostsResponse>)>>>();
   // let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
+
   let query = use_query_map();
   let _ssr_query_error =
     move || serde_json::from_str::<LemmyAppError>(&query.get().get("error").unwrap_or("".into())).ok().map(|e| (e, None::<Option<RwSignal<bool>>>));
   let ssr_list = move || serde_json::from_str::<ListingType>(&query.get().get("list").unwrap_or("".into())).unwrap_or(ListingType::All);
   let ssr_sort =
     move || serde_json::from_str::<SortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(default_sort.get().unwrap_or(SortType::Active));
-  let logged_in =
-    Signal::derive(move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) });
   let ssr_term = move || query.get().get("term").unwrap_or("".into());
 
   let on_sort_click = move |s: SortType| {
@@ -116,7 +117,7 @@ pub fn TopNav(
             show_nsfw: Some(false),
             page_cursor: None,
           },
-          logged_in.get(),
+          logged_in(),
         ));
       });
       let mut query_params = query.get();
@@ -161,7 +162,7 @@ pub fn TopNav(
             show_nsfw: Some(false),
             page_cursor: None,
           },
-          logged_in.get(),
+          logged_in(),
         ));
       });
       let mut query_params = query.get();
@@ -291,7 +292,7 @@ pub fn TopNav(
           show_nsfw: Some(false),
           page_cursor: None,
         },
-        logged_in.get(),
+        logged_in(),
       ));
     });
     #[cfg(not(feature = "ssr"))]
@@ -309,8 +310,8 @@ pub fn TopNav(
     });
   };
 
-  let logged_in =
-    Signal::derive(move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) });
+  // let logged_in =
+  //   Signal::derive(move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) });
 
   let _online = expect_context::<RwSignal<OnlineSetter>>();
   let change_theme = ServerAction::<ChangeTheme>::new();
@@ -363,6 +364,7 @@ pub fn TopNav(
   };
 
   view! {
+  <Transition fallback={|| {}}>
     <nav class="flex flex-row py-0 navbar">
       <div class={move || { (if search_show.get() { "hidden" } else { "flex" }).to_string() }}>
         <ActionForm attr:class={move || { if still_pressed.get() { "" } else { "hidden" } }} action={instance_action}>
@@ -418,7 +420,7 @@ pub fn TopNav(
                           show_nsfw: Some(false),
                           page_cursor: None,
                         },
-                        logged_in.get(),
+                        logged_in(),
                       ),
                     );
                   });
@@ -444,6 +446,7 @@ pub fn TopNav(
                 }
               }}
             >
+              // <Transition fallback={|| {}}>
               {move || {
                 if let Some(Ok(GetSiteResponse { site_view: SiteView { site: Site { icon: Some(i), .. }, .. }, .. })) = ssr_site_signal.get() {
                   view! { <img class="h-8 sm:hidden" src={i.inner().to_string()} /> }.into_any()
@@ -453,7 +456,9 @@ pub fn TopNav(
               }}
               <span class="hidden sm:flex">
                 {move || { if let Some(Ok(m)) = ssr_site_signal.get() { m.site_view.site.name } else { "A.O.S".to_owned() } }}
+                // {move || { if let Some(Ok(m)) = ssr_site.get() { m.site_view.site.name } else { "A.O.S".to_owned() } }}
               </span>
+              // </Transition>
             </A>
           </li>
           <li class="hidden sm:flex z-[1]">
@@ -724,7 +729,8 @@ pub fn TopNav(
             </details>
           </li>
           <Show
-            when={move || { if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { true } else { false } }}
+            // when={move || { if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { true } else { false } }}
+            when={move || logged_in().unwrap_or(false)}
             fallback={move || {
               view! {
                 <li>
@@ -824,5 +830,6 @@ pub fn TopNav(
         </ul>
       </div>
     </nav>
+  </Transition>
   }
 }

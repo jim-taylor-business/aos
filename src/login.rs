@@ -8,7 +8,7 @@ use lemmy_api_common::{
   person::{Login, LoginResponse},
   site::GetSiteResponse,
 };
-use leptos::{prelude::*, task::spawn_local_scoped_with_cancellation};
+use leptos::{logging::log, prelude::*, task::spawn_local_scoped_with_cancellation};
 use leptos_meta::Title;
 use leptos_router::{hooks::*, *};
 use web_sys::MouseEvent;
@@ -70,6 +70,7 @@ pub async fn login_fn(username_or_email: String, password: String, uri: String) 
 #[component]
 pub fn LoginForm() -> impl IntoView {
   // let _i18n = use_i18n();
+  log!("LOGIN");
 
   let query = use_query_map();
   let name = RwSignal::new(String::new());

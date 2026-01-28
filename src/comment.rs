@@ -30,8 +30,7 @@ pub fn Comment(
 ) -> impl IntoView {
   let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
 
-  let logged_in =
-    Signal::derive(move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) });
+  let logged_in = move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { true } else { false };
   let online = expect_context::<RwSignal<OnlineSetter>>();
 
   let on_toggle = move |i: i32| {
@@ -399,11 +398,11 @@ pub fn Comment(
                   format!(
                     "{}{}",
                     { if Some(1) == comment_view.get().my_vote { "text-secondary" } else { "" } },
-                    { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
+                    { if !logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
                   )
                 }}
                 title="Up vote"
-                disabled={move || Some(true) != logged_in.get() || !online.get().0}
+                disabled={move || !logged_in() || !online.get().0}
                 on:click={on_up_vote_submit}
               >
                 <Icon icon={Upvote} />
@@ -419,11 +418,11 @@ pub fn Comment(
                   format!(
                     "{}{}",
                     { if Some(-1) == comment_view.get().my_vote { "text-primary" } else { "" } },
-                    { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-primary/50" } },
+                    { if !logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-primary/50" } },
                   )
                 }}
                 title="Down vote"
-                disabled={move || Some(true) != logged_in.get() || !online.get().0}
+                disabled={move || !logged_in() || !online.get().0}
                 on:click={on_down_vote_submit}
               >
                 <Icon icon={Downvote} />
@@ -439,10 +438,10 @@ pub fn Comment(
                   format!(
                     "{}{}",
                     { if comment_view.get().saved { "text-accent" } else { "" } },
-                    { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+                    { if !logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
                   )
                 }}
-                disabled={move || Some(true) != logged_in.get() || !online.get().0}
+                disabled={move || !logged_in() || !online.get().0}
                 on:click={on_save_submit}
               >
                 <Icon icon={Save} />
@@ -471,9 +470,9 @@ pub fn Comment(
               }}
               title="Reply"
               class={move || {
-                format!("{}", { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } })
+                format!("{}", { if !logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } })
               }}
-              disabled={move || Some(true) != logged_in.get() || !online.get().0}
+              disabled={move || !logged_in() || !online.get().0}
             >
               <Icon icon={Reply} />
             </button>
@@ -504,10 +503,10 @@ pub fn Comment(
                 format!(
                   "{}{}",
                   if current_person.get().eq(&Some(comment_view.get().creator)) { "" } else { "pointer-events-none text-base-content/50" },
-                  { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+                  { if !logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
                 )
               }}
-              disabled={move || Some(true) != logged_in.get() || !online.get().0}
+              disabled={move || !logged_in() || !online.get().0}
               title="Edit"
             >
               <Icon icon={Pencil} />
@@ -578,7 +577,7 @@ pub fn Comment(
               <button
                 on:click={on_reply_click}
                 type="button"
-                disabled={move || Some(true) != logged_in.get() || !online.get().0}
+                disabled={move || !logged_in() || !online.get().0}
                 class={move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })}
               >
                 "Reply"
@@ -624,7 +623,7 @@ pub fn Comment(
               <button
                 on:click={on_edit_click}
                 type="button"
-                disabled={move || Some(true) != logged_in.get() || !online.get().0}
+                disabled={move || !logged_in() || !online.get().0}
                 class={move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })}
               >
                 "Edit"
