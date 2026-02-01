@@ -1,10 +1,14 @@
 use core::num::ParseIntError;
 use lemmy_api_common::LemmyErrorType;
-#[cfg(feature = "ssr")]
-use leptos::prelude::ServerFnError;
+use leptos::prelude::*;
+use leptos::{
+  logging::{error, log},
+  prelude::*,
+};
 use serde::{Deserialize, Serialize};
 use serde_urlencoded::ser;
 use strum_macros::Display;
+use web_sys::MouseEvent;
 
 pub type LemmyAppResult<T> = Result<T, LemmyAppError>;
 
@@ -46,6 +50,69 @@ pub fn message_from_error(error: &LemmyAppError) -> String {
   leptos::logging::error!("{}\n{:#?}", s, error);
 
   s
+}
+
+#[component]
+pub fn Offline(on_retry_click: Option<impl Fn(MouseEvent) + 'static>) -> impl IntoView {
+  view! {
+    <div class="py-4 px-8 break-inside-avoid">
+      <div class="flex justify-between alert alert-warning alert-soft">
+        <span class="text-lg">{"Offline"}</span>
+        { if let Some(o) = on_retry_click {
+          view! {
+            <span on:click={o} class="btn btn-sm">
+              "Retry"
+            </span>
+          }.into_any()
+        } else {
+          view! {
+          }.into_any()
+        } }
+      </div>
+    </div>
+  }
+  .into_any()
+}
+
+#[component]
+pub fn Error(error: LemmyAppError, on_retry_click: Option<impl Fn(MouseEvent) + 'static>) -> impl IntoView {
+  error!("{:#?}", error);
+  view! {
+    <div class="py-4 px-8 break-inside-avoid">
+      <div class="flex justify-between alert alert-error alert-soft">
+        <span class="text-lg">{"Error"}</span>
+        { if let Some(o) = on_retry_click {
+          view! {
+            <span on:click={o} class="btn btn-sm">
+              "Retry"
+            </span>
+          }.into_any()
+        } else {
+          view! {
+          }.into_any()
+        } }
+      </div>
+    </div>
+  }
+  .into_any()
+}
+
+#[component]
+pub fn Loading(loading: bool) -> impl IntoView {
+  if loading {
+    view! {
+      <div class="overflow-hidden break-inside-avoid animate-[popdown_1s_step-end_1]">
+        <div class="py-4 px-8">
+          <div class="alert alert-info alert-soft">
+            <span>"Loading..."</span>
+          </div>
+        </div>
+      </div>
+    }
+    .into_any()
+  } else {
+    view! {}.into_any()
+  }
 }
 
 #[derive(Clone, Serialize, Deserialize, PartialEq)]

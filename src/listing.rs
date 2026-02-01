@@ -1,7 +1,7 @@
 use crate::{
   OnlineSetter, ReadInstanceCookie,
   client::*,
-  errors::{LemmyAppError, LemmyAppErrorType},
+  errors::{Error, LemmyAppError, LemmyAppErrorType, Loading},
   icon::{IconType::*, *},
 };
 use lemmy_api_common::{lemmy_db_views::structs::*, person::*, post::*, site::GetSiteResponse};
@@ -99,6 +99,9 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
   let online = expect_context::<RwSignal<OnlineSetter>>();
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
   let post_view = RwSignal::new(post_view);
+  let loading = RwSignal::new(false);
+  let error = RwSignal::new(false);
+  let latest_error = RwSignal::new(LemmyAppError { error_type: LemmyAppErrorType::Unknown, content: "".to_owned() });
   let vote_action = ServerAction::<VotePostFn>::new();
 
   let on_vote_submit = move |e: MouseEvent, score: i16| {
@@ -108,17 +111,24 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
       move |()| async move {
         let form = CreatePostLike { post_id: post_view.get().post.id, score };
         let result = LemmyClient.like_post(form).await;
+        // log!("END");
+        loading.set(false);
         match result {
           Ok(o) => {
             post_view.set(o.post_view);
           }
-          Err(_e) => {}
+          Err(e) => {
+            error.set(true);
+            latest_error.set(e);
+          }
         }
       },
     );
   };
 
   let on_up_vote_submit = move |e: MouseEvent| {
+    // log!("VOTE");
+    loading.set(true);
     let score = if Some(1) == post_view.get().my_vote { 0 } else { 1 };
     on_vote_submit(e, score);
   };
@@ -462,5 +472,17 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
         <span class="flex items-center text-base-content/25">{if post_number != 0 { format!("{}", post_number) } else { "".into() }}</span>
       </div>
     </div>
+    {move || { view!{ <Loading loading=loading.get() /> } }}
+    <Show when={move || error.get()} fallback={|| {}}>
+
+    // {move || { if error.get() {
+      // view!{
+        <Error error={latest_error.get()} on_retry_click={Some(|_| {})} />
+      // }.into_any()
+    // } else {
+    //   view!{ }.into_any()
+    // } } }
+    </Show>
+    // <div> "THING" <br/> "THING" <br/> "THING" <br/> "THING" <br/> </div>
   }
 }

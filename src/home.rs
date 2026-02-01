@@ -1,8 +1,9 @@
 use crate::db::csr_indexed_db::*;
+use crate::errors::Offline;
 use crate::{
   // i18n::*,
   client::*,
-  errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult},
+  errors::{Error, LemmyAppError, LemmyAppErrorType, LemmyAppResult, Loading},
   listings::Listings,
   nav::TopNav,
 };
@@ -370,52 +371,56 @@ pub fn Home() -> impl IntoView {
                   Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
                     loading.set(false);
                     view! {
-                      <div class="py-4 px-8 break-inside-avoid">
-                        <div class="flex justify-between alert alert-warning alert-soft">
-                          <span class="text-lg">{"Offline"}</span>
-                          <span on:click={on_retry_click} class="btn btn-sm">
-                            "Retry"
-                          </span>
-                        </div>
-                      </div>
+                      <Offline on_retry_click={Some(on_retry_click)} /*on_retry_click={None::<Option<_>>}*/ />
+                      // <div class="py-4 px-8 break-inside-avoid">
+                      //   <div class="flex justify-between alert alert-warning alert-soft">
+                      //     <span class="text-lg">{"Offline"}</span>
+                      //     <span on:click={on_retry_click} class="btn btn-sm">
+                      //       "Retry"
+                      //     </span>
+                      //   </div>
+                      // </div>
                     }
-                      .into_any()
+                    .into_any()
                   }
                   Err(e) => {
                     loading.set(false);
                     error!("{:#?}", e);
                     view! {
-                      <div class="py-4 px-8 break-inside-avoid">
-                        <div class="flex justify-between alert alert-error alert-soft">
-                          <span class="text-lg">{"Error"}</span>
-                          <span on:click={on_retry_click} class="btn btn-sm">
-                            "Retry"
-                          </span>
-                        </div>
-                      </div>
+                      <Error error={e} on_retry_click={Some(on_retry_click)} /*on_retry_click={None::<Option<_>>}*/ />
+                      // <div class="py-4 px-8 break-inside-avoid">
+                      //   <div class="flex justify-between alert alert-error alert-soft">
+                      //     <span class="text-lg">{"Error"}</span>
+                      //     <span on:click={on_retry_click} class="btn btn-sm">
+                      //       "Retry"
+                      //     </span>
+                      //   </div>
+                      // </div>
                     }
-                      .into_any()
+                    .into_any()
                   }
                 }}
               </For>
               <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
-              {move || {
-                if loading.get() {
-                  Some(
-                    view! {
-                      <div class="overflow-hidden break-inside-avoid animate-[popdown_1s_step-end_1]">
-                        <div class="py-4 px-8">
-                          <div class="alert alert-info alert-soft">
-                            <span>"Loading..."</span>
-                          </div>
-                        </div>
-                      </div>
-                    },
-                  )
-                } else {
-                  None
-                }
-              }}
+              {move || { view!{ <Loading loading=loading.get() /> } }}
+              // <Error loading=loading.get() />
+              // {move || {
+              //   if loading.get() {
+              //     Some(
+              //       view! {
+              //         <div class="overflow-hidden break-inside-avoid animate-[popdown_1s_step-end_1]">
+              //           <div class="py-4 px-8">
+              //             <div class="alert alert-info alert-soft">
+              //               <span>"Loading..."</span>
+              //             </div>
+              //           </div>
+              //         </div>
+              //       },
+              //     )
+              //   } else {
+              //     None
+              //   }
+              // }}
             </Transition>
         // </Show>
         // {
