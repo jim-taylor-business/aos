@@ -1,5 +1,5 @@
 use crate::{
-  OnlineSetter, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
+  OnlineSetter, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
   client::*,
   db::csr_indexed_db::*,
   errors::{LemmyAppError, LemmyAppResult},
@@ -9,7 +9,7 @@ use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SortType, source::site::Site},
   lemmy_db_views::structs::SiteView,
   post::{GetPostResponse, GetPosts, GetPostsResponse},
-  site::GetSiteResponse,
+  site::{GetSiteResponse, MyUserInfo},
 };
 use leptos::{html::Div, logging::log, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local_scoped_with_cancellation, *};
 use leptos_router::{components::*, hooks::*, *};
@@ -19,11 +19,21 @@ use web_sys::{KeyboardEvent, MouseEvent, SubmitEvent, VisibilityState};
 
 #[server]
 pub async fn logout_fn() -> Result<(), ServerFnError> {
+  let (get_auth_cookie, set_auth_cookie) =
+    use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
+  provide_context(ReadAuthCookie(get_auth_cookie));
+  provide_context(WriteAuthCookie(set_auth_cookie));
+  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+    "instance",
+    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
+  );
+  provide_context(ReadInstanceCookie(get_instance_cookie));
+  provide_context(WriteInstanceCookie(set_instance_cookie));
   use leptos_axum::redirect;
   let result = LemmyClient.logout().await;
   match result {
     Ok(_o) => {
-      let WriteAuthCookie(set_auth_cookie) = expect_context::<WriteAuthCookie>();
+      // let WriteAuthCookie(set_auth_cookie) = expect_context::<WriteAuthCookie>();
       set_auth_cookie.set(None);
       Ok(())
     }
@@ -79,9 +89,13 @@ pub fn TopNav(
 ) -> impl IntoView {
   // let i18n = use_i18n();
 
+  // let ssr_site_signal = expect_context::<RwSignal<Option<GetSiteResponse>>>();
+  // let ssr_user_signal = expect_context::<RwSignal<Option<MyUserInfo>>>();
+  // let logged_in = Memo::new(move |_| false;//ssr_user_signal.get().is_some());
+
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
-  let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
-  let logged_in = move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) };
+  // let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
+  // let logged_in = Memo::new(move |_| if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { true } else { false });
 
   let WriteThemeCookie(set_theme_cookie) = expect_context::<WriteThemeCookie>();
   let _online = expect_context::<RwSignal<OnlineSetter>>();
@@ -117,7 +131,8 @@ pub fn TopNav(
             show_nsfw: Some(false),
             page_cursor: None,
           },
-          logged_in(),
+          Some(false),
+          // Some(logged_in.get()),
         ));
       });
       let mut query_params = query.get();
@@ -162,7 +177,8 @@ pub fn TopNav(
             show_nsfw: Some(false),
             page_cursor: None,
           },
-          logged_in(),
+          Some(false),
+          // Some(logged_in.get()),
         ));
       });
       let mut query_params = query.get();
@@ -214,11 +230,12 @@ pub fn TopNav(
         Ok(_o) => {
           let WriteAuthCookie(set_auth_cookie) = expect_context::<WriteAuthCookie>();
           set_auth_cookie.set(None);
-          ssr_site_signal.update(|s| {
-            if let Some(Ok(t)) = s {
-              t.my_user = None;
-            }
-          });
+          ssr_site.refetch();
+          // ssr_site_signal.update(|s| {
+          //   if let Some(Ok(t)) = s {
+          //     t.my_user = None;
+          //   }
+          // });
         }
         Err(_e) => {}
       }
@@ -292,14 +309,15 @@ pub fn TopNav(
           show_nsfw: Some(false),
           page_cursor: None,
         },
-        logged_in(),
+        Some(false),
+        // Some(logged_in.get()),
       ));
     });
     #[cfg(not(feature = "ssr"))]
     spawn_local_scoped_with_cancellation(async move {
       if let Ok(d) = IndexedDb::new().await {
         let _ = d.set(&ScrollPositionKey { path: "/".into(), query: "".into() }, &0i32).await;
-        ssr_site_signal.set(Some(LemmyClient.get_site().await));
+        // ssr_site_signal.set(Some(LemmyClient.get_site().await));
         // ssr_site.refetch();
         // let mut query_params = query.get();
         // query_params.remove("page".into());
@@ -363,8 +381,52 @@ pub fn TopNav(
     }
   };
 
+  // let log_in = {
+  //   move || {
+  //     if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { true } else { false }
+  //   }
+  // };
+
   view! {
+    // <Transition fallback={|| {}}>
+    //   {move || {
+    //     match ssr_site_signal.get() {
+    //       None => {
+    //         view! {
+    //           <div class="py-4 px-8 break-inside-avoid">
+    //             <div class="flex justify-between alert alert-error alert-soft">
+    //               <span class="text-lg">{"Site Error"}</span>
+    //               <span on:click={on_retry_site_click} class="btn btn-sm">
+    //                 "Retry"
+    //               </span>
+    //             </div>
+    //           </div>
+    //         }
+    //           .into_any()
+    //       }
+    //       _ => view! {}.into_any(),
+    //     }
+    //   }}
+    // </Transition>
+
   <Transition fallback={|| {}}>
+    {move || {
+      match ssr_site.get() {
+        Some(Ok(s)) => {
+          let site_details = Memo::new(move |_| s.site_view.site.name.clone());
+          let icon_details = Memo::new(move |_| s.site_view.site.icon.clone());
+          let user_details = Memo::new(move |_| s.my_user.clone());
+          let logged_in = Memo::new(move |_| user_details.get().is_some());
+
+
+          view! {
+  //       }.into_any(),
+  //     }
+  //   }}
+  // </Transition>
+
+
+
     <nav class="flex flex-row py-0 navbar">
       <div class={move || { (if search_show.get() { "hidden" } else { "flex" }).to_string() }}>
         <ActionForm attr:class={move || { if still_pressed.get() { "" } else { "hidden" } }} action={instance_action}>
@@ -401,31 +463,31 @@ pub fn TopNav(
                   still_pressed.set(false);
                   // e.prevent_default();
                 } else {
-                  response_cache.update(move |rc| {
-                    rc.remove(
-                      &(
-                        0usize,
-                        GetPosts {
-                          type_: Some(ListingType::All),
-                          sort: Some(SortType::Active),
-                          page: None,
-                          limit: Some(50),
-                          community_id: None,
-                          community_name: None,
-                          saved_only: None,
-                          liked_only: None,
-                          disliked_only: None,
-                          show_hidden: Some(true),
-                          show_read: Some(true),
-                          show_nsfw: Some(false),
-                          page_cursor: None,
-                        },
-                        logged_in(),
-                      ),
-                    );
-                  });
                   #[cfg(not(feature = "ssr"))]
                   spawn_local_scoped_with_cancellation(async move {
+                    response_cache.update(move |rc| {
+                      rc.remove(
+                        &(
+                          0usize,
+                          GetPosts {
+                            type_: Some(ListingType::All),
+                            sort: Some(SortType::Active),
+                            page: None,
+                            limit: Some(50),
+                            community_id: None,
+                            community_name: None,
+                            saved_only: None,
+                            liked_only: None,
+                            disliked_only: None,
+                            show_hidden: Some(true),
+                            show_read: Some(true),
+                            show_nsfw: Some(false),
+                            page_cursor: None,
+                          },
+                          Some(logged_in.get()),
+                        ),
+                      );
+                    });
                     if let Ok(d) = IndexedDb::new().await {
                       let _ = d.set(
                           &ScrollPositionKey {
@@ -448,14 +510,17 @@ pub fn TopNav(
             >
               // <Transition fallback={|| {}}>
               {move || {
-                if let Some(Ok(GetSiteResponse { site_view: SiteView { site: Site { icon: Some(i), .. }, .. }, .. })) = ssr_site_signal.get() {
+                if let Some(i) = icon_details.get() {
+                // if let Some(GetSiteResponse { site_view: SiteView { site: Site { icon: Some(i), .. }, .. }, .. }) = ssr_site_signal.get() {
                   view! { <img class="h-8 sm:hidden" src={i.inner().to_string()} /> }.into_any()
                 } else {
                   view! { <img class="h-8" src="/favicon.png" /> }.into_any()
                 }
               }}
               <span class="hidden sm:flex">
-                {move || { if let Some(Ok(m)) = ssr_site_signal.get() { m.site_view.site.name } else { "A.O.S".to_owned() } }}
+              // {move || { if let Some(m) = ssr_site_signal.get() { m.site_view.site.name } else { "A.O.S".to_owned() } }}
+                {move || { if let m = site_details.get() { m } else { "A.O.S".to_owned() } }}
+              // {move || { if let Some(Ok(m)) = ssr_site.get() { m.site_view.site.name } else { "A.O.S".to_owned() } }}
                 // {move || { if let Some(Ok(m)) = ssr_site.get() { m.site_view.site.name } else { "A.O.S".to_owned() } }}
               </span>
               // </Transition>
@@ -478,7 +543,8 @@ pub fn TopNav(
                     format!(
                       "{}{}",
                       highlight_csr_filter(ListingType::Subscribed),
-                      if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { "" } else { " btn-disabled" },
+                      // if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { "" } else { " btn-disabled" },
+                      if logged_in.get() { "" } else { " btn-disabled" },
                     )
                   }}
                   on:click={on_csr_filter_click(ListingType::Subscribed)}
@@ -562,7 +628,8 @@ pub fn TopNav(
                           format!(
                             "{}{}",
                             highlight_csr_filter(ListingType::Subscribed),
-                            if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { "" } else { " btn-disabled" },
+                            // if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { "" } else { " btn-disabled" },
+                            if logged_in.get() { "" } else { " btn-disabled" },
                           )
                         }}
                         on:click={on_csr_filter_click(ListingType::Subscribed)}
@@ -728,17 +795,26 @@ pub fn TopNav(
               </ul>
             </details>
           </li>
+          // <Transition fallback={|| {}}>
+          //   {move || {
+          //     match ssr_site.get() {
+          //       None => view! {}.into_any(),
+          //       _ => view! {
           <Show
-            // when={move || { if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { true } else { false } }}
-            when={move || logged_in().unwrap_or(false)}
+            when={move || { if let Some(u) = user_details.get() { true } else { false } }}
+            // when={move || { if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { true } else { false } }}
+            // when={move || logged_in.get()}
+            // when=logg
             fallback={move || {
               view! {
                 <li>
-                  <form class="p-0" action="/l" method="POST" on:click={on_navigate_login}>
-                    <button class="py-2 px-4" type="submit">
+                  <A href="/l">
+                  // <form class="p-0" action="/l" method="POST" on:click={on_navigate_login}>
+                    // <button class="py-2 px-4" type="submit">
                       <Icon icon={SignIn} />
-                    </button>
-                  </form>
+                    // </button>
+                  // </form>
+                  </A>
                 </li>
               }
             }}
@@ -782,7 +858,7 @@ pub fn TopNav(
                       </ul>
                     </details>
                   </li>
-                  <div class="flex my-0 sm:hidden divider" />
+                  // <div class="flex my-0 sm:hidden divider" />
                   // <li>
                   //   <A href="/notifications">"Notifications"</A>
                   // </li>
@@ -827,9 +903,18 @@ pub fn TopNav(
               </details>
             </li>
           </Show>
+          //       }.into_any(),
+          //     }
+          //   }}
+          // </Transition>
         </ul>
       </div>
     </nav>
+
+        } }.into_any(),
+        _ => view! {}.into_any(),
+      }
+    }}
   </Transition>
   }
 }

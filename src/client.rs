@@ -1,5 +1,5 @@
 use crate::{
-  ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie,
+  OnlineSetter, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie,
   db::csr_indexed_db::*,
   errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult},
 };
@@ -42,8 +42,28 @@ pub trait Fetch {
 }
 
 pub trait LemmyApi: Fetch {
+  async fn set_signals(&self) {
+    let ssr_site_signal = expect_context::<RwSignal<Option<GetSiteResponse>>>();
+    let ssr_user_signal = expect_context::<RwSignal<Option<MyUserInfo>>>();
+    if ssr_site_signal.get().is_none() {
+      let r = self.get_site().await;
+      match r {
+        Ok(o) => {
+          log!("NONE");
+          ssr_user_signal.set(o.my_user.clone());
+          ssr_site_signal.set(Some(o));
+        }
+        _ => {}
+      }
+    } else {
+      log!("SOME");
+    }
+  }
+
   async fn login(&self, form: Login) -> LemmyAppResult<LoginResponse> {
-    self.make_request(HttpType::Post, "user/login", form).await
+    let r = self.make_request(HttpType::Post, "user/login", form).await;
+    log!("LOGIN {:#?}", r);
+    r
   }
 
   async fn logout(&self) -> LemmyAppResult<SuccessResponse> {
@@ -55,18 +75,34 @@ pub trait LemmyApi: Fetch {
   }
 
   async fn get_comments(&self, form: GetComments) -> LemmyAppResult<GetCommentsResponse> {
+    // self.set_signals().await;
     self.make_request(HttpType::Get, "comment/list", form).await
   }
 
   async fn list_posts(&self, form: GetPosts) -> LemmyAppResult<GetPostsResponse> {
+    // self.set_signals().await;
     self.make_request(HttpType::Get, "post/list", form).await
   }
 
   async fn get_post(&self, form: GetPost) -> LemmyAppResult<GetPostResponse> {
+    // self.set_signals().await;
     self.make_request(HttpType::Get, "post", form).await
   }
 
   async fn get_site(&self) -> LemmyAppResult<GetSiteResponse> {
+    // let ssr_site_signal = expect_context::<RwSignal<Option<GetSiteResponse>>>();
+    // let ssr_user_signal = expect_context::<RwSignal<Option<MyUserInfo>>>();
+    // // if ssr_site_signal.get().is_none() {
+    // let r: LemmyAppResult<GetSiteResponse> = self.make_request(HttpType::Get, "site", ()).await;
+    // match r {
+    //   Ok(ref o) => {
+    //     ssr_user_signal.set(o.my_user.clone());
+    //     ssr_site_signal.set(Some(o.clone()));
+    //   }
+    //   _ => {}
+    // }
+    // r
+    // // }
     self.make_request(HttpType::Get, "site", ()).await
   }
 
@@ -144,13 +180,11 @@ impl LemmyApi for LemmyClient {}
 fn build_route(route: &str) -> String {
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
   let WriteInstanceCookie(set_instance_cookie) = expect_context::<WriteInstanceCookie>();
-
   if let Some(t) = get_instance_cookie.get() {
     set_instance_cookie.set(Some(t));
   } else {
     set_instance_cookie.set(Some("lemmy.world".to_owned()));
   }
-
   format!("https://{}/api/v3/{}", get_instance_cookie.get().unwrap_or("".to_owned()), route)
 }
 
@@ -260,7 +294,8 @@ mod client {
 
       // }).await
 
-      let client = reqwest::Client::new();
+      // let client = reqwest::Client::new();
+      let client = reqwest::Client::builder().brotli(true).build().unwrap();
 
       let m = match method {
         HttpType::Get => client.get(&route).maybe_bearer_auth(jwt.clone()).query(&form).send(),
@@ -271,6 +306,7 @@ mod client {
 
       match m {
         Err(re) => {
+          log!("METHOD {:#?}", re);
           return Err(LemmyAppError {
             error_type: LemmyAppErrorType::ApiError(LemmyErrorType::Unknown("reqwest error".into())),
             content: format!("{:#?}", re),

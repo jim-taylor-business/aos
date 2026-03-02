@@ -12,7 +12,7 @@ use lemmy_api_common::{
   comment::{CreateComment, GetComments},
   lemmy_db_schema::{CommentSortType, SortType, newtypes::PostId},
   post::{GetPost, GetPostResponse},
-  site::GetSiteResponse,
+  site::{GetSiteResponse, MyUserInfo},
 };
 use leptos::{
   html::{Div, Textarea},
@@ -28,14 +28,25 @@ use web_sys::{HtmlAnchorElement, HtmlImageElement, WheelEvent, wasm_bindgen::JsC
 
 #[component]
 pub fn Post() -> impl IntoView {
-  let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
+  // let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
+  // let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
+
+  // let ssr_site_signal = expect_context::<RwSignal<Option<GetSiteResponse>>>();
+  // let ssr_user_signal = expect_context::<RwSignal<Option<MyUserInfo>>>();
 
   let params = use_params_map();
   let query = use_query_map();
 
   let post_id = Signal::derive(move || params.get().get("id").unwrap_or_default().parse::<i32>().ok());
-  let logged_in =
-    Signal::derive(move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) });
+  // let logged_in =
+  //   Signal::derive(move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) });
+  let logged_in = move || false; //ssr_user_signal.get().is_some();
+  // let logged_in = {
+  //   move || {
+  //     if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { true } else { false }
+  //   }
+  // };
+
   let online = expect_context::<RwSignal<OnlineSetter>>();
 
   // let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
@@ -154,6 +165,7 @@ pub fn Post() -> impl IntoView {
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
 
   view! {
+    // <Transition fallback={|| {}}>
     <main class="flex flex-col">
       <TopNav scroll_element=on_scroll_element.into() default_sort={SortType::TopAll.into()} post_view />//={post_view.into()} />
       <div class="flex flex-grow">
@@ -167,6 +179,8 @@ pub fn Post() -> impl IntoView {
           class="gap-4 min-w-full sm:overflow-x-auto sm:overflow-y-hidden sm:absolute sm:px-4 sm:h-[calc(100%-4rem)] sm:columns-sm"
           style="column-fill: auto"
         >
+        // <A href="/c/technology"> "TECH" </A>
+        // <A href="/"> "ROOT" </A>
           <div>
             <Transition fallback={|| {}}>
               {move || {
@@ -227,10 +241,8 @@ pub fn Post() -> impl IntoView {
                         }
                       });
                     }
-                    let res2 = res.1.clone();
-                    let res = res.1.clone();
-                    post_view.set(Some(res));
-                    let post_response = RwSignal::new(res2);
+                    post_view.set(Some(res.1.clone()));
+                    let post_response = Memo::new(move |_| res.1.clone());
                     let text = if let Some(b) = post_response.get().post_view.post.body.clone() {
                       if b.len() > 0 { Some(b) } else { post_response.get().post_view.post.embed_description.clone() }
                     } else {
@@ -291,6 +303,15 @@ pub fn Post() -> impl IntoView {
                       .to_string();
                     let url = Memo::new(move |_| post_response.get().post_view.post.url);
                     let thumbnail_url = Memo::new(move |_| post_response.get().post_view.post.thumbnail_url);
+                    let domain = Memo::new(move |_| if let Some(d) = url.get() {
+                      if let Some(f) = d.inner().host_str() {
+                        if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { format!(" from {}", f) } else { "".to_owned() }
+                      } else {
+                        "".to_owned()
+                      }
+                    } else {
+                      "".to_owned()
+                    });
 
                     view! {
                       <Title text={post_response.get().post_view.post.name} />
@@ -345,18 +366,7 @@ pub fn Post() -> impl IntoView {
                           >
                             <span class="overflow-y-auto" inner_html={community_title_encoded} />
                           </A>
-                          <span
-                            class="overflow-y-auto"
-                            inner_html={move || if let Some(d) = url.get() {
-                              if let Some(f) = d.inner().host_str() {
-                                if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { format!(" from {}", f) } else { "".to_owned() }
-                              } else {
-                                "".to_owned()
-                              }
-                            } else {
-                              "".to_owned()
-                            }}
-                          />
+                          <span class="overflow-y-auto">{domain.get()}</span>
                         </span>
                       </div>
                       <a
@@ -377,7 +387,7 @@ pub fn Post() -> impl IntoView {
                           if let Some(d) = url.get() {
                             d.inner().to_string()
                           } else {
-                            format!("/post/{}", post_response.get().post_view.post.id)
+                            format!("/p/{}", post_response.get().post_view.post.id)
                           }
                         }}
                       >
@@ -502,11 +512,11 @@ pub fn Post() -> impl IntoView {
                                 format!(
                                   "btn btn-neutral{}",
                                   {
-                                    if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" }
+                                    if !logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" }
                                   },
                                 )
                               }}
-                              disabled={move || Some(true) != logged_in.get() || !online.get().0}
+                              disabled={move || !logged_in() || !online.get().0}
                             >
                               "Comment"
                             </button>
@@ -516,8 +526,7 @@ pub fn Post() -> impl IntoView {
                           </div>
                         </div>
                       </Show>
-                    }
-                      .into_any()
+                    }.into_any()
                   }
                   Some(None) | None => {
                     view! {
@@ -528,13 +537,12 @@ pub fn Post() -> impl IntoView {
                           </div>
                         </div>
                       </div>
-                    }
-                      .into_any()
+                    }.into_any()
                   }
                 }
               }}
-            </Transition>
-            <Transition fallback={|| {}}>
+            // </Transition>
+            // <Transition fallback={|| {}}>
               {move || {
                 comments_resource
                   .get()
@@ -565,5 +573,6 @@ pub fn Post() -> impl IntoView {
         </div>
       </div>
     </main>
+    // </Transition>
   }
 }

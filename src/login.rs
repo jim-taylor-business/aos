@@ -1,8 +1,8 @@
 use crate::{
-  WriteAuthCookie,
   client::*,
   errors::{LemmyAppError, LemmyAppErrorType},
   icon::{Icon, IconType::*},
+  *,
 };
 use lemmy_api_common::{
   person::{Login, LoginResponse},
@@ -46,6 +46,16 @@ async fn try_login(form: Login) -> Result<LoginResponse, LemmyAppError> {
 
 #[server]
 pub async fn login_fn(username_or_email: String, password: String, uri: String) -> Result<(), ServerFnError> {
+  let (get_auth_cookie, set_auth_cookie) =
+    use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
+  provide_context(ReadAuthCookie(get_auth_cookie));
+  provide_context(WriteAuthCookie(set_auth_cookie));
+  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+    "instance",
+    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
+  );
+  provide_context(ReadInstanceCookie(get_instance_cookie));
+  provide_context(WriteInstanceCookie(set_instance_cookie));
   use leptos_axum::redirect;
   let req = Login { username_or_email: username_or_email.into(), password: password.into(), totp_2fa_token: None };
   let result = try_login(req).await;
@@ -79,7 +89,8 @@ pub fn LoginForm() -> impl IntoView {
   let username_validation = RwSignal::new("".to_owned());
   let password_validation = RwSignal::new("".to_owned());
   let ssr_error = move || query.with(|params| params.get("error"));
-  let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
+  let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
+  // let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
 
   if let Some(e) = ssr_error() {
     let le = serde_json::from_str::<LemmyAppError>(&e[..]);
@@ -103,7 +114,8 @@ pub fn LoginForm() -> impl IntoView {
         Ok(LoginResponse { jwt: Some(jwt), .. }) => {
           let WriteAuthCookie(set_auth_cookie) = expect_context::<WriteAuthCookie>();
           set_auth_cookie.set(Some(jwt.clone().into_inner()));
-          ssr_site_signal.set(Some(LemmyClient.get_site().await));
+          ssr_site.refetch();
+          // ssr_site_signal.set(Some(LemmyClient.get_site().await));
           use_navigate()("/", Default::default());
         }
         Ok(LoginResponse { jwt: None, .. }) => {}
@@ -128,10 +140,11 @@ pub fn LoginForm() -> impl IntoView {
     <div>
       <ActionForm attr:class="space-y-3" action={login}>
         <input type="hidden" name="uri" value={move || query.get().get("uri").unwrap_or("".into())} />
-        <TextInput id="username" name="username_or_email" input_value={name} label="Username" />
+        <TextInput id="username" autocomplete="username" name="username_or_email" input_value={name} label="Username" />
         <TextInput
           id="password"
           name="password"
+          autocomplete="current-password"
           validation_class={password_validation.into()}
           input_value={password}
           input_type={InputType::Password}
@@ -157,6 +170,7 @@ pub fn TextInput(
   #[prop(optional)] required: MaybeProp<bool>,
   #[prop(into)] id: TextProp,
   #[prop(into)] name: TextProp,
+  #[prop(optional, into)] autocomplete: TextProp,
   #[prop(into)] label: TextProp,
   #[prop(into)] input_value: RwSignal<String>,
   #[prop(default = InputType::Text)] input_type: InputType,
@@ -170,6 +184,7 @@ pub fn TextInput(
       <input
         type={move || { if input_type == InputType::Text || show_password.get() { "text" } else { "password" } }}
         id={id}
+        autocomplete={autocomplete}
         class={move || { format!("input input-bordered p-4 grow {}", validation_class.get()) }}
         placeholder={move || label.get()}
         name={move || name.get()}

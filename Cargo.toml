@@ -9,25 +9,35 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 lemmy_api_common = { branch = "deploy_demo", git = "https://github.com/jim-taylor-business/lemmy.git", default-features = false }
 
-leptos = { version = "0" }
+leptos = { version = "0.8.16" }
 leptos_meta = { version = "0" }
 leptos_axum = { version = "0", optional = true }
 leptos_router = { version = "0" }
 
-# leptos = { git = "https://github.com/jim-taylor-business/leptos.git", branch = "main" }
-# leptos_meta = { git = "https://github.com/jim-taylor-business/leptos.git", branch = "main" }
-# leptos_axum = { git = "https://github.com/jim-taylor-business/leptos.git", branch = "main", optional = true }
-# leptos_router = { git = "https://github.com/jim-taylor-business/leptos.git", branch = "main" }
+# leptos = { git = "https://github.com/jim-taylor-business/leptos.git", branch = "deploy_demo" }
+# leptos_meta = { git = "https://github.com/jim-taylor-business/leptos.git", branch = "deploy_demo" }
+# leptos_axum = { git = "https://github.com/jim-taylor-business/leptos.git", branch = "deploy_demo", optional = true }
+# leptos_router = { git = "https://github.com/jim-taylor-business/leptos.git", branch = "deploy_demo" }
+
+
+
+# leptos = { git = "https://github.com/jim-taylor-business/leptos.git", commit = "49b95378" }
+# leptos_meta = { git = "https://github.com/jim-taylor-business/leptos.git", commit = "49b95378" }
+# leptos_axum = { git = "https://github.com/jim-taylor-business/leptos.git", commit = "49b95378", optional = true }
+# leptos_router = { git = "https://github.com/jim-taylor-business/leptos.git", commit = "49b95378" }
 
 # leptos_i18n = { version = "0", features = ["track_locale_files"] , optional = true }
+
 leptos-use = { version = "0", optional = true }
+# leptos-use = { git = "https://github.com/Synphonyte/leptos-use.git", commit = "355b2af2", optional = true }
+# leptos-use = { git = "https://github.com/jim-taylor-business/leptos-use.git", branch = "deploy_demo", optional = true }
 
 serde = { version = "1", features = ["derive"] }
 serde_urlencoded = "0"
 serde_json = "1"
 strum = "0"
 strum_macros = "0"
-web-sys = { version = "0", features = ["AbortController", "AbortSignal"] }
+web-sys = { version = "=0.3.89", features = ["AbortController", "AbortSignal"] }
 pulldown-cmark = { branch = "deploy_demo", git = "https://github.com/jim-taylor-business/pulldown-cmark.git" }
 html-escape = "0"
 pretty-duration = { branch = "main", git = "https://github.com/jim-taylor-business/pretty-duration.git" }
@@ -48,7 +58,7 @@ tower = { version = "0", optional = true }
 tower-http = { version = "0", features = ["fs"], optional = true }
 tracing = { version = "0", optional = true }
 send_wrapper = { version = "0", features = ["futures"] }
-reqwest = { version = "0", features = ["json", "query", "form", "blocking"] }
+reqwest = { version = "0", features = ["json", "query", "form", "blocking", "brotli", "gzip", "deflate", "zstd"] }
 # awc = { version = "3", features = ["openssl"], optional = true }
 
 [features]

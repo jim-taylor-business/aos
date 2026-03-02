@@ -25,7 +25,8 @@ use web_sys::WheelEvent;
 #[component]
 pub fn Search() -> impl IntoView {
   // let i18n = use_i18n();
-  let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
+  let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
+  // let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
 
   let param = use_params_map();
   let ssr_name = move || param.get().get("name").unwrap_or("".into());
@@ -41,8 +42,7 @@ pub fn Search() -> impl IntoView {
 
   let loading = RwSignal::new(false);
 
-  let logged_in =
-    Signal::derive(move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) });
+  let logged_in = move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { Some(true) } else { Some(false) };
 
   let intersection_element = NodeRef::<Div>::new();
   let on_scroll_element = NodeRef::<Div>::new();
@@ -93,7 +93,7 @@ pub fn Search() -> impl IntoView {
   }
 
   let search_cache_resource = Resource::new(
-    move || (logged_in.get(), ssr_list(), ssr_sort(), ssr_name(), ssr_page(), ssr_term()),
+    move || (logged_in(), ssr_list(), ssr_sort(), ssr_name(), ssr_page(), ssr_term()),
     move |(_logged_in, _list, sort, _name, pages, term)| async move {
       let mut new_pages: Vec<(u32, SearchResponse)> = Vec::new();
       for p in pages {

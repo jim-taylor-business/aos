@@ -21,19 +21,19 @@ fn main() {
 
     if let Ok(conf) = get_configuration(None) {
       let leptos_options = conf.leptos_options;
-      let addr = leptos_options.site_addr;
-      let routes = generate_route_list(App);
+      let bind_address = leptos_options.site_addr;
+      let app_routes = generate_route_list(App);
 
-      let app = Router::new()
-        .leptos_routes(&leptos_options, routes, {
+      let service_router = Router::new()
+        .leptos_routes(&leptos_options, app_routes, {
           let leptos_options = leptos_options.clone();
           move || html_template(leptos_options.clone())
         })
         .fallback(leptos_axum::file_and_error_handler(html_template))
         .with_state(leptos_options);
 
-      if let Ok(listener) = tokio::net::TcpListener::bind(&addr).await {
-        if let Ok(a) = axum::serve(listener, app.into_make_service()).await {
+      if let Ok(listener) = tokio::net::TcpListener::bind(&bind_address).await {
+        if let Ok(a) = axum::serve(listener, service_router.into_make_service()).await {
         } else {
           log!("server did not start");
         }

@@ -4,16 +4,17 @@
 pub mod client;
 pub mod comment;
 pub mod comments;
+pub mod community;
 pub mod db;
+pub mod default;
 pub mod errors;
-pub mod fold;
 pub mod hero;
-pub mod home;
 pub mod icon;
 pub mod listing;
 pub mod listings;
 pub mod login;
 pub mod nav;
+pub mod overview;
 pub mod post;
 pub mod root;
 pub mod search;
@@ -27,10 +28,11 @@ use crate::{
   search::Search,
 };
 use codee::string::FromToStringCodec;
-use home::Home;
+use community::Community;
+use default::Default;
 use lemmy_api_common::{
   post::{GetPosts, GetPostsResponse},
-  site::GetSiteResponse,
+  site::{GetSiteResponse, MyUserInfo},
 };
 use leptos::{html::Div, logging::log, prelude::*};
 use leptos_meta::{Link, Meta, MetaTags, Stylesheet, provide_meta_context, *};
@@ -170,7 +172,9 @@ pub fn App() -> impl IntoView {
     set_theme_cookie.set(Some(t));
   }
 
-  let ssr_site_signal: RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>> = RwSignal::new(None);
+  // let ssr_site_signal: RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>> = RwSignal::new(None);
+  // let ssr_site_signal: RwSignal<Option<GetSiteResponse>> = RwSignal::new(None);
+  // let ssr_user_signal: RwSignal<Option<MyUserInfo>> = RwSignal::new(None);
 
   let ssr_site = Resource::new(
     move || (),
@@ -178,8 +182,9 @@ pub fn App() -> impl IntoView {
       let result: Result<GetSiteResponse, LemmyAppError> = { LemmyClient.get_site().await };
       match result {
         Ok(o) => {
-          log!("SET");
-          // ssr_site_signal.set(Some(Ok(o.clone())));
+          log!("GET {}", o.my_user.is_some());
+          // ssr_site_signal.set(Some(o.clone()));
+          // ssr_user_signal.set(o.my_user.clone());
           Ok(o)
         }
         Err(e) => Err(e),
@@ -187,30 +192,31 @@ pub fn App() -> impl IntoView {
     },
   );
 
-  // let s = LemmyClient.get_site_blocking();
-  // ssr_site_signal.set(Some(s));
+  // // let s = LemmyClient.get_site_blocking();
+  // // ssr_site_signal.set(Some(s));
 
   provide_context(ssr_site);
-  provide_context(ssr_site_signal);
+  // provide_context(ssr_site_signal);
+  // provide_context(ssr_user_signal);
 
-  let formatter = move |text: String| match ssr_site_signal.get() {
-    Some(Ok(site)) => {
-      if text.len() > 0 {
-        if let Some(d) = site.site_view.site.description {
-          format!("{} - AOS for {} - {}", text, site.site_view.site.name, d)
-        } else {
-          format!("{} - AOS for {}", text, site.site_view.site.name)
-        }
-      } else {
-        if let Some(d) = site.site_view.site.description {
-          format!("AOS for {} - {}", site.site_view.site.name, d)
-        } else {
-          format!("AOS for {}", site.site_view.site.name)
-        }
-      }
-    }
-    _ => "AOS".to_owned(),
-  };
+  // let formatter = move |text: String| match ssr_site_signal.get() {
+  //   Some(site) => {
+  //     if text.len() > 0 {
+  //       if let Some(d) = site.site_view.site.description {
+  //         format!("{} - AOS for {} - {}", text, site.site_view.site.name, d)
+  //       } else {
+  //         format!("{} - AOS for {}", text, site.site_view.site.name)
+  //       }
+  //     } else {
+  //       if let Some(d) = site.site_view.site.description {
+  //         format!("AOS for {} - {}", site.site_view.site.name, d)
+  //       } else {
+  //         format!("AOS for {}", site.site_view.site.name)
+  //       }
+  //     }
+  //   }
+  //   _ => "AOS".to_owned(),
+  // };
 
   log!("APP");
 
@@ -224,37 +230,72 @@ pub fn App() -> impl IntoView {
         ssr_site
           .get()
           .map(|s| {
-            ssr_site_signal.set(Some(s));
-            // log!("SET");
-            view! {
-              <Title formatter text="" />
+            match s {
+              Ok(site) => {
+                // ssr_site_signal.set(Some(Ok(site.clone())));
+                // log!("SET");
+                if let Some(d) = site.site_view.site.description {
+                  view! {
+                    <Title formatter={move |text: String|
+                      if text.len() > 0 {
+                        format!("{} - AOS for {} - {}", text, site.site_view.site.name, d.clone())
+                      } else {
+                        format!("AOS for {} - {}", site.site_view.site.name, d.clone())
+                      }
+                    } text="" />
+                  }
+                  // format!("{} - AOS for {} - {}", text, site.site_view.site.name, d)
+                } else {
+                  view! {
+                    <Title formatter={move |text: String|
+                      if text.len() > 0 {
+                        format!("{} - AOS for {}", text, site.site_view.site.name)
+                      } else {
+                        format!("AOS for {}", site.site_view.site.name)
+                      }
+                    } text="" />
+                  }
+                }
+              }
+              _ => {
+                view! {
+                  <Title formatter={|text: String|
+                    if text.len() > 0 {
+                      format!("{} - AOS", text)
+                    } else {
+                      format!("AOS")
+                    }
+                  } text="" />
+                }
+              },
             }
           })
       }}
     </Transition>
+    // <Title formatter text="" />
     <Stylesheet id="leptos" href="/pkg/aos.css" />
     <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico" />
     <Link rel="manifest" href="/manifest.json" />
-    <Meta name="description" content={formatter("".into())} />
+    // <Meta name="description" content={formatter("".into())} />
     // <Transition fallback={|| {}}>
+    <Router>
+      <Routes fallback={NotFound}>
+        <ParentRoute path={(StaticSegment(""))} view={Root} ssr={SsrMode::Async}>
+          <Route path={(StaticSegment(""))} view={Default} />
+          <Route path={(StaticSegment("l"))} view={Login} />
+          <Route path={(StaticSegment("p"), ParamSegment("id"))} view={Post} />
+          <Route path={(StaticSegment("c"), ParamSegment("name"))} view={Community} />
+          <Route path={(StaticSegment("s"))} view={Search} />
+        </ParentRoute>
+      </Routes>
+    </Router>
     //   {move || {
     //     ssr_site
     //       .get_untracked()
     //       .map(|s| {
     //         ssr_site_signal.set(Some(s));
-    //         view! {
-    <Router>
-      <Routes fallback={NotFound}>
-        <ParentRoute path={(StaticSegment(""))} view={Root} ssr={SsrMode::Async}>
-          <Route path={(StaticSegment(""))} view={Home} />
-          <Route path={(StaticSegment("l"))} view={Login} />
-          <Route path={(StaticSegment("p"), ParamSegment("id"))} view={Post} />
-          <Route path={(StaticSegment("c"), ParamSegment("name"))} view={Home} />
-          <Route path={(StaticSegment("s"))} view={Search} />
-        </ParentRoute>
-      </Routes>
-    </Router>
-    //         }
+    //         // view! {
+    //         // }
     //       })
     //   }}
     // </Transition>

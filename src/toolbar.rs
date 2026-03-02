@@ -5,7 +5,12 @@ use crate::{
   errors::{LemmyAppError, LemmyAppErrorType},
   icon::{IconType::*, *},
 };
-use lemmy_api_common::{lemmy_db_views::structs::*, person::*, post::*, site::GetSiteResponse};
+use lemmy_api_common::{
+  lemmy_db_views::structs::*,
+  person::*,
+  post::*,
+  site::{GetSiteResponse, MyUserInfo},
+};
 use leptos::{html::Img, logging::log, prelude::*, task::*};
 use leptos_router::{
   components::{A, Form},
@@ -102,10 +107,18 @@ pub fn PostToolbar(
   content: RwSignal<String>,
   post_id: Signal<Option<i32>>,
 ) -> impl IntoView {
-  // let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
+  let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
 
-  let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
-  let logged_in = move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { true } else { false };
+  // let ssr_site_signal = expect_context::<RwSignal<Option<GetSiteResponse>>>();
+  // let ssr_user_signal = expect_context::<RwSignal<Option<MyUserInfo>>>();
+  // let logged_in = move || ssr_user_signal.get().is_some();
+  // let logged_in = Memo::new(move |_| {
+  //   log!("yo");
+  //   false
+  //   // ssr_user_signal.get().is_some()
+  // });
+
+  // let logged_in = move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { true } else { false };
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
   let online = expect_context::<RwSignal<OnlineSetter>>();
   let post_view = RwSignal::new(post_view.get());
@@ -277,11 +290,22 @@ pub fn PostToolbar(
   let _thumbnail_element = NodeRef::<Img>::new();
   let _thumbnail = RwSignal::new(String::from(""));
 
+  log!("IN");
+
   view! {
+    <Transition fallback={|| {}}>
+      {move || {
+        match ssr_site.get() {
+          Some(Ok(s)) => {
+            let logged_in = Memo::new(move |_| { s.my_user.is_some()});
+            log!("UP");
+            view! {
+
+              // <div> "FUUUUUUUUU" </div>
     <div class="px-4 break-inside-avoid">
       <div class="flex flex-wrap gap-x-2 items-center pb-2">
         <ActionForm action={vote_action} attr:class="flex items-center">
-          <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
+          <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
           <input type="hidden" name="score" value={move || if Some(1) == post_view.get().my_vote { 0 } else { 1 }} />
           <button
             type="submit"
@@ -290,10 +314,10 @@ pub fn PostToolbar(
               format!(
                 "{}{}",
                 { if Some(1) == post_view.get().my_vote { "text-secondary" } else { "" } },
-                { if !logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
+                { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
               )
             }}
-            disabled={move || !logged_in() || !online.get().0}
+            disabled={move || !logged_in.get() || !online.get().0}
             title="Up vote"
           >
             <Icon icon={Upvote} />
@@ -301,7 +325,7 @@ pub fn PostToolbar(
         </ActionForm>
         <span class="block text-sm">{move || post_view.get().counts.score}</span>
         <ActionForm action={vote_action} attr:class="flex items-center">
-          <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
+          <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
           <input type="hidden" name="score" value={move || if Some(-1) == post_view.get().my_vote { 0 } else { -1 }} />
           <button
             type="submit"
@@ -310,10 +334,10 @@ pub fn PostToolbar(
               format!(
                 "{}{}",
                 { if Some(-1) == post_view.get().my_vote { "text-primary" } else { "" } },
-                { if !logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-primary/50" } },
+                { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-primary/50" } },
               )
             }}
-            disabled={move || !logged_in() || !online.get().0}
+            disabled={move || !logged_in.get() || !online.get().0}
             title="Down vote"
           >
             <Icon icon={Downvote} />
@@ -324,9 +348,9 @@ pub fn PostToolbar(
           title={move || {
             format!(
               "{} comments{}",
-              post_view.get().counts.comments,
-              if post_view.get().unread_comments != post_view.get().counts.comments && post_view.get().unread_comments > 0 {
-                format!(" ({} unread)", post_view.get().unread_comments)
+              post_view.get_untracked().counts.comments,
+              if post_view.get_untracked().unread_comments != post_view.get_untracked().counts.comments && post_view.get_untracked().unread_comments > 0 {
+                format!(" ({} unread)", post_view.get_untracked().unread_comments)
               } else {
                 "".to_owned()
               },
@@ -334,15 +358,15 @@ pub fn PostToolbar(
           }}
         >
           <Icon icon={Comments} class={"inline".into()} />
-          {post_view.get().counts.comments}
-          {if post_view.get().unread_comments != post_view.get().counts.comments && post_view.get().unread_comments > 0 {
-            format!(" ({})", post_view.get().unread_comments)
+          {post_view.get_untracked().counts.comments}
+          {if post_view.get_untracked().unread_comments != post_view.get_untracked().counts.comments && post_view.get_untracked().unread_comments > 0 {
+            format!(" ({})", post_view.get_untracked().unread_comments)
           } else {
             "".to_owned()
           }}
         </span>
           <Form action="PUT"/*{save_post_action}*/ attr:class="flex items-center">
-            <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
+            <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
             <input type="hidden" name="save" value={move || format!("{}", !post_view.get().saved)} />
             <button
               type="submit"
@@ -352,10 +376,10 @@ pub fn PostToolbar(
                 format!(
                   "{}{}",
                   { if post_view.get().saved { "text-accent" } else { "" } },
-                  { if !logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+                  { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
                 )
               }}
-              disabled={move || !logged_in() || !online.get().0}
+              disabled={move || !logged_in.get() || !online.get().0}
             >
               <Icon icon={Save} />
             </button>
@@ -364,11 +388,11 @@ pub fn PostToolbar(
             class={move || {
               format!(
                 "cursor-pointer{}",
-                { if !logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+                { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
               )
             }}
             on:click={move |_| {
-              if let Some(id) = post_id.get() {
+              if let Some(id) = post_id.get_untracked() {
                 #[cfg(not(feature = "ssr"))]
                 spawn_local_scoped_with_cancellation(async move {
                   if let Ok(d) = IndexedDb::new().await {
@@ -389,12 +413,12 @@ pub fn PostToolbar(
               reply_show.update(|b| *b = !*b);
             }}
             title="Reply"
-            disabled={move || !logged_in() || !online.get().0}
+            disabled={move || !logged_in.get() || !online.get().0}
           >
             <Icon icon={Reply} />
           </button>
-          <span class={format!("text-base-content{}", if post_view.get().post.local { " hidden" } else { "" })} title="Original">
-            <A href={post_view.get().post.ap_id.inner().to_string()}>
+          <span class={format!("text-base-content{}", if post_view.get_untracked().post.local { " hidden" } else { "" })} title="Original">
+            <A href={post_view.get_untracked().post.ap_id.inner().to_string()}>
               <Icon icon={External} />
             </A>
           </span>
@@ -402,9 +426,9 @@ pub fn PostToolbar(
             class={format!(
               "text-base-content{}",
               {
-                if let Some(d) = post_view.get().post.url {
+                if let Some(d) = post_view.get_untracked().post.url {
                   if let Some(f) = d.inner().host_str() {
-                    if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { "" } else { " hidden" }
+                    if f.to_string().ne(&get_instance_cookie.get_untracked().unwrap_or("".into())) { "" } else { " hidden" }
                   } else {
                     " hidden"
                   }
@@ -419,7 +443,7 @@ pub fn PostToolbar(
               target="_blank"
               href={format!(
                 "https://archive.ph/submit/?url={}",
-                { if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { "".to_owned() } },
+                { if let Some(d) = post_view.get_untracked().post.url { d.inner().to_string() } else { "".to_owned() } },
               )}
             >
               <Icon icon={History} />
@@ -433,9 +457,9 @@ pub fn PostToolbar(
               <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
                 <li>
                   <ActionForm action={report_post_action} attr:class="flex flex-col items-start">
-                    <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
+                    <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
                     <input
-                      class={move || format!("input input-bordered {}", report_validation.get())}
+                      class={move || format!("input input-bordered {}", report_validation.get_untracked())}
                       type="text"
                       on:click={on_report_submit}
                       on:input={move |e| reason.update(|r| *r = event_target_value(&e))}
@@ -450,7 +474,7 @@ pub fn PostToolbar(
                 </li>
                 <li>
                   <ActionForm action={block_user_action}>
-                    <input type="hidden" name="person_id" value={format!("{}", post_view.get().creator.id.0)} />
+                    <input type="hidden" name="person_id" value={format!("{}", post_view.get_untracked().creator.id.0)} />
                     <input type="hidden" name="block" value="true" />
                     <button on:click={on_block_submit} class="text-xs whitespace-nowrap" title="Block user" type="submit">
                       <Icon icon={Block} class={"inline-block".into()} />
@@ -463,5 +487,11 @@ pub fn PostToolbar(
           </span>
       </div>
     </div>
+
+          } }.into_any(),
+          _ => view! {}.into_any(),
+        }
+      }}
+    </Transition>
   }
 }

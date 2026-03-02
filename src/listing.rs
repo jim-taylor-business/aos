@@ -4,7 +4,12 @@ use crate::{
   errors::{Error, LemmyAppError, LemmyAppErrorType, Loading},
   icon::{IconType::*, *},
 };
-use lemmy_api_common::{lemmy_db_views::structs::*, person::*, post::*, site::GetSiteResponse};
+use lemmy_api_common::{
+  lemmy_db_views::structs::*,
+  person::*,
+  post::*,
+  site::{GetSiteResponse, MyUserInfo},
+};
 use leptos::{html::Img, logging::*, prelude::*};
 use leptos_router::{components::*, hooks::*};
 use web_sys::MouseEvent;
@@ -93,9 +98,11 @@ pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostR
 
 #[component]
 pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<bool>) -> impl IntoView {
-  let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
-  let logged_in =
-    Signal::derive(move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) });
+  // let ssr_site_signal = expect_context::<RwSignal<Option<GetSiteResponse>>>();
+  // let ssr_user_signal = expect_context::<RwSignal<Option<MyUserInfo>>>();
+  let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
+  // let logged_in = move || false; //ssr_user_signal.get().is_some();
+  // let logged_in = move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { true } else { false };
   let online = expect_context::<RwSignal<OnlineSetter>>();
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
   let post_view = RwSignal::new(post_view);
@@ -247,8 +254,10 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
     }
     _ => event,
   });
-  let mut title_encoded = String::new();
-  pulldown_cmark::html::push_html(&mut title_encoded, custom);
+  let mut title_encoded_mut = String::new();
+  pulldown_cmark::html::push_html(&mut title_encoded_mut, custom);
+  // let title_encoded_mut = title_encoded_mut;
+  let title_encoded = Memo::new(move |_| title_encoded_mut.clone());
 
   let community_title = if post_view.get().community.local {
     format!("{}", post_view.get().community.name)
@@ -259,9 +268,9 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
       if let Some(h) = post_view.get().community.actor_id.inner().host() { h.to_string() } else { "".to_owned() }
     )
   };
-  let community_title_encoded = html_escape::encode_safe(&community_title).to_string();
-  let creator_name = &post_view.get().creator.actor_id.to_string()[8..];
-  let creator_name_encoded = html_escape::encode_safe(creator_name).to_string();
+  let community_title_encoded = Memo::new(move |_| html_escape::encode_safe(&community_title).to_string());
+  // let creator_name = post_view.get().creator.actor_id.to_string()[8..];
+  let creator_name_encoded = Memo::new(move |_| html_escape::encode_safe(&post_view.get().creator.actor_id.to_string()[8..]).to_string());
 
   let now_in_millis = {
     #[cfg(not(feature = "ssr"))]
@@ -285,27 +294,37 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
     if let Some((index, _)) = duration_in_text.match_indices(' ').nth(1) { duration_in_text.split_at(index) } else { (&duration_in_text[..], "") }
       .0
       .to_string();
+  let abbr_duration = Memo::new(move |_| abbr_duration.clone());
 
   let thumbnail_element = NodeRef::<Img>::new();
   let thumbnail = RwSignal::new(String::from(""));
 
   view! {
+    <Transition fallback={|| {}}>
+      {move || {
+        match ssr_site.get() {
+          Some(Ok(s)) => {
+            let logged_in = Memo::new(move |_| { s.my_user.is_some()});
+            log!("L UP");
+
+            view! {
+
     <div class="grid gap-x-4 px-4 pb-6 grid-cols-[6rem_1fr] grid-rows-[1fr_2rem] break-inside-avoid sm:grid-rows-[1fr_2rem]">
       <div class={move || {
         format!(
           "col-span-1 row-span-2 flex items-start pt-2{}",
-          if post_view.get().post.thumbnail_url.is_none() && post_view.get().post.url.is_none() { " hidden" } else { "" },
+          if post_view.get_untracked().post.thumbnail_url.is_none() && post_view.get_untracked().post.url.is_none() { " hidden" } else { "" },
         )
       }}>
         <a
           class="flex flex-col h-full"
           target="_blank"
           href={move || {
-            if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { format!("/p/{}", post_view.get().post.id) }
+            if let Some(d) = post_view.get_untracked().post.url { d.inner().to_string() } else { format!("/p/{}", post_view.get_untracked().post.id) }
           }}
         >
           {move || {
-            if let Some(t) = post_view.get().post.thumbnail_url {
+            if let Some(t) = post_view.get_untracked().post.thumbnail_url {
               let h = t.inner().to_string();
               thumbnail.set(h);
               view! {
@@ -313,8 +332,8 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
                   <div class="shrink grow basis-0 truncate">
                     <img
                       loading="lazy"
-                      class={move || format!("w-24{}", if thumbnail.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" })}
-                      src={move || thumbnail.get()}
+                      class={move || format!("w-24{}", if thumbnail.get_untracked().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" })}
+                      src={move || thumbnail.get_untracked()}
                       node_ref={thumbnail_element}
                       on:error={move |_e| {
                         thumbnail.set("/lemmy.svg".into());
@@ -338,11 +357,11 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
       <div class={move || {
         format!(
           "col-span-1 row-span-1{}",
-          if post_view.get().post.thumbnail_url.is_none() && post_view.get().post.url.is_none() { " col-span-2 sm:col-span-2" } else { "" },
+          if post_view.get_untracked().post.thumbnail_url.is_none() && post_view.get_untracked().post.url.is_none() { " col-span-2 sm:col-span-2" } else { "" },
         )
       }}>
-        <A href={move || format!("/p/{}", post_view.get().post.id)} attr:class="block hover:text-accent">
-          <span class="overflow-y-auto text-lg wrap-anywhere" inner_html={title_encoded} />
+        <A href={move || format!("/p/{}", post_view.get_untracked().post.id)} attr:class="block hover:text-accent">
+          <span class="overflow-y-auto text-lg wrap-anywhere" inner_html={title_encoded.get_untracked()} />
         </A>
         <span class="block mt-1 mb-1 text-sm wrap-anywhere">
           <span>{abbr_duration}</span>
@@ -350,28 +369,27 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
           <span class="overflow-y-auto" inner_html={creator_name_encoded} />
           " in "
           <span class="overflow-y-auto" inner_html={community_title_encoded} />
-          <span
-            class="overflow-y-auto"
-            inner_html={if let Some(d) = post_view.get().post.url {
+          <span class="overflow-y-auto">
+            {if let Some(d) = post_view.get_untracked().post.url {
               if let Some(f) = d.inner().host_str() {
-                if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { format!(" from {}", f) } else { "".into() }
+                if f.to_string().ne(&get_instance_cookie.get_untracked().unwrap_or("".into())) { format!(" from {}", f) } else { "".into() }
               } else {
                 "".into()
               }
             } else {
               "".into()
             }}
-          />
+          </span>
         </span>
       </div>
       <div class={move || {
         format!(
           "row-span-1 flex items-center gap-x-1{}",
-          if post_view.get().post.thumbnail_url.is_none() && post_view.get().post.url.is_none() { " col-span-2" } else { " col-span-1" },
+          if post_view.get_untracked().post.thumbnail_url.is_none() && post_view.get_untracked().post.url.is_none() { " col-span-2" } else { " col-span-1" },
         )
       }}>
         <ActionForm action={vote_action} attr:class="flex items-center">
-          <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
+          <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
           <input type="hidden" name="score" value={move || if Some(1) == post_view.get().my_vote { 0 } else { 1 }} />
           <button
             type="submit"
@@ -380,10 +398,10 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
               format!(
                 "{}{}",
                 { if Some(1) == post_view.get().my_vote { "text-secondary" } else { "" } },
-                { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
+                { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
               )
             }}
-            disabled={move || Some(true) != logged_in.get() || !online.get().0}
+            disabled={move || !logged_in.get() || !online.get().0}
             title="Up vote"
           >
             <Icon icon={Upvote} />
@@ -395,9 +413,9 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
           title={move || {
             format!(
               "{} comments{}",
-              post_view.get().counts.comments,
-              if post_view.get().unread_comments != post_view.get().counts.comments && post_view.get().unread_comments > 0 {
-                format!(" ({} unread)", post_view.get().unread_comments)
+              post_view.get_untracked().counts.comments,
+              if post_view.get_untracked().unread_comments != post_view.get_untracked().counts.comments && post_view.get_untracked().unread_comments > 0 {
+                format!(" ({} unread)", post_view.get_untracked().unread_comments)
               } else {
                 "".to_owned()
               },
@@ -405,12 +423,12 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
           }}
         >
           <Icon icon={Comments} class={"inline".into()} />
-          {post_view.get().counts.comments}
+          {post_view.get_untracked().counts.comments}
         </span>
         <Show when={move || { post_number == 0 }} fallback={|| {}}>
           <ActionForm action={save_post_action} attr:class="flex items-center">
-            <input type="hidden" name="post_id" value={format!("{}", post_view.get().post.id)} />
-            <input type="hidden" name="save" value={move || format!("{}", !post_view.get().saved)} />
+            <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
+            <input type="hidden" name="save" value={move || format!("{}", !post_view.get_untracked().saved)} />
             <button
               type="submit"
               on:click={on_save_submit}
@@ -418,11 +436,11 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
               class={move || {
                 format!(
                   "{}{}",
-                  { if post_view.get().saved { "text-accent" } else { "" } },
-                  { if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+                  { if post_view.get_untracked().saved { "text-accent" } else { "" } },
+                  { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
                 )
               }}
-              disabled={move || Some(true) != logged_in.get() || !online.get().0}
+              disabled={move || !logged_in.get() || !online.get().0}
             >
               <Icon icon={Save} />
             </button>
@@ -436,8 +454,8 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
           >
             <Icon icon={Reply} />
           </span>
-          <span class={format!("text-base-content{}", if post_view.get().post.local { " hidden" } else { "" })} title="Original">
-            <A href={post_view.get().post.ap_id.inner().to_string()}>
+          <span class={format!("text-base-content{}", if post_view.get_untracked().post.local { " hidden" } else { "" })} title="Original">
+            <A href={post_view.get_untracked().post.ap_id.inner().to_string()}>
               <Icon icon={External} />
             </A>
           </span>
@@ -448,9 +466,9 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
             class={format!(
               "{}",
               {
-                if let Some(d) = post_view.get().post.url {
+                if let Some(d) = post_view.get_untracked().post.url {
                   if let Some(f) = d.inner().host_str() {
-                    if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { "" } else { " hidden" }
+                    if f.to_string().ne(&get_instance_cookie.get_untracked().unwrap_or("".into())) { "" } else { " hidden" }
                   } else {
                     " hidden"
                   }
@@ -463,7 +481,7 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
             target="_blank"
             href={format!(
               "https://archive.ph/submit/?url={}",
-              { if let Some(d) = post_view.get().post.url { d.inner().to_string() } else { "".to_owned() } },
+              { if let Some(d) = post_view.get_untracked().post.url { d.inner().to_string() } else { "".to_owned() } },
             )}
           >
             <Icon icon={History} />
@@ -474,15 +492,14 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
     </div>
     {move || { view!{ <Loading loading=loading.get() /> } }}
     <Show when={move || error.get()} fallback={|| {}}>
-
-    // {move || { if error.get() {
-      // view!{
         <Error error={latest_error.get()} on_retry_click={Some(|_| {})} />
-      // }.into_any()
-    // } else {
-    //   view!{ }.into_any()
-    // } } }
     </Show>
-    // <div> "THING" <br/> "THING" <br/> "THING" <br/> "THING" <br/> </div>
+
+          } }.into_any(),
+          _ => view! {}.into_any(),
+        }
+      }}
+    </Transition>
+
   }
 }

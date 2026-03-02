@@ -15,7 +15,7 @@ use lemmy_api_common::{
   lemmy_db_schema::{CommentSortType, SortType, newtypes::PostId},
   lemmy_db_views::structs::CommentView,
   post::{GetPost, GetPostResponse},
-  site::GetSiteResponse,
+  site::{GetSiteResponse, MyUserInfo},
 };
 use leptos::{
   html::{Div, Textarea},
@@ -31,14 +31,19 @@ use web_sys::{HtmlAnchorElement, HtmlImageElement, WheelEvent, wasm_bindgen::JsC
 
 #[component]
 pub fn Hero(post_id: Signal<PostId>, post_number: usize) -> impl IntoView {
-  let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
+  // let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
+  // let ssr_site_signal = expect_context::<RwSignal<Option<GetSiteResponse>>>();
+  // let ssr_user_signal = expect_context::<RwSignal<Option<MyUserInfo>>>();
 
   let params = use_params_map();
   let query = use_query_map();
 
   // let post_id = Signal::derive(move || params.get().get("id").unwrap_or_default().parse::<i32>().ok());
-  let logged_in =
-    Signal::derive(move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) });
+  let logged_in = move || {
+    false
+    // ssr_user_signal.get().is_some()
+    // if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { Some(true) } else { Some(false) }
+  };
   let online = expect_context::<RwSignal<OnlineSetter>>();
 
   // let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
@@ -55,7 +60,6 @@ pub fn Hero(post_id: Signal<PostId>, post_number: usize) -> impl IntoView {
   let post_resource = Resource::new(
     move || post_id.get(),
     move |id| async move {
-      // if let Some(id) = id_string {
       let form = GetPost { id: Some(id), comment_id: None };
       let result = LemmyClient.get_post(form.clone()).await;
       loading.set(false);
@@ -63,16 +67,12 @@ pub fn Hero(post_id: Signal<PostId>, post_number: usize) -> impl IntoView {
         Ok(o) => Some(Ok((form, o))),
         Err(e) => Some(Err(e)),
       }
-      // } else {
-      //   None
-      // }
     },
   );
 
   let comments_resource = Resource::new(
     move || (post_id.get(), ssr_sort()),
     move |(post_id, sort_type)| async move {
-      // if let Some(id) = post_id {
       let form = GetComments {
         post_id: Some(post_id),
         community_id: None,
@@ -92,9 +92,6 @@ pub fn Hero(post_id: Signal<PostId>, post_number: usize) -> impl IntoView {
         Ok(o) => Some((form, o)),
         Err(_e) => None,
       }
-      // } else {
-      //   None
-      // }
     },
   );
 
@@ -160,7 +157,7 @@ pub fn Hero(post_id: Signal<PostId>, post_number: usize) -> impl IntoView {
 
   view! {
     // <main class="flex flex-col">
-    //   <TopNav scroll_element=on_scroll_element.into() default_sort={SortType::TopAll.into()} post_view />//={post_view.into()} />
+    //   // <TopNav scroll_element=on_scroll_element.into() default_sort={SortType::TopAll.into()} post_view />//={post_view.into()} />
     //   <div class="flex flex-grow">
     //     <div
     //       on:wheel={move |e: WheelEvent| {
@@ -390,7 +387,7 @@ pub fn Hero(post_id: Signal<PostId>, post_number: usize) -> impl IntoView {
                           if let Some(d) = url.get() {
                             d.inner().to_string()
                           } else {
-                            format!("/post/{}", post_response.get().post_view.post.id)
+                            format!("/p/{}", post_response.get().post_view.post.id)
                           }
                         }}
                       >

@@ -28,9 +28,19 @@ pub fn Comment(
   highlight_user_id: RwSignal<Option<PersonId>>,
   post_id: Signal<Option<i32>>,
 ) -> impl IntoView {
-  let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
+  let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
+  // let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
+  // let logged_in = move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { true } else { false };
+  // let logged_in = {
+  //   move || {
+  //     if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { true } else { false }
+  //   }
+  // };
+  // let ssr_site_signal = expect_context::<RwSignal<Option<GetSiteResponse>>>();
+  // let ssr_user_signal = expect_context::<RwSignal<Option<MyUserInfo>>>();
+  let logged_in = move || false; //ssr_user_signal.get().is_some();
+  // let logged_in_s = move |s| { s.my_user.is_some() };
 
-  let logged_in = move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { true } else { false };
   let online = expect_context::<RwSignal<OnlineSetter>>();
 
   let on_toggle = move |i: i32| {
@@ -49,13 +59,10 @@ pub fn Comment(
     });
   };
 
-  let current_person = Signal::derive(move || {
-    if let Some(Ok(GetSiteResponse { my_user: Some(MyUserInfo { local_user_view: LocalUserView { person, .. }, .. }), .. })) = ssr_site_signal.get() {
-      Some(person)
-    } else {
-      None
-    }
-  });
+  // let current_person = move || {
+  //   // if let Some(Ok(GetSiteResponse { my_user: Some(MyUserInfo { local_user_view: LocalUserView { person, .. }, .. }), .. })) = ssr_site.get() {
+  //   if let Some(MyUserInfo { local_user_view: LocalUserView { person, .. }, .. }) = ssr_user_signal.get() { Some(person) } else { None }
+  // };
 
   let mut comments_descendants = comments.get().clone();
   let id = comment.get().comment.id.to_string();
@@ -389,20 +396,28 @@ pub fn Comment(
 
         <Show when={move || vote_show.get()} fallback={|| view! {}}>
           <div on:click={cancel} class="flex flex-wrap gap-x-2 items-center break-inside-avoid">
+          <Transition fallback={|| {}}>
+            {move || {
+              match ssr_site.get() {
+                Some(Ok(s)) => {
+                  let logged_in = Memo::new(move |_| { s.my_user.is_some()});
+                  log!("C UP");
+                  view! {
+
             <Form action="POST" attr:class="flex items-center">
-              <input type="hidden" name="post_id" value={format!("{}", comment_view.get().post.id)} />
-              <input type="hidden" name="score" value={move || if Some(1) == comment_view.get().my_vote { 0 } else { 1 }} />
+              <input type="hidden" name="post_id" value={format!("{}", comment_view.get_untracked().post.id)} />
+              <input type="hidden" name="score" value={move || if Some(1) == comment_view.get_untracked().my_vote { 0 } else { 1 }} />
               <button
                 type="submit"
                 class={move || {
                   format!(
                     "{}{}",
-                    { if Some(1) == comment_view.get().my_vote { "text-secondary" } else { "" } },
-                    { if !logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
+                    { if Some(1) == comment_view.get_untracked().my_vote { "text-secondary" } else { "" } },
+                    { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
                   )
                 }}
                 title="Up vote"
-                disabled={move || !logged_in() || !online.get().0}
+                disabled={move || !logged_in.get() || !online.get().0}
                 on:click={on_up_vote_submit}
               >
                 <Icon icon={Upvote} />
@@ -410,43 +425,49 @@ pub fn Comment(
             </Form>
             <span class="text-sm">{move || comment_view.get().counts.score}</span>
             <Form action="POST" attr:class="flex items-center">
-              <input type="hidden" name="post_id" value={format!("{}", comment_view.get().post.id)} />
-              <input type="hidden" name="score" value={move || if Some(-1) == comment_view.get().my_vote { 0 } else { -1 }} />
+              <input type="hidden" name="post_id" value={format!("{}", comment_view.get_untracked().post.id)} />
+              <input type="hidden" name="score" value={move || if Some(-1) == comment_view.get_untracked().my_vote { 0 } else { -1 }} />
               <button
                 type="submit"
                 class={move || {
                   format!(
                     "{}{}",
-                    { if Some(-1) == comment_view.get().my_vote { "text-primary" } else { "" } },
-                    { if !logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-primary/50" } },
+                    { if Some(-1) == comment_view.get_untracked().my_vote { "text-primary" } else { "" } },
+                    { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-primary/50" } },
                   )
                 }}
                 title="Down vote"
-                disabled={move || !logged_in() || !online.get().0}
+                disabled={move || !logged_in.get() || !online.get().0}
                 on:click={on_down_vote_submit}
               >
                 <Icon icon={Downvote} />
               </button>
             </Form>
             <Form action="POST" attr:class="flex items-center">
-              <input type="hidden" name="post_id" value={format!("{}", comment_view.get().post.id)} />
-              <input type="hidden" name="save" value={move || format!("{}", !comment_view.get().saved)} />
+              <input type="hidden" name="post_id" value={format!("{}", comment_view.get_untracked().post.id)} />
+              <input type="hidden" name="save" value={move || format!("{}", !comment_view.get_untracked().saved)} />
               <button
                 type="submit"
                 title="Save"
                 class={move || {
                   format!(
                     "{}{}",
-                    { if comment_view.get().saved { "text-accent" } else { "" } },
-                    { if !logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+                    { if comment_view.get_untracked().saved { "text-accent" } else { "" } },
+                    { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
                   )
                 }}
-                disabled={move || !logged_in() || !online.get().0}
+                disabled={move || !logged_in.get() || !online.get().0}
                 on:click={on_save_submit}
               >
                 <Icon icon={Save} />
               </button>
             </Form>
+
+                } }.into_any(),
+                _ => view! {}.into_any(),
+              }
+            }}
+          </Transition>
             <button
               on:click={move |_| {
                 edit_show.set(false);
@@ -499,13 +520,13 @@ pub fn Comment(
                   }
                 });
               }}
-              class={move || {
-                format!(
-                  "{}{}",
-                  if current_person.get().eq(&Some(comment_view.get().creator)) { "" } else { "pointer-events-none text-base-content/50" },
-                  { if !logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
-                )
-              }}
+              // class={move || {
+              //   format!(
+              //     "{}{}",
+              //     if current_person().eq(&Some(comment_view.get().creator)) { "" } else { "pointer-events-none text-base-content/50" },
+              //     { if !logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+              //   )
+              // }}
               disabled={move || !logged_in() || !online.get().0}
               title="Edit"
             >

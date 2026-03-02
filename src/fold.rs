@@ -28,14 +28,14 @@ use web_sys::{HtmlAnchorElement, HtmlImageElement, WheelEvent, wasm_bindgen::JsC
 
 #[component]
 pub fn Fold() -> impl IntoView {
-  let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
+  // let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
+  let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
 
   let params = use_params_map();
   let query = use_query_map();
 
   let post_id = Signal::derive(move || params.get().get("id").unwrap_or_default().parse::<i32>().ok());
-  let logged_in =
-    Signal::derive(move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) });
+  let logged_in = move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { Some(true) } else { Some(false) };
   let online = expect_context::<RwSignal<OnlineSetter>>();
 
   // let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
@@ -377,7 +377,7 @@ pub fn Fold() -> impl IntoView {
                           if let Some(d) = url.get() {
                             d.inner().to_string()
                           } else {
-                            format!("/post/{}", post_response.get().post_view.post.id)
+                            format!("/p/{}", post_response.get().post_view.post.id)
                           }
                         }}
                       >
@@ -502,11 +502,11 @@ pub fn Fold() -> impl IntoView {
                                 format!(
                                   "btn btn-neutral{}",
                                   {
-                                    if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" }
+                                    if Some(true) != logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" }
                                   },
                                 )
                               }}
-                              disabled={move || Some(true) != logged_in.get() || !online.get().0}
+                              disabled={move || Some(true) != logged_in() || !online.get().0}
                             >
                               "Comment"
                             </button>

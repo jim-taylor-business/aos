@@ -4,7 +4,7 @@ use crate::{
   errors::LemmyAppError,
 };
 use lemmy_api_common::site::GetSiteResponse;
-use leptos::prelude::*;
+use leptos::{logging::log, prelude::*};
 use leptos_router::components::Outlet;
 
 #[component]
@@ -33,10 +33,23 @@ pub fn Root() -> impl IntoView {
     // <Transition fallback={|| {}}>
     //   {move || {
     //     ssr_site
+    //       .get()
+    //       .map(|s| {
+    //         ssr_site_signal.set(Some(s));
+    //         // log!("ROOT");
+    //         // view! {
+    //         // }
+    //       })
+    //   }}
+    // </Transition>
+
+    // <Transition fallback={|| {}}>
+    //   {move || {
+    //     ssr_site
     //       .get_untracked()
     //       .map(|s| {
-            // ssr_site_signal.set(Some(s));
-            // view! {
+    //         ssr_site_signal.set(Some(s));
+    //         view! {
               <div class="flex flex-col min-h-screen" data-theme={move || get_theme_cookie.get()}>
                 <Outlet />
               </div>
