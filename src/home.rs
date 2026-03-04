@@ -190,7 +190,7 @@ pub fn Home() -> impl IntoView {
       // let render_scroll = false;
 
       let _logged_in = true;
-      log!("LOAD {:?} {:?} ", /*list,*/ sort, /*name,*/ pages);
+      // log!("LOAD {:?} {:?} ", /*list,*/ sort, /*name,*/ pages);
       // log!("LOAD");
 
       // loading.set(true);

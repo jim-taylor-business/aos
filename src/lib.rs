@@ -76,7 +76,7 @@ pub fn html_template(options: LeptosOptions) -> impl IntoView {
       <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <AutoReload options={options.clone()} />
+        // <AutoReload options={options.clone()} />
         <HydrationScripts options />
         <MetaTags />
       </head>
@@ -133,8 +133,8 @@ pub fn App() -> impl IntoView {
   let _offline_handle = window_event_listener_untyped("offline", on_online(false));
   let _online_handle = window_event_listener_untyped("online", on_online(true));
 
-  let response_cache: RwSignal<BTreeMap<(usize, GetPosts, Option<bool>), (i64, LemmyAppResult<GetPostsResponse>)>> = RwSignal::new(BTreeMap::new());
-  provide_context(response_cache);
+  let browser_cache: RwSignal<BTreeMap<(usize, GetPosts, Option<String>), (i64, LemmyAppResult<GetPostsResponse>)>> = RwSignal::new(BTreeMap::new());
+  provide_context(browser_cache);
   // let search_cache: RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>> = RwSignal::new(BTreeMap::new());
   // provide_context(response_cache);
 
@@ -182,7 +182,7 @@ pub fn App() -> impl IntoView {
       let result: Result<GetSiteResponse, LemmyAppError> = { LemmyClient.get_site().await };
       match result {
         Ok(o) => {
-          log!("GET {}", o.my_user.is_some());
+          // log!("GET {}", o.my_user.is_some());
           // ssr_site_signal.set(Some(o.clone()));
           // ssr_user_signal.set(o.my_user.clone());
           Ok(o)
@@ -218,7 +218,7 @@ pub fn App() -> impl IntoView {
   //   _ => "AOS".to_owned(),
   // };
 
-  log!("APP");
+  // log!("APP");
 
   // ssr_site.get_untracked().map(|s| {
   //   ssr_site_signal.set(Some(s));

@@ -290,7 +290,7 @@ pub fn PostToolbar(
   let _thumbnail_element = NodeRef::<Img>::new();
   let _thumbnail = RwSignal::new(String::from(""));
 
-  log!("IN");
+  // log!("IN");
 
   view! {
     <Transition fallback={|| {}}>
@@ -298,7 +298,7 @@ pub fn PostToolbar(
         match ssr_site.get() {
           Some(Ok(s)) => {
             let logged_in = Memo::new(move |_| { s.my_user.is_some()});
-            log!("UP");
+            // log!("UP");
             view! {
 
               // <div> "FUUUUUUUUU" </div>

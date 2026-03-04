@@ -305,7 +305,7 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
         match ssr_site.get() {
           Some(Ok(s)) => {
             let logged_in = Memo::new(move |_| { s.my_user.is_some()});
-            log!("L UP");
+            // log!("L UP");
 
             view! {
 

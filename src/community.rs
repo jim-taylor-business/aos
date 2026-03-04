@@ -41,6 +41,36 @@ pub fn Community() -> impl IntoView {
   // let ssr_sort = move || serde_json::from_str::<SortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(SortType::Active);
   // let ssr_page = move || serde_json::from_str::<Vec<(usize, String)>>(&query.get().get("page").unwrap_or("".into())).unwrap_or(vec![]);
 
+  let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
+
+  // view! {
+  //   // <Transition fallback={|| {}}>
+  //   //   {move || {
+  //   //     match ssr_site.get() {
+  //   //       Some(Ok(s)) => {
+  //   //         // log!("squeak {:#?}", s);
+  //   //         // log!("squeak");
+  //   //         view! {
+  //   //           <Overview g=s />
+  //   //         }.into_any()
+  //   //       },
+  //   //       Some(..) => {
+  //   //         // log!("wdwsd");
+  //   //         view! {
+  //   //           <Overview />
+  //   //         }.into_any()
+  //   //       },
+  //   //       _ => {
+  //   //         // log!("aaaaa");
+  //   //         view! {
+  //   //         }.into_any()
+  //   //       },
+  //   //     }
+  //   //   }}
+  //   // </Transition>
+  //   <Overview />
+  // }
+
   view! {
     <Overview ssr_name />
   }

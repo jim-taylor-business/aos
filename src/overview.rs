@@ -1,3 +1,4 @@
+use crate::ReadAuthCookie;
 use crate::db::csr_indexed_db::*;
 use crate::errors::Offline;
 use crate::{
@@ -30,7 +31,7 @@ use std::{collections::BTreeMap, usize, vec};
 use web_sys::{Event, MouseEvent, ScrollToOptions, WheelEvent};
 
 #[component]
-pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl IntoView {
+pub fn Overview(#[prop(optional)] g: Option<GetSiteResponse>, #[prop(optional)] ssr_name: Signal<Option<String>>) -> impl IntoView {
   // let i18n = use_i18n();
 
   let param = use_params_map();
@@ -41,7 +42,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
   let ssr_sort = move || serde_json::from_str::<SortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(SortType::Active);
   let ssr_page = move || serde_json::from_str::<Vec<(usize, String)>>(&query.get().get("page").unwrap_or("".into())).unwrap_or(vec![]);
 
-  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<bool>), (i64, LemmyAppResult<GetPostsResponse>)>>>();
+  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>), (i64, LemmyAppResult<GetPostsResponse>)>>>();
   let next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
 
   // let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
@@ -52,12 +53,14 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   // let ssr_site_signal = expect_context::<RwSignal<Option<GetSiteResponse>>>();
   // let ssr_user_signal = expect_context::<RwSignal<Option<MyUserInfo>>>();
-  let logged_in = move || {
-    // log!("TRIGGER");
-    false
-    // ssr_user_signal.get().is_some()
-    // if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { true } else { false }
-  };
+  // let logged_in = move || {
+  //   // log!("TRIGGER");
+  //   false
+  //   // ssr_user_signal.get().is_some()
+  //   // if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { true } else { false }
+  // };
+  // let logged_in = RwSignal::new(false);
+  // let logged_in = RwSignal::new(if g.is_some() { g.unwrap().my_user.is_some() } else { false });
 
   let intersection_element = NodeRef::<Div>::new();
   let on_scroll_element = NodeRef::<Div>::new();
@@ -194,13 +197,17 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
       #[cfg(not(feature = "ssr"))]
       let render_scroll = false;
 
-      let _logged_in = true;
-      log!("LOAD {:?} {:?} {:?} {:?} {:?}", list, sort, name, pages, _logged_in);
+      let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
+
+      // let _logged_in = logged_in.get();
+      // let _logged_in = false;
+      // log!("LOAD {:?} {:?} {:?} {:?} {:?}", list, sort, name, pages, get_auth_cookie.get_untracked());
       // log!("LOAD");
 
+      #[cfg(not(feature = "ssr"))]
       loading.set(true);
       let rc = response_cache.get_untracked();
-      let mut new_pages: Vec<(usize, GetPosts, i64, LemmyAppResult<GetPostsResponse>, bool, bool)> = vec![];
+      let mut new_pages: Vec<(usize, GetPosts, i64, LemmyAppResult<GetPostsResponse>, Option<String>, bool)> = vec![];
       if pages.len() == 0 {
         pages = vec![(0usize, "".to_owned())];
       }
@@ -221,21 +228,22 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
           show_read: Some(true),
         };
         #[cfg(not(feature = "ssr"))]
-        if let Some((t, r)) = rc.get(&(p.0, form.clone(), Some(_logged_in))) {
+        if let Some((t, r)) = rc.get(&(p.0, form.clone(), get_auth_cookie.get_untracked())) {
+          log!("cached");
           match r {
             Ok(_) => {
               // log!("cache");
-              new_pages.push((p.0, form.clone(), t.clone(), r.clone(), _logged_in, render_scroll));
+              new_pages.push((p.0, form.clone(), t.clone(), r.clone(), get_auth_cookie.get_untracked(), render_scroll));
             }
             _ => {
               let result = LemmyClient.list_posts(form.clone()).await;
-              new_pages.push((p.0, form.clone(), chrono::Utc::now().timestamp_millis(), result, _logged_in, render_scroll));
+              new_pages.push((p.0, form.clone(), chrono::Utc::now().timestamp_millis(), result, get_auth_cookie.get_untracked(), render_scroll));
             }
           }
           continue;
         }
         let result = LemmyClient.list_posts(form.clone()).await;
-        new_pages.push((p.0, form.clone(), chrono::Utc::now().timestamp_millis(), result, _logged_in, render_scroll));
+        new_pages.push((p.0, form.clone(), chrono::Utc::now().timestamp_millis(), result, get_auth_cookie.get_untracked(), render_scroll));
       }
       new_pages
     },
@@ -309,6 +317,116 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                     }
                       .into_any()
                   }
+                  Some(Ok(s)) => {
+                    // log!("adf");
+                  //   logged_in.set(s.my_user.is_some());
+                  //   // let logged_in = Memo::new(move |_| { s.my_user.is_some()});
+                    view! {
+                  //     <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| (p.1.clone(), p.2, p.4)} let:p>
+                  //       {match p.3 {
+                  //         Ok(ref o) => {
+                  //           // #[cfg(feature = "ssr")]
+                  //           // log!("HOMEYY ssr");
+                  //           // #[cfg(feature = "ssr")]
+                  //           // let ssr_render_signal = RwSignal::new(true);
+
+                  //           // #[cfg(not(feature = "ssr"))]
+                  //           // log!("HOMEYY csr");
+                  //           // #[cfg(not(feature = "ssr"))]
+                  //           // let csr_render_signal = RwSignal::new(true);
+
+                  //           // log!(" SIDE  ? {} {} {}", ssr_render_signal.get(), csr_render_signal.get(), p.5);
+
+
+                  //           // log!("RENDER {}", p.0);
+                  //           #[cfg(not(feature = "ssr"))]
+                  //           {
+                  //             let rw = p.3.clone();
+                  //             let fm = p.1.clone();
+                  //             use crate::db::csr_indexed_db::*;
+                  //             spawn_local_scoped_with_cancellation(async move {
+                  //               if let Ok(d) = IndexedDb::new().await {
+                  //                 if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&fm, &rw).await {}
+                  //               }
+                  //               response_cache
+                  //                 .update(move |rc| {
+                  //                   rc.insert((p.0, fm, Some(p.4)), (p.2, rw));
+                  //                 });
+                  //             });
+                  //             let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
+                  //             if iw < 768f64 || p.5 {} else {
+                  //               if let Some(c) = cancel_handle.get_untracked() {
+                  //                 c.clear();
+                  //               }
+                  //               cancel_handle.set(set_timeout_with_handle(
+                  //                 move || {
+                  //                   if let Some(s) = on_scroll_element.get() {
+                  //                     spawn_local_scoped_with_cancellation(async move {
+                  //                       if let Ok(d) = IndexedDb::new().await {
+                  //                         let query_params = query.get();
+                  //                         let l: Result<Option<i32>, Error> = d
+                  //                           .get(
+                  //                             &ScrollPositionKey {
+                  //                               path: use_location().pathname.get(),
+                  //                               query: query_params.to_query_string(),
+                  //                             },
+                  //                           )
+                  //                           .await;
+                  //                         if let Ok(Some(l)) = l {
+                  //                           // log!("set {} {} {}", l, use_location().pathname.get(), query_params.to_query_string());
+                  //                           s.set_scroll_left(l);
+                  //                         }
+                  //                         // scroll_save.set(true);
+                  //                       }
+                  //                       // log!("  SAVE 2 {}", scroll_save.get());
+                  //                     });
+                  //                     // scroll_element.set(Some(on_scroll_element));
+                  //                   }
+                  //                 },
+                  //                 std::time::Duration::new(0, 750_000_000),
+                  //               ).ok());
+                  //             }
+                  //           }
+                  //           next_page_cursor.set((p.0 + 50usize, o.next_page.clone()));
+                  //           loading.set(false);
+                  //           view! { <Listings posts={o.posts.clone().into()} page_number={RwSignal::new(p.0)} /> }
+                  //             .into_any()
+                  //         }
+                  //         Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
+                  //           loading.set(false);
+                  //           view! {
+                  //             <Offline on_retry_click={Some(on_retry_click)} /*on_retry_click={None::<Option<_>>}*/ />
+                  //             // <div class="py-4 px-8 break-inside-avoid">
+                  //             //   <div class="flex justify-between alert alert-warning alert-soft">
+                  //             //     <span class="text-lg">{"Offline"}</span>
+                  //             //     <span on:click={on_retry_click} class="btn btn-sm">
+                  //             //       "Retry"
+                  //             //     </span>
+                  //             //   </div>
+                  //             // </div>
+                  //           }
+                  //           .into_any()
+                  //         }
+                  //         Err(e) => {
+                  //           loading.set(false);
+                  //           error!("{:#?}", e);
+                  //           view! {
+                  //             <Error error={e} on_retry_click={Some(on_retry_click)} /*on_retry_click={None::<Option<_>>}*/ />
+                  //             // <div class="py-4 px-8 break-inside-avoid">
+                  //             //   <div class="flex justify-between alert alert-error alert-soft">
+                  //             //     <span class="text-lg">{"Error"}</span>
+                  //             //     <span on:click={on_retry_click} class="btn btn-sm">
+                  //             //       "Retry"
+                  //             //     </span>
+                  //             //   </div>
+                  //             // </div>
+                  //           }
+                  //           .into_any()
+                  //         }
+                  //       }}
+                  //     </For>
+                    }.into_any()
+                  }
                   _ => view! {}.into_any(),
                 }
               }}
@@ -316,7 +434,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
         // <Show when={move || render_signal.get()} fallback={|| {}}>
             <Transition fallback={|| {}}>
               // <Title text="" />
-              <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| (p.1.clone(), p.2, p.4)} let:p>
+              <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| (p.1.clone(), p.2, p.4.clone())} let:p>
                 {match p.3 {
                   Ok(ref o) => {
                     // #[cfg(feature = "ssr")]
@@ -344,7 +462,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                         }
                         response_cache
                           .update(move |rc| {
-                            rc.insert((p.0, fm, Some(p.4)), (p.2, rw));
+                            rc.insert((p.0, fm, p.4), (p.2, rw));
                           });
                       });
                       let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
@@ -382,11 +500,13 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                       }
                     }
                     next_page_cursor.set((p.0 + 50usize, o.next_page.clone()));
+                    #[cfg(not(feature = "ssr"))]
                     loading.set(false);
                     view! { <Listings posts={o.posts.clone().into()} page_number={RwSignal::new(p.0)} /> }
                       .into_any()
                   }
                   Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
+                    #[cfg(not(feature = "ssr"))]
                     loading.set(false);
                     view! {
                       <Offline on_retry_click={Some(on_retry_click)} /*on_retry_click={None::<Option<_>>}*/ />
@@ -402,6 +522,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                     .into_any()
                   }
                   Err(e) => {
+                    #[cfg(not(feature = "ssr"))]
                     loading.set(false);
                     error!("{:#?}", e);
                     view! {
@@ -419,8 +540,6 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                   }
                 }}
               </For>
-              <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
-              {move || { view!{ <Loading loading=loading.get() /> } }}
               // <Error loading=loading.get() />
               // {move || {
               //   if loading.get() {
@@ -440,6 +559,8 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
               //   }
               // }}
             </Transition>
+            <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
+            {move || { view!{ <Loading loading=loading.get() /> } }}
         // </Show>
         // {
         //   // #[cfg(not(feature = "ssr"))]

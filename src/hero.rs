@@ -39,11 +39,11 @@ pub fn Hero(post_id: Signal<PostId>, post_number: usize) -> impl IntoView {
   let query = use_query_map();
 
   // let post_id = Signal::derive(move || params.get().get("id").unwrap_or_default().parse::<i32>().ok());
-  let logged_in = move || {
-    false
-    // ssr_user_signal.get().is_some()
-    // if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { Some(true) } else { Some(false) }
-  };
+  // let logged_in = move || {
+  //   false
+  //   // ssr_user_signal.get().is_some()
+  //   // if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { Some(true) } else { Some(false) }
+  // };
   let online = expect_context::<RwSignal<OnlineSetter>>();
 
   // let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
@@ -149,7 +149,7 @@ pub fn Hero(post_id: Signal<PostId>, post_number: usize) -> impl IntoView {
     );
   }
 
-  log!("HERO");
+  // log!("HERO");
 
   let on_scroll_element = NodeRef::<Div>::new();
   let thumbnail = RwSignal::new(String::from(""));
@@ -683,9 +683,22 @@ pub fn Hero(post_id: Signal<PostId>, post_number: usize) -> impl IntoView {
                     spawn_local_scoped_with_cancellation(async move {
                       if let p = post_id.get() {
                         if let Ok(d) = IndexedDb::new().await {
-                          if let Ok(Some(comment_ids)) = d.get::<i32, Vec<i32>>(&p.0).await {
-                            hidden_comments.set(comment_ids);
+                          if let Ok(Some(mut comment_ids)) = d.get::<i32, Vec<i32>>(&p.0).await {
+                            // hidden_comments.set(comment_ids);
+                            // let mut comment_ids = comment_ids;
+                            hidden_comments.update(|h| {
+                              h.append(&mut comment_ids);
+                            });
+
                           }
+                        }
+                      }
+                    });
+
+                    hidden_comments.update(|h| {
+                      if let Some(ref f) = first_comment.get(0) {
+                        if !h.contains(&f.comment.id.0) {
+                            h.push(f.comment.id.0);
                         }
                       }
                     });
@@ -699,6 +712,7 @@ pub fn Hero(post_id: Signal<PostId>, post_number: usize) -> impl IntoView {
                             comment={cv.clone().into()}
                             comments={comments_descendants.into()}
                             level=1
+                            // close_level=Some(3usize)
                             now_in_millis
                             highlight_user_id
                             // post_id

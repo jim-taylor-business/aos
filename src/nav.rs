@@ -97,9 +97,10 @@ pub fn TopNav(
   // let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
   // let logged_in = Memo::new(move |_| if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { true } else { false });
 
+  let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
   let WriteThemeCookie(set_theme_cookie) = expect_context::<WriteThemeCookie>();
   let _online = expect_context::<RwSignal<OnlineSetter>>();
-  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<bool>), (i64, LemmyAppResult<GetPostsResponse>)>>>();
+  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>), (i64, LemmyAppResult<GetPostsResponse>)>>>();
   // let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
 
   let query = use_query_map();
@@ -131,7 +132,7 @@ pub fn TopNav(
             show_nsfw: Some(false),
             page_cursor: None,
           },
-          Some(false),
+          get_auth_cookie.get_untracked(),
           // Some(logged_in.get()),
         ));
       });
@@ -177,7 +178,7 @@ pub fn TopNav(
             show_nsfw: Some(false),
             page_cursor: None,
           },
-          Some(false),
+          get_auth_cookie.get_untracked(),
           // Some(logged_in.get()),
         ));
       });
@@ -309,7 +310,7 @@ pub fn TopNav(
           show_nsfw: Some(false),
           page_cursor: None,
         },
-        Some(false),
+        get_auth_cookie.get_untracked(),
         // Some(logged_in.get()),
       ));
     });
@@ -484,7 +485,7 @@ pub fn TopNav(
                             show_nsfw: Some(false),
                             page_cursor: None,
                           },
-                          Some(logged_in.get()),
+                          get_auth_cookie.get_untracked(),
                         ),
                       );
                     });

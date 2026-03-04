@@ -1,6 +1,6 @@
 use crate::{hero::Hero, listing::Listing};
 use lemmy_api_common::lemmy_db_views::structs::PostView;
-use leptos::prelude::*;
+use leptos::{logging::log, prelude::*};
 
 #[component]
 pub fn Listings(posts: Signal<Vec<PostView>>, page_number: RwSignal<usize>) -> impl IntoView {
@@ -10,6 +10,7 @@ pub fn Listings(posts: Signal<Vec<PostView>>, page_number: RwSignal<usize>) -> i
       {
         post_number.set(post_number.get() + 1);
         if post_number.get() < 2usize {
+          log!("LIST");
           view! { <Hero post_id={Signal::derive(move || pv.post.id)} post_number={post_number.get()} /> }.into_any()
         } else {
           view! { <Listing post_view={pv} post_number={post_number.get()} reply_show={RwSignal::new(false)} /> }.into_any()

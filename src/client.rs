@@ -49,20 +49,20 @@ pub trait LemmyApi: Fetch {
       let r = self.get_site().await;
       match r {
         Ok(o) => {
-          log!("NONE");
+          // log!("NONE");
           ssr_user_signal.set(o.my_user.clone());
           ssr_site_signal.set(Some(o));
         }
         _ => {}
       }
     } else {
-      log!("SOME");
+      // log!("SOME");
     }
   }
 
   async fn login(&self, form: Login) -> LemmyAppResult<LoginResponse> {
     let r = self.make_request(HttpType::Post, "user/login", form).await;
-    log!("LOGIN {:#?}", r);
+    // log!("LOGIN {:#?}", r);
     r
   }
 
@@ -306,7 +306,7 @@ mod client {
 
       match m {
         Err(re) => {
-          log!("METHOD {:#?}", re);
+          // log!("METHOD {:#?}", re);
           return Err(LemmyAppError {
             error_type: LemmyAppErrorType::ApiError(LemmyErrorType::Unknown("reqwest error".into())),
             content: format!("{:#?}", re),

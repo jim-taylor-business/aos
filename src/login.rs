@@ -80,7 +80,7 @@ pub async fn login_fn(username_or_email: String, password: String, uri: String) 
 #[component]
 pub fn LoginForm() -> impl IntoView {
   // let _i18n = use_i18n();
-  log!("LOGIN");
+  // log!("LOGIN");
 
   let query = use_query_map();
   let name = RwSignal::new(String::new());

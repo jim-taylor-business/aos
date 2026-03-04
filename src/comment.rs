@@ -27,6 +27,7 @@ pub fn Comment(
   hidden_comments: RwSignal<Vec<i32>>,
   highlight_user_id: RwSignal<Option<PersonId>>,
   post_id: Signal<Option<i32>>,
+  // #[prop(optional_no_strip)] close_level: Option<usize>,
 ) -> impl IntoView {
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   // let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
@@ -38,7 +39,7 @@ pub fn Comment(
   // };
   // let ssr_site_signal = expect_context::<RwSignal<Option<GetSiteResponse>>>();
   // let ssr_user_signal = expect_context::<RwSignal<Option<MyUserInfo>>>();
-  let logged_in = move || false; //ssr_user_signal.get().is_some();
+  // let logged_in = move || false; //ssr_user_signal.get().is_some();
   // let logged_in_s = move |s| { s.my_user.is_some() };
 
   let online = expect_context::<RwSignal<OnlineSetter>>();
@@ -302,6 +303,7 @@ pub fn Comment(
         if level > 8 { "" } else { "pl-4" },
         if level == 1 { " odd:bg-base-200 pr-4 pt-2 pb-1" } else { "" },
         if !hidden_comments.get().contains(&parent_comment_id) { "" } else { " hidden" },
+        // if let Some(l) = close_level { if l == (level - 1) { " hidden" } else { "" }} else { "" },
       )
     }}>
       <div
@@ -400,8 +402,15 @@ pub fn Comment(
             {move || {
               match ssr_site.get() {
                 Some(Ok(s)) => {
-                  let logged_in = Memo::new(move |_| { s.my_user.is_some()});
-                  log!("C UP");
+                  let is_user = s.my_user.is_some();
+                  let logged_in = Memo::new(move |_| { is_user });
+                  // let logged_in = Memo::new(move |_| { if let Some(ref u) = s.my_user {true} else {false} } );
+                  let current_person = Memo::new(move |_| {
+                    if let GetSiteResponse { my_user: Some(MyUserInfo { local_user_view: LocalUserView { ref person, .. }, .. }), .. } = s { Some(person.clone()) } else { None }
+                    // if let MyUserInfo { local_user_view: LocalUserView { person, .. }, .. } = s.my_user { Some(person) } else { None }
+                  });
+
+                  // log!("C UP");
                   view! {
 
             <Form action="POST" attr:class="flex items-center">
@@ -462,12 +471,6 @@ pub fn Comment(
                 <Icon icon={Save} />
               </button>
             </Form>
-
-                } }.into_any(),
-                _ => view! {}.into_any(),
-              }
-            }}
-          </Transition>
             <button
               on:click={move |_| {
                 edit_show.set(false);
@@ -491,9 +494,9 @@ pub fn Comment(
               }}
               title="Reply"
               class={move || {
-                format!("{}", { if !logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } })
+                format!("{}", { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } })
               }}
-              disabled={move || !logged_in() || !online.get().0}
+              disabled={move || !logged_in.get() || !online.get().0}
             >
               <Icon icon={Reply} />
             </button>
@@ -520,14 +523,14 @@ pub fn Comment(
                   }
                 });
               }}
-              // class={move || {
-              //   format!(
-              //     "{}{}",
-              //     if current_person().eq(&Some(comment_view.get().creator)) { "" } else { "pointer-events-none text-base-content/50" },
-              //     { if !logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
-              //   )
-              // }}
-              disabled={move || !logged_in() || !online.get().0}
+              class={move || {
+                format!(
+                  "{}{}",
+                  if current_person.get().eq(&Some(comment_view.get().creator)) { "" } else { "pointer-events-none text-base-content/50" },
+                  { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+                )
+              }}
+              disabled={move || !logged_in.get() || !online.get().0}
               title="Edit"
             >
               <Icon icon={Pencil} />
@@ -544,6 +547,13 @@ pub fn Comment(
             >
               <Icon icon={Highlighter} />
             </span>
+
+                } }.into_any(),
+                _ => view! {}.into_any(),
+              }
+            }}
+          </Transition>
+
             <span class="overflow-hidden wrap-anywhere">
               <span>{abbr_duration.clone()}</span>
               " ago, by "
@@ -554,7 +564,7 @@ pub fn Comment(
           </div>
         </Show>
         <Show
-          when={move || hidden_comments.get().contains(&comment_view.get().comment.id.0) && (children.get().len() + descendants.get().len()) > 0}
+          when={move || (hidden_comments.get().contains(&comment_view.get().comment.id.0)) && (children.get().len() + descendants.get().len()) > 0}
           fallback={|| {}}
         >
           <span class="inline-block whitespace-nowrap badge badge-neutral">{children.get().len() + descendants.get().len()} " replies"</span>
@@ -598,7 +608,7 @@ pub fn Comment(
               <button
                 on:click={on_reply_click}
                 type="button"
-                disabled={move || !logged_in() || !online.get().0}
+                disabled={move || !online.get().0}
                 class={move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })}
               >
                 "Reply"
@@ -644,7 +654,7 @@ pub fn Comment(
               <button
                 on:click={on_edit_click}
                 type="button"
-                disabled={move || !logged_in() || !online.get().0}
+                disabled={move || !online.get().0}
                 class={move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })}
               >
                 "Edit"
@@ -656,6 +666,10 @@ pub fn Comment(
           </Show>
         </div>
       </Show>
+      // {
+      //   let n = {if let Some(c) = close_level { Some(c) } else { None } };
+      // }
+
       <For each={move || children.get()} key={|cv| cv.comment.id} let:cv>
         <Comment
           parent_comment_id={comment_view.get().comment.id.0}
@@ -666,6 +680,10 @@ pub fn Comment(
           now_in_millis
           highlight_user_id
           post_id
+          // close_level
+          // { .. }
+          // {if let Some(c) = close_level { close_level } else { .. }}
+          // close_level=close_level.unwrap_or(None)
         />
       </For>
     </div>
