@@ -42,7 +42,7 @@ pub fn Search() -> impl IntoView {
 
   let loading = RwSignal::new(false);
 
-  let logged_in = move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { Some(true) } else { Some(false) };
+  // let logged_in = move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { Some(true) } else { Some(false) };
 
   let intersection_element = NodeRef::<Div>::new();
   let on_scroll_element = NodeRef::<Div>::new();
@@ -93,8 +93,8 @@ pub fn Search() -> impl IntoView {
   }
 
   let search_cache_resource = Resource::new(
-    move || (logged_in(), ssr_list(), ssr_sort(), ssr_name(), ssr_page(), ssr_term()),
-    move |(_logged_in, _list, sort, _name, pages, term)| async move {
+    move || (/*logged_in(), */ ssr_list(), ssr_sort(), ssr_name(), ssr_page(), ssr_term()),
+    move |(/*_logged_in, */ _list, sort, _name, pages, term)| async move {
       let mut new_pages: Vec<(u32, SearchResponse)> = Vec::new();
       for p in pages {
         let form = Search {

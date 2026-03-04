@@ -114,9 +114,13 @@ pub fn LoginForm() -> impl IntoView {
         Ok(LoginResponse { jwt: Some(jwt), .. }) => {
           let WriteAuthCookie(set_auth_cookie) = expect_context::<WriteAuthCookie>();
           set_auth_cookie.set(Some(jwt.clone().into_inner()));
-          ssr_site.refetch();
+          spawn_local_scoped_with_cancellation(async move {
+            ssr_site.refetch();
+            spawn_local_scoped_with_cancellation(async move {
+              use_navigate()("/", Default::default());
+            });
+          });
           // ssr_site_signal.set(Some(LemmyClient.get_site().await));
-          use_navigate()("/", Default::default());
         }
         Ok(LoginResponse { jwt: None, .. }) => {}
         Err(e) => {

@@ -28,7 +28,7 @@ use web_sys::{HtmlAnchorElement, HtmlImageElement, WheelEvent, wasm_bindgen::JsC
 
 #[component]
 pub fn Post() -> impl IntoView {
-  // let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
+  let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   // let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
 
   // let ssr_site_signal = expect_context::<RwSignal<Option<GetSiteResponse>>>();
@@ -40,7 +40,7 @@ pub fn Post() -> impl IntoView {
   let post_id = Signal::derive(move || params.get().get("id").unwrap_or_default().parse::<i32>().ok());
   // let logged_in =
   //   Signal::derive(move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) });
-  let logged_in = move || false; //ssr_user_signal.get().is_some();
+  // let logged_in = move || false; //ssr_user_signal.get().is_some();
   // let logged_in = {
   //   move || {
   //     if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { true } else { false }
@@ -469,6 +469,14 @@ pub fn Post() -> impl IntoView {
                       } else {
                         None
                       }}
+                      <Transition fallback={|| {}}>
+                        {move || {
+                          match ssr_site.get() {
+                            Some(Ok(s)) => {
+                              let logged_in = Memo::new(move |_| { s.my_user.is_some()});
+                              // log!("UP");
+                              view! {
+
                       <Show when={move || reply_show.get()} fallback={|| {}}>
                         <div class="mb-3 space-y-3 before:content-[''] before:block before:w-24 before:overflow-hidden">
                           <div class="form-control">
@@ -512,11 +520,11 @@ pub fn Post() -> impl IntoView {
                                 format!(
                                   "btn btn-neutral{}",
                                   {
-                                    if !logged_in() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" }
+                                    if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" }
                                   },
                                 )
                               }}
-                              disabled={move || !logged_in() || !online.get().0}
+                              disabled={move || !logged_in.get() || !online.get().0}
                             >
                               "Comment"
                             </button>
@@ -526,6 +534,13 @@ pub fn Post() -> impl IntoView {
                           </div>
                         </div>
                       </Show>
+
+                            } }.into_any(),
+                            _ => view! {}.into_any(),
+                          }
+                        }}
+                      </Transition>
+
                     }.into_any()
                   }
                   Some(None) | None => {
