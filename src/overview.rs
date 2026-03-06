@@ -236,13 +236,25 @@ pub fn Overview(#[prop(optional)] g: Option<GetSiteResponse>, #[prop(optional)] 
               new_pages.push((p.0, form.clone(), t.clone(), r.clone(), get_auth_cookie.get_untracked(), render_scroll));
             }
             _ => {
-              let result = LemmyClient.list_posts(form.clone()).await;
+              let result = match LemmyClient.list_posts(form.clone()).await {
+                Ok(mut o) => {
+                  o.posts.retain(|p| !p.banned_from_community);
+                  Ok(o)
+                }
+                Err(e) => Err(e),
+              };
               new_pages.push((p.0, form.clone(), chrono::Utc::now().timestamp_millis(), result, get_auth_cookie.get_untracked(), render_scroll));
             }
           }
           continue;
         }
-        let result = LemmyClient.list_posts(form.clone()).await;
+        let result = match LemmyClient.list_posts(form.clone()).await {
+          Ok(mut o) => {
+            o.posts.retain(|p| !p.banned_from_community);
+            Ok(o)
+          }
+          Err(e) => Err(e),
+        };
         new_pages.push((p.0, form.clone(), chrono::Utc::now().timestamp_millis(), result, get_auth_cookie.get_untracked(), render_scroll));
       }
       new_pages
@@ -508,7 +520,7 @@ pub fn Overview(#[prop(optional)] g: Option<GetSiteResponse>, #[prop(optional)] 
                         ).ok());
                       }
                     }
-                    next_page_cursor.set((p.0 + 50usize, o.next_page.clone()));
+                    next_page_cursor.set((p.0 + o.posts.len(), o.next_page.clone()));
                     #[cfg(not(feature = "ssr"))]
                     loading.set(false);
                     view! { <Listings posts={o.posts.clone().into()} page_number={RwSignal::new(p.0)} /> }
