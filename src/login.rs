@@ -11,6 +11,7 @@ use lemmy_api_common::{
 use leptos::{logging::log, prelude::*, task::spawn_local_scoped_with_cancellation};
 use leptos_meta::Title;
 use leptos_router::{hooks::*, *};
+use leptos_use::{UseTimeoutFnReturn, use_timeout_fn};
 use web_sys::MouseEvent;
 
 fn validate_login(form: &Login) -> Option<LemmyAppErrorType> {
@@ -114,12 +115,21 @@ pub fn LoginForm() -> impl IntoView {
         Ok(LoginResponse { jwt: Some(jwt), .. }) => {
           let WriteAuthCookie(set_auth_cookie) = expect_context::<WriteAuthCookie>();
           set_auth_cookie.set(Some(jwt.clone().into_inner()));
-          spawn_local_scoped_with_cancellation(async move {
-            ssr_site.refetch();
-            spawn_local_scoped_with_cancellation(async move {
-              use_navigate()("/", Default::default());
-            });
-          });
+          ssr_site.refetch();
+          use_navigate()("/", Default::default());
+          // spawn_local_scoped_with_cancellation(async move {
+          //   ssr_site.refetch();
+          //   spawn_local_scoped_with_cancellation(async move {
+          //   });
+          // });
+          // let UseTimeoutFnReturn { start, stop, is_pending, .. } = use_timeout_fn(
+          //   |i: i32| {
+          //     ssr_site.refetch();
+          //   },
+          //   500.0,
+          // );
+          // start(3);
+
           // ssr_site_signal.set(Some(LemmyClient.get_site().await));
         }
         Ok(LoginResponse { jwt: None, .. }) => {}

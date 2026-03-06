@@ -103,7 +103,31 @@ pub trait LemmyApi: Fetch {
     // }
     // r
     // // }
-    self.make_request(HttpType::Get, "site", ()).await
+    //
+    //
+    #[derive(Debug, Clone, Serialize)]
+    struct GetSite {
+      t: u64,
+    };
+
+    impl Store for GetSite {
+      fn store_name(&self) -> &'static str {
+        "query_gets"
+      }
+    }
+
+    let now_in_millis = {
+      #[cfg(not(feature = "ssr"))]
+      {
+        chrono::offset::Utc::now().timestamp_millis() as u64
+      }
+      #[cfg(feature = "ssr")]
+      {
+        std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or(std::time::Duration::new(1000, 0)).as_millis() as u64
+      }
+    };
+
+    self.make_request(HttpType::Get, "site", GetSite { t: now_in_millis }).await
   }
 
   fn get_site_blocking(&self) -> LemmyAppResult<GetSiteResponse> {
@@ -459,6 +483,8 @@ mod client {
       let WriteAuthCookie(set_auth_cookie) = expect_context::<WriteAuthCookie>();
       let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
       let jwt = get_auth_cookie.get();
+
+      // log!("JWT {:#?}", jwt);
 
       let online = expect_context::<RwSignal<OnlineSetter>>();
 

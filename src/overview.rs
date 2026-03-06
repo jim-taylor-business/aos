@@ -229,7 +229,7 @@ pub fn Overview(#[prop(optional)] g: Option<GetSiteResponse>, #[prop(optional)] 
         };
         #[cfg(not(feature = "ssr"))]
         if let Some((t, r)) = rc.get(&(p.0, form.clone(), get_auth_cookie.get_untracked())) {
-          log!("cached");
+          // log!("cached");
           match r {
             Ok(_) => {
               // log!("cache");
@@ -314,14 +314,23 @@ pub fn Overview(#[prop(optional)] g: Option<GetSiteResponse>, #[prop(optional)] 
                           </span>
                         </div>
                       </div>
-                    }
-                      .into_any()
+                    }.into_any()
                   }
                   Some(Ok(s)) => {
+                    view! {
+                      // <div class="py-4 px-8 break-inside-avoid">
+                      //   <div class="flex justify-between alert alert-error alert-soft">
+                      //     <span class="text-lg">{"Site Error"}</span>
+                      //     <span on:click={on_retry_site_click} class="btn btn-sm">
+                      //       "Retry"
+                      //     </span>
+                      //   </div>
+                      // </div>
+                    }.into_any()
                     // log!("adf");
                   //   logged_in.set(s.my_user.is_some());
                   //   // let logged_in = Memo::new(move |_| { s.my_user.is_some()});
-                    view! {
+                    // view! {
                   //     <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| (p.1.clone(), p.2, p.4)} let:p>
                   //       {match p.3 {
                   //         Ok(ref o) => {
@@ -425,7 +434,7 @@ pub fn Overview(#[prop(optional)] g: Option<GetSiteResponse>, #[prop(optional)] 
                   //         }
                   //       }}
                   //     </For>
-                    }.into_any()
+                    // }.into_any()
                   }
                   _ => view! {}.into_any(),
                 }
