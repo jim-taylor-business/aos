@@ -332,8 +332,8 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
                   <div class="shrink grow basis-0 truncate">
                     <img
                       loading="lazy"
-                      class={move || format!("w-24{}", if thumbnail.get_untracked().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" })}
-                      src={move || thumbnail.get_untracked()}
+                      class={move || format!("w-24{}", if thumbnail.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" })}
+                      src={move || thumbnail.get()}
                       node_ref={thumbnail_element}
                       on:error={move |_e| {
                         thumbnail.set("/lemmy.svg".into());
@@ -341,15 +341,13 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
                     />
                   </div>
                 </div>
-              }
-                .into_any()
+              }.into_any()
             } else {
               view! {
                 <div class="block w-24 truncate">
                   <img class="w-24 h-16" src="/lemmy.svg" />
                 </div>
-              }
-                .into_any()
+              }.into_any()
             }
           }}
         </a>

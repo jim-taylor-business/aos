@@ -31,7 +31,8 @@ use codee::string::FromToStringCodec;
 use community::Community;
 use default::Default;
 use lemmy_api_common::{
-  post::{GetPosts, GetPostsResponse},
+  comment::{GetComments, GetCommentsResponse},
+  post::{GetPost, GetPostResponse, GetPosts, GetPostsResponse},
   site::{GetSiteResponse, MyUserInfo},
 };
 use leptos::{html::Div, logging::log, prelude::*};
@@ -133,8 +134,14 @@ pub fn App() -> impl IntoView {
   let _offline_handle = window_event_listener_untyped("offline", on_online(false));
   let _online_handle = window_event_listener_untyped("online", on_online(true));
 
-  let browser_cache: RwSignal<BTreeMap<(usize, GetPosts, Option<String>), (i64, LemmyAppResult<GetPostsResponse>)>> = RwSignal::new(BTreeMap::new());
-  provide_context(browser_cache);
+  let listing_browser_cache: RwSignal<BTreeMap<(usize, GetPosts, Option<String>), (i64, LemmyAppResult<GetPostsResponse>)>> =
+    RwSignal::new(BTreeMap::new());
+  provide_context(listing_browser_cache);
+  let post_browser_cache: RwSignal<BTreeMap<(GetPost, Option<String>), (i64, LemmyAppResult<GetPostResponse>)>> = RwSignal::new(BTreeMap::new());
+  provide_context(post_browser_cache);
+  let comments_browser_cache: RwSignal<BTreeMap<(GetComments, Option<String>), (i64, LemmyAppResult<GetCommentsResponse>)>> =
+    RwSignal::new(BTreeMap::new());
+  provide_context(comments_browser_cache);
   // let search_cache: RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>> = RwSignal::new(BTreeMap::new());
   // provide_context(response_cache);
 

@@ -1617,8 +1617,8 @@ checksum = "09edd9e8b54e49e587e4f6295a7d29c3ea94d469cb40ab8ca70b288248a81db2"
 
 [[package]]
 name = "lemmy_api_common"
-version = "0.19.15"
-source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#7f67fdebd8b597515c2412a9c3f3e19c987363b1"
+version = "0.19.16"
+source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#9a33b9eb3140d3eac289679263d138c5039507a2"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1641,8 +1641,8 @@ dependencies = [
 
 [[package]]
 name = "lemmy_db_schema"
-version = "0.19.15"
-source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#7f67fdebd8b597515c2412a9c3f3e19c987363b1"
+version = "0.19.16"
+source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#9a33b9eb3140d3eac289679263d138c5039507a2"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1661,8 +1661,8 @@ dependencies = [
 
 [[package]]
 name = "lemmy_db_views"
-version = "0.19.15"
-source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#7f67fdebd8b597515c2412a9c3f3e19c987363b1"
+version = "0.19.16"
+source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#9a33b9eb3140d3eac289679263d138c5039507a2"
 dependencies = [
  "chrono",
  "lemmy_db_schema",
@@ -1672,8 +1672,8 @@ dependencies = [
 
 [[package]]
 name = "lemmy_db_views_actor"
-version = "0.19.15"
-source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#7f67fdebd8b597515c2412a9c3f3e19c987363b1"
+version = "0.19.16"
+source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#9a33b9eb3140d3eac289679263d138c5039507a2"
 dependencies = [
  "chrono",
  "lemmy_db_schema",
@@ -1684,8 +1684,8 @@ dependencies = [
 
 [[package]]
 name = "lemmy_db_views_moderator"
-version = "0.19.15"
-source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#7f67fdebd8b597515c2412a9c3f3e19c987363b1"
+version = "0.19.16"
+source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#9a33b9eb3140d3eac289679263d138c5039507a2"
 dependencies = [
  "lemmy_db_schema",
  "serde",
@@ -1694,8 +1694,8 @@ dependencies = [
 
 [[package]]
 name = "lemmy_utils"
-version = "0.19.15"
-source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#7f67fdebd8b597515c2412a9c3f3e19c987363b1"
+version = "0.19.16"
+source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#9a33b9eb3140d3eac289679263d138c5039507a2"
 dependencies = [
  "cfg-if",
  "clearurls",
@@ -3130,12 +3130,12 @@ checksum = "67b1b7a3b5fe4f1376887184045fcf45c69e92af734b7aaddc05fb777b6fbd03"
 
 [[package]]
 name = "socket2"
-version = "0.6.2"
+version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "86f4aa3ad99f2088c990dfa82d367e19cb29268ed67c574d10d0a4bfe71f07e0"
+checksum = "3a766e1110788c36f4fa1c2b71b387a7815aa65f88ce0229841826633d93723e"
 dependencies = [
  "libc",
- "windows-sys 0.60.2",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

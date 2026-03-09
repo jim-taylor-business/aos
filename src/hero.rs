@@ -1,17 +1,19 @@
+use std::collections::BTreeMap;
+
 use crate::{
-  OnlineSetter, ReadInstanceCookie, WriteInstanceCookie,
+  OnlineSetter, ReadAuthCookie, ReadInstanceCookie, WriteInstanceCookie,
   client::*,
   comment::Comment,
   comments::Comments,
   db::csr_indexed_db::*,
-  errors::{LemmyAppError, LemmyAppErrorType},
+  errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult},
   icon::{Icon, IconType},
   nav::TopNav,
   toolbar::PostToolbar,
 };
 use ev::MouseEvent;
 use lemmy_api_common::{
-  comment::{CreateComment, GetComments},
+  comment::{CreateComment, GetComments, GetCommentsResponse},
   lemmy_db_schema::{CommentSortType, SortType, newtypes::PostId},
   lemmy_db_views::structs::CommentView,
   post::{GetPost, GetPostResponse},
@@ -57,11 +59,29 @@ pub fn Hero(post_id: Signal<PostId>, post_number: usize) -> impl IntoView {
 
   let post_view = RwSignal::new(None::<GetPostResponse>);
 
+  let post_response_cache = expect_context::<RwSignal<BTreeMap<(GetPost, Option<String>), (i64, LemmyAppResult<GetPostResponse>)>>>();
+  let comments_response_cache = expect_context::<RwSignal<BTreeMap<(GetComments, Option<String>), (i64, LemmyAppResult<GetCommentsResponse>)>>>();
+  let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
+
   let post_resource = Resource::new(
     move || post_id.get(),
     move |id| async move {
       let form = GetPost { id: Some(id), comment_id: None };
-      let result = LemmyClient.get_post(form.clone()).await;
+
+      // #[cfg(not(feature = "ssr"))]
+      let rc = post_response_cache.get_untracked();
+
+      // #[cfg(not(feature = "ssr"))]
+      let result = if let Some((t, r)) = rc.get(&(form.clone(), get_auth_cookie.get_untracked())) {
+        match r {
+          Ok(o) => Ok(o.clone()),
+          _ => LemmyClient.get_post(form.clone()).await,
+        }
+      } else {
+        LemmyClient.get_post(form.clone()).await
+      };
+
+      // let result = LemmyClient.get_post(form.clone()).await;
       loading.set(false);
       match result {
         Ok(o) => Some(Ok((form, o))),
@@ -87,7 +107,17 @@ pub fn Hero(post_id: Signal<PostId>, post_number: usize) -> impl IntoView {
         disliked_only: None,
         liked_only: None,
       };
-      let result = LemmyClient.get_comments(form.clone()).await;
+
+      let rc = comments_response_cache.get_untracked();
+      let result = if let Some((t, r)) = rc.get(&(form.clone(), get_auth_cookie.get_untracked())) {
+        match r {
+          Ok(o) => Ok(o.clone()),
+          _ => LemmyClient.get_comments(form.clone()).await,
+        }
+      } else {
+        LemmyClient.get_comments(form.clone()).await
+      };
+
       match result {
         Ok(o) => Some((form, o)),
         Err(_e) => None,
@@ -234,8 +264,13 @@ pub fn Hero(post_id: Signal<PostId>, post_number: usize) -> impl IntoView {
                         if let Ok(d) = IndexedDb::new().await {
                           if let Ok(_c) = d.set(&fm, &rw).await {}
                         }
+                        post_response_cache
+                          .update(move |rc| {
+                            rc.insert((fm, get_auth_cookie.get_untracked()), (0, Ok(rw)));
+                          });
                       });
                     }
+
                     let res2 = res.1.clone();
                     let res = res.1.clone();
                     post_view.set(Some(res));
@@ -625,6 +660,10 @@ pub fn Hero(post_id: Signal<PostId>, post_number: usize) -> impl IntoView {
                         if let Ok(d) = IndexedDb::new().await {
                           if let Ok(_c) = d.set(&fm, &rw).await {}
                         }
+                        comments_response_cache
+                          .update(move |rc| {
+                            rc.insert((fm, get_auth_cookie.get_untracked()), (0, Ok(rw)));
+                          });
                       });
                     }
                     let res = res.1.clone();
