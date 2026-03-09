@@ -25,22 +25,28 @@ use leptos::{
   *,
 };
 use leptos_meta::*;
+use leptos_router::params::ParamsMap;
 use leptos_router::{components::*, location::State, *};
 use leptos_use::*;
 use std::{collections::BTreeMap, usize, vec};
 use web_sys::{Event, MouseEvent, ScrollToOptions, WheelEvent};
 
 #[component]
-pub fn Overview(#[prop(optional)] g: Option<GetSiteResponse>, #[prop(optional)] ssr_name: Signal<Option<String>>) -> impl IntoView {
+pub fn Overview(
+  // param: Memo<ParamsMap>,
+  // query: Memo<ParamsMap>,
+  #[prop(optional)] g: Option<GetSiteResponse>,
+  #[prop(optional)] ssr_name: Signal<Option<String>>,
+) -> impl IntoView {
   // let i18n = use_i18n();
 
-  let param = use_params_map();
-  let query = use_query_map();
+  // let param = use_params_map();
+  // let query = use_query_map();
 
   // let ssr_name = move || param.get().get("name").unwrap_or("".into());
-  let ssr_list = move || serde_json::from_str::<ListingType>(&query.get().get("list").unwrap_or("".into())).unwrap_or(ListingType::All);
-  let ssr_sort = move || serde_json::from_str::<SortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(SortType::Active);
-  let ssr_page = move || serde_json::from_str::<Vec<(usize, String)>>(&query.get().get("page").unwrap_or("".into())).unwrap_or(vec![]);
+  let ssr_list = move || serde_json::from_str::<ListingType>(&use_query_map().get().get("list").unwrap_or("".into())).unwrap_or(ListingType::All);
+  let ssr_sort = move || serde_json::from_str::<SortType>(&use_query_map().get().get("sort").unwrap_or("".into())).unwrap_or(SortType::Active);
+  let ssr_page = move || serde_json::from_str::<Vec<(usize, String)>>(&use_query_map().get().get("page").unwrap_or("".into())).unwrap_or(vec![]);
 
   let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>), (i64, LemmyAppResult<GetPostsResponse>)>>>();
   let next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
@@ -83,11 +89,13 @@ pub fn Overview(#[prop(optional)] g: Option<GetSiteResponse>, #[prop(optional)] 
     if let Some(se) = on_scroll_element.get() {
       spawn_local_scoped_with_cancellation(async move {
         if let Ok(d) = IndexedDb::new().await {
-          let query_params = query.get();
+          // let use_query_map()_params = query.get();
           // log!("  SAVE 3 {}", scroll_save.get());
           // if scroll_save.get() {
           //   log!("  SAVE 4 {}", scroll_save.get());
-          let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: query_params.to_query_string() }, &se.scroll_left()).await;
+          let _ = d
+            .set(&ScrollPositionKey { path: use_location().pathname.get(), query: use_query_map().get().to_query_string() }, &se.scroll_left())
+            .await;
           // log!("stash {} {} {}", se.scroll_left(), use_location().pathname.get(), query_params.to_query_string(),);
           // }
         }
@@ -153,7 +161,7 @@ pub fn Overview(#[prop(optional)] g: Option<GetSiteResponse>, #[prop(optional)] 
                 st.push((key, next_page));
               }
             }
-            let mut query_params = query.get();
+            let mut query_params = use_query_map().get();
             query_params.remove("page");
             query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
 
@@ -496,12 +504,12 @@ pub fn Overview(#[prop(optional)] g: Option<GetSiteResponse>, #[prop(optional)] 
                             if let Some(s) = on_scroll_element.get() {
                               spawn_local_scoped_with_cancellation(async move {
                                 if let Ok(d) = IndexedDb::new().await {
-                                  let query_params = query.get();
+                                  // let query_params = query.get();
                                   let l: Result<Option<i32>, Error> = d
                                     .get(
                                       &ScrollPositionKey {
                                         path: use_location().pathname.get(),
-                                        query: query_params.to_query_string(),
+                                        query: use_query_map().get().to_query_string(),
                                       },
                                     )
                                     .await;

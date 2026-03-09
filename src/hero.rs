@@ -485,20 +485,38 @@ pub fn Hero(post_id: Signal<PostId>, post_number: usize) -> impl IntoView {
                               )
                             }}
                             on:click={move |e: MouseEvent| {
+                              e.prevent_default();
                               #[cfg(not(feature = "ssr"))]
                               spawn_local_scoped_with_cancellation(async move {
                                 if let Ok(d) = IndexedDb::new().await {
                                   let _ = d
                                     .set(
                                       &ScrollPositionKey {
-                                        path: use_location().pathname.get(),
-                                        query: use_query_map().get().to_query_string(),
+                                        path: {if post_response.get().post_view.community.local {
+                                          format!("/c/{}", post_response.get().post_view.community.name)
+                                        } else {
+                                          format!(
+                                            "/c/{}@{}",
+                                            post_response.get().post_view.community.name,
+                                            post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
+                                          )
+                                        }},
+                                        query: "".into(),
                                       },
                                       &0i32,
                                     )
                                     .await;
                                 }
                               });
+                              use_navigate()(&{if post_response.get().post_view.community.local {
+                                format!("/c/{}", post_response.get().post_view.community.name)
+                              } else {
+                                format!(
+                                  "/c/{}@{}",
+                                  post_response.get().post_view.community.name,
+                                  post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
+                                )
+                              }}, Default::default());
                               // if let Some(on_scroll_element) = scroll_element.get() {
                               //   if let Some(se) = on_scroll_element.get() {
                               //     se.set_scroll_left(0i32);
