@@ -178,7 +178,7 @@ pub fn Overview(
                   let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &se.scroll_left()).await;
                   // log!("inter {} {} {}", se.scroll_left(), use_location().pathname.get(), params.to_query_string(),);
                 }
-                // log!("  SAVE 1 {}", scroll_save.get());
+                // log!("  SAVE 1 ");
                 // scroll_save.set(false);
                 use_navigate()(
                   &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),

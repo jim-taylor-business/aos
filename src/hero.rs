@@ -15,7 +15,7 @@ use ev::MouseEvent;
 use lemmy_api_common::{
   comment::{CreateComment, GetComments, GetCommentsResponse},
   lemmy_db_schema::{CommentSortType, SortType, newtypes::PostId},
-  lemmy_db_views::structs::CommentView,
+  lemmy_db_views::structs::{CommentView, PaginationCursor},
   post::{GetPost, GetPostResponse},
   site::{GetSiteResponse, MyUserInfo},
 };
@@ -32,7 +32,11 @@ use leptos_use::{UseIntersectionObserverOptions, use_intersection_observer_with_
 use web_sys::{HtmlAnchorElement, HtmlImageElement, WheelEvent, wasm_bindgen::JsCast};
 
 #[component]
-pub fn Hero(post_id: Signal<PostId>, post_number: usize) -> impl IntoView {
+pub fn Hero(
+  post_id: Signal<PostId>,
+  post_number: usize,
+  #[prop(optional)] next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)>,
+) -> impl IntoView {
   // let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   // let ssr_site_signal = expect_context::<RwSignal<Option<GetSiteResponse>>>();
   // let ssr_user_signal = expect_context::<RwSignal<Option<MyUserInfo>>>();
@@ -508,6 +512,8 @@ pub fn Hero(post_id: Signal<PostId>, post_number: usize) -> impl IntoView {
                                     .await;
                                 }
                               });
+                              // log!("set");
+                              next_page_cursor.set((0, None));
                               use_navigate()(&{if post_response.get().post_view.community.local {
                                 format!("/c/{}", post_response.get().post_view.community.name)
                               } else {

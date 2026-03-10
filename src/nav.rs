@@ -7,7 +7,7 @@ use crate::{
 };
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SortType, source::site::Site},
-  lemmy_db_views::structs::SiteView,
+  lemmy_db_views::structs::{PaginationCursor, SiteView},
   post::{GetPostResponse, GetPosts, GetPostsResponse},
   site::{GetSiteResponse, MyUserInfo},
 };
@@ -84,6 +84,7 @@ pub async fn change_theme(theme: String) -> Result<(), ServerFnError> {
 #[component]
 pub fn TopNav(
   scroll_element: Signal<Option<NodeRef<Div>>>,
+  #[prop(optional)] next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)>,
   #[prop(optional)] default_sort: Signal<Option<SortType>>,
   #[prop(optional)] post_view: RwSignal<Option<GetPostResponse>>,
 ) -> impl IntoView {
@@ -499,6 +500,8 @@ pub fn TopNav(
                         )
                         .await;
                     }
+                    // log!("set");
+                    next_page_cursor.set((0, None));
                     use_navigate()("/", Default::default());
                   });
                   if let Some(on_scroll_element) = scroll_element.get() {
