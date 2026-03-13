@@ -513,6 +513,21 @@ pub fn Hero(
                                     .await;
                                 }
                                 listing_response_cache.update(move |rc| {
+                                  // log!("remove {:?}", GetPosts {
+                                  //   type_: Some(ListingType::All),
+                                  //   sort: Some(SortType::Active),
+                                  //   page: None,
+                                  //   limit: Some(50),
+                                  //   community_id: None,
+                                  //   community_name: Some(post_response.get().post_view.community.name),
+                                  //   saved_only: None,
+                                  //   liked_only: None,
+                                  //   disliked_only: None,
+                                  //   show_hidden: Some(true),
+                                  //   show_read: Some(true),
+                                  //   show_nsfw: Some(false),
+                                  //   page_cursor: None,
+                                  // });
                                   rc.remove(
                                     &(
                                       0usize,
@@ -522,7 +537,15 @@ pub fn Hero(
                                         page: None,
                                         limit: Some(50),
                                         community_id: None,
-                                        community_name: Some(post_response.get().post_view.community.name),
+                                        community_name: Some(if post_response.get().post_view.community.local {
+                                          format!("{}", post_response.get().post_view.community.name)
+                                        } else {
+                                          format!(
+                                            "{}@{}",
+                                            post_response.get().post_view.community.name,
+                                            post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
+                                          )
+                                        }),
                                         saved_only: None,
                                         liked_only: None,
                                         disliked_only: None,
