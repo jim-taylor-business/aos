@@ -89,14 +89,7 @@ pub fn TopNav(
   #[prop(optional)] post_view: RwSignal<Option<GetPostResponse>>,
 ) -> impl IntoView {
   // let i18n = use_i18n();
-
-  // let ssr_site_signal = expect_context::<RwSignal<Option<GetSiteResponse>>>();
-  // let ssr_user_signal = expect_context::<RwSignal<Option<MyUserInfo>>>();
-  // let logged_in = Memo::new(move |_| false;//ssr_user_signal.get().is_some());
-
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
-  // let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
-  // let logged_in = Memo::new(move |_| if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { true } else { false });
 
   let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
   let WriteThemeCookie(set_theme_cookie) = expect_context::<WriteThemeCookie>();
@@ -210,7 +203,7 @@ pub fn TopNav(
     if l == ssr_list() { "menu-active" } else { "" }
   };
 
-  let logout_action = ServerAction::<LogoutFn>::new();
+  // let logout_action = ServerAction::<LogoutFn>::new();
 
   let search_show = RwSignal::new(false);
   let still_pressed = RwSignal::new(false);
@@ -244,7 +237,7 @@ pub fn TopNav(
     });
   };
 
-  let search_action = ServerAction::<SearchFn>::new();
+  // let search_action = ServerAction::<SearchFn>::new();
   let search_term = RwSignal::new("".to_owned());
 
   let display_title = Signal::derive(move || {
@@ -279,7 +272,7 @@ pub fn TopNav(
   let WriteInstanceCookie(set_instance_cookie) = expect_context::<WriteInstanceCookie>();
 
   let instance_term = RwSignal::new(get_instance_cookie.get());
-  let instance_action = ServerAction::<InstanceFn>::new();
+  // let instance_action = ServerAction::<InstanceFn>::new();
   let on_instance_submit = move || {
     // e.prevent_default();
     still_pressed.set(false);
@@ -330,11 +323,8 @@ pub fn TopNav(
     });
   };
 
-  // let logged_in =
-  //   Signal::derive(move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) });
-
   let _online = expect_context::<RwSignal<OnlineSetter>>();
-  let change_theme = ServerAction::<ChangeTheme>::new();
+  // let change_theme = ServerAction::<ChangeTheme>::new();
 
   let on_theme_submit = move |theme_name: &'static str| {
     move |e: MouseEvent| {
@@ -343,7 +333,7 @@ pub fn TopNav(
     }
   };
 
-  let lang_action = ServerAction::<ChangeLangFn>::new();
+  // let lang_action = ServerAction::<ChangeLangFn>::new();
 
   // let on_lang_submit = move |lang: Locale| {
   //   move |ev: SubmitEvent| {
@@ -383,34 +373,7 @@ pub fn TopNav(
     }
   };
 
-  // let log_in = {
-  //   move || {
-  //     if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { true } else { false }
-  //   }
-  // };
-
   view! {
-    // <Transition fallback={|| {}}>
-    //   {move || {
-    //     match ssr_site_signal.get() {
-    //       None => {
-    //         view! {
-    //           <div class="py-4 px-8 break-inside-avoid">
-    //             <div class="flex justify-between alert alert-error alert-soft">
-    //               <span class="text-lg">{"Site Error"}</span>
-    //               <span on:click={on_retry_site_click} class="btn btn-sm">
-    //                 "Retry"
-    //               </span>
-    //             </div>
-    //           </div>
-    //         }
-    //           .into_any()
-    //       }
-    //       _ => view! {}.into_any(),
-    //     }
-    //   }}
-    // </Transition>
-
   <Transition fallback={|| {}}>
     {move || {
       match ssr_site.get() {
@@ -420,18 +383,11 @@ pub fn TopNav(
           let user_details = Memo::new(move |_| s.my_user.clone());
           let logged_in = Memo::new(move |_| user_details.get().is_some());
 
-
           view! {
-  //       }.into_any(),
-  //     }
-  //   }}
-  // </Transition>
-
-
-
     <nav class="flex flex-row py-0 navbar">
       <div class={move || { (if search_show.get() { "hidden" } else { "flex" }).to_string() }}>
-        <ActionForm attr:class={move || { if still_pressed.get() { "" } else { "hidden" } }} action={instance_action}>
+        // <ActionForm attr:class={move || { if still_pressed.get() { "" } else { "hidden" } }} action={instance_action}>
+        <div class={move || { if still_pressed.get() { "" } else { "hidden" } }}>
           <input
             class="pl-6 w-40 text-xl input"
             type="text"
@@ -450,7 +406,8 @@ pub fn TopNav(
               instance_term.set(Some(event_target_value(&ev)));
             }}
           />
-        </ActionForm>
+        // </ActionForm>
+        </div>
         <ul class="flex-nowrap items-center menu menu-horizontal">
           <li>
             <A
@@ -465,8 +422,19 @@ pub fn TopNav(
                   still_pressed.set(false);
                   // e.prevent_default();
                 } else {
+                  next_page_cursor.set((0, None));
                   #[cfg(not(feature = "ssr"))]
                   spawn_local_scoped_with_cancellation(async move {
+                    if let Ok(d) = IndexedDb::new().await {
+                      let _ = d.set(
+                          &ScrollPositionKey {
+                            path: "/".into(),
+                            query: "".into(),
+                          },
+                          &0i32,
+                        )
+                        .await;
+                    }
                     response_cache.update(move |rc| {
                       rc.remove(
                         &(
@@ -490,25 +458,14 @@ pub fn TopNav(
                         ),
                       );
                     });
-                    if let Ok(d) = IndexedDb::new().await {
-                      let _ = d.set(
-                          &ScrollPositionKey {
-                            path: "/".into(),
-                            query: "".into(),
-                          },
-                          &0i32,
-                        )
-                        .await;
-                    }
                     // log!("set");
-                    next_page_cursor.set((0, None));
                     use_navigate()("/", Default::default());
                   });
-                  if let Some(on_scroll_element) = scroll_element.get() {
-                    if let Some(se) = on_scroll_element.get() {
-                      se.set_scroll_left(0i32);
-                    }
-                  }
+                  // if let Some(on_scroll_element) = scroll_element.get() {
+                  //   if let Some(se) = on_scroll_element.get() {
+                  //     se.set_scroll_left(0i32);
+                  //   }
+                  // }
                 }
               }}
             >
@@ -697,17 +654,15 @@ pub fn TopNav(
               </ul>
             </details>
           </li>
-
         </ul>
-
       </div>
       <div class="flex flex-grow">
-        <ActionForm
-          attr:class={move || {
-            (if search_show.get() { "form-control flex flex-grow" } else { "form-control hidden sm:flex flex-grow" }).to_string()
-          }}
-          action={search_action}
-        >
+      //   <ActionForm
+      //     attr:class={move || {
+      //       (if search_show.get() { "form-control flex flex-grow" } else { "form-control hidden sm:flex flex-grow" }).to_string()
+      //     }}
+      //     action={search_action}
+      //   >
           <input
             title={move || display_title.get()}
             class="w-full input"
@@ -724,7 +679,7 @@ pub fn TopNav(
               search_term.set(event_target_value(&ev));
             }}
           />
-        </ActionForm>
+      //   </ActionForm>
       </div>
       <div class="flex-none">
         <button
@@ -748,20 +703,20 @@ pub fn TopNav(
               </summary>
               <ul class="z-[1] [inset-inline-end:0]">
                 <li>
-                  <ActionForm attr:class="p-0" action={lang_action}>
-                    <input type="hidden" name="lang" value="FR" />
+                  // <ActionForm attr:class="p-0" action={lang_action}>
+                  //   <input type="hidden" name="lang" value="FR" />
                     <button class="py-2 px-4" type="submit">
                       "FR"
                     </button>
-                  </ActionForm>
+                  // </ActionForm>
                 </li>
                 <li>
-                  <ActionForm attr:class="p-0" action={lang_action}>
-                    <input type="hidden" name="lang" value="EN" />
+                  // <ActionForm attr:class="p-0" action={lang_action}>
+                  //   <input type="hidden" name="lang" value="EN" />
                     <button class="py-2 px-4" type="submit">
                       "EN"
                     </button>
-                  </ActionForm>
+                  // </ActionForm>
                 </li>
               </ul>
             </details>
@@ -773,28 +728,28 @@ pub fn TopNav(
               </summary>
               <ul class="z-[1] [inset-inline-end:0]">
                 <li data-theme="dark">
-                  <ActionForm attr:class="p-0" action={change_theme}>
-                    <input type="hidden" name="theme" value="dark" />
+                  // <ActionForm attr:class="p-0" action={change_theme}>
+                  //   <input type="hidden" name="theme" value="dark" />
                     <button class="py-2 px-4" type="submit" on:click={on_theme_submit("dark")}>
                       "Dark"
                     </button>
-                  </ActionForm>
+                  // </ActionForm>
                 </li>
                 <li data-theme="light">
-                  <ActionForm attr:class="p-0" action={change_theme}>
-                    <input type="hidden" name="theme" value="light" />
+                  // <ActionForm attr:class="p-0" action={change_theme}>
+                  //   <input type="hidden" name="theme" value="light" />
                     <button class="py-2 px-4" type="submit" on:click={on_theme_submit("light")}>
                       "Light"
                     </button>
-                  </ActionForm>
+                  // </ActionForm>
                 </li>
                 <li data-theme="retro">
-                  <ActionForm attr:class="p-0" action={change_theme}>
-                    <input type="hidden" name="theme" value="retro" />
+                  // <ActionForm attr:class="p-0" action={change_theme}>
+                  //   <input type="hidden" name="theme" value="retro" />
                     <button class="py-2 px-4" type="submit" on:click={on_theme_submit("retro")}>
                       "Retro"
                     </button>
-                  </ActionForm>
+                  // </ActionForm>
                 </li>
               </ul>
             </details>
@@ -836,28 +791,28 @@ pub fn TopNav(
                       </summary>
                       <ul class="z-[1] [inset-inline-end:0]">
                         <li data-theme="dark">
-                          <ActionForm attr:class="p-0" action={change_theme}>
-                            <input type="hidden" name="theme" value="dark" />
+                          // <ActionForm attr:class="p-0" action={change_theme}>
+                          //   <input type="hidden" name="theme" value="dark" />
                             <button data-theme="dark" class="py-2 px-4" type="submit" on:click={on_theme_submit("dark")}>
                               "Dark"
                             </button>
-                          </ActionForm>
+                          // </ActionForm>
                         </li>
                         <li data-theme="light">
-                          <ActionForm attr:class="p-0" action={change_theme}>
-                            <input type="hidden" name="theme" value="light" />
+                          // <ActionForm attr:class="p-0" action={change_theme}>
+                          //   <input type="hidden" name="theme" value="light" />
                             <button data-theme="light" class="py-2 px-4" type="submit" on:click={on_theme_submit("light")}>
                               "Light"
                             </button>
-                          </ActionForm>
+                          // </ActionForm>
                         </li>
                         <li data-theme="retro">
-                          <ActionForm attr:class="p-0" action={change_theme}>
-                            <input type="hidden" name="theme" value="retro" />
+                          // <ActionForm attr:class="p-0" action={change_theme}>
+                          //   <input type="hidden" name="theme" value="retro" />
                             <button data-theme="retro" class="py-2 px-4" type="submit" on:click={on_theme_submit("retro")}>
                               "Retro"
                             </button>
-                          </ActionForm>
+                          // </ActionForm>
                         </li>
                       </ul>
                     </details>
@@ -897,11 +852,11 @@ pub fn TopNav(
                   // </li>
                   // <div class="my-0 divider" />
                   <li>
-                    <ActionForm action={logout_action}>
+                    // <ActionForm action={logout_action}>
                       <button type="submit" on:click={on_logout_submit}>
                         <Icon icon={SignOut} />
                       </button>
-                    </ActionForm>
+                    // </ActionForm>
                   </li>
                 </ul>
               </details>
@@ -914,7 +869,6 @@ pub fn TopNav(
         </ul>
       </div>
     </nav>
-
         } }.into_any(),
         _ => view! {}.into_any(),
       }

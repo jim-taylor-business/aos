@@ -14,9 +14,9 @@ use crate::{
 use ev::MouseEvent;
 use lemmy_api_common::{
   comment::{CreateComment, GetComments, GetCommentsResponse},
-  lemmy_db_schema::{CommentSortType, SortType, newtypes::PostId},
+  lemmy_db_schema::{CommentSortType, ListingType, SortType, newtypes::PostId},
   lemmy_db_views::structs::{CommentView, PaginationCursor},
-  post::{GetPost, GetPostResponse},
+  post::{GetPost, GetPostResponse, GetPosts, GetPostsResponse},
   site::{GetSiteResponse, MyUserInfo},
 };
 use leptos::{
@@ -63,6 +63,7 @@ pub fn Hero(
 
   let post_view = RwSignal::new(None::<GetPostResponse>);
 
+  let listing_response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>), (i64, LemmyAppResult<GetPostsResponse>)>>>();
   let post_response_cache = expect_context::<RwSignal<BTreeMap<(GetPost, Option<String>), (i64, LemmyAppResult<GetPostResponse>)>>>();
   let comments_response_cache = expect_context::<RwSignal<BTreeMap<(GetComments, Option<String>), (i64, LemmyAppResult<GetCommentsResponse>)>>>();
   let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
@@ -511,18 +512,41 @@ pub fn Hero(
                                     )
                                     .await;
                                 }
+                                listing_response_cache.update(move |rc| {
+                                  rc.remove(
+                                    &(
+                                      0usize,
+                                      GetPosts {
+                                        type_: Some(ListingType::All),
+                                        sort: Some(SortType::Active),
+                                        page: None,
+                                        limit: Some(50),
+                                        community_id: None,
+                                        community_name: Some(post_response.get().post_view.community.name),
+                                        saved_only: None,
+                                        liked_only: None,
+                                        disliked_only: None,
+                                        show_hidden: Some(true),
+                                        show_read: Some(true),
+                                        show_nsfw: Some(false),
+                                        page_cursor: None,
+                                      },
+                                      get_auth_cookie.get_untracked(),
+                                    ),
+                                  );
+                                });
+                                next_page_cursor.set((0, None));
+                                use_navigate()(&{if post_response.get().post_view.community.local {
+                                  format!("/c/{}", post_response.get().post_view.community.name)
+                                } else {
+                                  format!(
+                                    "/c/{}@{}",
+                                    post_response.get().post_view.community.name,
+                                    post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
+                                  )
+                                }}, Default::default());
                               });
                               // log!("set");
-                              next_page_cursor.set((0, None));
-                              use_navigate()(&{if post_response.get().post_view.community.local {
-                                format!("/c/{}", post_response.get().post_view.community.name)
-                              } else {
-                                format!(
-                                  "/c/{}@{}",
-                                  post_response.get().post_view.community.name,
-                                  post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
-                                )
-                              }}, Default::default());
                               // if let Some(on_scroll_element) = scroll_element.get() {
                               //   if let Some(se) = on_scroll_element.get() {
                               //     se.set_scroll_left(0i32);
