@@ -420,7 +420,9 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
             )
           }}
         >
-          <Icon icon={Comments} class={"inline".into()} />
+          <A href={move || format!("/p/{}", post_view.get_untracked().post.id)} attr:class="inline hover:text-accent">
+            <Icon icon={Comments} class={"inline".into()} />
+          </A>
           {post_view.get_untracked().counts.comments}
         </span>
         <Show when={move || { post_number == 0 }} fallback={|| {}}>

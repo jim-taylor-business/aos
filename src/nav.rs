@@ -657,6 +657,11 @@ pub fn TopNav(
         </ul>
       </div>
       <div class="flex flex-grow">
+        <div
+          class={move || {
+            (if search_show.get() { "form-control flex flex-grow" } else { "form-control hidden sm:flex flex-grow" }).to_string()
+          }}
+        >
       //   <ActionForm
       //     attr:class={move || {
       //       (if search_show.get() { "form-control flex flex-grow" } else { "form-control hidden sm:flex flex-grow" }).to_string()
@@ -680,6 +685,7 @@ pub fn TopNav(
             }}
           />
       //   </ActionForm>
+        </div>
       </div>
       <div class="flex-none">
         <button
