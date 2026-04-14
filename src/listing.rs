@@ -331,7 +331,7 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
                 <div class="flex shrink grow basis-0 min-h-16">
                   <div class="shrink grow basis-0 truncate">
                     <img
-                      loading="lazy"
+                      // loading="lazy"
                       class={move || format!("w-24{}", if thumbnail.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" })}
                       src={move || thumbnail.get()}
                       node_ref={thumbnail_element}

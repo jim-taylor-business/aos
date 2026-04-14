@@ -184,33 +184,14 @@ pub fn Hero(
     );
   }
 
-  // log!("HERO");
+  log!("HERO");
 
   let on_scroll_element = NodeRef::<Div>::new();
   let thumbnail = RwSignal::new(String::from(""));
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
 
   view! {
-    // <main class="flex flex-col">
-    //   // <TopNav scroll_element=on_scroll_element.into() default_sort={SortType::TopAll.into()} post_view />//={post_view.into()} />
-    //   <div class="flex flex-grow">
-    //     <div
-    //       on:wheel={move |e: WheelEvent| {
-    //         if let Some(se) = on_scroll_element.get() {
-    //           se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
-    //         }
-    //       }}
-    //       node_ref={on_scroll_element}
-    //       class="gap-4 min-w-full sm:overflow-x-auto sm:overflow-y-hidden sm:absolute sm:px-4 sm:h-[calc(100%-4rem)] sm:columns-sm"
-    //       style="column-fill: auto"
-    //     >
           <div class="bg-base-200 mb-4"
-          // {move || {
-          //   format!(
-          //     "{}",
-          //     if post_number % 2 == 1 { " odd:bg-base-800" } else { "" },
-          //   )
-          // }}
           >
             <Transition fallback={|| {}}>
               {move || {
@@ -343,71 +324,11 @@ pub fn Hero(
                     // log!("{:#?}", post_response.get().post_view.image_details);
 
                     view! {
-                      // <Title text={post_response.get().post_view.post.name} />
                       <div class="break-inside-avoid">
                       <div class="py-2 px-4">
                         <A href={move || format!("/p/{}", post_response.get().post_view.post.id)} attr:class="block hover:text-accent">
                           <span class="overflow-y-auto text-2xl font-extrabold wrap-anywhere" inner_html={title_encoded} />
                         </A>
-                        // <span class="block mb-1 wrap-anywhere text-md">
-                        //   <span>{abbr_duration}</span>
-                        //   " ago by "
-                        //   <a
-                        //     href={move || format!("{}", post_response.get().post_view.creator.actor_id)}
-                        //     target="_blank"
-                        //     class="inline wrap-anywhere hover:text-secondary"
-                        //   >
-                        //     <span class="overflow-y-auto" inner_html={creator_name_encoded} />
-                        //   </a>
-                        //   " in "
-                        //   <A
-                        //     attr:class="inline wrap-anywhere hover:text-secondary"
-                        //     href={if post_response.get().post_view.community.local {
-                        //       format!("/c/{}", post_response.get().post_view.community.name)
-                        //     } else {
-                        //       format!(
-                        //         "/c/{}@{}",
-                        //         post_response.get().post_view.community.name,
-                        //         post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
-                        //       )
-                        //     }}
-                        //     on:click={move |e: MouseEvent| {
-                        //       #[cfg(not(feature = "ssr"))]
-                        //       spawn_local_scoped_with_cancellation(async move {
-                        //         if let Ok(d) = IndexedDb::new().await {
-                        //           let _ = d
-                        //             .set(
-                        //               &ScrollPositionKey {
-                        //                 path: use_location().pathname.get(),
-                        //                 query: use_query_map().get().to_query_string(),
-                        //               },
-                        //               &0i32,
-                        //             )
-                        //             .await;
-                        //         }
-                        //       });
-                        //       // if let Some(on_scroll_element) = scroll_element.get() {
-                        //       //   if let Some(se) = on_scroll_element.get() {
-                        //       //     se.set_scroll_left(0i32);
-                        //       //   }
-                        //       // }
-                        //     }}
-                        //   >
-                        //     <span class="overflow-y-auto" inner_html={community_title_encoded} />
-                        //   </A>
-                        //   <span
-                        //     class="overflow-y-auto"
-                        //     inner_html={move || if let Some(d) = url.get() {
-                        //       if let Some(f) = d.inner().host_str() {
-                        //         if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { format!(" from {}", f) } else { "".to_owned() }
-                        //       } else {
-                        //         "".to_owned()
-                        //       }
-                        //     } else {
-                        //       "".to_owned()
-                        //     }}
-                        //   />
-                        // </span>
                       </div>
                       <a
                         class={move || {
@@ -641,63 +562,6 @@ pub fn Hero(
                       } else {
                         None
                       }}
-                      // <Show when={move || reply_show.get()} fallback={|| {}}>
-                      //   <div class="mb-3 space-y-3 before:content-[''] before:block before:w-24 before:overflow-hidden">
-                      //     <div class="form-control">
-                      //       <textarea
-                      //         class="h-24 text-base textarea textarea-bordered"
-                      //         placeholder="Comment text"
-                      //         prop:value={move || content.get()}
-                      //         node_ref={_visibility_element}
-                      //         on:wheel={move |e: WheelEvent| {
-                      //           e.stop_propagation();
-                      //         }}
-                      //         on:input={move |ev| {
-                      //           content.set(event_target_value(&ev));
-                      //           if let Some(id) = post_id.get() {
-                      //             #[cfg(not(feature = "ssr"))]
-                      //             spawn_local_scoped_with_cancellation(async move {
-                      //               if let Ok(d) = IndexedDb::new().await {
-                      //                 if let Ok(_c) = d
-                      //                   .set(
-                      //                     &CommentDraftKey {
-                      //                       comment_id: id,
-                      //                       draft: Draft::Post,
-                      //                     },
-                      //                     &content.get(),
-                      //                   )
-                      //                   .await
-                      //                 {}
-                      //               }
-                      //             });
-                      //           }
-                      //         }}
-                      //       >
-                      //         {content.get_untracked()}
-                      //       </textarea>
-                      //     </div>
-                      //     <div class="form-control">
-                      //       <button
-                      //         on:click={on_reply_click}
-                      //         type="button"
-                      //         class={move || {
-                      //           format!(
-                      //             "btn btn-neutral{}",
-                      //             {
-                      //               if Some(true) != logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" }
-                      //             },
-                      //           )
-                      //         }}
-                      //         disabled={move || Some(true) != logged_in.get() || !online.get().0}
-                      //       >
-                      //         "Comment"
-                      //       </button>
-                      //       <button on:click={move |_| reply_show.set(false)} type="button" class="btn btn-neutral">
-                      //         "Cancel"
-                      //       </button>
-                      //     </div>
-                      //   </div>
-                      // </Show>
                     }
                       .into_any()
                   }
@@ -838,8 +702,5 @@ pub fn Hero(
               }}
             </Transition>
           </div>
-    //     </div>
-    //   </div>
-    // </main>
   }
 }
