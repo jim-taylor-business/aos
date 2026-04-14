@@ -36,7 +36,7 @@ jobs:
       - name: Leptos build
         run: |
           rustc --version
-          apt-get install -y clang
+          # apt-get install -y clang
           # lsb_release -a
           ls -la .
           uname -a
