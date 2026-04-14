@@ -29,7 +29,7 @@ jobs:
       - name: Leptos build
         run: |
           rustc --version
-          lsb_release -a
+          # lsb_release -a
           ls -la .
           uname -a
           export GIT_HASH=$(git rev-parse --short HEAD)
