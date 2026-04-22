@@ -3,13 +3,7 @@ on: [push]
 jobs:
   build:
     runs-on: ubuntu-22.04
-#    strategy:
-#      matrix:
-#        node-version: [20, 22, 24]
     steps:
-#      - uses: actions/setup-node@v6
-#        with:
-#          node-version: '22'
 
       - uses: actions/checkout@v3
 
@@ -42,7 +36,7 @@ jobs:
           uname -a
           export GIT_HASH=$(git rev-parse --short HEAD)
           export LEPTOS_WASM_OPT_VERSION=version_126
-          export LEPTOS_TAILWIND_VERSION=v4.2.2
+          export LEPTOS_TAILWIND_VERSION=v4.2.4
           cargo binstall -y cargo-leptos
           cargo leptos build --release
           ls -la .

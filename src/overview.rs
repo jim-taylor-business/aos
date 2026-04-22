@@ -76,7 +76,7 @@ pub fn Overview(
 
   // #[cfg(not(feature = "ssr"))]
   // {
-  let on_scroll = move |_e: Event| {
+  let on_scroll = move |e: Event| {
     // #[cfg(not(feature = "ssr"))]
     // {
     //   if let Some(c) = scroll_handle.get_untracked() {
@@ -305,16 +305,21 @@ pub fn Overview(
         <div class="flex flex-grow">
           <div
             on:wheel={move |e: WheelEvent| {
-              e.stop_propagation();
-              if let Some(se) = on_scroll_element.get() {
-                // let o = ScrollToOptions::new();
-                // o.set_left(e.delta_y());
-                // o.set_behavior(web_sys::ScrollBehavior::Smooth);
-                // log!("{:#?}", o);
-                // se.scroll_by_with_scroll_to_options(&o);
-
-                se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
-
+              // e.stop_propagation();
+              if e.delta_x() != 0.0 {
+                log!("{} {} {}", e.delta_y().abs() / e.delta_x().abs() , e.delta_x(), e.delta_y());
+                if e.delta_y().abs() / e.delta_x().abs() < 0.3 {
+                } else {
+                  e.prevent_default();
+                  if let Some(se) = on_scroll_element.get() {
+                    se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+                  }
+                }
+              } else {
+                e.prevent_default();
+                if let Some(se) = on_scroll_element.get() {
+                  se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+                }
               }
             }}
             // on:scroll=on_scroll
