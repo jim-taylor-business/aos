@@ -171,9 +171,25 @@ pub fn Post() -> impl IntoView {
       <div class="flex flex-grow">
         <div
           on:wheel={move |e: WheelEvent| {
-            if let Some(se) = on_scroll_element.get() {
-              se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+            if e.delta_x() != 0.0 {
+              // log!("{} {} {}", e.delta_y().abs() / e.delta_x().abs() , e.delta_x(), e.delta_y());
+              if e.delta_y().abs() / e.delta_x().abs() < 0.3 {
+              } else {
+                e.prevent_default();
+                if let Some(se) = on_scroll_element.get() {
+                  se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+                }
+              }
+            } else {
+              e.prevent_default();
+              if let Some(se) = on_scroll_element.get() {
+                se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+              }
             }
+
+            // if let Some(se) = on_scroll_element.get() {
+            //   se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+            // }
           }}
           node_ref={on_scroll_element}
           class="gap-4 min-w-full sm:overflow-x-auto sm:overflow-y-hidden sm:absolute sm:px-4 sm:h-[calc(100%-4rem)] sm:columns-sm"

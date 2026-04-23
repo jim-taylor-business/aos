@@ -307,7 +307,7 @@ pub fn Overview(
             on:wheel={move |e: WheelEvent| {
               // e.stop_propagation();
               if e.delta_x() != 0.0 {
-                log!("{} {} {}", e.delta_y().abs() / e.delta_x().abs() , e.delta_x(), e.delta_y());
+                // log!("{} {} {}", e.delta_y().abs() / e.delta_x().abs() , e.delta_x(), e.delta_y());
                 if e.delta_y().abs() / e.delta_x().abs() < 0.3 {
                 } else {
                   e.prevent_default();

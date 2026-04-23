@@ -184,7 +184,7 @@ pub fn Hero(
     );
   }
 
-  log!("HERO");
+  // log!("HERO");
 
   let on_scroll_element = NodeRef::<Div>::new();
   let thumbnail = RwSignal::new(String::from(""));
