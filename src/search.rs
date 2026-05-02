@@ -129,10 +129,38 @@ pub fn Search() -> impl IntoView {
       <div class="flex flex-grow">
         <div
           on:wheel={move |e: WheelEvent| {
-            if let Some(se) = on_scroll_element.get() {
-              se.scroll_by_with_x_and_y(e.delta_y(), 0f64);
+            let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
+            if iw < 768f64 {
+            } else {
+
+            if e.delta_x() != 0.0 {
+              // log!("{} {} {}", e.delta_y().abs() / e.delta_x().abs() , e.delta_x(), e.delta_y());
+              if e.delta_y().abs() / e.delta_x().abs() < 0.3 {
+              } else {
+                e.prevent_default();
+                if let Some(se) = on_scroll_element.get() {
+                  se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+                }
+              }
+            } else {
+              e.prevent_default();
+              if let Some(se) = on_scroll_element.get() {
+                se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+              }
             }
+
+            }
+
+            // if let Some(se) = on_scroll_element.get() {
+            //   se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+            // }
           }}
+
+          // on:wheel={move |e: WheelEvent| {
+          //   if let Some(se) = on_scroll_element.get() {
+          //     se.scroll_by_with_x_and_y(e.delta_y(), 0f64);
+          //   }
+          // }}
           node_ref={on_scroll_element}
           class={move || {
             format!(

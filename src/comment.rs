@@ -526,7 +526,7 @@ pub fn Comment(
               class={move || {
                 format!(
                   "{}{}",
-                  if current_person.get().eq(&Some(comment_view.get().creator)) { "" } else { "pointer-events-none text-base-content/50" },
+                  if current_person.get_untracked().eq(&Some(comment_view.get_untracked().creator)) { "" } else { "pointer-events-none text-base-content/50" },
                   { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
                 )
               }}

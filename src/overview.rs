@@ -305,6 +305,11 @@ pub fn Overview(
         <div class="flex flex-grow">
           <div
             on:wheel={move |e: WheelEvent| {
+
+              let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
+              if iw < 768f64 {
+              } else {
+
               // e.stop_propagation();
               if e.delta_x() != 0.0 {
                 // log!("{} {} {}", e.delta_y().abs() / e.delta_x().abs() , e.delta_x(), e.delta_y());
@@ -321,6 +326,9 @@ pub fn Overview(
                   se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
                 }
               }
+
+              }
+
             }}
             // on:scroll=on_scroll
             node_ref={on_scroll_element}
