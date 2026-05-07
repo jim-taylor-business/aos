@@ -164,7 +164,7 @@ pub fn Search() -> impl IntoView {
           node_ref={on_scroll_element}
           class={move || {
             format!(
-              "sm:h-[calc(100%-4rem)] min-w-full sm:absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-sm sm:px-4 gap-4{}",
+              "sm:h-[calc(100%-4rem)] min-w-full sm:absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[23rem] sm:px-4 gap-4{}",
               if loading.get() { " opacity-25" } else { "" },
             )
           }}

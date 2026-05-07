@@ -198,7 +198,7 @@ pub fn Post() -> impl IntoView {
             // }
           }}
           node_ref={on_scroll_element}
-          class="gap-4 min-w-full sm:overflow-x-auto sm:overflow-y-hidden sm:absolute sm:px-4 sm:h-[calc(100%-4rem)] sm:columns-sm"
+          class="gap-4 min-w-full sm:overflow-x-auto sm:overflow-y-hidden sm:absolute sm:px-4 sm:h-[calc(100%-4rem)] sm:columns-[23rem]"
           style="column-fill: auto"
         >
         // <A href="/c/technology"> "TECH" </A>

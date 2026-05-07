@@ -332,7 +332,7 @@ pub fn Overview(
             }}
             // on:scroll=on_scroll
             node_ref={on_scroll_element}
-            class={move || { "md:h-[calc(100%-4rem)] min-w-full md:absolute md:overflow-x-auto md:overflow-y-hidden md:columns-sm md:px-4 gap-4" }}
+            class={move || { "sm:h-[calc(100%-4rem)] min-w-full sm:absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[23rem] sm:px-4 gap-4" }}
           >
             <Transition fallback={|| {}}>
               {move || {
