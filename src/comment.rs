@@ -13,7 +13,7 @@ use lemmy_api_common::{
 };
 use leptos::{html::Textarea, logging::log, prelude::*, task::*, *};
 use leptos_dom::helpers::TimeoutHandle;
-use leptos_router::components::Form;
+use leptos_router::{components::Form, hooks::use_navigate};
 use leptos_use::{UseIntersectionObserverOptions, use_intersection_observer_with_options};
 use web_sys::{HtmlAnchorElement, HtmlImageElement, MouseEvent, PointerEvent, WheelEvent, wasm_bindgen::JsCast};
 
@@ -41,7 +41,6 @@ pub fn Comment(
   // let ssr_user_signal = expect_context::<RwSignal<Option<MyUserInfo>>>();
   // let logged_in = move || false; //ssr_user_signal.get().is_some();
   // let logged_in_s = move |s| { s.my_user.is_some() };
-
   let online = expect_context::<RwSignal<OnlineSetter>>();
 
   let on_toggle = move |i: i32| {
@@ -328,8 +327,12 @@ pub fn Comment(
               if let Some(i) = t.dyn_ref::<HtmlImageElement>() {
                 let _ = window().open_with_url_and_target(&i.src(), "_blank");
               } else if let Some(l) = t.dyn_ref::<HtmlAnchorElement>() {
-                let _ = window().open_with_url_and_target(&l.href(), "_blank");
                 e.prevent_default();
+                if l.host().eq(&window().location().host().unwrap_or("".to_owned())) {
+                  use_navigate()(&l.href(), Default::default());
+                } else {
+                  let _ = window().open_with_url_and_target(&l.href(), "_blank");
+                }
               } else if let Some(s) = t.dyn_ref::<web_sys::Element>() {
                 if s.tag_name().eq("SUMMARY") {} else {
                   on_toggle(comment_view.get().comment.id.0);
