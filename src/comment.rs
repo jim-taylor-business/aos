@@ -91,7 +91,11 @@ pub fn Comment(
 
   let safe_html = Signal::derive(move || {
     let content = comment_view.get().comment.content;
+    let mut safe_html = String::new();
 
+    // if level < 4 {
+    // } else if level > 4 {
+    // } else {
     let mut options = pulldown_cmark::Options::empty();
     options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
     options.insert(pulldown_cmark::Options::ENABLE_TABLES);
@@ -111,8 +115,11 @@ pub fn Comment(
       }
       _ => event,
     });
-    let mut safe_html = String::new();
+
+    // log!("{:#?}", content);
     pulldown_cmark::html::push_html(&mut safe_html, custom);
+    // }
+
     safe_html
   });
 

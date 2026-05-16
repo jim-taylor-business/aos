@@ -2406,7 +2406,7 @@ dependencies = [
 [[package]]
 name = "pulldown-cmark"
 version = "0.13.1"
-source = "git+https://github.com/jim-taylor-business/pulldown-cmark.git?branch=deploy_demo#3b37ba45536c8a9b9041bae5acd5ec2fffe63dbf"
+source = "git+https://github.com/jim-taylor-business/pulldown-cmark.git?branch=deploy_demo#7efd76c5f68ebb49b6f17de22061b95a2b571925"
 dependencies = [
  "bitflags",
  "getopts",
@@ -2418,7 +2418,7 @@ dependencies = [
 [[package]]
 name = "pulldown-cmark-escape"
 version = "0.11.0"
-source = "git+https://github.com/jim-taylor-business/pulldown-cmark.git?branch=deploy_demo#3b37ba45536c8a9b9041bae5acd5ec2fffe63dbf"
+source = "git+https://github.com/jim-taylor-business/pulldown-cmark.git?branch=deploy_demo#7efd76c5f68ebb49b6f17de22061b95a2b571925"
 
 [[package]]
 name = "quinn"

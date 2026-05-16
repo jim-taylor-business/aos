@@ -598,6 +598,7 @@ pub fn Post() -> impl IntoView {
               }}
             // </Transition>
             // <Transition fallback={|| {}}>
+
               {move || {
                 comments_resource
                   .get()
