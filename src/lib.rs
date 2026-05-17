@@ -19,6 +19,7 @@ pub mod post;
 pub mod root;
 pub mod search;
 pub mod toolbar;
+pub mod user;
 
 use crate::{
   client::{LemmyApi, LemmyClient},
@@ -26,6 +27,7 @@ use crate::{
   login::Login,
   post::Post,
   search::Search,
+  user::User,
 };
 use codee::string::FromToStringCodec;
 use community::Community;
@@ -292,6 +294,7 @@ pub fn App() -> impl IntoView {
           <Route path={(StaticSegment("l"))} view={Login} />
           <Route path={(StaticSegment("p"), ParamSegment("id"))} view={Post} />
           <Route path={(StaticSegment("c"), ParamSegment("name"))} view={Community} />
+          <Route path={(StaticSegment("u"), ParamSegment("name"))} view={User} />
           <Route path={(StaticSegment("s"))} view={Search} />
         </ParentRoute>
       </Routes>

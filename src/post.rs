@@ -345,13 +345,13 @@ pub fn Post() -> impl IntoView {
                         <span class="block mb-1 wrap-anywhere text-md">
                           <span>{abbr_duration}</span>
                           " ago by "
-                          <a
-                            href={move || format!("{}", post_response.get().post_view.creator.actor_id)}
-                            target="_blank"
-                            class="inline wrap-anywhere hover:text-secondary"
+                          <A
+                            href={move || {let a = post_response.get().post_view.creator.actor_id; format!("{}@{}", a.path(), a.domain().unwrap_or_default())}}
+                            // target="_blank"
+                            attr:class="inline wrap-anywhere hover:text-secondary"
                           >
                             <span class="overflow-y-auto" inner_html={creator_name_encoded} />
-                          </a>
+                          </A>
                           " in "
                           <A
                             attr:class="inline wrap-anywhere hover:text-secondary"
