@@ -74,6 +74,10 @@ pub trait LemmyApi: Fetch {
     self.make_request(HttpType::Get, "community/list", form).await
   }
 
+  async fn get_community(&self, form: GetCommunity) -> LemmyAppResult<GetCommunityResponse> {
+    self.make_request(HttpType::Get, "community", form).await
+  }
+
   async fn get_comments(&self, form: GetComments) -> LemmyAppResult<GetCommentsResponse> {
     // self.set_signals().await;
     self.make_request(HttpType::Get, "comment/list", form).await
@@ -160,6 +164,10 @@ pub trait LemmyApi: Fetch {
 
   async fn unread_count(&self) -> LemmyAppResult<GetUnreadCountResponse> {
     self.make_request(HttpType::Get, "user/unread_count", ()).await
+  }
+
+  async fn get_user(&self, form: GetPersonDetails) -> LemmyAppResult<GetPersonDetailsResponse> {
+    self.make_request(HttpType::Get, "user", form).await
   }
 
   async fn replies_user(&self, form: GetReplies) -> LemmyAppResult<GetRepliesResponse> {

@@ -5,10 +5,12 @@ use crate::{
   // i18n::*,
   client::*,
   errors::{Error, LemmyAppError, LemmyAppErrorType, LemmyAppResult, Loading},
+  icon::{IconType::*, *},
   listings::Listings,
   nav::TopNav,
 };
 use hooks::*;
+use lemmy_api_common::community::GetCommunity;
 use lemmy_api_common::site::MyUserInfo;
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SortType},
@@ -32,18 +34,9 @@ use std::{collections::BTreeMap, usize, vec};
 use web_sys::{Event, MouseEvent, ScrollToOptions, WheelEvent};
 
 #[component]
-pub fn Overview(
-  // param: Memo<ParamsMap>,
-  // query: Memo<ParamsMap>,
-  #[prop(optional)] g: Option<GetSiteResponse>,
-  #[prop(optional)] ssr_name: Signal<Option<String>>,
-) -> impl IntoView {
+pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl IntoView {
   // let i18n = use_i18n();
 
-  // let param = use_params_map();
-  // let query = use_query_map();
-
-  // let ssr_name = move || param.get().get("name").unwrap_or("".into());
   let ssr_list = move || serde_json::from_str::<ListingType>(&use_query_map().get().get("list").unwrap_or("".into())).unwrap_or(ListingType::All);
   let ssr_sort = move || serde_json::from_str::<SortType>(&use_query_map().get().get("sort").unwrap_or("".into())).unwrap_or(SortType::Active);
   let ssr_page = move || serde_json::from_str::<Vec<(usize, String)>>(&use_query_map().get().get("page").unwrap_or("".into())).unwrap_or(vec![]);
@@ -51,95 +44,23 @@ pub fn Overview(
   let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>), (i64, LemmyAppResult<GetPostsResponse>)>>>();
   let next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
 
-  // let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
-
   let loading = RwSignal::new(false);
-  // let scroll_save = RwSignal::new(true);
-
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
-  // let ssr_site_signal = expect_context::<RwSignal<Option<GetSiteResponse>>>();
-  // let ssr_user_signal = expect_context::<RwSignal<Option<MyUserInfo>>>();
-  // let logged_in = move || {
-  //   // log!("TRIGGER");
-  //   false
-  //   // ssr_user_signal.get().is_some()
-  //   // if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { true } else { false }
-  // };
-  // let logged_in = RwSignal::new(false);
-  // let logged_in = RwSignal::new(if g.is_some() { g.unwrap().my_user.is_some() } else { false });
 
   let intersection_element = NodeRef::<Div>::new();
   let on_scroll_element = NodeRef::<Div>::new();
 
-  // #[cfg(not(feature = "ssr"))]
-  // let scroll_handle: RwSignal<Option<TimeoutHandle>> = RwSignal::new(None);
-
-  // #[cfg(not(feature = "ssr"))]
-  // {
   let on_scroll = move |e: Event| {
-    // #[cfg(not(feature = "ssr"))]
-    // {
-    //   if let Some(c) = scroll_handle.get_untracked() {
-    //     c.clear();
-    //   }
-    //   scroll_handle.set(
-    //     set_timeout_with_handle(
-    //       move || {
     #[cfg(not(feature = "ssr"))]
     if let Some(se) = on_scroll_element.get() {
       spawn_local_scoped_with_cancellation(async move {
         if let Ok(d) = IndexedDb::new().await {
-          // let use_query_map()_params = query.get();
-          // log!("  SAVE 3 {}", scroll_save.get());
-          // if scroll_save.get() {
-          //   log!("  SAVE 4 {}", scroll_save.get());
           let _ = d
             .set(&ScrollPositionKey { path: use_location().pathname.get(), query: use_query_map().get().to_query_string() }, &se.scroll_left())
             .await;
-          // log!("stash {} {} {}", se.scroll_left(), use_location().pathname.get(), query_params.to_query_string(),);
-          // }
         }
       });
     }
-
-    // if let Some(s) = on_scroll_element.get() {
-    //   #[cfg(not(feature = "ssr"))]
-    //   spawn_local_scoped_with_cancellation(async move {
-    //     if let Ok(d) = IndexedDb::new().await {
-    //       let query_params = query.get();
-    //       let l: Result<Option<i32>, Error> =
-    //         d.get(&ScrollPositionKey { path: use_location().pathname.get(), query: query_params.to_query_string() }).await;
-    //       if let Ok(Some(l)) = l {
-    //         log!("set {} {} {}", l, use_location().pathname.get(), query_params.to_query_string());
-    //         s.set_scroll_left(l);
-    //       }
-    //     }
-    //     log!("  SAVE 2 {}", scroll_save.get());
-    //     // scroll_save.set(true);
-    //   });
-    //   // scroll_element.set(Some(on_scroll_element));
-    // }
-    //       },
-    //       std::time::Duration::new(0, 750_000_000),
-    //     )
-    //     .ok(),
-    //   );
-    // }
-
-    // if let Some(se) = on_scroll_element.get() {
-    //   #[cfg(not(feature = "ssr"))]
-    //   spawn_local_scoped_with_cancellation(async move {
-    //     if let Ok(d) = IndexedDb::new().await {
-    //       let query_params = query.get();
-    //       log!("  SAVE 3 {}", scroll_save.get());
-    //       if scroll_save.get() {
-    //         log!("  SAVE 4 {}", scroll_save.get());
-    //         let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: query_params.to_query_string() }, &se.scroll_left()).await;
-    //         log!("stash {} {} {}", se.scroll_left(), use_location().pathname.get(), query_params.to_query_string(),);
-    //       }
-    //     }
-    //   });
-    // }
   };
 
   #[cfg(not(feature = "ssr"))]
@@ -165,31 +86,19 @@ pub fn Overview(
             query_params.remove("page");
             query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
 
-            // let params = query_params.clone();
-
-            // let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-            // if iw < 768f64 {
-            // } else {
             #[cfg(not(feature = "ssr"))]
             if let Some(se) = on_scroll_element.get() {
               let params = query_params.clone();
               spawn_local_scoped_with_cancellation(async move {
                 if let Ok(d) = IndexedDb::new().await {
                   let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &se.scroll_left()).await;
-                  // log!("inter {} {} {}", se.scroll_left(), use_location().pathname.get(), params.to_query_string(),);
                 }
-                // log!("  SAVE 1 ");
-                // scroll_save.set(false);
                 use_navigate()(
                   &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
                   NavigateOptions { resolve: false, replace: true, scroll: false, state: State::default() },
                 );
-                // if let Some(se) = on_scroll_element.get() {
-                //   log!("navigate {} {} {}", se.scroll_left(), use_location().pathname.get(), params.to_query_string(),);
-                // }
               });
             }
-            // }
           }
         }
       },
@@ -198,19 +107,14 @@ pub fn Overview(
   }
 
   let post_list_resource = Resource::new(
-    move || (/*logged_in(), */ ssr_list(), ssr_sort(), ssr_name.get(), ssr_page()),
-    move |(/*_logged_in, */ list, sort, name, mut pages)| async move {
+    move || (ssr_list(), ssr_sort(), ssr_name.get(), ssr_page()),
+    move |(list, sort, name, mut pages)| async move {
       #[cfg(feature = "ssr")]
       let render_scroll = true && pages.len() == 0;
       #[cfg(not(feature = "ssr"))]
       let render_scroll = false;
 
       let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
-
-      // let _logged_in = logged_in.get();
-      // let _logged_in = false;
-      // log!("LOAD {:?} {:?} {:?} {:?} {:?}", list, sort, name, pages, get_auth_cookie.get_untracked());
-      // log!("LOAD");
 
       #[cfg(not(feature = "ssr"))]
       loading.set(true);
@@ -269,230 +173,220 @@ pub fn Overview(
     },
   );
 
+  let details_resource = Resource::new(
+    move || (ssr_name.get()),
+    move |(name)| async move {
+      if let Some(name) = name {
+        let form = GetCommunity { id: None, name: Some(name) };
+        let result = match LemmyClient.get_community(form.clone()).await {
+          Ok(o) => Ok(Some(o)),
+          Err(e) => Err(e),
+        };
+        result
+      } else {
+        Ok(None)
+      }
+    },
+  );
+
   let on_retry_click = move |_e: MouseEvent| {
     post_list_resource.refetch();
   };
 
   let on_retry_site_click = move |_e: MouseEvent| {
     spawn_local_scoped_with_cancellation(async move {
-      // ssr_site.refetch();
-      // ssr_site_signal.set(Some(LemmyClient.get_site().await));
       LemmyClient.get_site().await;
     });
   };
 
-  // log!("PAGE");
-
   #[cfg(not(feature = "ssr"))]
   let cancel_handle: RwSignal<Option<TimeoutHandle>> = RwSignal::new(None);
 
-  // let ssr_render_signal = RwSignal::new(false);
-
-  // let csr_render_signal = RwSignal::new(false);
-
-  // log!("COMPONENT");
+  let show_rules = RwSignal::new(false);
+  let on_show_rules = move |e: MouseEvent| {
+    e.prevent_default();
+    show_rules.set(!show_rules.get());
+  };
 
   view! {
-    // <A href="/c/technology"> "TECH" </A>
-    // <A href="/"> "ROOT" </A>
-    // <A href="/p/42674596"> "POST" </A>
-
-    // <Transition fallback={|| {}}>
       <main class="flex flex-col">
-      // <Transition fallback={|| {}}>
         <TopNav scroll_element=on_scroll_element.into() />
-        // </Transition>
         <div class="flex flex-grow">
           <div
             on:wheel={move |e: WheelEvent| {
-
               let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
               if iw < 768f64 {
               } else {
-
-              // e.stop_propagation();
-              if e.delta_x() != 0.0 {
-                // log!("{} {} {}", e.delta_y().abs() / e.delta_x().abs() , e.delta_x(), e.delta_y());
-                if e.delta_y().abs() / e.delta_x().abs() < 0.3 {
+                if e.delta_x() != 0.0 {
+                  if e.delta_y().abs() / e.delta_x().abs() < 0.3 {
+                  } else {
+                    e.prevent_default();
+                    if let Some(se) = on_scroll_element.get() {
+                      se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+                    }
+                  }
                 } else {
                   e.prevent_default();
                   if let Some(se) = on_scroll_element.get() {
                     se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
                   }
                 }
-              } else {
-                e.prevent_default();
-                if let Some(se) = on_scroll_element.get() {
-                  se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
-                }
               }
-
-              }
-
             }}
-            // on:scroll=on_scroll
             node_ref={on_scroll_element}
             class={move || { "sm:h-[calc(100%-4rem)] min-w-full sm:absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[23rem] sm:px-4 gap-4" }}
           >
             <Transition fallback={|| {}}>
               {move || {
                 match ssr_site.get() {
-                  Some(Err(_)) => {
+                  Some(Err(e)) => {
                     view! {
-                      <div class="py-4 px-8 break-inside-avoid">
-                        <div class="flex justify-between alert alert-error alert-soft">
-                          <span class="text-lg">{"Site Error"}</span>
-                          <span on:click={on_retry_site_click} class="btn btn-sm">
-                            "Retry"
-                          </span>
-                        </div>
-                      </div>
+                      <Error error={e} on_retry_click={Some(on_retry_site_click)} />
                     }.into_any()
                   }
                   Some(Ok(s)) => {
-                    view! {
-                      // <div class="py-4 px-8 break-inside-avoid">
-                      //   <div class="flex justify-between alert alert-error alert-soft">
-                      //     <span class="text-lg">{"Site Error"}</span>
-                      //     <span on:click={on_retry_site_click} class="btn btn-sm">
-                      //       "Retry"
-                      //     </span>
-                      //   </div>
-                      // </div>
-                    }.into_any()
-                    // log!("adf");
-                  //   logged_in.set(s.my_user.is_some());
-                  //   // let logged_in = Memo::new(move |_| { s.my_user.is_some()});
-                    // view! {
-                  //     <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| (p.1.clone(), p.2, p.4)} let:p>
-                  //       {match p.3 {
-                  //         Ok(ref o) => {
-                  //           // #[cfg(feature = "ssr")]
-                  //           // log!("HOMEYY ssr");
-                  //           // #[cfg(feature = "ssr")]
-                  //           // let ssr_render_signal = RwSignal::new(true);
-
-                  //           // #[cfg(not(feature = "ssr"))]
-                  //           // log!("HOMEYY csr");
-                  //           // #[cfg(not(feature = "ssr"))]
-                  //           // let csr_render_signal = RwSignal::new(true);
-
-                  //           // log!(" SIDE  ? {} {} {}", ssr_render_signal.get(), csr_render_signal.get(), p.5);
-
-
-                  //           // log!("RENDER {}", p.0);
-                  //           #[cfg(not(feature = "ssr"))]
-                  //           {
-                  //             let rw = p.3.clone();
-                  //             let fm = p.1.clone();
-                  //             use crate::db::csr_indexed_db::*;
-                  //             spawn_local_scoped_with_cancellation(async move {
-                  //               if let Ok(d) = IndexedDb::new().await {
-                  //                 if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&fm, &rw).await {}
-                  //               }
-                  //               response_cache
-                  //                 .update(move |rc| {
-                  //                   rc.insert((p.0, fm, Some(p.4)), (p.2, rw));
-                  //                 });
-                  //             });
-                  //             let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-                  //             if iw < 768f64 || p.5 {} else {
-                  //               if let Some(c) = cancel_handle.get_untracked() {
-                  //                 c.clear();
-                  //               }
-                  //               cancel_handle.set(set_timeout_with_handle(
-                  //                 move || {
-                  //                   if let Some(s) = on_scroll_element.get() {
-                  //                     spawn_local_scoped_with_cancellation(async move {
-                  //                       if let Ok(d) = IndexedDb::new().await {
-                  //                         let query_params = query.get();
-                  //                         let l: Result<Option<i32>, Error> = d
-                  //                           .get(
-                  //                             &ScrollPositionKey {
-                  //                               path: use_location().pathname.get(),
-                  //                               query: query_params.to_query_string(),
-                  //                             },
-                  //                           )
-                  //                           .await;
-                  //                         if let Ok(Some(l)) = l {
-                  //                           // log!("set {} {} {}", l, use_location().pathname.get(), query_params.to_query_string());
-                  //                           s.set_scroll_left(l);
-                  //                         }
-                  //                         // scroll_save.set(true);
-                  //                       }
-                  //                       // log!("  SAVE 2 {}", scroll_save.get());
-                  //                     });
-                  //                     // scroll_element.set(Some(on_scroll_element));
-                  //                   }
-                  //                 },
-                  //                 std::time::Duration::new(0, 750_000_000),
-                  //               ).ok());
-                  //             }
-                  //           }
-                  //           next_page_cursor.set((p.0 + 50usize, o.next_page.clone()));
-                  //           loading.set(false);
-                  //           view! { <Listings posts={o.posts.clone().into()} page_number={RwSignal::new(p.0)} /> }
-                  //             .into_any()
-                  //         }
-                  //         Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
-                  //           loading.set(false);
-                  //           view! {
-                  //             <Offline on_retry_click={Some(on_retry_click)} /*on_retry_click={None::<Option<_>>}*/ />
-                  //             // <div class="py-4 px-8 break-inside-avoid">
-                  //             //   <div class="flex justify-between alert alert-warning alert-soft">
-                  //             //     <span class="text-lg">{"Offline"}</span>
-                  //             //     <span on:click={on_retry_click} class="btn btn-sm">
-                  //             //       "Retry"
-                  //             //     </span>
-                  //             //   </div>
-                  //             // </div>
-                  //           }
-                  //           .into_any()
-                  //         }
-                  //         Err(e) => {
-                  //           loading.set(false);
-                  //           error!("{:#?}", e);
-                  //           view! {
-                  //             <Error error={e} on_retry_click={Some(on_retry_click)} /*on_retry_click={None::<Option<_>>}*/ />
-                  //             // <div class="py-4 px-8 break-inside-avoid">
-                  //             //   <div class="flex justify-between alert alert-error alert-soft">
-                  //             //     <span class="text-lg">{"Error"}</span>
-                  //             //     <span on:click={on_retry_click} class="btn btn-sm">
-                  //             //       "Retry"
-                  //             //     </span>
-                  //             //   </div>
-                  //             // </div>
-                  //           }
-                  //           .into_any()
-                  //         }
-                  //       }}
-                  //     </For>
-                    // }.into_any()
+                    view! {}.into_any()
                   }
                   _ => view! {}.into_any(),
                 }
               }}
             </Transition>
-        // <Show when={move || render_signal.get()} fallback={|| {}}>
+            <Transition fallback={|| {}}>
+              {move || {
+                match details_resource.get() {
+                  Some(Err(e)) => {
+                    view! {
+                      <Error error={e} on_retry_click={None::<fn(MouseEvent) -> ()>} />
+                    }.into_any()
+                  }
+                  Some(Ok(Some(s))) => {
+                    let community_title_encoded = html_escape::encode_safe(&s.community_view.community.title).to_string();
+
+                    let description = if let Some(description) = s.community_view.community.description {
+                      let mut options = pulldown_cmark::Options::empty();
+                      options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
+                      options.insert(pulldown_cmark::Options::ENABLE_TABLES);
+                      options.insert(pulldown_cmark::Options::ENABLE_SUPERSCRIPT);
+                      options.insert(pulldown_cmark::Options::ENABLE_SUBSCRIPT);
+                      options.insert(pulldown_cmark::Options::ENABLE_CONTAINER_EXTENSIONS);
+                      let parser = pulldown_cmark::Parser::new_ext(&description, options);
+                      let custom = parser
+                        .map(|event| match event {
+                          pulldown_cmark::Event::Html(text) => {
+                            let er = format!("<p>{}</p>", html_escape::encode_safe(&text).to_string());
+                            pulldown_cmark::Event::Html(er.into())
+                          }
+                          pulldown_cmark::Event::InlineHtml(text) => {
+                            let er = html_escape::encode_safe(&text).to_string();
+                            pulldown_cmark::Event::InlineHtml(er.into())
+                          }
+                          _ => event,
+                        });
+                      let mut description_encoded = String::new();
+                      pulldown_cmark::html::push_html(&mut description_encoded, custom);
+                      description_encoded
+                    } else {
+                      String::new()
+                    };
+
+                    let thumbnail_url = Memo::new(move |_| s.community_view.community.banner.clone());
+                    let thumbnail = RwSignal::new(String::from(""));
+
+                    view! {
+                      <div class="break-inside-avoid">
+                        <div class="py-2 px-4">
+                          <span class="overflow-y-auto text-2xl font-extrabold wrap-anywhere" inner_html={community_title_encoded} />
+                        </div>
+                        <div>
+                          {move || {
+                            if let Some(t) = thumbnail_url.get() {
+                              let h = t.inner().to_string();
+                              thumbnail.set(h);
+                              view! {
+                                <div class="py-2 px-4">
+                                  <div class="block">
+                                    <img
+                                      loading="lazy"
+                                      class={move || { format!("w-auto{}", if thumbnail.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" }) }}
+                                      src={move || thumbnail.get()}
+                                      on:error={move |_e| {
+                                        thumbnail.set("/lemmy.svg".into());
+                                      }}
+                                    />
+                                  </div>
+                                </div>
+                              }.into_any()
+                            } else {
+                              view! {
+                                // <div class="py-2 px-4">
+                                //   <div class="block">
+                                //     <img class="h-16" src="/lemmy.svg" />
+                                //   </div>
+                                // </div>
+                              }.into_any()
+                            }
+                          }}
+                        </div>
+                        <div class="px-4 break-inside-avoid">
+                          <div class="flex flex-wrap gap-x-2 items-center pb-2">
+                          <Form action="PUT" attr:class="flex items-center">
+                            // <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
+                            // <input type="hidden" name="save" value={move || format!("{}", !post_view.get().saved)} />
+                            <button
+                              type="submit"
+                              on:click={on_show_rules}
+                              // on:click={on_save_submit}
+                              title="Rules"
+                              // class={move || {
+                              //   format!(
+                              //     "{}{}",
+                              //     { if post_view.get().saved { "text-accent" } else { "" } },
+                              //     { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+                              //   )
+                              // }}
+                              // disabled={move || !logged_in.get() || !online.get().0}
+                            >
+                              <Icon icon={Rules} />
+                            </button>
+                          </Form>
+                          <Form action="PUT" attr:class="flex items-center">
+                            // <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
+                            // <input type="hidden" name="save" value={move || format!("{}", !post_view.get().saved)} />
+                            <button
+                              type="submit"
+                              // on:click={on_save_submit}
+                              title="Subscribe"
+                              class={move || {
+                                // format!(
+                              //     "{}{}",
+                              //     { if post_view.get().saved { "text-accent" } else { "" } },
+                              //     { if !logged_in.get() || !online.get().0 {
+                              " text-base-content/50"
+                              // } else { " hover:text-accent/50" } },
+                              //   )
+                              }}
+                              disabled={move || true}// !logged_in.get() || !online.get().0}
+                            >
+                              <Icon icon={Subscribe} />
+                            </button>
+                          </Form>
+                          </div>
+                        </div>
+                        <div class="py-2 px-4" style={move || { if show_rules.get() { "display: block;" } else { "display: none;" } }}>
+                          <div class="prose select-none" inner_html={description} />
+                        </div>
+                      </div>
+                    }.into_any()
+                  }
+                  _ => view! {}.into_any(),
+                }
+              }}
+            </Transition>
             <Transition fallback={|| {}}>
               // <Title text="" />
               <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| (p.1.clone(), p.2, p.4.clone())} let:p>
                 {match p.3 {
                   Ok(ref o) => {
-                    // #[cfg(feature = "ssr")]
-                    // log!("HOMEYY ssr");
-                    // #[cfg(feature = "ssr")]
-                    // let ssr_render_signal = RwSignal::new(true);
-
-                    // #[cfg(not(feature = "ssr"))]
-                    // log!("HOMEYY csr");
-                    // #[cfg(not(feature = "ssr"))]
-                    // let csr_render_signal = RwSignal::new(true);
-
-                    // log!(" SIDE  ? {} {} {}", ssr_render_signal.get(), csr_render_signal.get(), p.5);
-
-
-                    // log!("RENDER {}", p.0);
                     #[cfg(not(feature = "ssr"))]
                     {
                       let rw = p.3.clone();
@@ -504,8 +398,6 @@ pub fn Overview(
                         }
                         response_cache
                           .update(move |rc| {
-                            // log!("add {:?}", fm);
-
                             rc.insert((p.0, fm, p.4), (p.2, rw));
                           });
                       });
@@ -519,7 +411,6 @@ pub fn Overview(
                             if let Some(s) = on_scroll_element.get() {
                               spawn_local_scoped_with_cancellation(async move {
                                 if let Ok(d) = IndexedDb::new().await {
-                                  // let query_params = query.get();
                                   let l: Result<Option<i32>, Error> = d
                                     .get(
                                       &ScrollPositionKey {
@@ -529,14 +420,10 @@ pub fn Overview(
                                     )
                                     .await;
                                   if let Ok(Some(l)) = l {
-                                    // log!("set {} {} {}", l, use_location().pathname.get(), query_params.to_query_string());
                                     s.set_scroll_left(l);
                                   }
-                                  // scroll_save.set(true);
                                 }
-                                // log!("  SAVE 2 {}", scroll_save.get());
                               });
-                              // scroll_element.set(Some(on_scroll_element));
                             }
                           },
                           std::time::Duration::new(0, 750_000_000),
@@ -553,15 +440,7 @@ pub fn Overview(
                     #[cfg(not(feature = "ssr"))]
                     loading.set(false);
                     view! {
-                      <Offline on_retry_click={Some(on_retry_click)} /*on_retry_click={None::<Option<_>>}*/ />
-                      // <div class="py-4 px-8 break-inside-avoid">
-                      //   <div class="flex justify-between alert alert-warning alert-soft">
-                      //     <span class="text-lg">{"Offline"}</span>
-                      //     <span on:click={on_retry_click} class="btn btn-sm">
-                      //       "Retry"
-                      //     </span>
-                      //   </div>
-                      // </div>
+                      <Offline on_retry_click={Some(on_retry_click)} />
                     }
                     .into_any()
                   }
@@ -570,15 +449,7 @@ pub fn Overview(
                     loading.set(false);
                     error!("{:#?}", e);
                     view! {
-                      <Error error={e} on_retry_click={Some(on_retry_click)} /*on_retry_click={None::<Option<_>>}*/ />
-                      // <div class="py-4 px-8 break-inside-avoid">
-                      //   <div class="flex justify-between alert alert-error alert-soft">
-                      //     <span class="text-lg">{"Error"}</span>
-                      //     <span on:click={on_retry_click} class="btn btn-sm">
-                      //       "Retry"
-                      //     </span>
-                      //   </div>
-                      // </div>
+                      <Error error={e} on_retry_click={Some(on_retry_click)} />
                     }
                     .into_any()
                   }
@@ -605,16 +476,8 @@ pub fn Overview(
             </Transition>
             <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
             {move || { view!{ <Loading loading=loading.get() /> } }}
-        // </Show>
-        // {
-        //   // #[cfg(not(feature = "ssr"))]
-        //   if ssr_page().len() > 0 {
-        //     render_signal.set(true);
-        //   }
-        // }
           </div>
         </div>
       </main>
-    // </Transition>
   }
 }

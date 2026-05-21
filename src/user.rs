@@ -1,12 +1,18 @@
+use crate::comment::Comment;
 use crate::db::csr_indexed_db::*;
 use crate::errors::Loading;
+use crate::listing::Listing;
 use crate::{
   client::*,
-  errors::LemmyAppError,
-  listings::Listings,
+  errors::{Error, LemmyAppError},
   nav::TopNav,
   // i18n::*,
 };
+use lemmy_api_common::lemmy_db_schema::SubscribedType;
+use lemmy_api_common::lemmy_db_schema::aggregates::structs::PostAggregates;
+use lemmy_api_common::lemmy_db_schema::newtypes::{InstanceId, PostId};
+use lemmy_api_common::lemmy_db_views::structs::PostView;
+use lemmy_api_common::person::GetPersonDetails;
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SearchType, SortType},
   site::{GetSiteResponse, Search, SearchResponse},
@@ -21,14 +27,12 @@ use leptos::{
 use leptos_meta::Title;
 use leptos_router::hooks::*;
 use std::{usize, vec};
-use web_sys::WheelEvent;
+use web_sys::{MouseEvent, WheelEvent};
 
 #[component]
 pub fn User() -> impl IntoView {
   // let i18n = use_i18n();
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
-  // let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
-
   let param = use_params_map();
   let ssr_name = move || param.get().get("name").unwrap_or("".into());
 
@@ -42,9 +46,6 @@ pub fn User() -> impl IntoView {
   let next_page_cursor: RwSignal<u32> = RwSignal::new(0);
 
   let loading = RwSignal::new(false);
-
-  // let logged_in = move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { Some(true) } else { Some(false) };
-
   let intersection_element = NodeRef::<Div>::new();
   let on_scroll_element = NodeRef::<Div>::new();
 
@@ -93,36 +94,40 @@ pub fn User() -> impl IntoView {
     );
   }
 
-  // let search_cache_resource = Resource::new(
-  //   move || (/*logged_in(), */ ssr_list(), ssr_sort(), ssr_name(), ssr_page(), ssr_term()),
-  //   move |(/*_logged_in, */ _list, sort, _name, pages, term)| async move {
-  //     let mut new_pages: Vec<(u32, SearchResponse)> = Vec::new();
-  //     for p in pages {
-  //       let form = Search {
-  //         q: term.clone(),
-  //         type_: Some(SearchType::Posts),
-  //         sort: Some(sort),
-  //         community_name: None,
-  //         community_id: None,
-  //         page: Some(p as i64),
-  //         limit: Some(50),
-  //         creator_id: None,
-  //         listing_type: None,
-  //         post_title_only: None,
-  //       };
-  //       let result = LemmyClient.search(form.clone()).await;
-  //       match result {
-  //         Ok(o) => {
-  //           new_pages.push((p, o));
-  //         }
-  //         Err(e) => {
-  //           error!("err {:#?}", e);
-  //         }
-  //       }
-  //     }
-  //     new_pages
-  //   },
-  // );
+  let user_resource = Resource::new(
+    move || (ssr_name()),
+    move |(name)| async move {
+      // if let Some(name) = name {
+      let form = GetPersonDetails {
+        username: Some(name),
+        saved_only: None,
+        community_id: None,
+        limit: None,
+        page: None,
+        person_id: None,
+        sort: Some(SortType::New),
+      };
+      let result = match LemmyClient.get_user(form.clone()).await {
+        Ok(o) => Ok(Some(o)),
+        Err(e) => Err(e),
+      };
+      result
+      // } else {
+      //   Ok(None)
+      // }
+    },
+  );
+
+  let now_in_millis = RwSignal::new({
+    #[cfg(not(feature = "ssr"))]
+    {
+      chrono::offset::Utc::now().timestamp_millis() as u64
+    }
+    #[cfg(feature = "ssr")]
+    {
+      std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or(std::time::Duration::new(1000, 0)).as_millis() as u64
+    }
+  });
 
   view! {
     <main class="flex flex-col">
@@ -133,35 +138,22 @@ pub fn User() -> impl IntoView {
             let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
             if iw < 768f64 {
             } else {
-
-            if e.delta_x() != 0.0 {
-              // log!("{} {} {}", e.delta_y().abs() / e.delta_x().abs() , e.delta_x(), e.delta_y());
-              if e.delta_y().abs() / e.delta_x().abs() < 0.3 {
+              if e.delta_x() != 0.0 {
+                if e.delta_y().abs() / e.delta_x().abs() < 0.3 {
+                } else {
+                  e.prevent_default();
+                  if let Some(se) = on_scroll_element.get() {
+                    se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+                  }
+                }
               } else {
                 e.prevent_default();
                 if let Some(se) = on_scroll_element.get() {
                   se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
                 }
               }
-            } else {
-              e.prevent_default();
-              if let Some(se) = on_scroll_element.get() {
-                se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
-              }
             }
-
-            }
-
-            // if let Some(se) = on_scroll_element.get() {
-            //   se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
-            // }
           }}
-
-          // on:wheel={move |e: WheelEvent| {
-          //   if let Some(se) = on_scroll_element.get() {
-          //     se.scroll_by_with_x_and_y(e.delta_y(), 0f64);
-          //   }
-          // }}
           node_ref={on_scroll_element}
           class={move || {
             format!(
@@ -170,42 +162,191 @@ pub fn User() -> impl IntoView {
             )
           }}
         >
-          <Loading loading=true />
-          // <Transition fallback={|| {}}>
-          //   {move || {
-          //     match search_cache_resource.get() {
-          //       Some(o) => {
-          //         view! {
-          //           <div>
-          //             <Title text="Search" />
-          //             <For each={move || o.clone()} key={|r| r.0.clone()} let:r>
-          //               <Listings posts={r.1.posts.into()} page_number={RwSignal::new(((r.0 - 1) * 50) as usize)} />
-          //               {
-          //                 next_page_cursor.set(r.0 + 1);
-          //               }
-          //             </For>
-          //           </div>
-          //         }
-          //           .into_any()
-          //       }
-          //       _ => {
-          //         view! {
-          //           <div>
-          //             <Title text="" />
-          //             <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
-          //               <div class="py-4 px-8">
-          //                 <div class="alert alert-info alert-soft">
-          //                   <span>"Loading"</span>
-          //                 </div>
-          //               </div>
-          //             </div>
-          //           </div>
-          //         }
-          //           .into_any()
-          //       }
-          //     }
-          //   }} <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
-          // </Transition>
+          // <Loading loading=true />
+          <Transition fallback={|| {}}>
+            {move || {
+              match user_resource.get() {
+                Some(Err(e)) => {
+                  view! {
+                    <Error error={e} on_retry_click={None::<fn(MouseEvent) -> ()>} />
+                  }.into_any()
+                }
+                Some(Ok(Some(s))) => {
+                  let name = s.person_view.person.name;
+                  let banner = Memo::new(move |_| s.person_view.person.banner.clone());
+                  let avatar = Memo::new(move |_| s.person_view.person.avatar.clone());
+
+                  let comments = Memo::new(move |_| s.comments.clone());
+                  let posts = Memo::new(move |_| s.posts.clone());
+
+                  let bio = if let Some(bio) = s.person_view.person.bio {
+                    let mut options = pulldown_cmark::Options::empty();
+                    options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
+                    options.insert(pulldown_cmark::Options::ENABLE_TABLES);
+                    options.insert(pulldown_cmark::Options::ENABLE_SUPERSCRIPT);
+                    options.insert(pulldown_cmark::Options::ENABLE_SUBSCRIPT);
+                    options.insert(pulldown_cmark::Options::ENABLE_CONTAINER_EXTENSIONS);
+                    let parser = pulldown_cmark::Parser::new_ext(&bio, options);
+                    let custom = parser
+                      .map(|event| match event {
+                        pulldown_cmark::Event::Html(text) => {
+                          let er = format!("<p>{}</p>", html_escape::encode_safe(&text).to_string());
+                          pulldown_cmark::Event::Html(er.into())
+                        }
+                        pulldown_cmark::Event::InlineHtml(text) => {
+                          let er = html_escape::encode_safe(&text).to_string();
+                          pulldown_cmark::Event::InlineHtml(er.into())
+                        }
+                        _ => event,
+                      });
+                    let mut description_encoded = String::new();
+                    pulldown_cmark::html::push_html(&mut description_encoded, custom);
+                    description_encoded
+                  } else {
+                    String::new()
+                  };
+
+                  view! {
+                    <div class="break-inside-avoid">
+                      <div class="py-2 px-4">
+                        <span class="overflow-y-auto text-2xl font-extrabold wrap-anywhere"> {name} </span>
+                      </div>
+                      <div>
+                        {move || {
+                          if let Some(t) = banner.get() {
+                            let thumbnail = RwSignal::new(String::from(""));
+                            let h = t.inner().to_string();
+                            thumbnail.set(h);
+                            view! {
+                              <div class="py-2 px-4">
+                                <div class="block">
+                                  <img
+                                    loading="lazy"
+                                    class={move || { format!("w-auto{}", if thumbnail.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" }) }}
+                                    src={move || thumbnail.get()}
+                                    on:error={move |_e| {
+                                      thumbnail.set("/lemmy.svg".into());
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            }.into_any()
+                          } else {
+                            view! {
+                              // <div class="py-2 px-4">
+                              //   <div class="block">
+                              //     <img class="h-16" src="/lemmy.svg" />
+                              //   </div>
+                              // </div>
+                            }.into_any()
+                          }
+                        }}
+                      </div>
+                      <div>
+                        {move || {
+                          if let Some(t) = avatar.get() {
+                            let thumbnail = RwSignal::new(String::from(""));
+                            let h = t.inner().to_string();
+                            thumbnail.set(h);
+                            view! {
+                              <div class="py-2 px-4">
+                                <div class="block">
+                                  <img
+                                    loading="lazy"
+                                    class={move || { format!("w-auto{}", if thumbnail.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" }) }}
+                                    src={move || thumbnail.get()}
+                                    on:error={move |_e| {
+                                      thumbnail.set("/lemmy.svg".into());
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            }.into_any()
+                          } else {
+                            view! {
+                              <div class="py-2 px-4">
+                                <div class="block">
+                                  <img class="h-16" src="/lemmy.svg" />
+                                </div>
+                              </div>
+                            }.into_any()
+                          }
+                        }}
+                      </div>
+                      <div class="py-2 px-4">
+                        <div class="prose select-none" inner_html={bio} />
+                      </div>
+                    </div>
+                    <For each={move || posts.get()} key={|pv| pv.post.id} let:pv>
+                    <div class="odd:bg-base-200">
+                      <Listing post_view={pv} post_number={0} reply_show={RwSignal::new(false)} />
+                    </div>
+                    </For>
+                    <For each={move || comments.get()} key={|cv| cv.comment.id} let:cv>
+                    <div class="odd:bg-base-200">
+                      {
+                        let p = PostView {
+                          post: cv.post.clone(),
+                          creator: cv.creator.clone(),
+                          community: cv.community.clone(),
+                          creator_banned_from_community: false,
+                          creator_is_moderator: false,
+                          creator_is_admin: false,
+                          counts: PostAggregates {
+                            post_id: PostId(0),
+                            comments: 0,
+                            score: 0,
+                            upvotes: 0,
+                            downvotes: 0,
+                            published: chrono::offset::Utc::now(),
+                            newest_comment_time_necro: chrono::offset::Utc::now(),
+                            newest_comment_time: chrono::offset::Utc::now(),
+                            featured_community: false,
+                            featured_local: false,
+                            hot_rank: 0f64,
+                            hot_rank_active: 0f64,
+                            community_id: cv.community.id,
+                            creator_id: cv.creator.id,
+                            controversy_rank: 0f64,
+                            instance_id: InstanceId(0),
+                            scaled_rank: 0f64,
+                          },
+                          subscribed: SubscribedType::NotSubscribed,
+                          saved: false,
+                          read: false,
+                          creator_blocked: false,
+                          my_vote: None,
+                          unread_comments: 0,
+                          banned_from_community: false,
+                          hidden: false,
+                          image_details: None,
+                        };
+
+                        view! {
+                          <Listing post_view={p} post_number={0} reply_show={RwSignal::new(false)} />
+                        }
+                      }
+                      // <Listing post_view={cv.post} post_number={0} reply_show={RwSignal::new(false)} />
+                      <div class=" pr-4 pt-2 pb-4 pl-8">
+                      <Comment
+                        parent_comment_id=0
+                        hidden_comments={RwSignal::new(vec![])}
+                        comment={cv.clone().into()}
+                        comments={vec![].into()}
+                        level=0
+                        now_in_millis
+                        highlight_user_id={RwSignal::new(None)}
+                        post_id=Signal::derive(move || Some(cv.post.id.0))
+                      />
+                      </div>
+                      </div>
+                    </For>
+                  }.into_any()
+                }
+                _ => view! {}.into_any(),
+              }
+            }}
+          </Transition>
         </div>
       </div>
     </main>

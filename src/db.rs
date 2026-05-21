@@ -175,6 +175,18 @@ pub mod csr_indexed_db {
     }
   }
 
+  impl Store for GetCommunity {
+    fn store_name(&self) -> &'static str {
+      "query_gets"
+    }
+  }
+
+  impl Store for GetPersonDetails {
+    fn store_name(&self) -> &'static str {
+      "query_gets"
+    }
+  }
+
   #[cfg(not(feature = "ssr"))]
   use rexie::{ObjectStore, Rexie, TransactionMode};
 

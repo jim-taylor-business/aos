@@ -23,35 +23,17 @@ use leptos::{
 };
 use leptos_meta::*;
 use leptos_router::{components::A, hooks::*};
-use leptos_use::{UseIntersectionObserverOptions, use_intersection_observer_with_options};
-use web_sys::{HtmlAnchorElement, HtmlImageElement, WheelEvent, wasm_bindgen::JsCast};
+use leptos_use::{UseIntersectionObserverOptions, use_intersection_observer_with_options, *};
+use web_sys::{Event, HtmlAnchorElement, HtmlImageElement, WheelEvent, wasm_bindgen::JsCast};
 
 #[component]
 pub fn Post() -> impl IntoView {
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
-  // let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
-
-  // let ssr_site_signal = expect_context::<RwSignal<Option<GetSiteResponse>>>();
-  // let ssr_user_signal = expect_context::<RwSignal<Option<MyUserInfo>>>();
-
   let params = use_params_map();
   let query = use_query_map();
 
   let post_id = Signal::derive(move || params.get().get("id").unwrap_or_default().parse::<i32>().ok());
-  // let logged_in =
-  //   Signal::derive(move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { Some(true) } else { Some(false) });
-  // let logged_in = move || false; //ssr_user_signal.get().is_some();
-  // let logged_in = {
-  //   move || {
-  //     if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { true } else { false }
-  //   }
-  // };
-
   let online = expect_context::<RwSignal<OnlineSetter>>();
-
-  // let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
-  // scroll_element.set(None);
-
   let ssr_sort = move || serde_json::from_str::<CommentSortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(CommentSortType::Top);
 
   let reply_show = RwSignal::new(false);
@@ -147,8 +129,24 @@ pub fn Post() -> impl IntoView {
 
   let _visibility_element = NodeRef::<Textarea>::new();
 
+  let on_scroll_element = NodeRef::<Div>::new();
+  let on_scroll = move |e: Event| {
+    #[cfg(not(feature = "ssr"))]
+    if let Some(se) = on_scroll_element.get() {
+      spawn_local_scoped_with_cancellation(async move {
+        if let Ok(d) = IndexedDb::new().await {
+          let _ = d
+            .set(&ScrollPositionKey { path: use_location().pathname.get(), query: use_query_map().get().to_query_string() }, &se.scroll_left())
+            .await;
+        }
+      });
+    }
+  };
+
   #[cfg(not(feature = "ssr"))]
   {
+    let UseScrollReturn { .. } = use_scroll_with_options(on_scroll_element, UseScrollOptions::default().on_scroll(on_scroll));
+
     use_intersection_observer_with_options(
       _visibility_element,
       move |_entries, _io| {
@@ -160,7 +158,9 @@ pub fn Post() -> impl IntoView {
     );
   }
 
-  let on_scroll_element = NodeRef::<Div>::new();
+  #[cfg(not(feature = "ssr"))]
+  let cancel_handle: RwSignal<Option<TimeoutHandle>> = RwSignal::new(None);
+
   let thumbnail = RwSignal::new(String::from(""));
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
 
@@ -614,6 +614,34 @@ pub fn Post() -> impl IntoView {
                           if let Ok(_c) = d.set(&fm, &rw).await {}
                         }
                       });
+                      let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
+                      if iw < 768f64 /*|| p.5*/ {} else {
+                        if let Some(c) = cancel_handle.get_untracked() {
+                          c.clear();
+                        }
+                        cancel_handle.set(set_timeout_with_handle(
+                          move || {
+                            if let Some(s) = on_scroll_element.get() {
+                              spawn_local_scoped_with_cancellation(async move {
+                                if let Ok(d) = IndexedDb::new().await {
+                                  let l: Result<Option<i32>, Error> = d
+                                    .get(
+                                      &ScrollPositionKey {
+                                        path: use_location().pathname.get(),
+                                        query: use_query_map().get().to_query_string(),
+                                      },
+                                    )
+                                    .await;
+                                  if let Ok(Some(l)) = l {
+                                    s.set_scroll_left(l);
+                                  }
+                                }
+                              });
+                            }
+                          },
+                          std::time::Duration::new(0, 750_000_000),
+                        ).ok());
+                      }
                     }
                     let res = res.1.clone();
 

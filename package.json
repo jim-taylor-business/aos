@@ -2,11 +2,11 @@
   "author": "",
   "dependencies": {
     "@tailwindcss/typography": "^0.5.19",
-    "tailwindcss": "^4.2.4"
+    "tailwindcss": "^4.3.0"
   },
   "description": "A.O.S",
   "devDependencies": {
-    "@tailwindcss/cli": "^4.2.4",
+    "@tailwindcss/cli": "^4.3.0",
     "daisyui": "^5.5.19"
   },
   "keywords": [],

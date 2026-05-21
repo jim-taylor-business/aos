@@ -32,6 +32,8 @@ pub enum IconType {
   Hammer,
   Archive,
   History,
+  Subscribe,
+  Rules,
 }
 
 impl IconType {
@@ -67,6 +69,8 @@ impl IconType {
       IconType::Hammer => "hammer",
       IconType::Archive => "archive",
       IconType::History => "history",
+      IconType::Subscribe => "subscribe",
+      IconType::Rules => "rules",
     }
   }
 }

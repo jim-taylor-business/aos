@@ -309,7 +309,12 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
 
             view! {
 
-    <div class="grid gap-x-4 px-4 pb-6 grid-cols-[6rem_1fr] grid-rows-[1fr_2rem] break-inside-avoid sm:grid-rows-[1fr_2rem]">
+    <div class={move || {
+      format!(
+        "grid gap-x-4 px-4 grid-cols-[6rem_1fr] break-inside-avoid {}",
+        if post_number != 0 { "grid-rows-[1fr_2rem] pb-6" } else { "grid-rows-[1fr] pl-8 pb-2" },
+      )
+    }}>
       <div class={move || {
         format!(
           "col-span-1 row-span-2 flex items-start pt-2{}",
@@ -380,87 +385,88 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
           </span>
         </span>
       </div>
+      <Show when={move || { post_number != 0 }} fallback={|| {}}>
       <div class={move || {
         format!(
           "row-span-1 flex items-center gap-x-1{}",
           if post_view.get_untracked().post.thumbnail_url.is_none() && post_view.get_untracked().post.url.is_none() { " col-span-2" } else { " col-span-1" },
         )
       }}>
-        <ActionForm action={vote_action} attr:class="flex items-center">
-          <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
-          <input type="hidden" name="score" value={move || if Some(1) == post_view.get().my_vote { 0 } else { 1 }} />
-          <button
-            type="submit"
-            on:click={on_up_vote_submit}
-            class={move || {
-              format!(
-                "{}{}",
-                { if Some(1) == post_view.get().my_vote { "text-secondary" } else { "" } },
-                { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
-              )
-            }}
-            disabled={move || !logged_in.get() || !online.get().0}
-            title="Up vote"
-          >
-            <Icon icon={Upvote} />
-          </button>
-        </ActionForm>
-        <span class="block text-sm">{move || post_view.get().counts.score}</span>
-        <span
-          class="flex items-center pl-1"
-          title={move || {
-            format!(
-              "{} comments{}",
-              post_view.get_untracked().counts.comments,
-              if post_view.get_untracked().unread_comments != post_view.get_untracked().counts.comments && post_view.get_untracked().unread_comments > 0 {
-                format!(" ({} unread)", post_view.get_untracked().unread_comments)
-              } else {
-                "".to_owned()
-              },
-            )
-          }}
-        >
-          <A href={move || format!("/p/{}", post_view.get_untracked().post.id)} attr:class="inline hover:text-accent">
-            <Icon icon={Comments} class={"inline".into()} />
-          </A>
-          {post_view.get_untracked().counts.comments}
-        </span>
-        <Show when={move || { post_number == 0 }} fallback={|| {}}>
-          <ActionForm action={save_post_action} attr:class="flex items-center">
+          <ActionForm action={vote_action} attr:class="flex items-center">
             <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
-            <input type="hidden" name="save" value={move || format!("{}", !post_view.get_untracked().saved)} />
+            <input type="hidden" name="score" value={move || if Some(1) == post_view.get().my_vote { 0 } else { 1 }} />
             <button
               type="submit"
-              on:click={on_save_submit}
-              title="Save post"
+              on:click={on_up_vote_submit}
               class={move || {
                 format!(
                   "{}{}",
-                  { if post_view.get_untracked().saved { "text-accent" } else { "" } },
-                  { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+                  { if Some(1) == post_view.get().my_vote { "text-secondary" } else { "" } },
+                  { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
                 )
               }}
               disabled={move || !logged_in.get() || !online.get().0}
+              title="Up vote"
             >
-              <Icon icon={Save} />
+              <Icon icon={Upvote} />
             </button>
           </ActionForm>
+          <span class="block text-sm">{move || post_view.get().counts.score}</span>
           <span
-            class="cursor-pointer"
-            on:click={move |_| {
-              reply_show.update(|b| *b = !*b);
+            class="flex items-center pl-1"
+            title={move || {
+              format!(
+                "{} comments{}",
+                post_view.get_untracked().counts.comments,
+                if post_view.get_untracked().unread_comments != post_view.get_untracked().counts.comments && post_view.get_untracked().unread_comments > 0 {
+                  format!(" ({} unread)", post_view.get_untracked().unread_comments)
+                } else {
+                  "".to_owned()
+                },
+              )
             }}
-            title="Reply"
           >
-            <Icon icon={Reply} />
-          </span>
-          <span class={format!("text-base-content{}", if post_view.get_untracked().post.local { " hidden" } else { "" })} title="Original">
-            <A href={post_view.get_untracked().post.ap_id.inner().to_string()}>
-              <Icon icon={External} />
+            <A href={move || format!("/p/{}", post_view.get_untracked().post.id)} attr:class="inline hover:text-accent">
+              <Icon icon={Comments} class={"inline".into()} />
             </A>
+            {post_view.get_untracked().counts.comments}
           </span>
+        // </Show>
+          // <ActionForm action={save_post_action} attr:class="flex items-center">
+          //   <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
+          //   <input type="hidden" name="save" value={move || format!("{}", !post_view.get_untracked().saved)} />
+          //   <button
+          //     type="submit"
+          //     on:click={on_save_submit}
+          //     title="Save post"
+          //     class={move || {
+          //       format!(
+          //         "{}{}",
+          //         { if post_view.get_untracked().saved { "text-accent" } else { "" } },
+          //         { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+          //       )
+          //     }}
+          //     disabled={move || !logged_in.get() || !online.get().0}
+          //   >
+          //     <Icon icon={Save} />
+          //   </button>
+          // </ActionForm>
+          // <span
+          //   class="cursor-pointer"
+          //   on:click={move |_| {
+          //     reply_show.update(|b| *b = !*b);
+          //   }}
+          //   title="Reply"
+          // >
+          //   <Icon icon={Reply} />
+          // </span>
+          // <span class={format!("text-base-content{}", if post_view.get_untracked().post.local { " hidden" } else { "" })} title="Original">
+          //   <A href={post_view.get_untracked().post.ap_id.inner().to_string()}>
+          //     <Icon icon={External} />
+          //   </A>
+          // </span>
 
-        </Show>
+          // <Show when={move || { post_view.get_untracked().counts.post_id.0 != 0 }} fallback={|| {}}>
         <span class="flex items-center ml-auto text-base-content/25">
           <a
             class={format!(
@@ -489,6 +495,7 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
         </span>
         <span class="flex items-center text-base-content/25">{if post_number != 0 { format!("{}", post_number) } else { "".into() }}</span>
       </div>
+      </Show>
     </div>
     {move || { view!{ <Loading loading=loading.get() /> } }}
     <Show when={move || error.get()} fallback={|| {}}>
