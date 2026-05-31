@@ -78,6 +78,10 @@ pub trait LemmyApi: Fetch {
     self.make_request(HttpType::Get, "community", form).await
   }
 
+  async fn follow_community(&self, form: FollowCommunity) -> LemmyAppResult<CommunityResponse> {
+    self.make_request(HttpType::Post, "community/follow", form).await
+  }
+
   async fn get_comments(&self, form: GetComments) -> LemmyAppResult<GetCommentsResponse> {
     // self.set_signals().await;
     self.make_request(HttpType::Get, "comment/list", form).await

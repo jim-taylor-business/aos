@@ -73,6 +73,18 @@ pub mod csr_indexed_db {
     }
   }
 
+  impl Store for FollowCommunity {
+    fn store_name(&self) -> &'static str {
+      "query_gets"
+    }
+  }
+
+  impl Store for CommunityResponse {
+    fn store_name(&self) -> &'static str {
+      "query_gets"
+    }
+  }
+
   impl Store for SavePost {
     fn store_name(&self) -> &'static str {
       "query_gets"

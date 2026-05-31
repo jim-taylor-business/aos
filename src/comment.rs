@@ -13,7 +13,10 @@ use lemmy_api_common::{
 };
 use leptos::{html::Textarea, logging::log, prelude::*, task::*, *};
 use leptos_dom::helpers::TimeoutHandle;
-use leptos_router::{components::Form, hooks::use_navigate};
+use leptos_router::{
+  components::{A, Form},
+  hooks::use_navigate,
+};
 use leptos_use::{UseIntersectionObserverOptions, use_intersection_observer_with_options};
 use web_sys::{HtmlAnchorElement, HtmlImageElement, MouseEvent, PointerEvent, WheelEvent, wasm_bindgen::JsCast};
 
@@ -566,10 +569,14 @@ pub fn Comment(
 
             <span class="overflow-hidden wrap-anywhere">
               <span>{abbr_duration.clone()}</span>
-              " ago, by "
-              <a href={move || format!("{}", comment_view.get().creator.actor_id)} target="_blank" class="text-sm hover:text-secondary">
+              " ago by "
+              <A
+                href={move || {let a = comment_view.get().creator.actor_id; if let Some(domain) = a.domain() { format!("{}@{}", a.path(), domain) } else { format!("{}", a) }}}
+                attr:class="text-sm hover:text-secondary"
+              >
+              // <a href={move || format!("{}", comment_view.get().creator.actor_id)} target="_blank" class="text-sm hover:text-secondary">
                 <span inner_html={html_escape::encode_safe(&comment_view.get().creator.actor_id.to_string()[8..]).to_string()} />
-              </a>
+              </A>
             </span>
           </div>
         </Show>

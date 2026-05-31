@@ -371,7 +371,7 @@ pub fn PostToolbar(
             <button
               type="submit"
               on:click={on_save_submit}
-              title="Save post"
+              title="Save"
               class={move || {
                 format!(
                   "{}{}",
@@ -466,7 +466,7 @@ pub fn PostToolbar(
                       name="reason"
                       placeholder="Reason for reporting post"
                     />
-                    <button class="text-xs whitespace-nowrap" title="Report post" type="submit">
+                    <button class="text-xs whitespace-nowrap" title="Report" type="submit">
                       <Icon icon={Report} class={"inline-block".into()} />
                       "Report post"
                     </button>
@@ -476,7 +476,7 @@ pub fn PostToolbar(
                   <ActionForm action={block_user_action}>
                     <input type="hidden" name="person_id" value={format!("{}", post_view.get_untracked().creator.id.0)} />
                     <input type="hidden" name="block" value="true" />
-                    <button on:click={on_block_submit} class="text-xs whitespace-nowrap" title="Block user" type="submit">
+                    <button on:click={on_block_submit} class="text-xs whitespace-nowrap" title="Block" type="submit">
                       <Icon icon={Block} class={"inline-block".into()} />
                       "Block user"
                     </button>

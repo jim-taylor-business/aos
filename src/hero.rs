@@ -191,7 +191,7 @@ pub fn Hero(
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
 
   view! {
-          <div class="bg-base-200 mb-4"
+          <div class="bg-base-200 mb-6"
           >
             <Transition fallback={|| {}}>
               {move || {
@@ -392,17 +392,11 @@ pub fn Hero(
                           <span>{abbr_duration}</span>
                           " ago by "
                           <A
-                            href={move || {let a = post_response.get().post_view.creator.actor_id; format!("{}@{}", a.path(), a.domain().unwrap_or_default())}}
+                            href={move || {let a = post_response.get().post_view.creator.actor_id; if let Some(domain) = a.domain() { format!("{}@{}", a.path(), domain) } else { format!("{}", a) }}}
                             // target="_blank"
                             attr:class="inline wrap-anywhere hover:text-secondary"
                           >
-                          // <a
-                          //   href={move || format!("{}", post_response.get().post_view.creator.actor_id)}
-                          //   target="_blank"
-                          //   class="inline wrap-anywhere hover:text-secondary"
-                          // >
                             <span class="overflow-y-auto" inner_html={creator_name_encoded} />
-                          // </a>
                           </A>
                           " in "
                           <A

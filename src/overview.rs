@@ -11,6 +11,7 @@ use crate::{
 };
 use hooks::*;
 use lemmy_api_common::community::GetCommunity;
+use lemmy_api_common::lemmy_db_schema::SubscribedType;
 use lemmy_api_common::site::MyUserInfo;
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SortType},
@@ -291,11 +292,12 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
 
                     let thumbnail_url = Memo::new(move |_| s.community_view.community.banner.clone());
                     let thumbnail = RwSignal::new(String::from(""));
+                    let follow = Memo::new(move |_| s.community_view.subscribed.clone());
 
                     view! {
-                      <div class="break-inside-avoid">
+                      <div class="break-inside-avoid mb-4">
                         <div class="py-2 px-4">
-                          <span class="overflow-y-auto text-2xl font-extrabold wrap-anywhere" inner_html={community_title_encoded} />
+                          <span class="overflow-y-auto text-3xl font-extrabold wrap-anywhere" inner_html={community_title_encoded} />
                         </div>
                         <div>
                           {move || {
@@ -328,23 +330,18 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                           }}
                         </div>
                         <div class="px-4 break-inside-avoid">
-                          <div class="flex flex-wrap gap-x-2 items-center pb-2">
+                          <div class="flex flex-wrap gap-x-2 items-center py-2">
                           <Form action="PUT" attr:class="flex items-center">
-                            // <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
-                            // <input type="hidden" name="save" value={move || format!("{}", !post_view.get().saved)} />
                             <button
                               type="submit"
                               on:click={on_show_rules}
-                              // on:click={on_save_submit}
                               title="Rules"
-                              // class={move || {
-                              //   format!(
-                              //     "{}{}",
-                              //     { if post_view.get().saved { "text-accent" } else { "" } },
-                              //     { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
-                              //   )
-                              // }}
-                              // disabled={move || !logged_in.get() || !online.get().0}
+                              class={move || {
+                                format!(
+                                  "{}",
+                                  { if show_rules.get() { "text-accent" } else { "" } },
+                                )
+                              }}
                             >
                               <Icon icon={Rules} />
                             </button>
@@ -355,17 +352,23 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                             <button
                               type="submit"
                               // on:click={on_save_submit}
-                              title="Subscribe"
+                              title="Subscribed"
                               class={move || {
-                                // format!(
-                              //     "{}{}",
-                              //     { if post_view.get().saved { "text-accent" } else { "" } },
-                              //     { if !logged_in.get() || !online.get().0 {
-                              " text-base-content/50"
-                              // } else { " hover:text-accent/50" } },
-                              //   )
+                                format!(
+                                  "{}",
+                                  { if follow.get() == SubscribedType::Subscribed { "text-accent" } else { "" } },
+                                )
                               }}
-                              disabled={move || true}// !logged_in.get() || !online.get().0}
+                              // class={move || {
+                              //   // format!(
+                              // //     "{}{}",
+                              // //     { if post_view.get().saved { "text-accent" } else { "" } },
+                              // //     { if !logged_in.get() || !online.get().0 {
+                              // " text-base-content/50"
+                              // // } else { " hover:text-accent/50" } },
+                              // //   )
+                              // }}
+                              // disabled={move || true}// !logged_in.get() || !online.get().0}
                             >
                               <Icon icon={Subscribe} />
                             </button>

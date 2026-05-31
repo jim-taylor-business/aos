@@ -368,8 +368,11 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
         </A>
         <span class="block mt-1 mb-1 text-sm wrap-anywhere">
           <span>{abbr_duration}</span>
-          " ago by "
-          <span class="overflow-y-auto" inner_html={creator_name_encoded} />
+          " ago "
+          <Show when={move || { post_number != 0 }} fallback={|| {}}>
+            "by "
+            <span class="overflow-y-auto" inner_html={creator_name_encoded} />
+          </Show>
           " in "
           <span class="overflow-y-auto" inner_html={community_title_encoded} />
           <span class="overflow-y-auto">
