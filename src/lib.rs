@@ -120,9 +120,10 @@ pub fn App() -> impl IntoView {
   let notifications_refresh = RwSignal::new(NotificationsRefresh(true));
   provide_context(notifications_refresh);
 
-  #[cfg(not(feature = "ssr"))]
-  let UseServiceWorkerReturn { .. } =
-    use_service_worker_with_options(UseServiceWorkerOptions::default().script_url("/service-worker.js").skip_waiting_message("skipWaiting"));
+  // #[cfg(not(feature = "ssr"))]
+  // let UseServiceWorkerReturn { .. } =
+  //   use_service_worker_with_options(UseServiceWorkerOptions::default().script_url("/service-worker.js").skip_waiting_message("skipWaiting"));
+
   #[cfg(not(feature = "ssr"))]
   let visibility = use_document_visibility();
   #[cfg(not(feature = "ssr"))]
