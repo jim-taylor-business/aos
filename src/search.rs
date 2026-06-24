@@ -1,4 +1,5 @@
 use crate::db::csr_indexed_db::*;
+use crate::errors::Loading;
 use crate::{
   client::*,
   errors::LemmyAppError,
@@ -26,7 +27,6 @@ use web_sys::WheelEvent;
 pub fn Search() -> impl IntoView {
   // let i18n = use_i18n();
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
-  // let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
 
   let param = use_params_map();
   let ssr_name = move || param.get().get("name").unwrap_or("".into());
@@ -41,8 +41,6 @@ pub fn Search() -> impl IntoView {
   let next_page_cursor: RwSignal<u32> = RwSignal::new(0);
 
   let loading = RwSignal::new(false);
-
-  // let logged_in = move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { Some(true) } else { Some(false) };
 
   let intersection_element = NodeRef::<Div>::new();
   let on_scroll_element = NodeRef::<Div>::new();
@@ -93,8 +91,8 @@ pub fn Search() -> impl IntoView {
   }
 
   let search_cache_resource = Resource::new(
-    move || (/*logged_in(), */ ssr_list(), ssr_sort(), ssr_name(), ssr_page(), ssr_term()),
-    move |(/*_logged_in, */ _list, sort, _name, pages, term)| async move {
+    move || (ssr_list(), ssr_sort(), ssr_name(), ssr_page(), ssr_term()),
+    move |(_list, sort, _name, pages, term)| async move {
       let mut new_pages: Vec<(u32, SearchResponse)> = Vec::new();
       for p in pages {
         let form = Search {
@@ -109,6 +107,7 @@ pub fn Search() -> impl IntoView {
           listing_type: None,
           post_title_only: None,
         };
+        loading.set(true);
         let result = LemmyClient.search(form.clone()).await;
         match result {
           Ok(o) => {
@@ -134,7 +133,6 @@ pub fn Search() -> impl IntoView {
             } else {
 
             if e.delta_x() != 0.0 {
-              // log!("{} {} {}", e.delta_y().abs() / e.delta_x().abs() , e.delta_x(), e.delta_y());
               if e.delta_y().abs() / e.delta_x().abs() < 0.3 {
               } else {
                 e.prevent_default();
@@ -150,17 +148,7 @@ pub fn Search() -> impl IntoView {
             }
 
             }
-
-            // if let Some(se) = on_scroll_element.get() {
-            //   se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
-            // }
           }}
-
-          // on:wheel={move |e: WheelEvent| {
-          //   if let Some(se) = on_scroll_element.get() {
-          //     se.scroll_by_with_x_and_y(e.delta_y(), 0f64);
-          //   }
-          // }}
           node_ref={on_scroll_element}
           class={move || {
             format!(
@@ -173,6 +161,7 @@ pub fn Search() -> impl IntoView {
             {move || {
               match search_cache_resource.get() {
                 Some(o) => {
+                  loading.set(false);
                   view! {
                     <div>
                       <Title text="Search" />
@@ -187,23 +176,25 @@ pub fn Search() -> impl IntoView {
                     .into_any()
                 }
                 _ => {
+                  loading.set(false);
                   view! {
-                    <div>
-                      <Title text="" />
-                      <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
-                        <div class="py-4 px-8">
-                          <div class="alert alert-info alert-soft">
-                            <span>"Loading"</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    // <div>
+                    //   <Title text="" />
+                    //   <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
+                    //     <div class="py-4 px-8">
+                    //       <div class="alert alert-info alert-soft">
+                    //         <span>"Loading"</span>
+                    //       </div>
+                    //     </div>
+                    //   </div>
+                    // </div>
                   }
                     .into_any()
                 }
               }
             }} <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
           </Transition>
+          {move || { view!{ <Loading loading=loading.get() /> } }}
         </div>
       </div>
     </main>

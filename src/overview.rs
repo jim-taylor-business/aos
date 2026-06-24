@@ -458,24 +458,6 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                   }
                 }}
               </For>
-              // <Error loading=loading.get() />
-              // {move || {
-              //   if loading.get() {
-              //     Some(
-              //       view! {
-              //         <div class="overflow-hidden break-inside-avoid animate-[popdown_1s_step-end_1]">
-              //           <div class="py-4 px-8">
-              //             <div class="alert alert-info alert-soft">
-              //               <span>"Loading..."</span>
-              //             </div>
-              //           </div>
-              //         </div>
-              //       },
-              //     )
-              //   } else {
-              //     None
-              //   }
-              // }}
             </Transition>
             <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
             {move || { view!{ <Loading loading=loading.get() /> } }}

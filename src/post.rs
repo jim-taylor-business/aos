@@ -3,7 +3,7 @@ use crate::{
   client::*,
   comments::Comments,
   db::csr_indexed_db::*,
-  errors::{LemmyAppError, LemmyAppErrorType},
+  errors::{LemmyAppError, LemmyAppErrorType, Loading},
   nav::TopNav,
   toolbar::PostToolbar,
 };
@@ -47,8 +47,8 @@ pub fn Post() -> impl IntoView {
     move |id_string| async move {
       if let Some(id) = id_string {
         let form = GetPost { id: Some(PostId(id)), comment_id: None };
+        loading.set(true);
         let result = LemmyClient.get_post(form.clone()).await;
-        loading.set(false);
         match result {
           Ok(o) => Some(Ok((form, o))),
           Err(e) => Some(Err(e)),
@@ -208,6 +208,7 @@ pub fn Post() -> impl IntoView {
               {move || {
                 match post_resource.get() {
                   Some(Some(Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }))) => {
+                    loading.set(false);
                     view! {
                       <Title text="Error loading post" />
                       <div class="py-4 px-8">
@@ -230,6 +231,7 @@ pub fn Post() -> impl IntoView {
                       .into_any()
                   }
                   Some(Some(Err(_))) => {
+                    loading.set(false);
                     view! {
                       <Title text="Error loading post" />
                       <div class="py-4 px-8">
@@ -334,6 +336,8 @@ pub fn Post() -> impl IntoView {
                     } else {
                       "".to_owned()
                     });
+
+                    loading.set(false);
 
                     view! {
                       <Title text={post_response.get().post_view.post.name} />
@@ -585,13 +589,13 @@ pub fn Post() -> impl IntoView {
                   }
                   Some(None) | None => {
                     view! {
-                      <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
-                        <div class="py-4 px-8">
-                          <div class="alert alert-info alert-soft">
-                            <span>"Loading"</span>
-                          </div>
-                        </div>
-                      </div>
+                      // <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
+                      //   <div class="py-4 px-8">
+                      //     <div class="alert alert-info alert-soft">
+                      //       <span>"Loading"</span>
+                      //     </div>
+                      //   </div>
+                      // </div>
                     }.into_any()
                   }
                 }
@@ -653,6 +657,7 @@ pub fn Post() -> impl IntoView {
                   })
               }}
             </Transition>
+            {move || { view!{ <Loading loading=loading.get() /> } }}
           </div>
         </div>
       </div>
