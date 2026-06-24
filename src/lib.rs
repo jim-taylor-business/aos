@@ -73,10 +73,15 @@ pub struct ReadThemeCookie(Signal<Option<String>>);
 pub struct WriteThemeCookie(WriteSignal<Option<String>>);
 
 pub fn html_template(options: LeptosOptions) -> impl IntoView {
+  // let l = leptos_meta::link::Link::new().rel("preload").href("/font.woff2").as_("font").type_("font/woff2").cross_origin("anonymous").into_head();
+
   view! {
     <!DOCTYPE html>
     <html lang="en">
       <head>
+        <Link rel="preload" href="/AdwaitaSans-Italic.ttf" as_="font" crossorigin="anonymous" />
+        <Link rel="preload" href="/AdwaitaSans-Regular.ttf" as_="font" crossorigin="anonymous" />
+        <Link rel="preload" href="/icons.svg" as_="image" />
         <MetaTags />
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
