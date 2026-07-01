@@ -119,6 +119,7 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
         let form = CreatePostLike { post_id: post_view.get().post.id, score };
         let result = LemmyClient.like_post(form).await;
         // log!("END");
+        #[cfg(not(feature = "ssr"))]
         loading.set(false);
         match result {
           Ok(o) => {
@@ -135,6 +136,7 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
 
   let on_up_vote_submit = move |e: MouseEvent| {
     // log!("VOTE");
+    #[cfg(not(feature = "ssr"))]
     loading.set(true);
     let score = if Some(1) == post_view.get().my_vote { 0 } else { 1 };
     on_vote_submit(e, score);

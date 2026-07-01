@@ -38,7 +38,7 @@ pub fn Post() -> impl IntoView {
 
   let reply_show = RwSignal::new(false);
   let content = RwSignal::new(String::default());
-  let loading = RwSignal::new(true);
+  let loading = RwSignal::new(false);
 
   let post_view = RwSignal::new(None::<GetPostResponse>);
 
@@ -47,6 +47,7 @@ pub fn Post() -> impl IntoView {
     move |id_string| async move {
       if let Some(id) = id_string {
         let form = GetPost { id: Some(PostId(id)), comment_id: None };
+        #[cfg(not(feature = "ssr"))]
         loading.set(true);
         let result = LemmyClient.get_post(form.clone()).await;
         match result {
@@ -208,6 +209,7 @@ pub fn Post() -> impl IntoView {
               {move || {
                 match post_resource.get() {
                   Some(Some(Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }))) => {
+                    #[cfg(not(feature = "ssr"))]
                     loading.set(false);
                     view! {
                       <Title text="Error loading post" />
@@ -231,6 +233,7 @@ pub fn Post() -> impl IntoView {
                       .into_any()
                   }
                   Some(Some(Err(_))) => {
+                    #[cfg(not(feature = "ssr"))]
                     loading.set(false);
                     view! {
                       <Title text="Error loading post" />
@@ -337,6 +340,8 @@ pub fn Post() -> impl IntoView {
                       "".to_owned()
                     });
 
+                    // log!("lslsls");
+                    #[cfg(not(feature = "ssr"))]
                     loading.set(false);
 
                     view! {

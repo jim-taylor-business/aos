@@ -107,6 +107,7 @@ pub fn Search() -> impl IntoView {
           listing_type: None,
           post_title_only: None,
         };
+        #[cfg(not(feature = "ssr"))]
         loading.set(true);
         let result = LemmyClient.search(form.clone()).await;
         match result {
@@ -150,17 +151,19 @@ pub fn Search() -> impl IntoView {
             }
           }}
           node_ref={on_scroll_element}
-          class={move || {
-            format!(
-              "sm:h-[calc(100%-4rem)] min-w-full sm:absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[23rem] sm:px-4 gap-4{}",
-              if loading.get() { " opacity-25" } else { "" },
-            )
-          }}
+          class=
+          // {move || {
+            // format!(
+              "sm:h-[calc(100%-4rem)] min-w-full sm:absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[23rem] sm:px-4 gap-4{}" //,
+            //   if loading.get() { " opacity-25" } else { "" },
+            // )
+          // }}
         >
           <Transition fallback={|| {}}>
             {move || {
               match search_cache_resource.get() {
                 Some(o) => {
+                  #[cfg(not(feature = "ssr"))]
                   loading.set(false);
                   view! {
                     <div>
@@ -176,6 +179,7 @@ pub fn Search() -> impl IntoView {
                     .into_any()
                 }
                 _ => {
+                  #[cfg(not(feature = "ssr"))]
                   loading.set(false);
                   view! {
                     // <div>
