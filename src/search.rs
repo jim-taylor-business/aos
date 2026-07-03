@@ -115,6 +115,8 @@ pub fn Search() -> impl IntoView {
             new_pages.push((p, o));
           }
           Err(e) => {
+            #[cfg(not(feature = "ssr"))]
+            loading.set(false);
             error!("err {:#?}", e);
           }
         }
@@ -163,6 +165,7 @@ pub fn Search() -> impl IntoView {
             {move || {
               match search_cache_resource.get() {
                 Some(o) => {
+                  // log!("loca");
                   #[cfg(not(feature = "ssr"))]
                   loading.set(false);
                   view! {
@@ -179,8 +182,9 @@ pub fn Search() -> impl IntoView {
                     .into_any()
                 }
                 _ => {
-                  #[cfg(not(feature = "ssr"))]
-                  loading.set(false);
+                  // log!("we");
+                  // #[cfg(not(feature = "ssr"))]
+                  // loading.set(false);
                   view! {
                     // <div>
                     //   <Title text="" />

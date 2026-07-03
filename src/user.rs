@@ -183,7 +183,7 @@ pub fn User() -> impl IntoView {
                   let old_posts = Memo::new(move |_| t.posts.clone());
                   let old_comments = Memo::new(move |_| t.comments.clone());
 
-                  log!("old {} {}", old_comments.get().len(), old_posts.get().len());
+                  // log!("old {} {}", old_comments.get().len(), old_posts.get().len());
 
                   let name = s.person_view.person.name;
                   let banner = Memo::new(move |_| s.person_view.person.banner.clone());
@@ -245,7 +245,7 @@ pub fn User() -> impl IntoView {
                     ap.sort_by(|a, b| a.post.post.published.cmp(&b.post.post.published).reverse());
                   });
 
-                  log!("{} {}", all_posts.get().len(), all_posts.get().iter().flat_map(|p| p.comments.get().clone()).collect::<Vec<_>>().len());
+                  // log!("{} {}", all_posts.get().len(), all_posts.get().iter().flat_map(|p| p.comments.get().clone()).collect::<Vec<_>>().len());
 
                   let bio = if let Some(bio) = s.person_view.person.bio {
                     let mut options = pulldown_cmark::Options::empty();
