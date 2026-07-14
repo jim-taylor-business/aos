@@ -282,6 +282,8 @@ pub fn Post() -> impl IntoView {
                     options.insert(pulldown_cmark::Options::ENABLE_SUPERSCRIPT);
                     options.insert(pulldown_cmark::Options::ENABLE_SUBSCRIPT);
                     options.insert(pulldown_cmark::Options::ENABLE_CONTAINER_EXTENSIONS);
+                    options.insert(pulldown_cmark::Options::ENABLE_LINKIFY_LEMMY);
+                    options.insert(pulldown_cmark::Options::ENABLE_LINKIFY_HTTP);
                     let parser = pulldown_cmark::Parser::new_ext(&title, options);
                     let custom = parser
                       .map(|event| match event {
@@ -479,6 +481,8 @@ pub fn Post() -> impl IntoView {
                         options.insert(pulldown_cmark::Options::ENABLE_SUPERSCRIPT);
                         options.insert(pulldown_cmark::Options::ENABLE_SUBSCRIPT);
                         options.insert(pulldown_cmark::Options::ENABLE_CONTAINER_EXTENSIONS);
+                        options.insert(pulldown_cmark::Options::ENABLE_LINKIFY_LEMMY);
+                        options.insert(pulldown_cmark::Options::ENABLE_LINKIFY_HTTP);
                         let parser = pulldown_cmark::Parser::new_ext(content, options);
                         let custom = parser
                           .map(|event| match event {

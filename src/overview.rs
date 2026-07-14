@@ -31,6 +31,7 @@ use leptos_meta::*;
 use leptos_router::params::ParamsMap;
 use leptos_router::{components::*, location::State, *};
 use leptos_use::*;
+use send_wrapper::SendWrapper;
 use std::{collections::BTreeMap, usize, vec};
 use web_sys::{Event, MouseEvent, ScrollToOptions, WheelEvent};
 
@@ -107,20 +108,42 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
     );
   }
 
+  #[cfg(not(feature = "ssr"))]
+  fn load_cache(fc: GetPosts) -> impl std::future::Future<Output = Result<GetPostsResponse, LemmyAppError>> {
+    SendWrapper::new(async move {
+      if let Ok(d) = IndexedDb::new().await {
+        if let Ok(c) = d.load::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&fc).await {
+          if let Some(r) = c { r } else { Err(LemmyAppError { error_type: LemmyAppErrorType::Unknown, content: "".to_owned() }) }
+        } else {
+          Err(LemmyAppError { error_type: LemmyAppErrorType::Unknown, content: "".to_owned() })
+        }
+      } else {
+        Err(LemmyAppError { error_type: LemmyAppErrorType::Unknown, content: "".to_owned() })
+      }
+    })
+  }
+
   let post_list_resource = Resource::new(
     move || (ssr_list(), ssr_sort(), ssr_name.get(), ssr_page()),
     move |(list, sort, name, mut pages)| async move {
-      #[cfg(feature = "ssr")]
-      let render_scroll = true && pages.len() == 0;
-      #[cfg(not(feature = "ssr"))]
-      let render_scroll = false;
+      let many_pages = pages.len() > 0;
 
-      let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
+      #[cfg(feature = "ssr")]
+      let do_not_render_scroll = true && pages.len() == 0;
+      #[cfg(not(feature = "ssr"))]
+      let do_not_render_scroll = false;
+
+      #[cfg(feature = "ssr")]
+      let csr_cache_render = true && pages.len() > 0;
+      #[cfg(not(feature = "ssr"))]
+      let csr_cache_render = false;
 
       #[cfg(not(feature = "ssr"))]
       loading.set(true);
+
+      let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
       let rc = response_cache.get_untracked();
-      let mut new_pages: Vec<(usize, GetPosts, i64, LemmyAppResult<GetPostsResponse>, Option<String>, bool)> = vec![];
+      let mut new_pages: Vec<(usize, GetPosts, i64, LemmyAppResult<GetPostsResponse>, Option<String>, bool, bool)> = vec![];
       if pages.len() == 0 {
         pages = vec![(0usize, "".to_owned())];
       }
@@ -140,27 +163,31 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
           show_nsfw: Some(false),
           show_read: Some(true),
         };
+
         #[cfg(not(feature = "ssr"))]
-        if let Some((t, r)) = rc.get(&(p.0, form.clone(), get_auth_cookie.get_untracked())) {
-          // log!("cached");
-          match r {
-            Ok(_) => {
-              // log!("cache");
-              new_pages.push((p.0, form.clone(), t.clone(), r.clone(), get_auth_cookie.get_untracked(), render_scroll));
-            }
-            _ => {
-              let result = match LemmyClient.list_posts(form.clone()).await {
-                Ok(mut o) => {
-                  o.posts.retain(|p| !p.banned_from_community);
-                  Ok(o)
-                }
-                Err(e) => Err(e),
-              };
-              new_pages.push((p.0, form.clone(), chrono::Utc::now().timestamp_millis(), result, get_auth_cookie.get_untracked(), render_scroll));
+        if let Some((t, Ok(r))) = rc.get(&(p.0, form.clone(), get_auth_cookie.get_untracked())) {
+          new_pages.push((p.0, form.clone(), t.clone(), Ok(r.clone()), get_auth_cookie.get_untracked(), do_not_render_scroll, csr_cache_render));
+          continue;
+        } else {
+          if many_pages {
+            match load_cache(form.clone()).await {
+              Ok(o) => {
+                new_pages.push((
+                  p.0,
+                  form.clone(),
+                  chrono::Utc::now().timestamp_millis(),
+                  Ok(o),
+                  get_auth_cookie.get_untracked(),
+                  do_not_render_scroll,
+                  csr_cache_render,
+                ));
+                continue;
+              }
+              _ => {}
             }
           }
-          continue;
         }
+
         let result = match LemmyClient.list_posts(form.clone()).await {
           Ok(mut o) => {
             o.posts.retain(|p| !p.banned_from_community);
@@ -168,8 +195,17 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
           }
           Err(e) => Err(e),
         };
-        new_pages.push((p.0, form.clone(), chrono::Utc::now().timestamp_millis(), result, get_auth_cookie.get_untracked(), render_scroll));
+        new_pages.push((
+          p.0,
+          form.clone(),
+          chrono::Utc::now().timestamp_millis(),
+          result,
+          get_auth_cookie.get_untracked(),
+          do_not_render_scroll,
+          csr_cache_render,
+        ));
       }
+
       new_pages
     },
   );
@@ -202,6 +238,8 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
 
   #[cfg(not(feature = "ssr"))]
   let cancel_handle: RwSignal<Option<TimeoutHandle>> = RwSignal::new(None);
+  #[cfg(not(feature = "ssr"))]
+  let cancel_refresh_handle: RwSignal<Option<TimeoutHandle>> = RwSignal::new(None);
 
   let show_rules = RwSignal::new(false);
   let on_show_rules = move |e: MouseEvent| {
@@ -390,22 +428,25 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
               <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| (p.1.clone(), p.2, p.4.clone())} let:p>
                 {match p.3 {
                   Ok(ref o) => {
+                    // log!("{} {}", !p.5, p.6);
                     #[cfg(not(feature = "ssr"))]
                     {
                       let rw = p.3.clone();
                       let fm = p.1.clone();
                       use crate::db::csr_indexed_db::*;
                       spawn_local_scoped_with_cancellation(async move {
-                        if let Ok(d) = IndexedDb::new().await {
-                          if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&fm, &rw).await {}
+                        if p.6 {} else {
+                          if let Ok(d) = IndexedDb::new().await {
+                            if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&fm, &rw).await {}
+                          }
+                          response_cache
+                            .update(move |rc| {
+                              rc.insert((p.0, fm, p.4), (p.2, rw));
+                            });
                         }
-                        response_cache
-                          .update(move |rc| {
-                            rc.insert((p.0, fm, p.4), (p.2, rw));
-                          });
                       });
                       let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-                      if iw < 768f64 || p.5 {} else {
+                      if iw < 768f64 || p.5 || p.6 {} else {
                         if let Some(c) = cancel_handle.get_untracked() {
                           c.clear();
                         }
@@ -432,12 +473,25 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                           std::time::Duration::new(0, 750_000_000),
                         ).ok());
                       }
+                      if p.6 {
+                        if let Some(c) = cancel_refresh_handle.get_untracked() {
+                          c.clear();
+                        }
+                        cancel_refresh_handle.set(set_timeout_with_handle(
+                          move || {
+                            post_list_resource.refetch();
+                          },
+                          std::time::Duration::new(0, 750_000_000),
+                        ).ok());
+                      }
                     }
                     next_page_cursor.set((p.0 + o.posts.len(), o.next_page.clone()));
                     #[cfg(not(feature = "ssr"))]
                     loading.set(false);
-                    view! { <Listings posts={o.posts.clone().into()} page_number={RwSignal::new(p.0)} /> }
-                      .into_any()
+                    view! {
+                      // attr:class=format!("{}", if p.6 { "display: hidden" } else { "" })
+                      <Listings hide=p.6 posts={o.posts.clone().into()} page_number={RwSignal::new(p.0)} />
+                    }.into_any()
                   }
                   Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
                     #[cfg(not(feature = "ssr"))]

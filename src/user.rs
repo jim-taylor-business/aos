@@ -254,6 +254,8 @@ pub fn User() -> impl IntoView {
                     options.insert(pulldown_cmark::Options::ENABLE_SUPERSCRIPT);
                     options.insert(pulldown_cmark::Options::ENABLE_SUBSCRIPT);
                     options.insert(pulldown_cmark::Options::ENABLE_CONTAINER_EXTENSIONS);
+                    options.insert(pulldown_cmark::Options::ENABLE_LINKIFY_LEMMY);
+                    options.insert(pulldown_cmark::Options::ENABLE_LINKIFY_HTTP);
                     let parser = pulldown_cmark::Parser::new_ext(&bio, options);
                     let custom = parser
                       .map(|event| match event {
@@ -411,7 +413,7 @@ pub fn User() -> impl IntoView {
                     // </For>
                     <For each={move || all_posts.get()} key={|pc| pc.post.post.id} let:pc>
                       <div class="odd:bg-base-200 pt-4">
-                        <Listing post_view={pc.post} post_number={0} reply_show={RwSignal::new(false)} />
+                        <Listing hide=false post_view={pc.post} post_number={0} reply_show={RwSignal::new(false)} />
                         <For each={move || pc.comments.get()} key={|cv| cv.comment.id} let:cv>
                           <div class="pr-4 pt-2 pb-4 pl-8">
                             <Comment

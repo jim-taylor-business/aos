@@ -267,6 +267,20 @@ pub mod csr_indexed_db {
       }
     }
 
+    pub async fn load<Form, Response>(&self, key: &Form) -> Result<Option<Response>, Error>
+    where
+      Form: Serialize + Store,
+      Response: DeserializeOwned,
+    {
+      let transaction = self.rexie.transaction(&[key.store_name()], TransactionMode::ReadOnly)?;
+      let comments = transaction.store(key.store_name())?;
+      if let Some(comment_meta_value) = comments.get(serde_wasm_bindgen::to_value(&serde_json::to_string(key)?)?).await? {
+        Ok(Some(serde_wasm_bindgen::from_value::<Response>(comment_meta_value)?))
+      } else {
+        Ok(None)
+      }
+    }
+
     pub async fn set<Form, Response>(&self, key: &Form, t: &Response) -> Result<(), Error>
     where
       Form: Serialize + Store,

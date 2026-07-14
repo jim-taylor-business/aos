@@ -172,7 +172,7 @@ pub fn Search() -> impl IntoView {
                     <div>
                       <Title text="Search" />
                       <For each={move || o.clone()} key={|r| r.0.clone()} let:r>
-                        <Listings posts={r.1.posts.into()} page_number={RwSignal::new(((r.0 - 1) * 50) as usize)} />
+                        <Listings hide=false posts={r.1.posts.into()} page_number={RwSignal::new(((r.0 - 1) * 50) as usize)} />
                         {
                           next_page_cursor.set(r.0 + 1);
                         }

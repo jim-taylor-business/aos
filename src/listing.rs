@@ -97,7 +97,7 @@ pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostR
 }
 
 #[component]
-pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<bool>) -> impl IntoView {
+pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<bool>, hide: bool) -> impl IntoView {
   // let ssr_site_signal = expect_context::<RwSignal<Option<GetSiteResponse>>>();
   // let ssr_user_signal = expect_context::<RwSignal<Option<MyUserInfo>>>();
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
@@ -311,12 +311,24 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
 
             view! {
 
-    <div class={move || {
-      format!(
-        "grid gap-x-4 px-4 grid-cols-[6rem_1fr] break-inside-avoid {}",
-        if post_number != 0 { "grid-rows-[1fr_2rem] pb-6" } else { "grid-rows-[1fr] pl-8 pb-2" },
-      )
-    }}>
+    <div
+
+    class={move || {
+        format!(
+          "grid gap-x-4 px-4 grid-cols-[6rem_1fr] break-inside-avoid {}{}",
+          if post_number != 0 { "grid-rows-[1fr_2rem] pb-6" } else { "grid-rows-[1fr] pl-8 pb-2" },
+          if hide { " invisible" } else { "" },
+        )
+    }}
+
+
+    // class={move || {
+    //   format!(
+    //     "grid gap-x-4 px-4 grid-cols-[6rem_1fr] break-inside-avoid {}",
+    //     if post_number != 0 { "grid-rows-[1fr_2rem] pb-6" } else { "grid-rows-[1fr] pl-8 pb-2" },
+    //   )
+    // }}
+    >
       <div class={move || {
         format!(
           "col-span-1 row-span-2 flex items-start pt-2{}",
@@ -366,7 +378,11 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
         )
       }}>
         <A href={move || format!("/p/{}", post_view.get_untracked().post.id)} attr:class="block hover:text-accent">
+          // {
+          //   log!("{}", title_encoded.get_untracked());
+          // }
           <span class="overflow-y-auto text-lg wrap-anywhere" inner_html={title_encoded.get_untracked()} />
+          // <span class="overflow-y-auto text-lg wrap-anywhere" /* inner_html={title_encoded.get_untracked()} */> { title_encoded.get_untracked() }  </span>
         </A>
         <span class="block mt-1 mb-1 text-sm wrap-anywhere">
           <span>{abbr_duration}</span>
