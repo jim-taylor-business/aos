@@ -1,25 +1,21 @@
 use crate::{
-  OnlineSetter, ReadAuthCookie, ReadInstanceCookie, WriteInstanceCookie,
+  OnlineSetter, ReadAuthCookie, ReadInstanceCookie,
   client::*,
   comment::Comment,
-  comments::Comments,
   db::csr_indexed_db::*,
   errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult},
   icon::{Icon, IconType},
-  nav::TopNav,
   toolbar::PostToolbar,
 };
 use ev::MouseEvent;
 use lemmy_api_common::{
   comment::{CreateComment, GetComments, GetCommentsResponse},
   lemmy_db_schema::{CommentSortType, ListingType, SortType, newtypes::PostId},
-  lemmy_db_views::structs::{CommentView, PaginationCursor},
+  lemmy_db_views::structs::PaginationCursor,
   post::{GetPost, GetPostResponse, GetPosts, GetPostsResponse},
-  site::{GetSiteResponse, MyUserInfo},
 };
 use leptos::{
   html::{Div, Textarea},
-  logging::log,
   prelude::*,
   task::*,
   *,
@@ -28,18 +24,18 @@ use leptos_meta::*;
 use leptos_router::{components::A, hooks::*};
 use leptos_use::{UseIntersectionObserverOptions, use_intersection_observer_with_options};
 use std::collections::BTreeMap;
-use web_sys::{HtmlAnchorElement, HtmlImageElement, WheelEvent, wasm_bindgen::JsCast};
+use web_sys::{HtmlAnchorElement, HtmlImageElement, wasm_bindgen::JsCast};
 
 #[component]
 pub fn Hero(
   post_id: Signal<PostId>,
-  post_number: usize,
+  // _post_number: usize,
   hide: bool,
   #[prop(optional)] next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)>,
 ) -> impl IntoView {
-  let params = use_params_map();
+  let _params = use_params_map();
   let query = use_query_map();
-  let online = expect_context::<RwSignal<OnlineSetter>>();
+  let _online = expect_context::<RwSignal<OnlineSetter>>();
   let ssr_sort = move || serde_json::from_str::<CommentSortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(CommentSortType::Top);
 
   let reply_show = RwSignal::new(false);
@@ -58,7 +54,7 @@ pub fn Hero(
     move |id| async move {
       let form = GetPost { id: Some(id), comment_id: None };
       let rc = post_response_cache.get_untracked();
-      let result = if let Some((t, r)) = rc.get(&(form.clone(), get_auth_cookie.get_untracked())) {
+      let result = if let Some((_t, r)) = rc.get(&(form.clone(), get_auth_cookie.get_untracked())) {
         match r {
           Ok(o) => Ok(o.clone()),
           _ => LemmyClient.get_post(form.clone()).await,
@@ -92,7 +88,7 @@ pub fn Hero(
         liked_only: None,
       };
       let rc = comments_response_cache.get_untracked();
-      let result = if let Some((t, r)) = rc.get(&(form.clone(), get_auth_cookie.get_untracked())) {
+      let result = if let Some((_t, r)) = rc.get(&(form.clone(), get_auth_cookie.get_untracked())) {
         match r {
           Ok(o) => Ok(o.clone()),
           _ => LemmyClient.get_comments(form.clone()).await,
@@ -115,7 +111,7 @@ pub fn Hero(
         Ok(o) => {
           query_params.insert("sort", o);
         }
-        Err(e) => {}
+        Err(_e) => {}
       }
       if CommentSortType::Top == s {
         query_params.remove("sort");
@@ -125,7 +121,7 @@ pub fn Hero(
     }
   };
 
-  let on_reply_click = move |e: MouseEvent| {
+  let _on_reply_click = move |e: MouseEvent| {
     e.prevent_default();
     spawn_local_scoped_with_cancellation(async move {
       let form = CreateComment { content: content.get(), post_id: post_id.get(), parent_id: None, language_id: None };
@@ -152,14 +148,14 @@ pub fn Hero(
       _visibility_element,
       move |_entries, _io| {
         if let Some(v) = _visibility_element.get() {
-          v.focus();
+          let _ = v.focus();
         }
       },
       UseIntersectionObserverOptions::default(),
     );
   }
 
-  let on_scroll_element = NodeRef::<Div>::new();
+  let _on_scroll_element = NodeRef::<Div>::new();
   let thumbnail = RwSignal::new(String::from(""));
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
 
@@ -569,14 +565,13 @@ pub fn Hero(
               let hidden_comments: RwSignal<Vec<i32>> = RwSignal::new(vec![]);
               #[cfg(not(feature = "ssr"))]
               spawn_local_scoped_with_cancellation(async move {
-                if let p = post_id.get() {
-                  if let Ok(d) = IndexedDb::new().await {
-                    if let Ok(Some(mut comment_ids)) = d.get::<i32, Vec<i32>>(&p.0).await {
-                      hidden_comments
-                        .update(|h| {
-                          h.append(&mut comment_ids);
-                        });
-                    }
+                let p = post_id.get();
+                if let Ok(d) = IndexedDb::new().await {
+                  if let Ok(Some(mut comment_ids)) = d.get::<i32, Vec<i32>>(&p.0).await {
+                    hidden_comments
+                      .update(|h| {
+                        h.append(&mut comment_ids);
+                      });
                   }
                 }
               });

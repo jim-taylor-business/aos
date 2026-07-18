@@ -8,7 +8,7 @@ use lemmy_api_common::{
   lemmy_db_views::structs::*,
   person::*,
   post::*,
-  site::{GetSiteResponse, MyUserInfo},
+  site::GetSiteResponse,
 };
 use leptos::{html::Img, logging::*, prelude::*};
 use leptos_router::{components::*, hooks::*};
@@ -97,7 +97,7 @@ pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostR
 }
 
 #[component]
-pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<bool>, hide: bool) -> impl IntoView {
+pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<bool>, */ hide: bool) -> impl IntoView {
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   let online = expect_context::<RwSignal<OnlineSetter>>();
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
@@ -141,9 +141,9 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
     on_vote_submit(e, score);
   };
 
-  let save_post_action = ServerAction::<SavePostFn>::new();
+  let _save_post_action = ServerAction::<SavePostFn>::new();
 
-  let on_save_submit = move |e: MouseEvent| {
+  let _on_save_submit = move |e: MouseEvent| {
     e.prevent_default();
     Resource::new(
       move || (),
@@ -264,7 +264,6 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
     )
   };
   let community_title_encoded = Memo::new(move |_| html_escape::encode_safe(&community_title).to_string());
-  // let creator_name = post_view.get().creator.actor_id.to_string()[8..];
   let creator_name_encoded = Memo::new(move |_| html_escape::encode_safe(&post_view.get().creator.actor_id.to_string()[8..]).to_string());
 
   let now_in_millis = {

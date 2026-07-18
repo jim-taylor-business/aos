@@ -1,10 +1,5 @@
-use crate::{
-  ReadThemeCookie,
-  client::{LemmyApi, LemmyClient},
-  errors::LemmyAppError,
-};
-use lemmy_api_common::site::GetSiteResponse;
-use leptos::{logging::log, prelude::*};
+use crate::ReadThemeCookie;
+use leptos::prelude::*;
 use leptos_router::components::Outlet;
 
 #[component]

@@ -1,5 +1,5 @@
 use crate::{
-  OnlineSetter, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie,
+  ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie,
   db::csr_indexed_db::*,
   errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult},
 };
@@ -14,7 +14,7 @@ use lemmy_api_common::{
 };
 use leptos::{logging::log, prelude::*};
 use send_wrapper::SendWrapper;
-use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use serde::{Serialize, de::DeserializeOwned};
 use std::str;
 
 #[derive(Clone, PartialEq)]
@@ -283,7 +283,7 @@ mod client {
   use crate::OnlineSetter;
   use gloo_net::{http, http::RequestBuilder};
   use leptos::wasm_bindgen::UnwrapThrowExt;
-  use web_sys::{AbortController, RequestCache};
+
 
   trait MaybeBearerAuth {
     fn maybe_bearer_auth(self, token: Option<&str>) -> Self;
@@ -374,7 +374,7 @@ mod client {
             if method == HttpType::Get {
               if let Ok(ref e) = o {
                 if let Ok(d) = IndexedDb::new().await {
-                  if let Ok(c) = d.set(&form, &e).await {}
+                  if let Ok(_c) = d.set(&form, &e).await {}
                 }
               }
             }

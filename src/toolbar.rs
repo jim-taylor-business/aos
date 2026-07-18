@@ -5,13 +5,8 @@ use crate::{
   errors::{LemmyAppError, LemmyAppErrorType},
   icon::{IconType::*, *},
 };
-use lemmy_api_common::{
-  lemmy_db_views::structs::*,
-  person::*,
-  post::*,
-  site::{GetSiteResponse, MyUserInfo},
-};
-use leptos::{html::Img, logging::log, prelude::*, task::*};
+use lemmy_api_common::{lemmy_db_views::structs::*, person::*, post::*, site::GetSiteResponse};
+use leptos::{html::Img, prelude::*, task::*};
 use leptos_router::{
   components::{A, Form},
   hooks::*,
@@ -137,7 +132,7 @@ pub fn PostToolbar(
     on_vote_submit(e, score);
   };
 
-  let save_post_action = ServerAction::<SavePostFn>::new();
+  let _save_post_action = ServerAction::<SavePostFn>::new();
 
   let on_save_submit = move |e: MouseEvent| {
     e.prevent_default();

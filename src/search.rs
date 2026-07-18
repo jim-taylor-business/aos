@@ -12,7 +12,7 @@ use lemmy_api_common::{
 };
 use leptos::{
   html::Div,
-  logging::{error, log},
+  logging::error,
   prelude::*,
   task::*,
   *,
@@ -25,7 +25,7 @@ use web_sys::WheelEvent;
 #[component]
 pub fn Search() -> impl IntoView {
   // let i18n = use_i18n();
-  let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
+  let _ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
 
   let param = use_params_map();
   let ssr_name = move || param.get().get("name").unwrap_or("".into());

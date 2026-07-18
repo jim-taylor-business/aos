@@ -35,18 +35,18 @@ use default::Default;
 use lemmy_api_common::{
   comment::{GetComments, GetCommentsResponse},
   post::{GetPost, GetPostResponse, GetPosts, GetPostsResponse},
-  site::{GetSiteResponse, MyUserInfo},
+  site::GetSiteResponse,
 };
-use leptos::{html::Div, logging::log, prelude::*};
-use leptos_meta::{Link, Meta, MetaTags, Stylesheet, provide_meta_context, *};
+use leptos::prelude::*;
+use leptos_meta::{Link, MetaTags, Stylesheet, provide_meta_context, *};
 use leptos_router::{
   StaticSegment,
   components::{ParentRoute, Route, Router, Routes},
   *,
 };
-use leptos_use::{SameSite, UseCookieOptions, UseServiceWorkerOptions, use_cookie_with_options, use_service_worker_with_options};
 #[cfg(not(feature = "ssr"))]
-use leptos_use::{UseServiceWorkerReturn, use_document_visibility};
+use leptos_use::use_document_visibility;
+use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options};
 use root::Root;
 use std::collections::BTreeMap;
 
@@ -238,13 +238,13 @@ pub fn App() -> impl IntoView {
     <Link rel="manifest" href="/manifest.json" />
     <Router>
       <Routes fallback={NotFound}>
-        <ParentRoute path={(StaticSegment(""))} view={Root} ssr={SsrMode::Async}>
-          <Route path={(StaticSegment(""))} view={Default} />
-          <Route path={(StaticSegment("l"))} view={Login} />
+        <ParentRoute path={StaticSegment("")} view={Root} ssr={SsrMode::Async}>
+          <Route path={StaticSegment("")} view={Default} />
+          <Route path={StaticSegment("l")} view={Login} />
           <Route path={(StaticSegment("p"), ParamSegment("id"))} view={Post} />
           <Route path={(StaticSegment("c"), ParamSegment("name"))} view={Community} />
           <Route path={(StaticSegment("u"), ParamSegment("name"))} view={User} />
-          <Route path={(StaticSegment("s"))} view={Search} />
+          <Route path={StaticSegment("s")} view={Search} />
         </ParentRoute>
       </Routes>
     </Router>

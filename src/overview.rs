@@ -13,22 +13,14 @@ use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SortType, SubscribedType},
   lemmy_db_views::structs::PaginationCursor,
   post::{GetPosts, GetPostsResponse},
-  site::{GetSiteResponse, MyUserInfo},
+  site::GetSiteResponse,
 };
-use leptos::{
-  html::Div,
-  leptos_dom::helpers::TimeoutHandle,
-  logging::{error, log},
-  prelude::*,
-  task::*,
-  *,
-};
-use leptos_meta::*;
-use leptos_router::{components::*, location::State, params::ParamsMap, *};
+use leptos::{html::Div, leptos_dom::helpers::TimeoutHandle, logging::error, prelude::*, task::*, *};
+use leptos_router::{components::*, location::State, *};
 use leptos_use::*;
 use send_wrapper::SendWrapper;
 use std::{collections::BTreeMap, usize, vec};
-use web_sys::{Event, MouseEvent, ScrollToOptions, WheelEvent};
+use web_sys::{Event, MouseEvent, WheelEvent};
 
 #[component]
 pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl IntoView {
@@ -47,7 +39,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
   let intersection_element = NodeRef::<Div>::new();
   let on_scroll_element = NodeRef::<Div>::new();
 
-  let on_scroll = move |e: Event| {
+  let on_scroll = move |_e: Event| {
     #[cfg(not(feature = "ssr"))]
     if let Some(se) = on_scroll_element.get() {
       spawn_local_scoped_with_cancellation(async move {
@@ -206,8 +198,8 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
   );
 
   let details_resource = Resource::new(
-    move || (ssr_name.get()),
-    move |(name)| async move {
+    move || ssr_name.get(),
+    move |name| async move {
       if let Some(name) = name {
         let form = GetCommunity { id: None, name: Some(name) };
         let result = match LemmyClient.get_community(form.clone()).await {
@@ -227,7 +219,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
 
   let on_retry_site_click = move |_e: MouseEvent| {
     spawn_local_scoped_with_cancellation(async move {
-      LemmyClient.get_site().await;
+      let _ = LemmyClient.get_site().await;
     });
   };
 
@@ -272,7 +264,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
             {move || {
               match ssr_site.get() {
                 Some(Err(e)) => view! { <Error error={e} on_retry_click={Some(on_retry_site_click)} /> }.into_any(),
-                Some(Ok(s)) => view! {}.into_any(),
+                Some(Ok(_s)) => view! {}.into_any(),
                 _ => view! {}.into_any(),
               }
             }}

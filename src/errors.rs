@@ -1,7 +1,7 @@
 use core::num::ParseIntError;
 use lemmy_api_common::LemmyErrorType;
 use leptos::{
-  logging::{error, log},
+  logging::error,
   prelude::*,
 };
 use serde::{Deserialize, Serialize};

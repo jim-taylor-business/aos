@@ -6,15 +6,16 @@ use crate::{
   icon::{IconType::*, *},
 };
 use lemmy_api_common::{
-  lemmy_db_schema::{ListingType, SortType, source::site::Site},
-  lemmy_db_views::structs::{PaginationCursor, SiteView},
+  lemmy_db_schema::{ListingType, SortType},
+  lemmy_db_views::structs::PaginationCursor,
   post::{GetPostResponse, GetPosts, GetPostsResponse},
-  site::{GetSiteResponse, MyUserInfo},
+  site::GetSiteResponse,
 };
-use leptos::{html::Div, logging::log, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local_scoped_with_cancellation, *};
+use leptos::{html::Div, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local_scoped_with_cancellation, *};
 use leptos_router::{components::*, hooks::*, *};
 use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options};
 use std::collections::BTreeMap;
+
 use web_sys::{KeyboardEvent, MouseEvent, SubmitEvent, VisibilityState};
 
 #[server]
@@ -174,7 +175,7 @@ pub fn TopNav(
       let mut query_params = query.get();
       query_params.remove("page");
       query_params.remove("list");
-      let navigate = use_navigate();
+      let _navigate = use_navigate();
       if l != ListingType::All {
         query_params.insert("list", serde_json::to_string(&l).ok().unwrap_or("All".into()));
       }
@@ -322,7 +323,7 @@ pub fn TopNav(
   //   }
   // };
 
-  let on_navigate_login = move |e: MouseEvent| {
+  let _on_navigate_login = move |e: MouseEvent| {
     e.prevent_default();
     use_navigate()("/l", NavigateOptions::default());
   };
@@ -455,7 +456,7 @@ pub fn TopNav(
                               view! { <img class="h-8" src="/favicon.png" /> }.into_any()
                             }
                           }}
-                          <span class="hidden sm:flex">{move || { if let m = site_details.get() { m } else { "A.O.S".to_owned() } }}</span>
+                          <span class="hidden sm:flex">{move || { let m = site_details.get(); if m.len() > 0 { m } else { "A.O.S".to_owned() } }}</span>
                         </A>
                       </li>
                       <li class="hidden sm:flex z-[1]">
@@ -724,7 +725,7 @@ pub fn TopNav(
                         </details>
                       </li>
                       <Show
-                        when={move || { if let Some(u) = user_details.get() { true } else { false } }}
+                        when={move || { if let Some(_u) = user_details.get() { true } else { false } }}
                         fallback={move || {
                           view! {
                             <li>

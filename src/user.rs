@@ -4,46 +4,39 @@ use crate::{
   nav::TopNav,
   // i18n::*,
 };
-use crate::{comment::Comment, db::csr_indexed_db::*, errors::Loading, listing::Listing};
+use crate::{comment::Comment, db::csr_indexed_db::*, listing::Listing};
 use lemmy_api_common::{
   lemmy_db_schema::{
-    ListingType, SearchType, SortType, SubscribedType,
+    ListingType, SortType, SubscribedType,
     aggregates::structs::PostAggregates,
     newtypes::{InstanceId, PostId},
   },
   lemmy_db_views::structs::{CommentView, PostView},
   person::GetPersonDetails,
-  site::{GetSiteResponse, Search, SearchResponse},
+  site::GetSiteResponse,
 };
-use leptos::{
-  html::Div,
-  logging::{error, log},
-  prelude::*,
-  task::*,
-  *,
-};
-use leptos_meta::Title;
+use leptos::{html::Div, prelude::*, task::*, *};
 use leptos_router::hooks::*;
-use std::{usize, vec};
+use std::vec;
 use web_sys::{MouseEvent, WheelEvent};
 
 #[component]
 pub fn User() -> impl IntoView {
   // let i18n = use_i18n();
-  let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
+  let _ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   let param = use_params_map();
   let ssr_name = move || param.get().get("name").unwrap_or("".into());
 
   let query = use_query_map();
 
-  let ssr_list = move || serde_json::from_str::<ListingType>(&query.get().get("list").unwrap_or("".into())).unwrap_or(ListingType::All);
-  let ssr_sort = move || serde_json::from_str::<SortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(SortType::Active);
+  let _ssr_list = move || serde_json::from_str::<ListingType>(&query.get().get("list").unwrap_or("".into())).unwrap_or(ListingType::All);
+  let _ssr_sort = move || serde_json::from_str::<SortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(SortType::Active);
   let ssr_page = move || serde_json::from_str::<Vec<u32>>(&query.get().get("page").unwrap_or("".into())).unwrap_or(vec![1u32]);
-  let ssr_term = move || query.get().get("term").unwrap_or("".into());
+  let _ssr_term = move || query.get().get("term").unwrap_or("".into());
 
   let next_page_cursor: RwSignal<u32> = RwSignal::new(0);
 
-  let loading = RwSignal::new(false);
+  let _loading = RwSignal::new(false);
   let intersection_element = NodeRef::<Div>::new();
   let on_scroll_element = NodeRef::<Div>::new();
 
@@ -93,8 +86,8 @@ pub fn User() -> impl IntoView {
   }
 
   let user_resource = Resource::new(
-    move || (ssr_name()),
-    move |(name)| async move {
+    move || ssr_name(),
+    move |name| async move {
       let form = GetPersonDetails {
         username: Some(name),
         saved_only: None,
@@ -161,8 +154,8 @@ pub fn User() -> impl IntoView {
                 Some(Err(e)) => view! { <Error error={e} on_retry_click={None::<fn(MouseEvent) -> ()>} /> }.into_any(),
                 Some(Ok(Some(s))) => {
                   let t = s.clone();
-                  let old_posts = Memo::new(move |_| t.posts.clone());
-                  let old_comments = Memo::new(move |_| t.comments.clone());
+                  let _old_posts = Memo::new(move |_| t.posts.clone());
+                  let _old_comments = Memo::new(move |_| t.comments.clone());
                   let name = s.person_view.person.name;
                   let banner = Memo::new(move |_| s.person_view.person.banner.clone());
                   let avatar = Memo::new(move |_| s.person_view.person.avatar.clone());
@@ -326,7 +319,7 @@ pub fn User() -> impl IntoView {
 
                     <For each={move || all_posts.get()} key={|pc| pc.post.post.id} let:pc>
                       <div class="pt-4 odd:bg-base-200">
-                        <Listing hide=false post_view={pc.post} post_number=0 reply_show={RwSignal::new(false)} />
+                        <Listing hide=false post_view={pc.post} post_number=0 /*reply_show={RwSignal::new(false)}*/ />
                         <For each={move || pc.comments.get()} key={|cv| cv.comment.id} let:cv>
                           <div class="pt-2 pr-4 pb-4 pl-8">
                             <Comment

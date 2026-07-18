@@ -1,5 +1,5 @@
 use crate::{
-  client::*,
+  // client::*,
   errors::{LemmyAppError, LemmyAppErrorType},
   icon::{Icon, IconType::*},
   *,
@@ -8,10 +8,9 @@ use lemmy_api_common::{
   person::{Login, LoginResponse},
   site::GetSiteResponse,
 };
-use leptos::{logging::log, prelude::*, task::spawn_local_scoped_with_cancellation};
+use leptos::{prelude::*, task::spawn_local_scoped_with_cancellation};
 use leptos_meta::Title;
-use leptos_router::{hooks::*, *};
-use leptos_use::{UseTimeoutFnReturn, use_timeout_fn};
+use leptos_router::hooks::*;
 use web_sys::MouseEvent;
 
 fn validate_login(form: &Login) -> Option<LemmyAppErrorType> {

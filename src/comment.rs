@@ -11,7 +11,7 @@ use lemmy_api_common::{
   lemmy_db_views::structs::{CommentView, LocalUserView},
   site::{GetModlog, GetSiteResponse, MyUserInfo},
 };
-use leptos::{html::Textarea, logging::log, prelude::*, task::*, *};
+use leptos::{html::Textarea, prelude::*, task::*, *};
 use leptos_dom::helpers::TimeoutHandle;
 use leptos_router::{
   components::{A, Form},
@@ -277,7 +277,7 @@ pub fn Comment(
       _visibility_element,
       move |_entries, _io| {
         if let Some(v) = _visibility_element.get() {
-          v.focus();
+          let _ = v.focus();
         }
       },
       UseIntersectionObserverOptions::default(),

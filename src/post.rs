@@ -1,5 +1,5 @@
 use crate::{
-  OnlineSetter, ReadInstanceCookie, WriteInstanceCookie,
+  OnlineSetter, ReadInstanceCookie,
   client::*,
   comments::Comments,
   db::csr_indexed_db::*,
@@ -12,11 +12,10 @@ use lemmy_api_common::{
   comment::{CreateComment, GetComments},
   lemmy_db_schema::{CommentSortType, SortType, newtypes::PostId},
   post::{GetPost, GetPostResponse},
-  site::{GetSiteResponse, MyUserInfo},
+  site::GetSiteResponse,
 };
 use leptos::{
   html::{Div, Textarea},
-  logging::log,
   prelude::*,
   task::*,
   *,
@@ -97,7 +96,7 @@ pub fn Post() -> impl IntoView {
         Ok(o) => {
           query_params.insert("sort", o);
         }
-        Err(e) => {}
+        Err(_e) => {}
       }
       if CommentSortType::Top == s {
         query_params.remove("sort");
@@ -131,7 +130,7 @@ pub fn Post() -> impl IntoView {
   let _visibility_element = NodeRef::<Textarea>::new();
 
   let on_scroll_element = NodeRef::<Div>::new();
-  let on_scroll = move |e: Event| {
+  let on_scroll = move |_e: Event| {
     #[cfg(not(feature = "ssr"))]
     if let Some(se) = on_scroll_element.get() {
       spawn_local_scoped_with_cancellation(async move {
@@ -152,7 +151,7 @@ pub fn Post() -> impl IntoView {
       _visibility_element,
       move |_entries, _io| {
         if let Some(v) = _visibility_element.get() {
-          v.focus();
+          let _ = v.focus();
         }
       },
       UseIntersectionObserverOptions::default(),

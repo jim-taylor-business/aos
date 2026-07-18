@@ -33,7 +33,7 @@ fn main() {
         .with_state(leptos_options);
 
       if let Ok(listener) = tokio::net::TcpListener::bind(&bind_address).await {
-        if let Ok(a) = axum::serve(listener, service_router.into_make_service()).await {
+        if let Ok(_a) = axum::serve(listener, service_router.into_make_service()).await {
         } else {
           log!("server did not start");
         }
