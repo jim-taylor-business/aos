@@ -1,6 +1,5 @@
 use core::num::ParseIntError;
 use lemmy_api_common::LemmyErrorType;
-use leptos::prelude::*;
 use leptos::{
   logging::{error, log},
   prelude::*,

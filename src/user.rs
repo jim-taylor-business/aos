@@ -1,20 +1,18 @@
-use crate::comment::Comment;
-use crate::db::csr_indexed_db::*;
-use crate::errors::Loading;
-use crate::listing::Listing;
 use crate::{
   client::*,
   errors::{Error, LemmyAppError},
   nav::TopNav,
   // i18n::*,
 };
-use lemmy_api_common::lemmy_db_schema::SubscribedType;
-use lemmy_api_common::lemmy_db_schema::aggregates::structs::PostAggregates;
-use lemmy_api_common::lemmy_db_schema::newtypes::{InstanceId, PostId};
-use lemmy_api_common::lemmy_db_views::structs::{CommentView, PostView};
-use lemmy_api_common::person::GetPersonDetails;
+use crate::{comment::Comment, db::csr_indexed_db::*, errors::Loading, listing::Listing};
 use lemmy_api_common::{
-  lemmy_db_schema::{ListingType, SearchType, SortType},
+  lemmy_db_schema::{
+    ListingType, SearchType, SortType, SubscribedType,
+    aggregates::structs::PostAggregates,
+    newtypes::{InstanceId, PostId},
+  },
+  lemmy_db_views::structs::{CommentView, PostView},
+  person::GetPersonDetails,
   site::{GetSiteResponse, Search, SearchResponse},
 };
 use leptos::{

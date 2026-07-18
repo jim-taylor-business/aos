@@ -304,7 +304,7 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
               // log!("L UP");
 
               view! {
-                <div 
+                <div
                 class={move || {
                   format!(
                     "grid gap-x-4 px-4 grid-cols-[6rem_1fr] break-inside-avoid {}{}",

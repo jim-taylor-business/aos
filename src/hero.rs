@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use crate::{
   OnlineSetter, ReadAuthCookie, ReadInstanceCookie, WriteInstanceCookie,
   client::*,
@@ -29,6 +27,7 @@ use leptos::{
 use leptos_meta::*;
 use leptos_router::{components::A, hooks::*};
 use leptos_use::{UseIntersectionObserverOptions, use_intersection_observer_with_options};
+use std::collections::BTreeMap;
 use web_sys::{HtmlAnchorElement, HtmlImageElement, WheelEvent, wasm_bindgen::JsCast};
 
 #[component]

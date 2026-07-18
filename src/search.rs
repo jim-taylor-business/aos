@@ -1,5 +1,3 @@
-use crate::db::csr_indexed_db::*;
-use crate::errors::Loading;
 use crate::{
   client::*,
   errors::LemmyAppError,
@@ -7,6 +5,7 @@ use crate::{
   nav::TopNav,
   // i18n::*,
 };
+use crate::{db::csr_indexed_db::*, errors::Loading};
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SearchType, SortType},
   site::{GetSiteResponse, Search, SearchResponse},

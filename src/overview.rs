@@ -1,6 +1,4 @@
-use crate::ReadAuthCookie;
-use crate::db::csr_indexed_db::*;
-use crate::errors::Offline;
+use crate::{ReadAuthCookie, db::csr_indexed_db::*, errors::Offline};
 use crate::{
   // i18n::*,
   client::*,
@@ -10,14 +8,12 @@ use crate::{
   nav::TopNav,
 };
 use hooks::*;
-use lemmy_api_common::community::GetCommunity;
-use lemmy_api_common::lemmy_db_schema::SubscribedType;
-use lemmy_api_common::site::MyUserInfo;
 use lemmy_api_common::{
-  lemmy_db_schema::{ListingType, SortType},
+  community::GetCommunity,
+  lemmy_db_schema::{ListingType, SortType, SubscribedType},
   lemmy_db_views::structs::PaginationCursor,
   post::{GetPosts, GetPostsResponse},
-  site::GetSiteResponse,
+  site::{GetSiteResponse, MyUserInfo},
 };
 use leptos::{
   html::Div,
@@ -28,8 +24,7 @@ use leptos::{
   *,
 };
 use leptos_meta::*;
-use leptos_router::params::ParamsMap;
-use leptos_router::{components::*, location::State, *};
+use leptos_router::{components::*, location::State, params::ParamsMap, *};
 use leptos_use::*;
 use send_wrapper::SendWrapper;
 use std::{collections::BTreeMap, usize, vec};
