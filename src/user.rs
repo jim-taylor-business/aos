@@ -97,7 +97,6 @@ pub fn User() -> impl IntoView {
   let user_resource = Resource::new(
     move || (ssr_name()),
     move |(name)| async move {
-      // if let Some(name) = name {
       let form = GetPersonDetails {
         username: Some(name),
         saved_only: None,
@@ -112,9 +111,6 @@ pub fn User() -> impl IntoView {
         Err(e) => Err(e),
       };
       result
-      // } else {
-      //   Ok(None)
-      // }
     },
   );
 
@@ -161,15 +157,8 @@ pub fn User() -> impl IntoView {
             }
           }}
           node_ref={on_scroll_element}
-          class=
-          // {move || {
-          //   format!(
-              "sm:h-[calc(100%-4rem)] min-w-full sm:absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[23rem] sm:px-4 gap-4{}" //,
-              // if loading.get() { " opacity-25" } else { "" },
-          //   )
-          // }}
-        >
-          // <Loading loading=true />
+          class="sm:h-[calc(100%-4rem)] min-w-full sm:absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[23rem] sm:px-4 gap-4{}"
+          >
           <Transition fallback={|| {}}>
             {move || {
               match user_resource.get() {
@@ -182,8 +171,6 @@ pub fn User() -> impl IntoView {
                   let t = s.clone();
                   let old_posts = Memo::new(move |_| t.posts.clone());
                   let old_comments = Memo::new(move |_| t.comments.clone());
-
-                  // log!("old {} {}", old_comments.get().len(), old_posts.get().len());
 
                   let name = s.person_view.person.name;
                   let banner = Memo::new(move |_| s.person_view.person.banner.clone());
@@ -245,8 +232,6 @@ pub fn User() -> impl IntoView {
                     ap.sort_by(|a, b| a.post.post.published.cmp(&b.post.post.published).reverse());
                   });
 
-                  // log!("{} {}", all_posts.get().len(), all_posts.get().iter().flat_map(|p| p.comments.get().clone()).collect::<Vec<_>>().len());
-
                   let bio = if let Some(bio) = s.person_view.person.bio {
                     let mut options = pulldown_cmark::Options::empty();
                     options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
@@ -303,11 +288,6 @@ pub fn User() -> impl IntoView {
                             }.into_any()
                           } else {
                             view! {
-                              // <div class="py-2 px-4">
-                              //   <div class="block">
-                              //     <img class="h-16" src="/lemmy.svg" />
-                              //   </div>
-                              // </div>
                             }.into_any()
                           }
                         }}
@@ -347,70 +327,7 @@ pub fn User() -> impl IntoView {
                         <div class="prose select-none" inner_html={bio} />
                       </div>
                     </div>
-                    // <For each={move || old_posts.get()} key={|pv| pv.post.id} let:pv>
-                    // <div class="odd:bg-base-200">
-                    //   <Listing post_view={pv} post_number={0} reply_show={RwSignal::new(false)} />
-                    // </div>
-                    // </For>
-                    // <For each={move || old_comments.get()} key={|cv| cv.comment.id} let:cv>
-                    // <div class="odd:bg-base-200">
-                    //   {
-                    //     let p = PostView {
-                    //       post: cv.post.clone(),
-                    //       creator: cv.creator.clone(),
-                    //       community: cv.community.clone(),
-                    //       creator_banned_from_community: false,
-                    //       creator_is_moderator: false,
-                    //       creator_is_admin: false,
-                    //       counts: PostAggregates {
-                    //         post_id: PostId(0),
-                    //         comments: 0,
-                    //         score: 0,
-                    //         upvotes: 0,
-                    //         downvotes: 0,
-                    //         published: chrono::offset::Utc::now(),
-                    //         newest_comment_time_necro: chrono::offset::Utc::now(),
-                    //         newest_comment_time: chrono::offset::Utc::now(),
-                    //         featured_community: false,
-                    //         featured_local: false,
-                    //         hot_rank: 0f64,
-                    //         hot_rank_active: 0f64,
-                    //         community_id: cv.community.id,
-                    //         creator_id: cv.creator.id,
-                    //         controversy_rank: 0f64,
-                    //         instance_id: InstanceId(0),
-                    //         scaled_rank: 0f64,
-                    //       },
-                    //       subscribed: SubscribedType::NotSubscribed,
-                    //       saved: false,
-                    //       read: false,
-                    //       creator_blocked: false,
-                    //       my_vote: None,
-                    //       unread_comments: 0,
-                    //       banned_from_community: false,
-                    //       hidden: false,
-                    //       image_details: None,
-                    //     };
 
-                    //     view! {
-                    //       <Listing post_view={p} post_number={0} reply_show={RwSignal::new(false)} />
-                    //     }
-                    //   }
-                    //   // <Listing post_view={cv.post} post_number={0} reply_show={RwSignal::new(false)} />
-                    //   <div class=" pr-4 pt-2 pb-4 pl-8">
-                    //   <Comment
-                    //     parent_comment_id=0
-                    //     hidden_comments={RwSignal::new(vec![])}
-                    //     comment={cv.clone().into()}
-                    //     comments={vec![].into()}
-                    //     level=0
-                    //     now_in_millis
-                    //     highlight_user_id={RwSignal::new(None)}
-                    //     post_id=Signal::derive(move || Some(cv.post.id.0))
-                    //   />
-                    //   </div>
-                    //   </div>
-                    // </For>
                     <For each={move || all_posts.get()} key={|pc| pc.post.post.id} let:pc>
                       <div class="odd:bg-base-200 pt-4">
                         <Listing hide=false post_view={pc.post} post_number={0} reply_show={RwSignal::new(false)} />

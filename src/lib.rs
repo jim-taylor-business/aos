@@ -73,8 +73,6 @@ pub struct ReadThemeCookie(Signal<Option<String>>);
 pub struct WriteThemeCookie(WriteSignal<Option<String>>);
 
 pub fn html_template(options: LeptosOptions) -> impl IntoView {
-  // let l = leptos_meta::link::Link::new().rel("preload").href("/font.woff2").as_("font").type_("font/woff2").cross_origin("anonymous").into_head();
-
   view! {
     <!DOCTYPE html>
     <html lang="en">
@@ -108,9 +106,6 @@ fn NotFound() -> impl IntoView {
       <div class="py-4 px-8 break-inside-avoid">
         <div class="flex justify-between alert alert-warning alert-soft">
           <span class="text-lg">"Not Found"</span>
-        // <span on:click={on_retry_click} class="btn btn-sm">
-        // "Retry"
-        // </span>
         </div>
       </div>
     </div>
@@ -150,11 +145,6 @@ pub fn App() -> impl IntoView {
   let comments_browser_cache: RwSignal<BTreeMap<(GetComments, Option<String>), (i64, LemmyAppResult<GetCommentsResponse>)>> =
     RwSignal::new(BTreeMap::new());
   provide_context(comments_browser_cache);
-  // let search_cache: RwSignal<BTreeMap<(usize, String, ListingType, SortType, String), Option<GetPostsResponse>>> = RwSignal::new(BTreeMap::new());
-  // provide_context(response_cache);
-
-  // let scroll_element: RwSignal<Option<NodeRef<Div>>> = RwSignal::new(None);
-  // provide_context(scroll_element);
 
   let (get_auth_cookie, set_auth_cookie) =
     use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
@@ -187,57 +177,18 @@ pub fn App() -> impl IntoView {
     set_theme_cookie.set(Some(t));
   }
 
-  // let ssr_site_signal: RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>> = RwSignal::new(None);
-  // let ssr_site_signal: RwSignal<Option<GetSiteResponse>> = RwSignal::new(None);
-  // let ssr_user_signal: RwSignal<Option<MyUserInfo>> = RwSignal::new(None);
-
   let ssr_site = Resource::new(
     move || (),
     move |()| async move {
       let result: Result<GetSiteResponse, LemmyAppError> = { LemmyClient.get_site().await };
       match result {
-        Ok(o) => {
-          // log!("GET {}", o.my_user.is_some());
-          // ssr_site_signal.set(Some(o.clone()));
-          // ssr_user_signal.set(o.my_user.clone());
-          Ok(o)
-        }
+        Ok(o) => Ok(o),
         Err(e) => Err(e),
       }
     },
   );
 
-  // // let s = LemmyClient.get_site_blocking();
-  // // ssr_site_signal.set(Some(s));
-
   provide_context(ssr_site);
-  // provide_context(ssr_site_signal);
-  // provide_context(ssr_user_signal);
-
-  // let formatter = move |text: String| match ssr_site_signal.get() {
-  //   Some(site) => {
-  //     if text.len() > 0 {
-  //       if let Some(d) = site.site_view.site.description {
-  //         format!("{} - AOS for {} - {}", text, site.site_view.site.name, d)
-  //       } else {
-  //         format!("{} - AOS for {}", text, site.site_view.site.name)
-  //       }
-  //     } else {
-  //       if let Some(d) = site.site_view.site.description {
-  //         format!("AOS for {} - {}", site.site_view.site.name, d)
-  //       } else {
-  //         format!("AOS for {}", site.site_view.site.name)
-  //       }
-  //     }
-  //   }
-  //   _ => "AOS".to_owned(),
-  // };
-
-  // log!("APP");
-
-  // ssr_site.get_untracked().map(|s| {
-  //   ssr_site_signal.set(Some(s));
-  // });
 
   view! {
     <Transition fallback={|| {}}>
@@ -247,8 +198,6 @@ pub fn App() -> impl IntoView {
           .map(|s| {
             match s {
               Ok(site) => {
-                // ssr_site_signal.set(Some(Ok(site.clone())));
-                // log!("SET");
                 if let Some(d) = site.site_view.site.description {
                   view! {
                     <Title formatter={move |text: String|
@@ -259,7 +208,6 @@ pub fn App() -> impl IntoView {
                       }
                     } text="" />
                   }
-                  // format!("{} - AOS for {} - {}", text, site.site_view.site.name, d)
                 } else {
                   view! {
                     <Title formatter={move |text: String|
@@ -287,12 +235,9 @@ pub fn App() -> impl IntoView {
           })
       }}
     </Transition>
-    // <Title formatter text="" />
     <Stylesheet id="leptos" href="/pkg/aos.css" />
     <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico" />
     <Link rel="manifest" href="/manifest.json" />
-    // <Meta name="description" content={formatter("".into())} />
-    // <Transition fallback={|| {}}>
     <Router>
       <Routes fallback={NotFound}>
         <ParentRoute path={(StaticSegment(""))} view={Root} ssr={SsrMode::Async}>
@@ -305,16 +250,6 @@ pub fn App() -> impl IntoView {
         </ParentRoute>
       </Routes>
     </Router>
-    //   {move || {
-    //     ssr_site
-    //       .get_untracked()
-    //       .map(|s| {
-    //         ssr_site_signal.set(Some(s));
-    //         // view! {
-    //         // }
-    //       })
-    //   }}
-    // </Transition>
   }
 }
 

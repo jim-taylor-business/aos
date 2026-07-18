@@ -10,7 +10,6 @@ pub fn Listings(posts: Signal<Vec<PostView>>, page_number: RwSignal<usize>, hide
       {
         post_number.set(post_number.get() + 1);
         if post_number.get() < 2usize {
-          // log!("LIST");
           view! {
             <Hero hide post_id={Signal::derive(move || pv.post.id)} post_number={post_number.get()} />
           }.into_any()

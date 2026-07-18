@@ -166,7 +166,6 @@ pub fn Post() -> impl IntoView {
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
 
   view! {
-    // <Transition fallback={|| {}}>
     <main class="flex flex-col">
       <TopNav scroll_element=on_scroll_element.into() default_sort={SortType::TopAll.into()} post_view />//={post_view.into()} />
       <div class="flex flex-grow">
@@ -177,7 +176,6 @@ pub fn Post() -> impl IntoView {
             } else {
 
             if e.delta_x() != 0.0 {
-              // log!("{} {} {}", e.delta_y().abs() / e.delta_x().abs() , e.delta_x(), e.delta_y());
               if e.delta_y().abs() / e.delta_x().abs() < 0.3 {
               } else {
                 e.prevent_default();
@@ -193,17 +191,11 @@ pub fn Post() -> impl IntoView {
             }
 
             }
-
-            // if let Some(se) = on_scroll_element.get() {
-            //   se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
-            // }
           }}
           node_ref={on_scroll_element}
           class="gap-4 min-w-full sm:overflow-x-auto sm:overflow-y-hidden sm:absolute sm:px-4 sm:h-[calc(100%-4rem)] sm:columns-[23rem]"
           style="column-fill: auto"
         >
-        // <A href="/c/technology"> "TECH" </A>
-        // <A href="/"> "ROOT" </A>
           <div>
             <Transition fallback={|| {}}>
               {move || {
@@ -598,20 +590,10 @@ pub fn Post() -> impl IntoView {
                   }
                   Some(None) | None => {
                     view! {
-                      // <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
-                      //   <div class="py-4 px-8">
-                      //     <div class="alert alert-info alert-soft">
-                      //       <span>"Loading"</span>
-                      //     </div>
-                      //   </div>
-                      // </div>
                     }.into_any()
                   }
                 }
               }}
-            // </Transition>
-            // <Transition fallback={|| {}}>
-
               {move || {
                 comments_resource
                   .get()
@@ -628,7 +610,7 @@ pub fn Post() -> impl IntoView {
                         }
                       });
                       let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-                      if iw < 768f64 /*|| p.5*/ {} else {
+                      if iw < 768f64 {} else {
                         if let Some(c) = cancel_handle.get_untracked() {
                           c.clear();
                         }
@@ -671,6 +653,5 @@ pub fn Post() -> impl IntoView {
         </div>
       </div>
     </main>
-    // </Transition>
   }
 }

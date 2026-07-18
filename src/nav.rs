@@ -33,7 +33,6 @@ pub async fn logout_fn() -> Result<(), ServerFnError> {
   let result = LemmyClient.logout().await;
   match result {
     Ok(_o) => {
-      // let WriteAuthCookie(set_auth_cookie) = expect_context::<WriteAuthCookie>();
       set_auth_cookie.set(None);
       Ok(())
     }
@@ -76,7 +75,6 @@ pub async fn change_lang_fn(lang: String) -> Result<(), ServerFnError> {
 pub async fn change_theme(theme: String) -> Result<(), ServerFnError> {
   let (_, set_theme_cookie) =
     use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
-  // log!("{}", theme);
   set_theme_cookie.set(Some(theme));
   Ok(())
 }
@@ -95,7 +93,6 @@ pub fn TopNav(
   let WriteThemeCookie(set_theme_cookie) = expect_context::<WriteThemeCookie>();
   let _online = expect_context::<RwSignal<OnlineSetter>>();
   let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>), (i64, LemmyAppResult<GetPostsResponse>)>>>();
-  // let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
 
   let query = use_query_map();
   let _ssr_query_error =
@@ -127,7 +124,6 @@ pub fn TopNav(
             page_cursor: None,
           },
           get_auth_cookie.get_untracked(),
-          // Some(logged_in.get()),
         ));
       });
       let mut query_params = query.get();
@@ -173,7 +169,6 @@ pub fn TopNav(
             page_cursor: None,
           },
           get_auth_cookie.get_untracked(),
-          // Some(logged_in.get()),
         ));
       });
       let mut query_params = query.get();
@@ -226,18 +221,12 @@ pub fn TopNav(
           let WriteAuthCookie(set_auth_cookie) = expect_context::<WriteAuthCookie>();
           set_auth_cookie.set(None);
           ssr_site.refetch();
-          // ssr_site_signal.update(|s| {
-          //   if let Some(Ok(t)) = s {
-          //     t.my_user = None;
-          //   }
-          // });
         }
         Err(_e) => {}
       }
     });
   };
 
-  // let search_action = ServerAction::<SearchFn>::new();
   let search_term = RwSignal::new("".to_owned());
 
   let display_title = Signal::derive(move || {
@@ -272,9 +261,7 @@ pub fn TopNav(
   let WriteInstanceCookie(set_instance_cookie) = expect_context::<WriteInstanceCookie>();
 
   let instance_term = RwSignal::new(get_instance_cookie.get());
-  // let instance_action = ServerAction::<InstanceFn>::new();
   let on_instance_submit = move || {
-    // e.prevent_default();
     still_pressed.set(false);
     if instance_term.get().unwrap_or("".into()).len() > 0 {
       set_instance_cookie.set(instance_term.get());
@@ -305,19 +292,12 @@ pub fn TopNav(
           page_cursor: None,
         },
         get_auth_cookie.get_untracked(),
-        // Some(logged_in.get()),
       ));
     });
     #[cfg(not(feature = "ssr"))]
     spawn_local_scoped_with_cancellation(async move {
       if let Ok(d) = IndexedDb::new().await {
         let _ = d.set(&ScrollPositionKey { path: "/".into(), query: "".into() }, &0i32).await;
-        // ssr_site_signal.set(Some(LemmyClient.get_site().await));
-        // ssr_site.refetch();
-        // let mut query_params = query.get();
-        // query_params.remove("page".into());
-        // let navigate = ;
-        // &format!("{}{}", use_location().pathname.get(), "".to_owned())
         use_navigate()("/", Default::default());
       }
     });
@@ -395,11 +375,9 @@ pub fn TopNav(
             prop:value={move || instance_term.get()}
             // on:submit={on_instance_submit}
             on:keypress={move |e: KeyboardEvent| {
-              // log!("{}", e.key());
               if e.key() == "Enter" {
                 e.prevent_default();
                 on_instance_submit()
-                // use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
               }
             }}
             on:input={move |ev| {
@@ -420,7 +398,6 @@ pub fn TopNav(
                 e.prevent_default();
                 if still_pressed.get() {
                   still_pressed.set(false);
-                  // e.prevent_default();
                 } else {
                   next_page_cursor.set((0, None));
                   #[cfg(not(feature = "ssr"))]
@@ -458,33 +435,26 @@ pub fn TopNav(
                         ),
                       );
                     });
-                    // log!("set");
                     use_navigate()("/", Default::default());
                   });
-                  // if let Some(on_scroll_element) = scroll_element.get() {
-                  //   if let Some(se) = on_scroll_element.get() {
-                  //     se.set_scroll_left(0i32);
-                  //   }
-                  // }
+                  if let Some(on_scroll_element) = scroll_element.get() {
+                    if let Some(se) = on_scroll_element.get() {
+                      se.set_scroll_left(0i32);
+                    }
+                  }
                 }
               }}
             >
-              // <Transition fallback={|| {}}>
               {move || {
                 if let Some(i) = icon_details.get() {
-                // if let Some(GetSiteResponse { site_view: SiteView { site: Site { icon: Some(i), .. }, .. }, .. }) = ssr_site_signal.get() {
                   view! { <img class="h-8 sm:hidden" src={i.inner().to_string()} /> }.into_any()
                 } else {
                   view! { <img class="h-8" src="/favicon.png" /> }.into_any()
                 }
               }}
               <span class="hidden sm:flex">
-              // {move || { if let Some(m) = ssr_site_signal.get() { m.site_view.site.name } else { "A.O.S".to_owned() } }}
                 {move || { if let m = site_details.get() { m } else { "A.O.S".to_owned() } }}
-              // {move || { if let Some(Ok(m)) = ssr_site.get() { m.site_view.site.name } else { "A.O.S".to_owned() } }}
-                // {move || { if let Some(Ok(m)) = ssr_site.get() { m.site_view.site.name } else { "A.O.S".to_owned() } }}
               </span>
-              // </Transition>
             </A>
           </li>
           <li class="hidden sm:flex z-[1]">
@@ -504,7 +474,6 @@ pub fn TopNav(
                     format!(
                       "{}{}",
                       highlight_csr_filter(ListingType::Subscribed),
-                      // if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { "" } else { " btn-disabled" },
                       if logged_in.get() { "" } else { " btn-disabled" },
                     )
                   }}
@@ -589,7 +558,6 @@ pub fn TopNav(
                           format!(
                             "{}{}",
                             highlight_csr_filter(ListingType::Subscribed),
-                            // if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { "" } else { " btn-disabled" },
                             if logged_in.get() { "" } else { " btn-disabled" },
                           )
                         }}
@@ -760,25 +728,13 @@ pub fn TopNav(
               </ul>
             </details>
           </li>
-          // <Transition fallback={|| {}}>
-          //   {move || {
-          //     match ssr_site.get() {
-          //       None => view! {}.into_any(),
-          //       _ => view! {
           <Show
             when={move || { if let Some(u) = user_details.get() { true } else { false } }}
-            // when={move || { if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { true } else { false } }}
-            // when={move || logged_in.get()}
-            // when=logg
             fallback={move || {
               view! {
                 <li>
                   <A href="/l">
-                  // <form class="p-0" action="/l" method="POST" on:click={on_navigate_login}>
-                    // <button class="py-2 px-4" type="submit">
                       <Icon icon={SignIn} />
-                    // </button>
-                  // </form>
                   </A>
                 </li>
               }
@@ -868,10 +824,6 @@ pub fn TopNav(
               </details>
             </li>
           </Show>
-          //       }.into_any(),
-          //     }
-          //   }}
-          // </Transition>
         </ul>
       </div>
     </nav>

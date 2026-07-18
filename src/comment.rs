@@ -30,20 +30,8 @@ pub fn Comment(
   hidden_comments: RwSignal<Vec<i32>>,
   highlight_user_id: RwSignal<Option<PersonId>>,
   post_id: Signal<Option<i32>>,
-  // #[prop(optional_no_strip)] close_level: Option<usize>,
 ) -> impl IntoView {
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
-  // let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
-  // let logged_in = move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site_signal.get() { true } else { false };
-  // let logged_in = {
-  //   move || {
-  //     if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { true } else { false }
-  //   }
-  // };
-  // let ssr_site_signal = expect_context::<RwSignal<Option<GetSiteResponse>>>();
-  // let ssr_user_signal = expect_context::<RwSignal<Option<MyUserInfo>>>();
-  // let logged_in = move || false; //ssr_user_signal.get().is_some();
-  // let logged_in_s = move |s| { s.my_user.is_some() };
   let online = expect_context::<RwSignal<OnlineSetter>>();
 
   let on_toggle = move |i: i32| {
@@ -61,11 +49,6 @@ pub fn Comment(
       }
     });
   };
-
-  // let current_person = move || {
-  //   // if let Some(Ok(GetSiteResponse { my_user: Some(MyUserInfo { local_user_view: LocalUserView { person, .. }, .. }), .. })) = ssr_site.get() {
-  //   if let Some(MyUserInfo { local_user_view: LocalUserView { person, .. }, .. }) = ssr_user_signal.get() { Some(person) } else { None }
-  // };
 
   let mut comments_descendants = comments.get().clone();
   let id = comment.get().comment.id.to_string();
@@ -96,9 +79,6 @@ pub fn Comment(
     let content = comment_view.get().comment.content;
     let mut safe_html = String::new();
 
-    // if level < 4 {
-    // } else if level > 4 {
-    // } else {
     let mut options = pulldown_cmark::Options::empty();
     options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
     options.insert(pulldown_cmark::Options::ENABLE_TABLES);
@@ -120,10 +100,7 @@ pub fn Comment(
       }
       _ => event,
     });
-
-    // log!("{:#?}", content);
     pulldown_cmark::html::push_html(&mut safe_html, custom);
-    // }
 
     safe_html
   });
@@ -314,7 +291,6 @@ pub fn Comment(
         if level > 8 { "" } else { "pl-4" },
         if level == 1 { " odd:bg-base-200 pr-4 pt-2 pb-1" } else { "" },
         if !hidden_comments.get().contains(&parent_comment_id) { "" } else { " hidden" },
-        // if let Some(l) = close_level { if l == (level - 1) { " hidden" } else { "" }} else { "" },
       )
     }}>
       <div
@@ -419,13 +395,9 @@ pub fn Comment(
                 Some(Ok(s)) => {
                   let is_user = s.my_user.is_some();
                   let logged_in = Memo::new(move |_| { is_user });
-                  // let logged_in = Memo::new(move |_| { if let Some(ref u) = s.my_user {true} else {false} } );
                   let current_person = Memo::new(move |_| {
                     if let GetSiteResponse { my_user: Some(MyUserInfo { local_user_view: LocalUserView { ref person, .. }, .. }), .. } = s { Some(person.clone()) } else { None }
-                    // if let MyUserInfo { local_user_view: LocalUserView { person, .. }, .. } = s.my_user { Some(person) } else { None }
                   });
-
-                  // log!("C UP");
                   view! {
 
             <Form action="POST" attr:class="flex items-center">
@@ -576,7 +548,6 @@ pub fn Comment(
                 href={move || {let a = comment_view.get().creator.actor_id; if let Some(domain) = a.domain() { format!("{}@{}", a.path(), domain) } else { format!("{}", a) }}}
                 attr:class="text-sm hover:text-secondary"
               >
-              // <a href={move || format!("{}", comment_view.get().creator.actor_id)} target="_blank" class="text-sm hover:text-secondary">
                 <span inner_html={html_escape::encode_safe(&comment_view.get().creator.actor_id.to_string()[8..]).to_string()} />
               </A>
             </span>
@@ -685,9 +656,6 @@ pub fn Comment(
           </Show>
         </div>
       </Show>
-      // {
-      //   let n = {if let Some(c) = close_level { Some(c) } else { None } };
-      // }
 
       <For each={move || children.get()} key={|cv| cv.comment.id} let:cv>
         <Comment
@@ -699,10 +667,6 @@ pub fn Comment(
           now_in_millis
           highlight_user_id
           post_id
-          // close_level
-          // { .. }
-          // {if let Some(c) = close_level { close_level } else { .. }}
-          // close_level=close_level.unwrap_or(None)
         />
       </For>
     </div>

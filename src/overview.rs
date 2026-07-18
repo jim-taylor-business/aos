@@ -385,11 +385,8 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                             </button>
                           </Form>
                           <Form action="PUT" attr:class="flex items-center">
-                            // <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
-                            // <input type="hidden" name="save" value={move || format!("{}", !post_view.get().saved)} />
                             <button
                               type="submit"
-                              // on:click={on_save_submit}
                               title="Subscribed"
                               class={move || {
                                 format!(
@@ -397,16 +394,6 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                                   { if follow.get() == SubscribedType::Subscribed { "text-accent" } else { "" } },
                                 )
                               }}
-                              // class={move || {
-                              //   // format!(
-                              // //     "{}{}",
-                              // //     { if post_view.get().saved { "text-accent" } else { "" } },
-                              // //     { if !logged_in.get() || !online.get().0 {
-                              // " text-base-content/50"
-                              // // } else { " hover:text-accent/50" } },
-                              // //   )
-                              // }}
-                              // disabled={move || true}// !logged_in.get() || !online.get().0}
                             >
                               <Icon icon={Subscribe} />
                             </button>
@@ -424,11 +411,9 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
               }}
             </Transition>
             <Transition fallback={|| {}}>
-              // <Title text="" />
               <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| (p.1.clone(), p.2, p.4.clone())} let:p>
                 {match p.3 {
                   Ok(ref o) => {
-                    // log!("{} {}", !p.5, p.6);
                     #[cfg(not(feature = "ssr"))]
                     {
                       let rw = p.3.clone();
@@ -489,7 +474,6 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                     #[cfg(not(feature = "ssr"))]
                     loading.set(false);
                     view! {
-                      // attr:class=format!("{}", if p.6 { "display: hidden" } else { "" })
                       <Listings hide=p.6 posts={o.posts.clone().into()} page_number={RwSignal::new(p.0)} />
                     }.into_any()
                   }

@@ -80,9 +80,6 @@ pub async fn login_fn(username_or_email: String, password: String, uri: String) 
 
 #[component]
 pub fn LoginForm() -> impl IntoView {
-  // let _i18n = use_i18n();
-  // log!("LOGIN");
-
   let query = use_query_map();
   let name = RwSignal::new(String::new());
   let password = RwSignal::new(String::new());
@@ -91,7 +88,6 @@ pub fn LoginForm() -> impl IntoView {
   let password_validation = RwSignal::new("".to_owned());
   let ssr_error = move || query.with(|params| params.get("error"));
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
-  // let ssr_site_signal = expect_context::<RwSignal<Option<Result<GetSiteResponse, LemmyAppError>>>>();
 
   if let Some(e) = ssr_error() {
     let le = serde_json::from_str::<LemmyAppError>(&e[..]);
@@ -117,20 +113,6 @@ pub fn LoginForm() -> impl IntoView {
           set_auth_cookie.set(Some(jwt.clone().into_inner()));
           ssr_site.refetch();
           use_navigate()("/", Default::default());
-          // spawn_local_scoped_with_cancellation(async move {
-          //   ssr_site.refetch();
-          //   spawn_local_scoped_with_cancellation(async move {
-          //   });
-          // });
-          // let UseTimeoutFnReturn { start, stop, is_pending, .. } = use_timeout_fn(
-          //   |i: i32| {
-          //     ssr_site.refetch();
-          //   },
-          //   500.0,
-          // );
-          // start(3);
-
-          // ssr_site_signal.set(Some(LemmyClient.get_site().await));
         }
         Ok(LoginResponse { jwt: None, .. }) => {}
         Err(e) => {

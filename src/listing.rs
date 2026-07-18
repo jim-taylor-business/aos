@@ -98,11 +98,7 @@ pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostR
 
 #[component]
 pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<bool>, hide: bool) -> impl IntoView {
-  // let ssr_site_signal = expect_context::<RwSignal<Option<GetSiteResponse>>>();
-  // let ssr_user_signal = expect_context::<RwSignal<Option<MyUserInfo>>>();
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
-  // let logged_in = move || false; //ssr_user_signal.get().is_some();
-  // let logged_in = move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { true } else { false };
   let online = expect_context::<RwSignal<OnlineSetter>>();
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
   let post_view = RwSignal::new(post_view);
@@ -118,7 +114,6 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
       move |()| async move {
         let form = CreatePostLike { post_id: post_view.get().post.id, score };
         let result = LemmyClient.like_post(form).await;
-        // log!("END");
         #[cfg(not(feature = "ssr"))]
         loading.set(false);
         match result {
@@ -135,7 +130,6 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
   };
 
   let on_up_vote_submit = move |e: MouseEvent| {
-    // log!("VOTE");
     #[cfg(not(feature = "ssr"))]
     loading.set(true);
     let score = if Some(1) == post_view.get().my_vote { 0 } else { 1 };
@@ -258,7 +252,6 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
   });
   let mut title_encoded_mut = String::new();
   pulldown_cmark::html::push_html(&mut title_encoded_mut, custom);
-  // let title_encoded_mut = title_encoded_mut;
   let title_encoded = Memo::new(move |_| title_encoded_mut.clone());
 
   let community_title = if post_view.get().community.local {
@@ -321,13 +314,6 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
         )
     }}
 
-
-    // class={move || {
-    //   format!(
-    //     "grid gap-x-4 px-4 grid-cols-[6rem_1fr] break-inside-avoid {}",
-    //     if post_number != 0 { "grid-rows-[1fr_2rem] pb-6" } else { "grid-rows-[1fr] pl-8 pb-2" },
-    //   )
-    // }}
     >
       <div class={move || {
         format!(
@@ -378,11 +364,7 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
         )
       }}>
         <A href={move || format!("/p/{}", post_view.get_untracked().post.id)} attr:class="block hover:text-accent">
-          // {
-          //   log!("{}", title_encoded.get_untracked());
-          // }
           <span class="overflow-y-auto text-lg wrap-anywhere" inner_html={title_encoded.get_untracked()} />
-          // <span class="overflow-y-auto text-lg wrap-anywhere" /* inner_html={title_encoded.get_untracked()} */> { title_encoded.get_untracked() }  </span>
         </A>
         <span class="block mt-1 mb-1 text-sm wrap-anywhere">
           <span>{abbr_duration}</span>

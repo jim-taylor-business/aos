@@ -108,17 +108,6 @@ pub fn PostToolbar(
   post_id: Signal<Option<i32>>,
 ) -> impl IntoView {
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
-
-  // let ssr_site_signal = expect_context::<RwSignal<Option<GetSiteResponse>>>();
-  // let ssr_user_signal = expect_context::<RwSignal<Option<MyUserInfo>>>();
-  // let logged_in = move || ssr_user_signal.get().is_some();
-  // let logged_in = Memo::new(move |_| {
-  //   log!("yo");
-  //   false
-  //   // ssr_user_signal.get().is_some()
-  // });
-
-  // let logged_in = move || if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { true } else { false };
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
   let online = expect_context::<RwSignal<OnlineSetter>>();
   let post_view = RwSignal::new(post_view.get());
@@ -290,18 +279,14 @@ pub fn PostToolbar(
   let _thumbnail_element = NodeRef::<Img>::new();
   let _thumbnail = RwSignal::new(String::from(""));
 
-  // log!("IN");
-
   view! {
     <Transition fallback={|| {}}>
       {move || {
         match ssr_site.get() {
           Some(Ok(s)) => {
             let logged_in = Memo::new(move |_| { s.my_user.is_some()});
-            // log!("UP");
             view! {
 
-              // <div> "FUUUUUUUUU" </div>
     <div class="px-4 break-inside-avoid">
       <div class="flex flex-wrap gap-x-2 items-center pb-2">
         <ActionForm action={vote_action} attr:class="flex items-center">

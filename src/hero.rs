@@ -38,24 +38,9 @@ pub fn Hero(
   hide: bool,
   #[prop(optional)] next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)>,
 ) -> impl IntoView {
-  // let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
-  // let ssr_site_signal = expect_context::<RwSignal<Option<GetSiteResponse>>>();
-  // let ssr_user_signal = expect_context::<RwSignal<Option<MyUserInfo>>>();
-
   let params = use_params_map();
   let query = use_query_map();
-
-  // let post_id = Signal::derive(move || params.get().get("id").unwrap_or_default().parse::<i32>().ok());
-  // let logged_in = move || {
-  //   false
-  //   // ssr_user_signal.get().is_some()
-  //   // if let Some(Ok(GetSiteResponse { my_user: Some(_), .. })) = ssr_site.get() { Some(true) } else { Some(false) }
-  // };
   let online = expect_context::<RwSignal<OnlineSetter>>();
-
-  // let scroll_element = expect_context::<RwSignal<Option<NodeRef<Div>>>>();
-  // scroll_element.set(None);
-
   let ssr_sort = move || serde_json::from_str::<CommentSortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(CommentSortType::Top);
 
   let reply_show = RwSignal::new(false);
@@ -73,11 +58,7 @@ pub fn Hero(
     move || post_id.get(),
     move |id| async move {
       let form = GetPost { id: Some(id), comment_id: None };
-
-      // #[cfg(not(feature = "ssr"))]
       let rc = post_response_cache.get_untracked();
-
-      // #[cfg(not(feature = "ssr"))]
       let result = if let Some((t, r)) = rc.get(&(form.clone(), get_auth_cookie.get_untracked())) {
         match r {
           Ok(o) => Ok(o.clone()),
@@ -86,8 +67,6 @@ pub fn Hero(
       } else {
         LemmyClient.get_post(form.clone()).await
       };
-
-      // let result = LemmyClient.get_post(form.clone()).await;
       loading.set(false);
       match result {
         Ok(o) => Some(Ok((form, o))),
@@ -113,7 +92,6 @@ pub fn Hero(
         disliked_only: None,
         liked_only: None,
       };
-
       let rc = comments_response_cache.get_untracked();
       let result = if let Some((t, r)) = rc.get(&(form.clone(), get_auth_cookie.get_untracked())) {
         match r {
@@ -123,7 +101,6 @@ pub fn Hero(
       } else {
         LemmyClient.get_comments(form.clone()).await
       };
-
       match result {
         Ok(o) => Some((form, o)),
         Err(_e) => None,
@@ -152,7 +129,6 @@ pub fn Hero(
   let on_reply_click = move |e: MouseEvent| {
     e.prevent_default();
     spawn_local_scoped_with_cancellation(async move {
-      // if let Some(id) = post_id.get() {
       let form = CreateComment { content: content.get(), post_id: post_id.get(), parent_id: None, language_id: None };
       let result = LemmyClient.reply_comment(form).await;
       match result {
@@ -166,7 +142,6 @@ pub fn Hero(
         }
         Err(_e) => {}
       }
-      // }
     });
   };
 
@@ -185,15 +160,12 @@ pub fn Hero(
     );
   }
 
-  // log!("HERO");
-
   let on_scroll_element = NodeRef::<Div>::new();
   let thumbnail = RwSignal::new(String::from(""));
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
 
   view! {
     <div
-      // class="bg-base-200 mb-6"
       class=format!("bg-base-200 mb-6{}", if hide { " invisible" } else { "" })
     >
       <Transition fallback={|| {}}>
@@ -324,7 +296,6 @@ pub fn Hero(
                 .to_string();
               let url = Memo::new(move |_| post_response.get().post_view.post.url);
               let thumbnail_url = Memo::new(move |_| post_response.get().post_view.post.thumbnail_url);
-              // log!("{:#?}", post_response.get().post_view.image_details);
 
               view! {
                 <div class="break-inside-avoid">
@@ -437,21 +408,6 @@ pub fn Hero(
                               .await;
                           }
                           listing_response_cache.update(move |rc| {
-                            // log!("remove {:?}", GetPosts {
-                            //   type_: Some(ListingType::All),
-                            //   sort: Some(SortType::Active),
-                            //   page: None,
-                            //   limit: Some(50),
-                            //   community_id: None,
-                            //   community_name: Some(post_response.get().post_view.community.name),
-                            //   saved_only: None,
-                            //   liked_only: None,
-                            //   disliked_only: None,
-                            //   show_hidden: Some(true),
-                            //   show_read: Some(true),
-                            //   show_nsfw: Some(false),
-                            //   page_cursor: None,
-                            // });
                             rc.remove(
                               &(
                                 0usize,
@@ -493,12 +449,6 @@ pub fn Hero(
                             )
                           }}, Default::default());
                         });
-                        // log!("set");
-                        // if let Some(on_scroll_element) = scroll_element.get() {
-                        //   if let Some(se) = on_scroll_element.get() {
-                        //     se.set_scroll_left(0i32);
-                        //   }
-                        // }
                       }}
                     >
                       <span class="overflow-y-auto" inner_html={community_title_encoded} />
@@ -608,41 +558,7 @@ pub fn Hero(
               }
               let res = res.1.clone();
               let mut comments_descendants = res.comments.clone();
-              // let first_comment = res.comments.first().map(|f| vec![f.clone()]).unwrap_or_default();
               let first_comment = res.comments.first().map(|f| vec![f.clone()]).unwrap_or_default();
-              // log!("F {:#?}", first_comment[0]);
-
-              // let id = if let Some(c) = first_comment.get(0) {
-              //   c.comment.id.to_string()
-              // } else {
-              //   "".to_owned()
-              // };
-              // let level = 0;
-              // let mut comments_children: Vec<CommentView> = vec![];
-
-              // comments_descendants.retain(|ct| {
-              //   let tree = ct.comment.path.split('.').collect::<Vec<_>>();
-              //   if tree.len() == level + 2 {
-              //     if tree.get(level).unwrap_or(&"").eq(&id) {
-              //       comments_children.push(ct.clone());
-              //     }
-              //     false
-              //   } else if tree.len() > level + 2 {
-              //     tree.get(level).unwrap_or(&"").eq(&id)
-              //   } else {
-              //     false
-              //   }
-              // });
-
-              // view! {
-              //   <div class="w-full before:content-[''] before:block before:w-24 before:overflow-hidden">
-              //     <Comments comments={res.comments.into()} /*comments={comments_descendants.into()}*/ post_id=Signal::derive(move || Some(post_id.get().0)) />
-              //   </div>
-              // }
-
-              // let mut comments_clone = res.comments.clone();
-              // comments_clone.retain(|ct| ct.comment.path.chars().filter(|c| *c == '.').count() == 1);
-              // let com_sig = RwSignal::new(comments_clone);
               let highlight_user_id = RwSignal::new(None);
 
               let now_in_millis = RwSignal::new({
@@ -663,8 +579,6 @@ pub fn Hero(
                 if let p = post_id.get() {
                   if let Ok(d) = IndexedDb::new().await {
                     if let Ok(Some(mut comment_ids)) = d.get::<i32, Vec<i32>>(&p.0).await {
-                      // hidden_comments.set(comment_ids);
-                      // let mut comment_ids = comment_ids;
                       hidden_comments.update(|h| {
                         h.append(&mut comment_ids);
                       });
@@ -684,20 +598,16 @@ pub fn Hero(
 
               if let Some(cv) = first_comment.get(0) {
                 view! {
-                  // <For each={move || com_sig.get()} key={|cv| cv.comment.id} let:cv>
                     <Comment
                       parent_comment_id=0
                       hidden_comments
                       comment={cv.clone().into()}
                       comments={comments_descendants.into()}
                       level=1
-                      // close_level=Some(3usize)
                       now_in_millis
                       highlight_user_id
-                      // post_id
                       post_id=Signal::derive(move || Some(post_id.get().0))
                     />
-                  // </For>
                 }.into_any()
               } else {
                 view! {
