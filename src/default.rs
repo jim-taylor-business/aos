@@ -3,7 +3,5 @@ use leptos::prelude::*;
 
 #[component]
 pub fn Default() -> impl IntoView {
-  view! {
-    <Overview />
-  }
+  view! { <Overview /> }
 }

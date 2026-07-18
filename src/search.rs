@@ -127,40 +127,35 @@ pub fn Search() -> impl IntoView {
 
   view! {
     <main class="flex flex-col">
-      <TopNav scroll_element=on_scroll_element.into() />
+      <TopNav scroll_element={on_scroll_element.into()} />
       <div class="flex flex-grow">
         <div
           on:wheel={move |e: WheelEvent| {
             let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-            if iw < 768f64 {
-            } else {
-
-            if e.delta_x() != 0.0 {
-              if e.delta_y().abs() / e.delta_x().abs() < 0.3 {
+            if iw < 768f64 {} else {
+              if e.delta_x() != 0.0 {
+                if e.delta_y().abs() / e.delta_x().abs() < 0.3 {} else {
+                  e.prevent_default();
+                  if let Some(se) = on_scroll_element.get() {
+                    se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+                  }
+                }
               } else {
                 e.prevent_default();
                 if let Some(se) = on_scroll_element.get() {
                   se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
                 }
               }
-            } else {
-              e.prevent_default();
-              if let Some(se) = on_scroll_element.get() {
-                se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
-              }
-            }
-
             }
           }}
           node_ref={on_scroll_element}
-          class="sm:h-[calc(100%-4rem)] min-w-full sm:absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[23rem] sm:px-4 gap-4{}"
+          class="min-w-full sm:overflow-x-auto sm:overflow-y-hidden sm:absolute sm:px-4 gap-4{} sm:h-[calc(100%-4rem)] sm:columns-[23rem]"
         >
           <Transition fallback={|| {}}>
             {move || {
               match search_cache_resource.get() {
                 Some(o) => {
-                  #[cfg(not(feature = "ssr"))]
-                  loading.set(false);
+                  #[cfg(not(feature = "ssr"))] loading.set(false);
                   view! {
                     <div>
                       <Title text="Search" />
@@ -174,15 +169,13 @@ pub fn Search() -> impl IntoView {
                   }
                     .into_any()
                 }
-                _ => {
-                  view! {
-                  }
-                    .into_any()
-                }
+                _ => view! {}.into_any(),
               }
             }} <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
           </Transition>
-          {move || { view!{ <Loading loading=loading.get() /> } }}
+          {move || {
+            view! { <Loading loading={loading.get()} /> }
+          }}
         </div>
       </div>
     </main>

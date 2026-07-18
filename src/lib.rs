@@ -200,37 +200,35 @@ pub fn App() -> impl IntoView {
               Ok(site) => {
                 if let Some(d) = site.site_view.site.description {
                   view! {
-                    <Title formatter={move |text: String|
-                      if text.len() > 0 {
-                        format!("{} - AOS for {} - {}", text, site.site_view.site.name, d.clone())
-                      } else {
-                        format!("AOS for {} - {}", site.site_view.site.name, d.clone())
-                      }
-                    } text="" />
+                    <Title
+                      formatter={move |text: String| {
+                        if text.len() > 0 {
+                          format!("{} - AOS for {} - {}", text, site.site_view.site.name, d.clone())
+                        } else {
+                          format!("AOS for {} - {}", site.site_view.site.name, d.clone())
+                        }
+                      }}
+                      text=""
+                    />
                   }
                 } else {
                   view! {
-                    <Title formatter={move |text: String|
-                      if text.len() > 0 {
-                        format!("{} - AOS for {}", text, site.site_view.site.name)
-                      } else {
-                        format!("AOS for {}", site.site_view.site.name)
-                      }
-                    } text="" />
+                    <Title
+                      formatter={move |text: String| {
+                        if text.len() > 0 {
+                          format!("{} - AOS for {}", text, site.site_view.site.name)
+                        } else {
+                          format!("AOS for {}", site.site_view.site.name)
+                        }
+                      }}
+                      text=""
+                    />
                   }
                 }
               }
               _ => {
-                view! {
-                  <Title formatter={|text: String|
-                    if text.len() > 0 {
-                      format!("{} - AOS", text)
-                    } else {
-                      format!("AOS")
-                    }
-                  } text="" />
-                }
-              },
+                view! { <Title formatter={|text: String| if text.len() > 0 { format!("{} - AOS", text) } else { format!("AOS") }} text="" /> }
+              }
             }
           })
       }}

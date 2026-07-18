@@ -133,16 +133,14 @@ pub fn User() -> impl IntoView {
 
   view! {
     <main class="flex flex-col">
-      <TopNav scroll_element=on_scroll_element.into() />
+      <TopNav scroll_element={on_scroll_element.into()} />
       <div class="flex flex-grow">
         <div
           on:wheel={move |e: WheelEvent| {
             let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-            if iw < 768f64 {
-            } else {
+            if iw < 768f64 {} else {
               if e.delta_x() != 0.0 {
-                if e.delta_y().abs() / e.delta_x().abs() < 0.3 {
-                } else {
+                if e.delta_y().abs() / e.delta_x().abs() < 0.3 {} else {
                   e.prevent_default();
                   if let Some(se) = on_scroll_element.get() {
                     se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
@@ -157,37 +155,37 @@ pub fn User() -> impl IntoView {
             }
           }}
           node_ref={on_scroll_element}
-          class="sm:h-[calc(100%-4rem)] min-w-full sm:absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[23rem] sm:px-4 gap-4{}"
-          >
+          class="min-w-full sm:overflow-x-auto sm:overflow-y-hidden sm:absolute sm:px-4 gap-4{} sm:h-[calc(100%-4rem)] sm:columns-[23rem]"
+        >
           <Transition fallback={|| {}}>
             {move || {
               match user_resource.get() {
-                Some(Err(e)) => {
-                  view! {
-                    <Error error={e} on_retry_click={None::<fn(MouseEvent) -> ()>} />
-                  }.into_any()
-                }
+                Some(Err(e)) => view! { <Error error={e} on_retry_click={None::<fn(MouseEvent) -> ()>} /> }.into_any(),
                 Some(Ok(Some(s))) => {
                   let t = s.clone();
                   let old_posts = Memo::new(move |_| t.posts.clone());
                   let old_comments = Memo::new(move |_| t.comments.clone());
-
                   let name = s.person_view.person.name;
                   let banner = Memo::new(move |_| s.person_view.person.banner.clone());
                   let avatar = Memo::new(move |_| s.person_view.person.avatar.clone());
-
-                  let all_posts = RwSignal::new(s.posts.iter().map(|p| PostWithComments {
-                    post: p.clone(),
-                    comments: RwSignal::new(Vec::new()),
-                  }).collect::<Vec<_>>());
+                  let all_posts = RwSignal::new(
+                    s
+                      .posts
+                      .iter()
+                      .map(|p| PostWithComments {
+                        post: p.clone(),
+                        comments: RwSignal::new(Vec::new()),
+                      })
+                      .collect::<Vec<_>>(),
+                  );
                   let comments = s.comments.clone();
-                  all_posts.update(|ap| {
-                    for c in comments {
-                      if let Some(pc) = ap.iter_mut().find(|p| p.post.post.id == c.post.id) {
-                        pc.comments.update(|comments| comments.push(c));
-                      } else {
-                        ap.push(
-                          PostWithComments {
+                  all_posts
+                    .update(|ap| {
+                      for c in comments {
+                        if let Some(pc) = ap.iter_mut().find(|p| p.post.post.id == c.post.id) {
+                          pc.comments.update(|comments| comments.push(c));
+                        } else {
+                          ap.push(PostWithComments {
                             post: PostView {
                               post: c.post.clone(),
                               creator: c.creator.clone(),
@@ -225,13 +223,11 @@ pub fn User() -> impl IntoView {
                               image_details: None,
                             },
                             comments: RwSignal::new(vec![c]),
-                          }
-                        );
+                          });
+                        }
                       }
-                    }
-                    ap.sort_by(|a, b| a.post.post.published.cmp(&b.post.post.published).reverse());
-                  });
-
+                      ap.sort_by(|a, b| a.post.post.published.cmp(&b.post.post.published).reverse());
+                    });
                   let bio = if let Some(bio) = s.person_view.person.bio {
                     let mut options = pulldown_cmark::Options::empty();
                     options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
@@ -263,8 +259,8 @@ pub fn User() -> impl IntoView {
 
                   view! {
                     <div class="break-inside-avoid">
-                      <div class="my-2 px-4">
-                        <span class="overflow-y-auto text-2xl font-extrabold wrap-anywhere"> {name} </span>
+                      <div class="px-4 my-2">
+                        <span class="overflow-y-auto text-2xl font-extrabold wrap-anywhere">{name}</span>
                       </div>
                       <div>
                         {move || {
@@ -285,10 +281,10 @@ pub fn User() -> impl IntoView {
                                   />
                                 </div>
                               </div>
-                            }.into_any()
+                            }
+                              .into_any()
                           } else {
-                            view! {
-                            }.into_any()
+                            view! {}.into_any()
                           }
                         }}
                       </div>
@@ -311,7 +307,8 @@ pub fn User() -> impl IntoView {
                                   />
                                 </div>
                               </div>
-                            }.into_any()
+                            }
+                              .into_any()
                           } else {
                             view! {
                               <div class="py-2 px-4">
@@ -319,20 +316,21 @@ pub fn User() -> impl IntoView {
                                   <img class="h-16" src="/lemmy.svg" />
                                 </div>
                               </div>
-                            }.into_any()
+                            }
+                              .into_any()
                           }
                         }}
                       </div>
-                      <div class="my-2 px-4">
-                        <div class="prose select-none" inner_html={bio} />
+                      <div class="px-4 my-2">
+                        <div class="select-none prose" inner_html={bio} />
                       </div>
                     </div>
 
                     <For each={move || all_posts.get()} key={|pc| pc.post.post.id} let:pc>
-                      <div class="odd:bg-base-200 pt-4">
-                        <Listing hide=false post_view={pc.post} post_number={0} reply_show={RwSignal::new(false)} />
+                      <div class="pt-4 odd:bg-base-200">
+                        <Listing hide=false post_view={pc.post} post_number=0 reply_show={RwSignal::new(false)} />
                         <For each={move || pc.comments.get()} key={|cv| cv.comment.id} let:cv>
-                          <div class="pr-4 pt-2 pb-4 pl-8">
+                          <div class="pt-2 pr-4 pb-4 pl-8">
                             <Comment
                               parent_comment_id=0
                               hidden_comments={RwSignal::new(vec![])}
@@ -341,14 +339,14 @@ pub fn User() -> impl IntoView {
                               level=0
                               now_in_millis
                               highlight_user_id={RwSignal::new(None)}
-                              post_id=Signal::derive(move || Some(cv.post.id.0))
+                              post_id={Signal::derive(move || Some(cv.post.id.0))}
                             />
                           </div>
                         </For>
                       </div>
                     </For>
-
-                  }.into_any()
+                  }
+                    .into_any()
                 }
                 _ => view! {}.into_any(),
               }

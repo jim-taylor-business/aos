@@ -299,217 +299,244 @@ pub fn Listing(post_view: PostView, post_number: usize, reply_show: RwSignal<boo
       {move || {
         match ssr_site.get() {
           Some(Ok(s)) => {
-            let logged_in = Memo::new(move |_| { s.my_user.is_some()});
-            // log!("L UP");
+            {
+              let logged_in = Memo::new(move |_| { s.my_user.is_some() });
+              // log!("L UP");
 
-            view! {
-
-    <div
-
-    class={move || {
-        format!(
-          "grid gap-x-4 px-4 grid-cols-[6rem_1fr] break-inside-avoid {}{}",
-          if post_number != 0 { "grid-rows-[1fr_2rem] pb-6" } else { "grid-rows-[1fr] pl-8 pb-2" },
-          if hide { " invisible" } else { "" },
-        )
-    }}
-
-    >
-      <div class={move || {
-        format!(
-          "col-span-1 row-span-2 flex items-start pt-2{}",
-          if post_view.get_untracked().post.thumbnail_url.is_none() && post_view.get_untracked().post.url.is_none() { " hidden" } else { "" },
-        )
-      }}>
-        <a
-          class="flex flex-col h-full"
-          target="_blank"
-          href={move || {
-            if let Some(d) = post_view.get_untracked().post.url { d.inner().to_string() } else { format!("/p/{}", post_view.get_untracked().post.id) }
-          }}
-        >
-          {move || {
-            if let Some(t) = post_view.get_untracked().post.thumbnail_url {
-              let h = t.inner().to_string();
-              thumbnail.set(h);
               view! {
-                <div class="flex shrink grow basis-0 min-h-16">
-                  <div class="shrink grow basis-0 truncate">
-                    <img
-                      // loading="lazy"
-                      class={move || format!("w-24{}", if thumbnail.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" })}
-                      src={move || thumbnail.get()}
-                      node_ref={thumbnail_element}
-                      on:error={move |_e| {
-                        thumbnail.set("/lemmy.svg".into());
+                <div 
+                class={move || {
+                  format!(
+                    "grid gap-x-4 px-4 grid-cols-[6rem_1fr] break-inside-avoid {}{}",
+                    if post_number != 0 { "grid-rows-[1fr_2rem] pb-6" } else { "grid-rows-[1fr] pl-8 pb-2" },
+                    if hide { " invisible" } else { "" },
+                  )
+                }}>
+
+                  <div class={move || {
+                    format!(
+                      "col-span-1 row-span-2 flex items-start pt-2{}",
+                      if post_view.get_untracked().post.thumbnail_url.is_none() && post_view.get_untracked().post.url.is_none() {
+                        " hidden"
+                      } else {
+                        ""
+                      },
+                    )
+                  }}>
+                    <a
+                      class="flex flex-col h-full"
+                      target="_blank"
+                      href={move || {
+                        if let Some(d) = post_view.get_untracked().post.url {
+                          d.inner().to_string()
+                        } else {
+                          format!("/p/{}", post_view.get_untracked().post.id)
+                        }
                       }}
-                    />
+                    >
+                      {move || {
+                        if let Some(t) = post_view.get_untracked().post.thumbnail_url {
+                          let h = t.inner().to_string();
+                          thumbnail.set(h);
+                          view! {
+                            <div class="flex shrink grow basis-0 min-h-16">
+                              <div class="shrink grow basis-0 truncate">
+                                <img
+                                  // loading="lazy"
+                                  class={move || format!("w-24{}", if thumbnail.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" })}
+                                  src={move || thumbnail.get()}
+                                  node_ref={thumbnail_element}
+                                  on:error={move |_e| {
+                                    thumbnail.set("/lemmy.svg".into());
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          }
+                            .into_any()
+                        } else {
+                          view! {
+                            <div class="block w-24 truncate">
+                              <img class="w-24 h-16" src="/lemmy.svg" />
+                            </div>
+                          }
+                            .into_any()
+                        }
+                      }}
+                    </a>
                   </div>
+                  <div class={move || {
+                    format!(
+                      "col-span-1 row-span-1{}",
+                      if post_view.get_untracked().post.thumbnail_url.is_none() && post_view.get_untracked().post.url.is_none() {
+                        " col-span-2 sm:col-span-2"
+                      } else {
+                        ""
+                      },
+                    )
+                  }}>
+                    <A href={move || format!("/p/{}", post_view.get_untracked().post.id)} attr:class="block hover:text-accent">
+                      <span class="overflow-y-auto text-lg wrap-anywhere" inner_html={title_encoded.get_untracked()} />
+                    </A>
+                    <span class="block mt-1 mb-1 text-sm wrap-anywhere">
+                      <span>{abbr_duration}</span>
+                      " ago "
+                      <Show when={move || { post_number != 0 }} fallback={|| {}}>
+                        "by "
+                        <span class="overflow-y-auto" inner_html={creator_name_encoded} />
+                      </Show>
+                      " in "
+                      <span class="overflow-y-auto" inner_html={community_title_encoded} />
+                      <span class="overflow-y-auto">
+                        {if let Some(d) = post_view.get_untracked().post.url {
+                          if let Some(f) = d.inner().host_str() {
+                            if f.to_string().ne(&get_instance_cookie.get_untracked().unwrap_or("".into())) {
+                              format!(" from {}", f)
+                            } else {
+                              "".into()
+                            }
+                          } else {
+                            "".into()
+                          }
+                        } else {
+                          "".into()
+                        }}
+                      </span>
+                    </span>
+                  </div>
+                  <Show when={move || { post_number != 0 }} fallback={|| {}}>
+                    <div class={move || {
+                      format!(
+                        "row-span-1 flex items-center gap-x-1{}",
+                        if post_view.get_untracked().post.thumbnail_url.is_none() && post_view.get_untracked().post.url.is_none() {
+                          " col-span-2"
+                        } else {
+                          " col-span-1"
+                        },
+                      )
+                    }}>
+                      <ActionForm action={vote_action} attr:class="flex items-center">
+                        <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
+                        <input type="hidden" name="score" value={move || if Some(1) == post_view.get().my_vote { 0 } else { 1 }} />
+                        <button
+                          type="submit"
+                          on:click={on_up_vote_submit}
+                          class={move || {
+                            format!(
+                              "{}{}",
+                              { if Some(1) == post_view.get().my_vote { "text-secondary" } else { "" } },
+                              { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
+                            )
+                          }}
+                          disabled={move || !logged_in.get() || !online.get().0}
+                          title="Up vote"
+                        >
+                          <Icon icon={Upvote} />
+                        </button>
+                      </ActionForm>
+                      <span class="block text-sm">{move || post_view.get().counts.score}</span>
+                      <span
+                        class="flex items-center pl-1"
+                        title={move || {
+                          format!(
+                            "{} comments{}",
+                            post_view.get_untracked().counts.comments,
+                            if post_view.get_untracked().unread_comments != post_view.get_untracked().counts.comments
+                              && post_view.get_untracked().unread_comments > 0
+                            {
+                              format!(" ({} unread)", post_view.get_untracked().unread_comments)
+                            } else {
+                              "".to_owned()
+                            },
+                          )
+                        }}
+                      >
+                        <A href={move || format!("/p/{}", post_view.get_untracked().post.id)} attr:class="inline hover:text-accent">
+                          <Icon icon={Comments} class={"inline".into()} />
+                        </A>
+                        {post_view.get_untracked().counts.comments}
+                      </span>
+                      // </Show>
+                      // <ActionForm action={save_post_action} attr:class="flex items-center">
+                      // <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
+                      // <input type="hidden" name="save" value={move || format!("{}", !post_view.get_untracked().saved)} />
+                      // <button
+                      // type="submit"
+                      // on:click={on_save_submit}
+                      // title="Save post"
+                      // class={move || {
+                      // format!(
+                      // "{}{}",
+                      // { if post_view.get_untracked().saved { "text-accent" } else { "" } },
+                      // { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+                      // )
+                      // }}
+                      // disabled={move || !logged_in.get() || !online.get().0}
+                      // >
+                      // <Icon icon={Save} />
+                      // </button>
+                      // </ActionForm>
+                      // <span
+                      // class="cursor-pointer"
+                      // on:click={move |_| {
+                      // reply_show.update(|b| *b = !*b);
+                      // }}
+                      // title="Reply"
+                      // >
+                      // <Icon icon={Reply} />
+                      // </span>
+                      // <span class={format!("text-base-content{}", if post_view.get_untracked().post.local { " hidden" } else { "" })} title="Original">
+                      // <A href={post_view.get_untracked().post.ap_id.inner().to_string()}>
+                      // <Icon icon={External} />
+                      // </A>
+                      // </span>
+
+                      // <Show when={move || { post_view.get_untracked().counts.post_id.0 != 0 }} fallback={|| {}}>
+                      <span class="flex items-center ml-auto text-base-content/25">
+                        <a
+                          class={format!(
+                            "{}",
+                            {
+                              if let Some(d) = post_view.get_untracked().post.url {
+                                if let Some(f) = d.inner().host_str() {
+                                  if f.to_string().ne(&get_instance_cookie.get_untracked().unwrap_or("".into())) { "" } else { " hidden" }
+                                } else {
+                                  " hidden"
+                                }
+                              } else {
+                                " hidden"
+                              }
+                            },
+                          )}
+                          title="Archive"
+                          target="_blank"
+                          href={format!(
+                            "https://archive.ph/submit/?url={}",
+                            { if let Some(d) = post_view.get_untracked().post.url { d.inner().to_string() } else { "".to_owned() } },
+                          )}
+                        >
+                          <Icon icon={History} />
+                        </a>
+                      </span>
+                      <span class="flex items-center text-base-content/25">
+                        {if post_number != 0 { format!("{}", post_number) } else { "".into() }}
+                      </span>
+                    </div>
+                  </Show>
                 </div>
-              }.into_any()
-            } else {
-              view! {
-                <div class="block w-24 truncate">
-                  <img class="w-24 h-16" src="/lemmy.svg" />
-                </div>
-              }.into_any()
-            }
-          }}
-        </a>
-      </div>
-      <div class={move || {
-        format!(
-          "col-span-1 row-span-1{}",
-          if post_view.get_untracked().post.thumbnail_url.is_none() && post_view.get_untracked().post.url.is_none() { " col-span-2 sm:col-span-2" } else { "" },
-        )
-      }}>
-        <A href={move || format!("/p/{}", post_view.get_untracked().post.id)} attr:class="block hover:text-accent">
-          <span class="overflow-y-auto text-lg wrap-anywhere" inner_html={title_encoded.get_untracked()} />
-        </A>
-        <span class="block mt-1 mb-1 text-sm wrap-anywhere">
-          <span>{abbr_duration}</span>
-          " ago "
-          <Show when={move || { post_number != 0 }} fallback={|| {}}>
-            "by "
-            <span class="overflow-y-auto" inner_html={creator_name_encoded} />
-          </Show>
-          " in "
-          <span class="overflow-y-auto" inner_html={community_title_encoded} />
-          <span class="overflow-y-auto">
-            {if let Some(d) = post_view.get_untracked().post.url {
-              if let Some(f) = d.inner().host_str() {
-                if f.to_string().ne(&get_instance_cookie.get_untracked().unwrap_or("".into())) { format!(" from {}", f) } else { "".into() }
-              } else {
-                "".into()
+                {move || {
+                  view! { <Loading loading={loading.get()} /> }
+                }}
+                <Show when={move || error.get()} fallback={|| {}}>
+                  <Error error={latest_error.get()} on_retry_click={Some(|_| {})} />
+                </Show>
               }
-            } else {
-              "".into()
-            }}
-          </span>
-        </span>
-      </div>
-      <Show when={move || { post_number != 0 }} fallback={|| {}}>
-      <div class={move || {
-        format!(
-          "row-span-1 flex items-center gap-x-1{}",
-          if post_view.get_untracked().post.thumbnail_url.is_none() && post_view.get_untracked().post.url.is_none() { " col-span-2" } else { " col-span-1" },
-        )
-      }}>
-          <ActionForm action={vote_action} attr:class="flex items-center">
-            <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
-            <input type="hidden" name="score" value={move || if Some(1) == post_view.get().my_vote { 0 } else { 1 }} />
-            <button
-              type="submit"
-              on:click={on_up_vote_submit}
-              class={move || {
-                format!(
-                  "{}{}",
-                  { if Some(1) == post_view.get().my_vote { "text-secondary" } else { "" } },
-                  { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
-                )
-              }}
-              disabled={move || !logged_in.get() || !online.get().0}
-              title="Up vote"
-            >
-              <Icon icon={Upvote} />
-            </button>
-          </ActionForm>
-          <span class="block text-sm">{move || post_view.get().counts.score}</span>
-          <span
-            class="flex items-center pl-1"
-            title={move || {
-              format!(
-                "{} comments{}",
-                post_view.get_untracked().counts.comments,
-                if post_view.get_untracked().unread_comments != post_view.get_untracked().counts.comments && post_view.get_untracked().unread_comments > 0 {
-                  format!(" ({} unread)", post_view.get_untracked().unread_comments)
-                } else {
-                  "".to_owned()
-                },
-              )
-            }}
-          >
-            <A href={move || format!("/p/{}", post_view.get_untracked().post.id)} attr:class="inline hover:text-accent">
-              <Icon icon={Comments} class={"inline".into()} />
-            </A>
-            {post_view.get_untracked().counts.comments}
-          </span>
-        // </Show>
-          // <ActionForm action={save_post_action} attr:class="flex items-center">
-          //   <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
-          //   <input type="hidden" name="save" value={move || format!("{}", !post_view.get_untracked().saved)} />
-          //   <button
-          //     type="submit"
-          //     on:click={on_save_submit}
-          //     title="Save post"
-          //     class={move || {
-          //       format!(
-          //         "{}{}",
-          //         { if post_view.get_untracked().saved { "text-accent" } else { "" } },
-          //         { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
-          //       )
-          //     }}
-          //     disabled={move || !logged_in.get() || !online.get().0}
-          //   >
-          //     <Icon icon={Save} />
-          //   </button>
-          // </ActionForm>
-          // <span
-          //   class="cursor-pointer"
-          //   on:click={move |_| {
-          //     reply_show.update(|b| *b = !*b);
-          //   }}
-          //   title="Reply"
-          // >
-          //   <Icon icon={Reply} />
-          // </span>
-          // <span class={format!("text-base-content{}", if post_view.get_untracked().post.local { " hidden" } else { "" })} title="Original">
-          //   <A href={post_view.get_untracked().post.ap_id.inner().to_string()}>
-          //     <Icon icon={External} />
-          //   </A>
-          // </span>
-
-          // <Show when={move || { post_view.get_untracked().counts.post_id.0 != 0 }} fallback={|| {}}>
-        <span class="flex items-center ml-auto text-base-content/25">
-          <a
-            class={format!(
-              "{}",
-              {
-                if let Some(d) = post_view.get_untracked().post.url {
-                  if let Some(f) = d.inner().host_str() {
-                    if f.to_string().ne(&get_instance_cookie.get_untracked().unwrap_or("".into())) { "" } else { " hidden" }
-                  } else {
-                    " hidden"
-                  }
-                } else {
-                  " hidden"
-                }
-              },
-            )}
-            title="Archive"
-            target="_blank"
-            href={format!(
-              "https://archive.ph/submit/?url={}",
-              { if let Some(d) = post_view.get_untracked().post.url { d.inner().to_string() } else { "".to_owned() } },
-            )}
-          >
-            <Icon icon={History} />
-          </a>
-        </span>
-        <span class="flex items-center text-base-content/25">{if post_number != 0 { format!("{}", post_number) } else { "".into() }}</span>
-      </div>
-      </Show>
-    </div>
-    {move || { view!{ <Loading loading=loading.get() /> } }}
-    <Show when={move || error.get()} fallback={|| {}}>
-        <Error error={latest_error.get()} on_retry_click={Some(|_| {})} />
-    </Show>
-
-          } }.into_any(),
+            }
+              .into_any()
+          }
           _ => view! {}.into_any(),
         }
       }}
     </Transition>
-
   }
 }

@@ -165,9 +165,7 @@ pub fn Hero(
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
 
   view! {
-    <div
-      class=format!("bg-base-200 mb-6{}", if hide { " invisible" } else { "" })
-    >
+    <div class={format!("bg-base-200 mb-6{}", if hide { " invisible" } else { "" })}>
       <Transition fallback={|| {}}>
         {move || {
           match post_resource.get() {
@@ -231,7 +229,6 @@ pub fn Hero(
                     });
                 });
               }
-
               let res2 = res.1.clone();
               let res = res.1.clone();
               post_view.set(Some(res));
@@ -299,174 +296,179 @@ pub fn Hero(
 
               view! {
                 <div class="break-inside-avoid">
-                <div class="py-2 px-4">
-                  <A href={move || format!("/p/{}", post_response.get().post_view.post.id)} attr:class="block hover:text-accent">
-                    <span class="overflow-y-auto text-2xl font-extrabold wrap-anywhere" inner_html={title_encoded} />
-                  </A>
-                </div>
-                <a
-                  class={move || {
-                    format!(
-                      "{}",
-                      if thumbnail_url.get().is_none()
-                        && url.get().is_none()
-                      {
-                        " hidden"
-                      } else {
-                        ""
-                      },
-                    )
-                  }}
-                  target="_blank"
-                  href={move || {
-                    if let Some(d) = url.get() {
-                      d.inner().to_string()
-                    } else {
-                      format!("/p/{}", post_response.get().post_view.post.id)
-                    }
-                  }}
-                >
-                  {move || {
-                    if let Some(t) = thumbnail_url.get() {
-                      let h = t.inner().to_string();
-                      thumbnail.set(h);
-                      view! {
-                        <div class="py-2 px-4">
-                          <div class="block">
-                            <img
-                              loading="lazy"
-                              class={move || { format!("w-auto{}", if thumbnail.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" }) }}
-                              src={move || thumbnail.get()}
-                              on:error={move |_e| {
-                                thumbnail.set("/lemmy.svg".into());
-                              }}
-                            />
-                          </div>
-                        </div>
-                      }
-                        .into_any()
-                    } else {
-                      view! {
-                        <div class="py-2 px-4">
-                          <div class="block">
-                            <Icon class="h-24".into() icon=IconType::Link />
-                            // <img class="h-16" src="/lemmy.svg" />
-                          </div>
-                        </div>
-                      }
-                        .into_any()
-                    }
-                  }}
-                </a>
-                <div class="py-2">
-                  <PostToolbar post_view={post_response.get().post_view.into()} reply_show content post_id=Signal::derive(move || Some(post_response.get().post_view.post.id.0)) />
-                </div>
-                <div class="py-2 px-4">
-                  <span class="block mb-1 wrap-anywhere text-md">
-                    <span>{abbr_duration}</span>
-                    " ago by "
-                    <A
-                      href={move || {let a = post_response.get().post_view.creator.actor_id; if let Some(domain) = a.domain() { format!("{}@{}", a.path(), domain) } else { format!("{}", a) }}}
-                      // target="_blank"
-                      attr:class="inline wrap-anywhere hover:text-secondary"
-                    >
-                      <span class="overflow-y-auto" inner_html={creator_name_encoded} />
+                  <div class="py-2 px-4">
+                    <A href={move || format!("/p/{}", post_response.get().post_view.post.id)} attr:class="block hover:text-accent">
+                      <span class="overflow-y-auto text-2xl font-extrabold wrap-anywhere" inner_html={title_encoded} />
                     </A>
-                    " in "
-                    <A
-                      attr:class="inline wrap-anywhere hover:text-secondary"
-                      href={if post_response.get().post_view.community.local {
-                        format!("/c/{}", post_response.get().post_view.community.name)
+                  </div>
+                  <a
+                    class={move || { format!("{}", if thumbnail_url.get().is_none() && url.get().is_none() { " hidden" } else { "" }) }}
+                    target="_blank"
+                    href={move || {
+                      if let Some(d) = url.get() { d.inner().to_string() } else { format!("/p/{}", post_response.get().post_view.post.id) }
+                    }}
+                  >
+                    {move || {
+                      if let Some(t) = thumbnail_url.get() {
+                        let h = t.inner().to_string();
+                        thumbnail.set(h);
+                        view! {
+                          <div class="py-2 px-4">
+                            <div class="block">
+                              <img
+                                loading="lazy"
+                                class={move || { format!("w-auto{}", if thumbnail.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" }) }}
+                                src={move || thumbnail.get()}
+                                on:error={move |_e| {
+                                  thumbnail.set("/lemmy.svg".into());
+                                }}
+                              />
+                            </div>
+                          </div>
+                        }
+                          .into_any()
                       } else {
-                        format!(
-                          "/c/{}@{}",
-                          post_response.get().post_view.community.name,
-                          post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
-                        )
-                      }}
-                      on:click={move |e: MouseEvent| {
-                        e.prevent_default();
-                        #[cfg(not(feature = "ssr"))]
-                        spawn_local_scoped_with_cancellation(async move {
-                          if let Ok(d) = IndexedDb::new().await {
-                            let _ = d
-                              .set(
-                                &ScrollPositionKey {
-                                  path: {if post_response.get().post_view.community.local {
-                                    format!("/c/{}", post_response.get().post_view.community.name)
-                                  } else {
-                                    format!(
-                                      "/c/{}@{}",
-                                      post_response.get().post_view.community.name,
-                                      post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
-                                    )
-                                  }},
-                                  query: "".into(),
-                                },
-                                &0i32,
-                              )
-                              .await;
-                          }
-                          listing_response_cache.update(move |rc| {
-                            rc.remove(
-                              &(
-                                0usize,
-                                GetPosts {
-                                  type_: Some(ListingType::All),
-                                  sort: Some(SortType::Active),
-                                  page: None,
-                                  limit: Some(50),
-                                  community_id: None,
-                                  community_name: Some(if post_response.get().post_view.community.local {
-                                    format!("{}", post_response.get().post_view.community.name)
-                                  } else {
-                                    format!(
-                                      "{}@{}",
-                                      post_response.get().post_view.community.name,
-                                      post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
-                                    )
-                                  }),
-                                  saved_only: None,
-                                  liked_only: None,
-                                  disliked_only: None,
-                                  show_hidden: Some(true),
-                                  show_read: Some(true),
-                                  show_nsfw: Some(false),
-                                  page_cursor: None,
-                                },
-                                get_auth_cookie.get_untracked(),
-                              ),
+                        view! {
+                          <div class="py-2 px-4">
+                            <div class="block">
+                              <Icon class={"h-24".into()} icon={IconType::Link} />
+                            // <img class="h-16" src="/lemmy.svg" />
+                            </div>
+                          </div>
+                        }
+                          .into_any()
+                      }
+                    }}
+                  </a>
+                  <div class="py-2">
+                    <PostToolbar
+                      post_view={post_response.get().post_view.into()}
+                      reply_show
+                      content
+                      post_id={Signal::derive(move || Some(post_response.get().post_view.post.id.0))}
+                    />
+                  </div>
+                  <div class="py-2 px-4">
+                    <span class="block mb-1 wrap-anywhere text-md">
+                      <span>{abbr_duration}</span>
+                      " ago by "
+                      <A
+                        href={move || {
+                          let a = post_response.get().post_view.creator.actor_id;
+                          if let Some(domain) = a.domain() { format!("{}@{}", a.path(), domain) } else { format!("{}", a) }
+                        }}
+                        // target="_blank"
+                        attr:class="inline wrap-anywhere hover:text-secondary"
+                      >
+                        <span class="overflow-y-auto" inner_html={creator_name_encoded} />
+                      </A>
+                      " in "
+                      <A
+                        attr:class="inline wrap-anywhere hover:text-secondary"
+                        href={if post_response.get().post_view.community.local {
+                          format!("/c/{}", post_response.get().post_view.community.name)
+                        } else {
+                          format!(
+                            "/c/{}@{}",
+                            post_response.get().post_view.community.name,
+                            post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
+                          )
+                        }}
+                        on:click={move |e: MouseEvent| {
+                          e.prevent_default();
+                          #[cfg(not(feature = "ssr"))]
+                          spawn_local_scoped_with_cancellation(async move {
+                            if let Ok(d) = IndexedDb::new().await {
+                              let _ = d
+                                .set(
+                                  &ScrollPositionKey {
+                                    path: {
+                                      if post_response.get().post_view.community.local {
+                                        format!("/c/{}", post_response.get().post_view.community.name)
+                                      } else {
+                                        format!(
+                                          "/c/{}@{}",
+                                          post_response.get().post_view.community.name,
+                                          post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
+                                        )
+                                      }
+                                    },
+                                    query: "".into(),
+                                  },
+                                  &0i32,
+                                )
+                                .await;
+                            }
+                            listing_response_cache
+                              .update(move |rc| {
+                                rc.remove(
+                                  &(
+                                    0usize,
+                                    GetPosts {
+                                      type_: Some(ListingType::All),
+                                      sort: Some(SortType::Active),
+                                      page: None,
+                                      limit: Some(50),
+                                      community_id: None,
+                                      community_name: Some(
+                                        if post_response.get().post_view.community.local {
+                                          format!("{}", post_response.get().post_view.community.name)
+                                        } else {
+                                          format!(
+                                            "{}@{}",
+                                            post_response.get().post_view.community.name,
+                                            post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
+                                          )
+                                        },
+                                      ),
+                                      saved_only: None,
+                                      liked_only: None,
+                                      disliked_only: None,
+                                      show_hidden: Some(true),
+                                      show_read: Some(true),
+                                      show_nsfw: Some(false),
+                                      page_cursor: None,
+                                    },
+                                    get_auth_cookie.get_untracked(),
+                                  ),
+                                );
+                              });
+                            next_page_cursor.set((0, None));
+                            use_navigate()(
+                              &{
+                                if post_response.get().post_view.community.local {
+                                  format!("/c/{}", post_response.get().post_view.community.name)
+                                } else {
+                                  format!(
+                                    "/c/{}@{}",
+                                    post_response.get().post_view.community.name,
+                                    post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
+                                  )
+                                }
+                              },
+                              Default::default(),
                             );
                           });
-                          next_page_cursor.set((0, None));
-                          use_navigate()(&{if post_response.get().post_view.community.local {
-                            format!("/c/{}", post_response.get().post_view.community.name)
+                        }}
+                      >
+                        <span class="overflow-y-auto" inner_html={community_title_encoded} />
+                      </A>
+                      <span
+                        class="overflow-y-auto"
+                        inner_html={move || {
+                          if let Some(d) = url.get() {
+                            if let Some(f) = d.inner().host_str() {
+                              if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { format!(" from {}", f) } else { "".to_owned() }
+                            } else {
+                              "".to_owned()
+                            }
                           } else {
-                            format!(
-                              "/c/{}@{}",
-                              post_response.get().post_view.community.name,
-                              post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
-                            )
-                          }}, Default::default());
-                        });
-                      }}
-                    >
-                      <span class="overflow-y-auto" inner_html={community_title_encoded} />
-                    </A>
-                    <span
-                      class="overflow-y-auto"
-                      inner_html={move || if let Some(d) = url.get() {
-                        if let Some(f) = d.inner().host_str() {
-                          if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { format!(" from {}", f) } else { "".to_owned() }
-                        } else {
-                          "".to_owned()
-                        }
-                      } else {
-                        "".to_owned()
-                      }}
-                    />
-                  </span>
-                </div>
+                            "".to_owned()
+                          }
+                        }}
+                      />
+                    </span>
+                  </div>
                 </div>
 
                 {if let Some(ref content) = text {
@@ -560,58 +562,50 @@ pub fn Hero(
               let mut comments_descendants = res.comments.clone();
               let first_comment = res.comments.first().map(|f| vec![f.clone()]).unwrap_or_default();
               let highlight_user_id = RwSignal::new(None);
-
               let now_in_millis = RwSignal::new({
-                #[cfg(not(feature = "ssr"))]
-                {
-                  chrono::offset::Utc::now().timestamp_millis() as u64
-                }
+                #[cfg(not(feature = "ssr"))] { chrono::offset::Utc::now().timestamp_millis() as u64 }
                 #[cfg(feature = "ssr")]
-                {
-                  std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or(std::time::Duration::new(1000, 0)).as_millis() as u64
-                }
+                { std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or(std::time::Duration::new(1000, 0)).as_millis() as u64 }
               });
-
               let hidden_comments: RwSignal<Vec<i32>> = RwSignal::new(vec![]);
-
               #[cfg(not(feature = "ssr"))]
               spawn_local_scoped_with_cancellation(async move {
                 if let p = post_id.get() {
                   if let Ok(d) = IndexedDb::new().await {
                     if let Ok(Some(mut comment_ids)) = d.get::<i32, Vec<i32>>(&p.0).await {
-                      hidden_comments.update(|h| {
-                        h.append(&mut comment_ids);
-                      });
-
+                      hidden_comments
+                        .update(|h| {
+                          h.append(&mut comment_ids);
+                        });
                     }
                   }
                 }
               });
-
-              hidden_comments.update(|h| {
-                if let Some(ref f) = first_comment.get(0) {
-                  if !h.contains(&f.comment.id.0) {
+              hidden_comments
+                .update(|h| {
+                  if let Some(ref f) = first_comment.get(0) {
+                    if !h.contains(&f.comment.id.0) {
                       h.push(f.comment.id.0);
+                    }
                   }
-                }
-              });
-
+                });
               if let Some(cv) = first_comment.get(0) {
+
                 view! {
-                    <Comment
-                      parent_comment_id=0
-                      hidden_comments
-                      comment={cv.clone().into()}
-                      comments={comments_descendants.into()}
-                      level=1
-                      now_in_millis
-                      highlight_user_id
-                      post_id=Signal::derive(move || Some(post_id.get().0))
-                    />
-                }.into_any()
+                  <Comment
+                    parent_comment_id=0
+                    hidden_comments
+                    comment={cv.clone().into()}
+                    comments={comments_descendants.into()}
+                    level=1
+                    now_in_millis
+                    highlight_user_id
+                    post_id={Signal::derive(move || Some(post_id.get().0))}
+                  />
+                }
+                  .into_any()
               } else {
-                view! {
-                }.into_any()
+                view! {}.into_any()
               }
             })
         }}

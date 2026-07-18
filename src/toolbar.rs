@@ -284,196 +284,202 @@ pub fn PostToolbar(
       {move || {
         match ssr_site.get() {
           Some(Ok(s)) => {
-            let logged_in = Memo::new(move |_| { s.my_user.is_some()});
-            view! {
-
-    <div class="px-4 break-inside-avoid">
-      <div class="flex flex-wrap gap-x-2 items-center pb-2">
-        <ActionForm action={vote_action} attr:class="flex items-center">
-          <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
-          <input type="hidden" name="score" value={move || if Some(1) == post_view.get().my_vote { 0 } else { 1 }} />
-          <button
-            type="submit"
-            on:click={on_up_vote_submit}
-            class={move || {
-              format!(
-                "{}{}",
-                { if Some(1) == post_view.get().my_vote { "text-secondary" } else { "" } },
-                { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
-              )
-            }}
-            disabled={move || !logged_in.get() || !online.get().0}
-            title="Up vote"
-          >
-            <Icon icon={Upvote} />
-          </button>
-        </ActionForm>
-        <span class="block text-sm">{move || post_view.get().counts.score}</span>
-        <ActionForm action={vote_action} attr:class="flex items-center">
-          <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
-          <input type="hidden" name="score" value={move || if Some(-1) == post_view.get().my_vote { 0 } else { -1 }} />
-          <button
-            type="submit"
-            on:click={on_down_vote_submit}
-            class={move || {
-              format!(
-                "{}{}",
-                { if Some(-1) == post_view.get().my_vote { "text-primary" } else { "" } },
-                { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-primary/50" } },
-              )
-            }}
-            disabled={move || !logged_in.get() || !online.get().0}
-            title="Down vote"
-          >
-            <Icon icon={Downvote} />
-          </button>
-        </ActionForm>
-        <span
-          class="flex items-center"
-          title={move || {
-            format!(
-              "{} comments{}",
-              post_view.get_untracked().counts.comments,
-              if post_view.get_untracked().unread_comments != post_view.get_untracked().counts.comments && post_view.get_untracked().unread_comments > 0 {
-                format!(" ({} unread)", post_view.get_untracked().unread_comments)
-              } else {
-                "".to_owned()
-              },
-            )
-          }}
-        >
-          <Icon icon={Comments} class={"inline".into()} />
-          {post_view.get_untracked().counts.comments}
-          {if post_view.get_untracked().unread_comments != post_view.get_untracked().counts.comments && post_view.get_untracked().unread_comments > 0 {
-            format!(" ({})", post_view.get_untracked().unread_comments)
-          } else {
-            "".to_owned()
-          }}
-        </span>
-          <Form action="PUT"/*{save_post_action}*/ attr:class="flex items-center">
-            <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
-            <input type="hidden" name="save" value={move || format!("{}", !post_view.get().saved)} />
-            <button
-              type="submit"
-              on:click={on_save_submit}
-              title="Save"
-              class={move || {
-                format!(
-                  "{}{}",
-                  { if post_view.get().saved { "text-accent" } else { "" } },
-                  { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
-                )
-              }}
-              disabled={move || !logged_in.get() || !online.get().0}
-            >
-              <Icon icon={Save} />
-            </button>
-          </Form>
-          <button
-            class={move || {
-              format!(
-                "cursor-pointer{}",
-                { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
-              )
-            }}
-            on:click={move |_| {
-              if let Some(id) = post_id.get_untracked() {
-                #[cfg(not(feature = "ssr"))]
-                spawn_local_scoped_with_cancellation(async move {
-                  if let Ok(d) = IndexedDb::new().await {
-                    if let Ok(Some(c)) = d
-                      .get(
-                        &CommentDraftKey {
-                          comment_id: id,
-                          draft: Draft::Post,
+            {
+              let logged_in = Memo::new(move |_| { s.my_user.is_some() });
+              view! {
+                <div class="px-4 break-inside-avoid">
+                  <div class="flex flex-wrap gap-x-2 items-center pb-2">
+                    <ActionForm action={vote_action} attr:class="flex items-center">
+                      <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
+                      <input type="hidden" name="score" value={move || if Some(1) == post_view.get().my_vote { 0 } else { 1 }} />
+                      <button
+                        type="submit"
+                        on:click={on_up_vote_submit}
+                        class={move || {
+                          format!(
+                            "{}{}",
+                            { if Some(1) == post_view.get().my_vote { "text-secondary" } else { "" } },
+                            { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
+                          )
+                        }}
+                        disabled={move || !logged_in.get() || !online.get().0}
+                        title="Up vote"
+                      >
+                        <Icon icon={Upvote} />
+                      </button>
+                    </ActionForm>
+                    <span class="block text-sm">{move || post_view.get().counts.score}</span>
+                    <ActionForm action={vote_action} attr:class="flex items-center">
+                      <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
+                      <input type="hidden" name="score" value={move || if Some(-1) == post_view.get().my_vote { 0 } else { -1 }} />
+                      <button
+                        type="submit"
+                        on:click={on_down_vote_submit}
+                        class={move || {
+                          format!(
+                            "{}{}",
+                            { if Some(-1) == post_view.get().my_vote { "text-primary" } else { "" } },
+                            { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-primary/50" } },
+                          )
+                        }}
+                        disabled={move || !logged_in.get() || !online.get().0}
+                        title="Down vote"
+                      >
+                        <Icon icon={Downvote} />
+                      </button>
+                    </ActionForm>
+                    <span
+                      class="flex items-center"
+                      title={move || {
+                        format!(
+                          "{} comments{}",
+                          post_view.get_untracked().counts.comments,
+                          if post_view.get_untracked().unread_comments != post_view.get_untracked().counts.comments
+                            && post_view.get_untracked().unread_comments > 0
+                          {
+                            format!(" ({} unread)", post_view.get_untracked().unread_comments)
+                          } else {
+                            "".to_owned()
+                          },
+                        )
+                      }}
+                    >
+                      <Icon icon={Comments} class={"inline".into()} />
+                      {post_view.get_untracked().counts.comments}
+                      {if post_view.get_untracked().unread_comments != post_view.get_untracked().counts.comments
+                        && post_view.get_untracked().unread_comments > 0
+                      {
+                        format!(" ({})", post_view.get_untracked().unread_comments)
+                      } else {
+                        "".to_owned()
+                      }}
+                    </span>
+                    <Form action="PUT" attr:class="flex items-center">
+                      <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
+                      <input type="hidden" name="save" value={move || format!("{}", !post_view.get().saved)} />
+                      <button
+                        type="submit"
+                        on:click={on_save_submit}
+                        title="Save"
+                        class={move || {
+                          format!(
+                            "{}{}",
+                            { if post_view.get().saved { "text-accent" } else { "" } },
+                            { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+                          )
+                        }}
+                        disabled={move || !logged_in.get() || !online.get().0}
+                      >
+                        <Icon icon={Save} />
+                      </button>
+                    </Form>
+                    <button
+                      class={move || {
+                        format!(
+                          "cursor-pointer{}",
+                          { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+                        )
+                      }}
+                      on:click={move |_| {
+                        if let Some(id) = post_id.get_untracked() {
+                          #[cfg(not(feature = "ssr"))]
+                          spawn_local_scoped_with_cancellation(async move {
+                            if let Ok(d) = IndexedDb::new().await {
+                              if let Ok(Some(c)) = d
+                                .get(
+                                  &CommentDraftKey {
+                                    comment_id: id,
+                                    draft: Draft::Post,
+                                  },
+                                )
+                                .await
+                              {
+                                content.set(c);
+                              }
+                            }
+                          });
+                        }
+                        reply_show.update(|b| *b = !*b);
+                      }}
+                      title="Reply"
+                      disabled={move || !logged_in.get() || !online.get().0}
+                    >
+                      <Icon icon={Reply} />
+                    </button>
+                    <span class={format!("text-base-content{}", if post_view.get_untracked().post.local { " hidden" } else { "" })} title="Original">
+                      <A href={post_view.get_untracked().post.ap_id.inner().to_string()}>
+                        <Icon icon={External} />
+                      </A>
+                    </span>
+                    <span
+                      class={format!(
+                        "text-base-content{}",
+                        {
+                          if let Some(d) = post_view.get_untracked().post.url {
+                            if let Some(f) = d.inner().host_str() {
+                              if f.to_string().ne(&get_instance_cookie.get_untracked().unwrap_or("".into())) { "" } else { " hidden" }
+                            } else {
+                              " hidden"
+                            }
+                          } else {
+                            " hidden"
+                          }
                         },
-                      )
-                      .await
-                    {
-                      content.set(c);
-                    }
-                  }
-                });
+                      )}
+                      title="Archive"
+                    >
+                      <a
+                        target="_blank"
+                        href={format!(
+                          "https://archive.ph/submit/?url={}",
+                          { if let Some(d) = post_view.get_untracked().post.url { d.inner().to_string() } else { "".to_owned() } },
+                        )}
+                      >
+                        <Icon icon={History} />
+                      </a>
+                    </span>
+                    <span class="flex ml-auto item-center">
+                      <div class="dropdown max-sm:dropdown-end">
+                        <label tabindex="0">
+                          <Icon icon={VerticalDots} />
+                        </label>
+                        <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+                          <li>
+                            <ActionForm action={report_post_action} attr:class="flex flex-col items-start">
+                              <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
+                              <input
+                                class={move || format!("input input-bordered {}", report_validation.get_untracked())}
+                                type="text"
+                                on:click={on_report_submit}
+                                on:input={move |e| reason.update(|r| *r = event_target_value(&e))}
+                                name="reason"
+                                placeholder="Reason for reporting post"
+                              />
+                              <button class="text-xs whitespace-nowrap" title="Report" type="submit">
+                                <Icon icon={Report} class={"inline-block".into()} />
+                                "Report post"
+                              </button>
+                            </ActionForm>
+                          </li>
+                          <li>
+                            <ActionForm action={block_user_action}>
+                              <input type="hidden" name="person_id" value={format!("{}", post_view.get_untracked().creator.id.0)} />
+                              <input type="hidden" name="block" value="true" />
+                              <button on:click={on_block_submit} class="text-xs whitespace-nowrap" title="Block" type="submit">
+                                <Icon icon={Block} class={"inline-block".into()} />
+                                "Block user"
+                              </button>
+                            </ActionForm>
+                          </li>
+                        </ul>
+                      </div>
+                    </span>
+                  </div>
+                </div>
               }
-              reply_show.update(|b| *b = !*b);
-            }}
-            title="Reply"
-            disabled={move || !logged_in.get() || !online.get().0}
-          >
-            <Icon icon={Reply} />
-          </button>
-          <span class={format!("text-base-content{}", if post_view.get_untracked().post.local { " hidden" } else { "" })} title="Original">
-            <A href={post_view.get_untracked().post.ap_id.inner().to_string()}>
-              <Icon icon={External} />
-            </A>
-          </span>
-          <span
-            class={format!(
-              "text-base-content{}",
-              {
-                if let Some(d) = post_view.get_untracked().post.url {
-                  if let Some(f) = d.inner().host_str() {
-                    if f.to_string().ne(&get_instance_cookie.get_untracked().unwrap_or("".into())) { "" } else { " hidden" }
-                  } else {
-                    " hidden"
-                  }
-                } else {
-                  " hidden"
-                }
-              },
-            )}
-            title="Archive"
-          >
-            <a
-              target="_blank"
-              href={format!(
-                "https://archive.ph/submit/?url={}",
-                { if let Some(d) = post_view.get_untracked().post.url { d.inner().to_string() } else { "".to_owned() } },
-              )}
-            >
-              <Icon icon={History} />
-            </a>
-          </span>
-          <span class="flex ml-auto item-center">
-            <div class="dropdown max-sm:dropdown-end">
-              <label tabindex="0">
-                <Icon icon={VerticalDots} />
-              </label>
-              <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
-                <li>
-                  <ActionForm action={report_post_action} attr:class="flex flex-col items-start">
-                    <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
-                    <input
-                      class={move || format!("input input-bordered {}", report_validation.get_untracked())}
-                      type="text"
-                      on:click={on_report_submit}
-                      on:input={move |e| reason.update(|r| *r = event_target_value(&e))}
-                      name="reason"
-                      placeholder="Reason for reporting post"
-                    />
-                    <button class="text-xs whitespace-nowrap" title="Report" type="submit">
-                      <Icon icon={Report} class={"inline-block".into()} />
-                      "Report post"
-                    </button>
-                  </ActionForm>
-                </li>
-                <li>
-                  <ActionForm action={block_user_action}>
-                    <input type="hidden" name="person_id" value={format!("{}", post_view.get_untracked().creator.id.0)} />
-                    <input type="hidden" name="block" value="true" />
-                    <button on:click={on_block_submit} class="text-xs whitespace-nowrap" title="Block" type="submit">
-                      <Icon icon={Block} class={"inline-block".into()} />
-                      "Block user"
-                    </button>
-                  </ActionForm>
-                </li>
-              </ul>
-            </div>
-          </span>
-      </div>
-    </div>
-
-          } }.into_any(),
+            }
+              .into_any()
+          }
           _ => view! {}.into_any(),
         }
       }}

@@ -167,29 +167,26 @@ pub fn Post() -> impl IntoView {
 
   view! {
     <main class="flex flex-col">
-      <TopNav scroll_element=on_scroll_element.into() default_sort={SortType::TopAll.into()} post_view />//={post_view.into()} />
+      // ={post_view.into()} />
+      <TopNav scroll_element={on_scroll_element.into()} default_sort={SortType::TopAll.into()} post_view />
       <div class="flex flex-grow">
         <div
           on:wheel={move |e: WheelEvent| {
             let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-            if iw < 768f64 {
-            } else {
-
-            if e.delta_x() != 0.0 {
-              if e.delta_y().abs() / e.delta_x().abs() < 0.3 {
+            if iw < 768f64 {} else {
+              if e.delta_x() != 0.0 {
+                if e.delta_y().abs() / e.delta_x().abs() < 0.3 {} else {
+                  e.prevent_default();
+                  if let Some(se) = on_scroll_element.get() {
+                    se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
+                  }
+                }
               } else {
                 e.prevent_default();
                 if let Some(se) = on_scroll_element.get() {
                   se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
                 }
               }
-            } else {
-              e.prevent_default();
-              if let Some(se) = on_scroll_element.get() {
-                se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
-              }
-            }
-
             }
           }}
           node_ref={on_scroll_element}
@@ -201,8 +198,7 @@ pub fn Post() -> impl IntoView {
               {move || {
                 match post_resource.get() {
                   Some(Some(Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }))) => {
-                    #[cfg(not(feature = "ssr"))]
-                    loading.set(false);
+                    #[cfg(not(feature = "ssr"))] loading.set(false);
                     view! {
                       <Title text="Error loading post" />
                       <div class="py-4 px-8">
@@ -225,8 +221,7 @@ pub fn Post() -> impl IntoView {
                       .into_any()
                   }
                   Some(Some(Err(_))) => {
-                    #[cfg(not(feature = "ssr"))]
-                    loading.set(false);
+                    #[cfg(not(feature = "ssr"))] loading.set(false);
                     view! {
                       <Title text="Error loading post" />
                       <div class="py-4 px-8">
@@ -324,19 +319,20 @@ pub fn Post() -> impl IntoView {
                       .to_string();
                     let url = Memo::new(move |_| post_response.get().post_view.post.url);
                     let thumbnail_url = Memo::new(move |_| post_response.get().post_view.post.thumbnail_url);
-                    let domain = Memo::new(move |_| if let Some(d) = url.get() {
-                      if let Some(f) = d.inner().host_str() {
-                        if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { format!(" from {}", f) } else { "".to_owned() }
+                    let domain = Memo::new(move |_| {
+                      if let Some(d) = url.get() {
+                        if let Some(f) = d.inner().host_str() {
+                          if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { format!(" from {}", f) } else { "".to_owned() }
+                        } else {
+                          "".to_owned()
+                        }
                       } else {
                         "".to_owned()
                       }
-                    } else {
-                      "".to_owned()
                     });
+                    #[cfg(not(feature = "ssr"))] loading.set(false);
 
                     // log!("lslsls");
-                    #[cfg(not(feature = "ssr"))]
-                    loading.set(false);
 
                     view! {
                       <Title text={post_response.get().post_view.post.name} />
@@ -349,7 +345,10 @@ pub fn Post() -> impl IntoView {
                           <span>{abbr_duration}</span>
                           " ago by "
                           <A
-                            href={move || {let a = post_response.get().post_view.creator.actor_id; format!("{}@{}", a.path(), a.domain().unwrap_or_default())}}
+                            href={move || {
+                              let a = post_response.get().post_view.creator.actor_id;
+                              format!("{}@{}", a.path(), a.domain().unwrap_or_default())
+                            }}
                             // target="_blank"
                             attr:class="inline wrap-anywhere hover:text-secondary"
                           >
@@ -375,36 +374,38 @@ pub fn Post() -> impl IntoView {
                                   let _ = d
                                     .set(
                                       &ScrollPositionKey {
-                                        path: {if post_response.get().post_view.community.local {
-                                          format!("/c/{}", post_response.get().post_view.community.name)
-                                        } else {
-                                          format!(
-                                            "/c/{}@{}",
-                                            post_response.get().post_view.community.name,
-                                            post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
-                                          )
-                                        }},
+                                        path: {
+                                          if post_response.get().post_view.community.local {
+                                            format!("/c/{}", post_response.get().post_view.community.name)
+                                          } else {
+                                            format!(
+                                              "/c/{}@{}",
+                                              post_response.get().post_view.community.name,
+                                              post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
+                                            )
+                                          }
+                                        },
                                         query: "".into(),
                                       },
                                       &0i32,
                                     )
                                     .await;
                                 }
-                                use_navigate()(&{if post_response.get().post_view.community.local {
-                                  format!("/c/{}", post_response.get().post_view.community.name)
-                                } else {
-                                  format!(
-                                    "/c/{}@{}",
-                                    post_response.get().post_view.community.name,
-                                    post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
-                                  )
-                                }}, Default::default());
+                                use_navigate()(
+                                  &{
+                                    if post_response.get().post_view.community.local {
+                                      format!("/c/{}", post_response.get().post_view.community.name)
+                                    } else {
+                                      format!(
+                                        "/c/{}@{}",
+                                        post_response.get().post_view.community.name,
+                                        post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
+                                      )
+                                    }
+                                  },
+                                  Default::default(),
+                                );
                               });
-                              // if let Some(on_scroll_element) = scroll_element.get() {
-                              //   if let Some(se) = on_scroll_element.get() {
-                              //     se.set_scroll_left(0i32);
-                              //   }
-                              // }
                             }}
                           >
                             <span class="overflow-y-auto" inner_html={community_title_encoded} />
@@ -413,25 +414,10 @@ pub fn Post() -> impl IntoView {
                         </span>
                       </div>
                       <a
-                        class={move || {
-                          format!(
-                            "float-left{}",
-                            if thumbnail_url.get().is_none()
-                              && url.get().is_none()
-                            {
-                              " hidden"
-                            } else {
-                              ""
-                            },
-                          )
-                        }}
+                        class={move || { format!("float-left{}", if thumbnail_url.get().is_none() && url.get().is_none() { " hidden" } else { "" }) }}
                         target="_blank"
                         href={move || {
-                          if let Some(d) = url.get() {
-                            d.inner().to_string()
-                          } else {
-                            format!("/p/{}", post_response.get().post_view.post.id)
-                          }
+                          if let Some(d) = url.get() { d.inner().to_string() } else { format!("/p/{}", post_response.get().post_view.post.id) }
                         }}
                       >
                         {move || {
@@ -518,80 +504,79 @@ pub fn Post() -> impl IntoView {
                         {move || {
                           match ssr_site.get() {
                             Some(Ok(s)) => {
-                              let logged_in = Memo::new(move |_| { s.my_user.is_some()});
-                              // log!("UP");
-                              view! {
-
-                      <Show when={move || reply_show.get()} fallback={|| {}}>
-                        <div class="mb-3 space-y-3 before:content-[''] before:block before:w-24 before:overflow-hidden">
-                          <div class="form-control">
-                            <textarea
-                              class="h-24 text-base textarea textarea-bordered"
-                              placeholder="Comment text"
-                              prop:value={move || content.get()}
-                              node_ref={_visibility_element}
-                              on:wheel={move |e: WheelEvent| {
-                                e.stop_propagation();
-                              }}
-                              on:input={move |ev| {
-                                content.set(event_target_value(&ev));
-                                if let Some(id) = post_id.get() {
-                                  #[cfg(not(feature = "ssr"))]
-                                  spawn_local_scoped_with_cancellation(async move {
-                                    if let Ok(d) = IndexedDb::new().await {
-                                      if let Ok(_c) = d
-                                        .set(
-                                          &CommentDraftKey {
-                                            comment_id: id,
-                                            draft: Draft::Post,
-                                          },
-                                          &content.get(),
-                                        )
-                                        .await
-                                      {}
-                                    }
-                                  });
+                              {
+                                let logged_in = Memo::new(move |_| { s.my_user.is_some() });
+                                // log!("UP");
+                                view! {
+                                  <Show when={move || reply_show.get()} fallback={|| {}}>
+                                    <div class="mb-3 space-y-3 before:content-[''] before:block before:w-24 before:overflow-hidden">
+                                      <div class="form-control">
+                                        <textarea
+                                          class="h-24 text-base textarea textarea-bordered"
+                                          placeholder="Comment text"
+                                          prop:value={move || content.get()}
+                                          node_ref={_visibility_element}
+                                          on:wheel={move |e: WheelEvent| {
+                                            e.stop_propagation();
+                                          }}
+                                          on:input={move |ev| {
+                                            content.set(event_target_value(&ev));
+                                            if let Some(id) = post_id.get() {
+                                              #[cfg(not(feature = "ssr"))]
+                                              spawn_local_scoped_with_cancellation(async move {
+                                                if let Ok(d) = IndexedDb::new().await {
+                                                  if let Ok(_c) = d
+                                                    .set(
+                                                      &CommentDraftKey {
+                                                        comment_id: id,
+                                                        draft: Draft::Post,
+                                                      },
+                                                      &content.get(),
+                                                    )
+                                                    .await
+                                                  {}
+                                                }
+                                              });
+                                            }
+                                          }}
+                                        >
+                                          {content.get_untracked()}
+                                        </textarea>
+                                      </div>
+                                      <div class="form-control">
+                                        <button
+                                          on:click={on_reply_click}
+                                          type="button"
+                                          class={move || {
+                                            format!(
+                                              "btn btn-neutral{}",
+                                              {
+                                                if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" }
+                                              },
+                                            )
+                                          }}
+                                          disabled={move || !logged_in.get() || !online.get().0}
+                                        >
+                                          "Comment"
+                                        </button>
+                                        <button on:click={move |_| reply_show.set(false)} type="button" class="btn btn-neutral">
+                                          "Cancel"
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </Show>
                                 }
-                              }}
-                            >
-                              {content.get_untracked()}
-                            </textarea>
-                          </div>
-                          <div class="form-control">
-                            <button
-                              on:click={on_reply_click}
-                              type="button"
-                              class={move || {
-                                format!(
-                                  "btn btn-neutral{}",
-                                  {
-                                    if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" }
-                                  },
-                                )
-                              }}
-                              disabled={move || !logged_in.get() || !online.get().0}
-                            >
-                              "Comment"
-                            </button>
-                            <button on:click={move |_| reply_show.set(false)} type="button" class="btn btn-neutral">
-                              "Cancel"
-                            </button>
-                          </div>
-                        </div>
-                      </Show>
-
-                            } }.into_any(),
+                              }
+                                .into_any()
+                            }
                             _ => view! {}.into_any(),
                           }
                         }}
                       </Transition>
-
-                    }.into_any()
+                    }
+                      .into_any()
                   }
-                  Some(None) | None => {
-                    view! {
-                    }.into_any()
-                  }
+                  Some(None) | None => view! {}.into_any(),
                 }
               }}
               {move || {
@@ -614,28 +599,32 @@ pub fn Post() -> impl IntoView {
                         if let Some(c) = cancel_handle.get_untracked() {
                           c.clear();
                         }
-                        cancel_handle.set(set_timeout_with_handle(
-                          move || {
-                            if let Some(s) = on_scroll_element.get() {
-                              spawn_local_scoped_with_cancellation(async move {
-                                if let Ok(d) = IndexedDb::new().await {
-                                  let l: Result<Option<i32>, Error> = d
-                                    .get(
-                                      &ScrollPositionKey {
-                                        path: use_location().pathname.get(),
-                                        query: use_query_map().get().to_query_string(),
-                                      },
-                                    )
-                                    .await;
-                                  if let Ok(Some(l)) = l {
-                                    s.set_scroll_left(l);
+                        cancel_handle
+                          .set(
+                            set_timeout_with_handle(
+                                move || {
+                                  if let Some(s) = on_scroll_element.get() {
+                                    spawn_local_scoped_with_cancellation(async move {
+                                      if let Ok(d) = IndexedDb::new().await {
+                                        let l: Result<Option<i32>, Error> = d
+                                          .get(
+                                            &ScrollPositionKey {
+                                              path: use_location().pathname.get(),
+                                              query: use_query_map().get().to_query_string(),
+                                            },
+                                          )
+                                          .await;
+                                        if let Ok(Some(l)) = l {
+                                          s.set_scroll_left(l);
+                                        }
+                                      }
+                                    });
                                   }
-                                }
-                              });
-                            }
-                          },
-                          std::time::Duration::new(0, 750_000_000),
-                        ).ok());
+                                },
+                                std::time::Duration::new(0, 750_000_000),
+                              )
+                              .ok(),
+                          );
                       }
                     }
                     let res = res.1.clone();
@@ -648,7 +637,9 @@ pub fn Post() -> impl IntoView {
                   })
               }}
             </Transition>
-            {move || { view!{ <Loading loading=loading.get() /> } }}
+            {move || {
+              view! { <Loading loading={loading.get()} /> }
+            }}
           </div>
         </div>
       </div>

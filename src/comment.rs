@@ -389,163 +389,176 @@ pub fn Comment(
 
         <Show when={move || vote_show.get()} fallback={|| view! {}}>
           <div on:click={cancel} class="flex flex-wrap gap-x-2 items-center break-inside-avoid">
-          <Transition fallback={|| {}}>
-            {move || {
-              match ssr_site.get() {
-                Some(Ok(s)) => {
-                  let is_user = s.my_user.is_some();
-                  let logged_in = Memo::new(move |_| { is_user });
-                  let current_person = Memo::new(move |_| {
-                    if let GetSiteResponse { my_user: Some(MyUserInfo { local_user_view: LocalUserView { ref person, .. }, .. }), .. } = s { Some(person.clone()) } else { None }
-                  });
-                  view! {
-
-            <Form action="POST" attr:class="flex items-center">
-              <input type="hidden" name="post_id" value={format!("{}", comment_view.get_untracked().post.id)} />
-              <input type="hidden" name="score" value={move || if Some(1) == comment_view.get_untracked().my_vote { 0 } else { 1 }} />
-              <button
-                type="submit"
-                class={move || {
-                  format!(
-                    "{}{}",
-                    { if Some(1) == comment_view.get_untracked().my_vote { "text-secondary" } else { "" } },
-                    { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
-                  )
-                }}
-                title="Up vote"
-                disabled={move || !logged_in.get() || !online.get().0}
-                on:click={on_up_vote_submit}
-              >
-                <Icon icon={Upvote} />
-              </button>
-            </Form>
-            <span class="text-sm">{move || comment_view.get().counts.score}</span>
-            <Form action="POST" attr:class="flex items-center">
-              <input type="hidden" name="post_id" value={format!("{}", comment_view.get_untracked().post.id)} />
-              <input type="hidden" name="score" value={move || if Some(-1) == comment_view.get_untracked().my_vote { 0 } else { -1 }} />
-              <button
-                type="submit"
-                class={move || {
-                  format!(
-                    "{}{}",
-                    { if Some(-1) == comment_view.get_untracked().my_vote { "text-primary" } else { "" } },
-                    { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-primary/50" } },
-                  )
-                }}
-                title="Down vote"
-                disabled={move || !logged_in.get() || !online.get().0}
-                on:click={on_down_vote_submit}
-              >
-                <Icon icon={Downvote} />
-              </button>
-            </Form>
-            <Form action="POST" attr:class="flex items-center">
-              <input type="hidden" name="post_id" value={format!("{}", comment_view.get_untracked().post.id)} />
-              <input type="hidden" name="save" value={move || format!("{}", !comment_view.get_untracked().saved)} />
-              <button
-                type="submit"
-                title="Save"
-                class={move || {
-                  format!(
-                    "{}{}",
-                    { if comment_view.get_untracked().saved { "text-accent" } else { "" } },
-                    { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
-                  )
-                }}
-                disabled={move || !logged_in.get() || !online.get().0}
-                on:click={on_save_submit}
-              >
-                <Icon icon={Save} />
-              </button>
-            </Form>
-            <button
-              on:click={move |_| {
-                edit_show.set(false);
-                reply_show.update(|b| *b = !*b);
-                spawn_local_scoped_with_cancellation(async move {
-                  #[cfg(not(feature = "ssr"))]
-                  if let Ok(d) = IndexedDb::new().await {
-                    if let Ok(Some(c)) = d
-                      .get(
-                        &CommentDraftKey {
-                          comment_id: comment_view.get().comment.id.0,
-                          draft: Draft::Reply,
-                        },
-                      )
-                      .await
+            <Transition fallback={|| {}}>
+              {move || {
+                match ssr_site.get() {
+                  Some(Ok(s)) => {
                     {
-                      reply_content.set(c);
+                      let is_user = s.my_user.is_some();
+                      let logged_in = Memo::new(move |_| { is_user });
+                      let current_person = Memo::new(move |_| {
+                        if let GetSiteResponse { my_user: Some(MyUserInfo { local_user_view: LocalUserView { ref person, .. }, .. }), .. } = s {
+                          Some(person.clone())
+                        } else {
+                          None
+                        }
+                      });
+                      view! {
+                        <Form action="POST" attr:class="flex items-center">
+                          <input type="hidden" name="post_id" value={format!("{}", comment_view.get_untracked().post.id)} />
+                          <input type="hidden" name="score" value={move || if Some(1) == comment_view.get_untracked().my_vote { 0 } else { 1 }} />
+                          <button
+                            type="submit"
+                            class={move || {
+                              format!(
+                                "{}{}",
+                                { if Some(1) == comment_view.get_untracked().my_vote { "text-secondary" } else { "" } },
+                                { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
+                              )
+                            }}
+                            title="Up vote"
+                            disabled={move || !logged_in.get() || !online.get().0}
+                            on:click={on_up_vote_submit}
+                          >
+                            <Icon icon={Upvote} />
+                          </button>
+                        </Form>
+                        <span class="text-sm">{move || comment_view.get().counts.score}</span>
+                        <Form action="POST" attr:class="flex items-center">
+                          <input type="hidden" name="post_id" value={format!("{}", comment_view.get_untracked().post.id)} />
+                          <input type="hidden" name="score" value={move || if Some(-1) == comment_view.get_untracked().my_vote { 0 } else { -1 }} />
+                          <button
+                            type="submit"
+                            class={move || {
+                              format!(
+                                "{}{}",
+                                { if Some(-1) == comment_view.get_untracked().my_vote { "text-primary" } else { "" } },
+                                { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-primary/50" } },
+                              )
+                            }}
+                            title="Down vote"
+                            disabled={move || !logged_in.get() || !online.get().0}
+                            on:click={on_down_vote_submit}
+                          >
+                            <Icon icon={Downvote} />
+                          </button>
+                        </Form>
+                        <Form action="POST" attr:class="flex items-center">
+                          <input type="hidden" name="post_id" value={format!("{}", comment_view.get_untracked().post.id)} />
+                          <input type="hidden" name="save" value={move || format!("{}", !comment_view.get_untracked().saved)} />
+                          <button
+                            type="submit"
+                            title="Save"
+                            class={move || {
+                              format!(
+                                "{}{}",
+                                { if comment_view.get_untracked().saved { "text-accent" } else { "" } },
+                                { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+                              )
+                            }}
+                            disabled={move || !logged_in.get() || !online.get().0}
+                            on:click={on_save_submit}
+                          >
+                            <Icon icon={Save} />
+                          </button>
+                        </Form>
+                        <button
+                          on:click={move |_| {
+                            edit_show.set(false);
+                            reply_show.update(|b| *b = !*b);
+                            spawn_local_scoped_with_cancellation(async move {
+                              #[cfg(not(feature = "ssr"))]
+                              if let Ok(d) = IndexedDb::new().await {
+                                if let Ok(Some(c)) = d
+                                  .get(
+                                    &CommentDraftKey {
+                                      comment_id: comment_view.get().comment.id.0,
+                                      draft: Draft::Reply,
+                                    },
+                                  )
+                                  .await
+                                {
+                                  reply_content.set(c);
+                                }
+                              }
+                            });
+                          }}
+                          title="Reply"
+                          class={move || {
+                            format!("{}", { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } })
+                          }}
+                          disabled={move || !logged_in.get() || !online.get().0}
+                        >
+                          <Icon icon={Reply} />
+                        </button>
+                        <button
+                          on:click={move |_| {
+                            reply_show.set(false);
+                            edit_show.update(|b| *b = !*b);
+                            spawn_local_scoped_with_cancellation(async move {
+                              #[cfg(not(feature = "ssr"))]
+                              if let Ok(d) = IndexedDb::new().await {
+                                if let Ok(Some(c)) = d
+                                  .get(
+                                    &CommentDraftKey {
+                                      comment_id: comment_view.get().comment.id.0,
+                                      draft: Draft::Edit,
+                                    },
+                                  )
+                                  .await
+                                {
+                                  edit_content.set(c);
+                                } else {
+                                  edit_content.set(comment_view.get_untracked().comment.content);
+                                }
+                              }
+                            });
+                          }}
+                          class={move || {
+                            format!(
+                              "{}{}",
+                              if current_person.get_untracked().eq(&Some(comment_view.get_untracked().creator)) {
+                                ""
+                              } else {
+                                "pointer-events-none text-base-content/50"
+                              },
+                              { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+                            )
+                          }}
+                          disabled={move || !logged_in.get() || !online.get().0}
+                          title="Edit"
+                        >
+                          <Icon icon={Pencil} />
+                        </button>
+                        <span
+                          on:click={move |_| {
+                            if highlight_user_id.get().eq(&Some(comment_view.get().creator.id)) {
+                              highlight_user_id.set(None)
+                            } else {
+                              highlight_user_id.set(Some(comment_view.get().creator.id))
+                            }
+                          }}
+                          title="Highlight"
+                        >
+                          <Icon icon={Highlighter} />
+                        </span>
+                      }
                     }
+                      .into_any()
                   }
-                });
-              }}
-              title="Reply"
-              class={move || {
-                format!("{}", { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } })
-              }}
-              disabled={move || !logged_in.get() || !online.get().0}
-            >
-              <Icon icon={Reply} />
-            </button>
-            <button
-              on:click={move |_| {
-                reply_show.set(false);
-                edit_show.update(|b| *b = !*b);
-                spawn_local_scoped_with_cancellation(async move {
-                  #[cfg(not(feature = "ssr"))]
-                  if let Ok(d) = IndexedDb::new().await {
-                    if let Ok(Some(c)) = d
-                      .get(
-                        &CommentDraftKey {
-                          comment_id: comment_view.get().comment.id.0,
-                          draft: Draft::Edit,
-                        },
-                      )
-                      .await
-                    {
-                      edit_content.set(c);
-                    } else {
-                      edit_content.set(comment_view.get_untracked().comment.content);
-                    }
-                  }
-                });
-              }}
-              class={move || {
-                format!(
-                  "{}{}",
-                  if current_person.get_untracked().eq(&Some(comment_view.get_untracked().creator)) { "" } else { "pointer-events-none text-base-content/50" },
-                  { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
-                )
-              }}
-              disabled={move || !logged_in.get() || !online.get().0}
-              title="Edit"
-            >
-              <Icon icon={Pencil} />
-            </button>
-            <span
-              on:click={move |_| {
-                if highlight_user_id.get().eq(&Some(comment_view.get().creator.id)) {
-                  highlight_user_id.set(None)
-                } else {
-                  highlight_user_id.set(Some(comment_view.get().creator.id))
+                  _ => view! {}.into_any(),
                 }
               }}
-              title="Highlight"
-            >
-              <Icon icon={Highlighter} />
-            </span>
-
-                } }.into_any(),
-                _ => view! {}.into_any(),
-              }
-            }}
-          </Transition>
+            </Transition>
 
             <span class="overflow-hidden wrap-anywhere">
               <span>{abbr_duration.clone()}</span>
               " ago by "
               <A
-                href={move || {let a = comment_view.get().creator.actor_id; if let Some(domain) = a.domain() { format!("{}@{}", a.path(), domain) } else { format!("{}", a) }}}
+                href={move || {
+                  let a = comment_view.get().creator.actor_id;
+                  if let Some(domain) = a.domain() { format!("{}@{}", a.path(), domain) } else { format!("{}", a) }
+                }}
                 attr:class="text-sm hover:text-secondary"
               >
                 <span inner_html={html_escape::encode_safe(&comment_view.get().creator.actor_id.to_string()[8..]).to_string()} />

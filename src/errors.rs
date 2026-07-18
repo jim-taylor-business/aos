@@ -58,16 +58,16 @@ pub fn Offline(on_retry_click: Option<impl Fn(MouseEvent) + 'static>) -> impl In
     <div class="py-4 px-8 break-inside-avoid">
       <div class="flex justify-between alert alert-warning alert-soft">
         <span class="text-lg">{"Offline"}</span>
-        { if let Some(o) = on_retry_click {
+        {if let Some(o) = on_retry_click {
           view! {
             <span on:click={o} class="btn btn-sm">
               "Retry"
             </span>
-          }.into_any()
+          }
+            .into_any()
         } else {
-          view! {
-          }.into_any()
-        } }
+          view! {}.into_any()
+        }}
       </div>
     </div>
   }
@@ -81,16 +81,16 @@ pub fn Error(error: LemmyAppError, on_retry_click: Option<impl Fn(MouseEvent) + 
     <div class="py-4 px-8 break-inside-avoid">
       <div class="flex justify-between alert alert-error alert-soft">
         <span class="text-lg">{"Error"}</span>
-        { if let Some(o) = on_retry_click {
+        {if let Some(o) = on_retry_click {
           view! {
             <span on:click={o} class="btn btn-sm">
               "Retry"
             </span>
-          }.into_any()
+          }
+            .into_any()
         } else {
-          view! {
-          }.into_any()
-        } }
+          view! {}.into_any()
+        }}
       </div>
     </div>
   }
