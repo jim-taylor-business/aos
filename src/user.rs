@@ -29,14 +29,10 @@ pub fn User() -> impl IntoView {
 
   let query = use_query_map();
 
-  let _ssr_list = move || serde_json::from_str::<ListingType>(&query.get().get("list").unwrap_or("".into())).unwrap_or(ListingType::All);
-  let _ssr_sort = move || serde_json::from_str::<SortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(SortType::Active);
   let ssr_page = move || serde_json::from_str::<Vec<u32>>(&query.get().get("page").unwrap_or("".into())).unwrap_or(vec![1u32]);
-  let _ssr_term = move || query.get().get("term").unwrap_or("".into());
 
   let next_page_cursor: RwSignal<u32> = RwSignal::new(0);
 
-  let _loading = RwSignal::new(false);
   let intersection_element = NodeRef::<Div>::new();
   let on_scroll_element = NodeRef::<Div>::new();
 
@@ -154,8 +150,6 @@ pub fn User() -> impl IntoView {
                 Some(Err(e)) => view! { <Error error={e} on_retry_click={None::<fn(MouseEvent) -> ()>} /> }.into_any(),
                 Some(Ok(Some(s))) => {
                   let t = s.clone();
-                  let _old_posts = Memo::new(move |_| t.posts.clone());
-                  let _old_comments = Memo::new(move |_| t.comments.clone());
                   let name = s.person_view.person.name;
                   let banner = Memo::new(move |_| s.person_view.person.banner.clone());
                   let avatar = Memo::new(move |_| s.person_view.person.avatar.clone());

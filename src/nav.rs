@@ -175,7 +175,6 @@ pub fn TopNav(
       let mut query_params = query.get();
       query_params.remove("page");
       query_params.remove("list");
-      let _navigate = use_navigate();
       if l != ListingType::All {
         query_params.insert("list", serde_json::to_string(&l).ok().unwrap_or("All".into()));
       }

@@ -10,13 +10,7 @@ use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SearchType, SortType},
   site::{GetSiteResponse, Search, SearchResponse},
 };
-use leptos::{
-  html::Div,
-  logging::error,
-  prelude::*,
-  task::*,
-  *,
-};
+use leptos::{html::Div, logging::error, prelude::*, task::*, *};
 use leptos_meta::Title;
 use leptos_router::hooks::*;
 use std::{usize, vec};
@@ -25,8 +19,6 @@ use web_sys::WheelEvent;
 #[component]
 pub fn Search() -> impl IntoView {
   // let i18n = use_i18n();
-  let _ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
-
   let param = use_params_map();
   let ssr_name = move || param.get().get("name").unwrap_or("".into());
 

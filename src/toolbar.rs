@@ -243,9 +243,7 @@ pub fn PostToolbar(
       if let Some(h) = post_view.get().community.actor_id.inner().host() { h.to_string() } else { "".to_owned() }
     )
   };
-  let _community_title_encoded = html_escape::encode_safe(&community_title).to_string();
   let creator_name = &post_view.get().creator.actor_id.to_string()[8..];
-  let _creator_name_encoded = html_escape::encode_safe(creator_name).to_string();
 
   let now_in_millis = {
     #[cfg(not(feature = "ssr"))]

@@ -27,15 +27,8 @@ use std::collections::BTreeMap;
 use web_sys::{HtmlAnchorElement, HtmlImageElement, wasm_bindgen::JsCast};
 
 #[component]
-pub fn Hero(
-  post_id: Signal<PostId>,
-  // _post_number: usize,
-  hide: bool,
-  #[prop(optional)] next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)>,
-) -> impl IntoView {
-  let _params = use_params_map();
+pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)>) -> impl IntoView {
   let query = use_query_map();
-  let _online = expect_context::<RwSignal<OnlineSetter>>();
   let ssr_sort = move || serde_json::from_str::<CommentSortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(CommentSortType::Top);
 
   let reply_show = RwSignal::new(false);
@@ -102,43 +95,6 @@ pub fn Hero(
       }
     },
   );
-
-  let _on_sort_click = move |s: CommentSortType| {
-    move |_e: MouseEvent| {
-      let r = serde_json::to_string::<CommentSortType>(&s);
-      let mut query_params = query.get();
-      match r {
-        Ok(o) => {
-          query_params.insert("sort", o);
-        }
-        Err(_e) => {}
-      }
-      if CommentSortType::Top == s {
-        query_params.remove("sort");
-      }
-      let navigate = use_navigate();
-      navigate(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), Default::default());
-    }
-  };
-
-  let _on_reply_click = move |e: MouseEvent| {
-    e.prevent_default();
-    spawn_local_scoped_with_cancellation(async move {
-      let form = CreateComment { content: content.get(), post_id: post_id.get(), parent_id: None, language_id: None };
-      let result = LemmyClient.reply_comment(form).await;
-      match result {
-        Ok(_o) => {
-          comments_resource.refetch();
-          reply_show.update(|b| *b = !*b);
-          #[cfg(not(feature = "ssr"))]
-          if let Ok(d) = IndexedDb::new().await {
-            if let Ok(_c) = d.del(&CommentDraftKey { comment_id: post_id.get().0, draft: Draft::Post }).await {}
-          }
-        }
-        Err(_e) => {}
-      }
-    });
-  };
 
   let _visibility_element = NodeRef::<Textarea>::new();
 
