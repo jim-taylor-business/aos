@@ -18,7 +18,7 @@ use leptos_router::{
   hooks::use_navigate,
 };
 use leptos_use::{UseIntersectionObserverOptions, use_intersection_observer_with_options};
-use web_sys::{HtmlAnchorElement, HtmlImageElement, MouseEvent, PointerEvent, WheelEvent, wasm_bindgen::JsCast};
+use web_sys::{HtmlAnchorElement, HtmlImageElement, MouseEvent, PointerEvent, TouchEvent, WheelEvent, wasm_bindgen::JsCast};
 
 #[component]
 pub fn Comment(
@@ -110,8 +110,10 @@ pub fn Comment(
   let vote_show = RwSignal::new(false);
   let reply_show = RwSignal::new(false);
   let edit_show = RwSignal::new(false);
-  let still_handle: RwSignal<Option<TimeoutHandle>> = RwSignal::new(None);
   let loading = RwSignal::new(false);
+
+  let touch_still_handle: StoredValue<Option<TimeoutHandle>> = StoredValue::new(None);
+  let pointer_still_handle: StoredValue<Option<TimeoutHandle>> = StoredValue::new(None);
 
   let reply_content = RwSignal::new(String::default());
   let edit_content = RwSignal::new(String::default());
@@ -331,10 +333,47 @@ pub fn Comment(
             }
           }
         }}
+        on:contextmenu={move |ev| ev.prevent_default()}
+        on:touchstart={move |e: TouchEvent| {
+          // if e.buttons() == 1 {
+            // e.prevent_default();
+            touch_still_handle
+              .set_value(
+                set_timeout_with_handle(
+                    move || {
+                      vote_show.set(!vote_show.get());
+                      still_down.set(true);
+                    },
+                    std::time::Duration::from_millis(500),
+                  )
+                  .ok(),
+              );
+          // } else {
+          //   if let Some(h) = still_handle.get() {
+          //     h.clear();
+          //   }
+          // }
+        }}
+        on:touchcancel={move |_e: TouchEvent| {
+          if let Some(h) = touch_still_handle.get_value() {
+            h.clear();
+          }
+        }}
+        on:touchend={move |_e: TouchEvent| {
+          if let Some(h) = touch_still_handle.get_value() {
+            h.clear();
+          }
+        }}
+        on:touchmove={move |_e: TouchEvent| {
+          if let Some(h) = touch_still_handle.get_value() {
+            h.clear();
+          }
+        }}
         on:pointerdown={move |e: PointerEvent| {
           if e.buttons() == 1 {
-            still_handle
-              .set(
+            // e.prevent_default();
+            pointer_still_handle
+              .set_value(
                 set_timeout_with_handle(
                     move || {
                       vote_show.set(!vote_show.get());
@@ -345,29 +384,29 @@ pub fn Comment(
                   .ok(),
               );
           } else {
-            if let Some(h) = still_handle.get() {
+            if let Some(h) = pointer_still_handle.get_value() {
               h.clear();
             }
           }
         }}
         on:pointerup={move |_e: PointerEvent| {
-          if let Some(h) = still_handle.get() {
+          if let Some(h) = pointer_still_handle.get_value() {
             h.clear();
           }
         }}
         on:pointerleave={move |_e: PointerEvent| {
-          if let Some(h) = still_handle.get() {
+          if let Some(h) = pointer_still_handle.get_value() {
             h.clear();
           }
         }}
         on:pointermove={move |_e: PointerEvent| {
-          if let Some(h) = still_handle.get() {
+          if let Some(h) = pointer_still_handle.get_value() {
             h.clear();
           }
         }}
-        on:dblclick={move |_e: MouseEvent| {
-          vote_show.set(!vote_show.get());
-        }}
+        // on:dblclick={move |_e: MouseEvent| {
+        //   vote_show.set(!vote_show.get());
+        // }}
       >
         <Show
           when={move || !(comment_view.get().creator_banned_from_community || comment_view.get().creator.banned)}
