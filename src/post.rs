@@ -331,8 +331,6 @@ pub fn Post() -> impl IntoView {
                     });
                     #[cfg(not(feature = "ssr"))] loading.set(false);
 
-                    // log!("lslsls");
-
                     view! {
                       <Title text={post_response.get().post_view.post.name} />
                       <div>
@@ -508,10 +506,10 @@ pub fn Post() -> impl IntoView {
                                 // log!("UP");
                                 view! {
                                   <Show when={move || reply_show.get()} fallback={|| {}}>
-                                    <div class="mb-3 space-y-3 before:content-[''] before:block before:w-24 before:overflow-hidden">
+                                    <div class="pr-4 pl-4 mb-3 space-y-3 before:content-[''] before:block before:w-24 before:overflow-hidden">
                                       <div class="form-control">
                                         <textarea
-                                          class="h-24 text-base textarea textarea-bordered"
+                                          class="h-24 w-full text-base textarea textarea-bordered"
                                           placeholder="Comment text"
                                           prop:value={move || content.get()}
                                           node_ref={_visibility_element}

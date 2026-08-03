@@ -44,6 +44,7 @@ pub fn Comments(comments: Signal<Vec<CommentView>>, post_id: Signal<Option<i32>>
         now_in_millis
         highlight_user_id
         post_id
+        selected_drag_offset={RwSignal::new((1, 0f64))}
       />
     </For>
   }

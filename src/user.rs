@@ -325,6 +325,7 @@ pub fn User() -> impl IntoView {
                               now_in_millis
                               highlight_user_id={RwSignal::new(None)}
                               post_id={Signal::derive(move || Some(cv.post.id.0))}
+                              selected_drag_offset={RwSignal::new((0, 0f64))}
                             />
                           </div>
                         </For>

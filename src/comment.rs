@@ -11,14 +11,14 @@ use lemmy_api_common::{
   lemmy_db_views::structs::{CommentView, LocalUserView},
   site::{GetModlog, GetSiteResponse, MyUserInfo},
 };
-use leptos::{html::Textarea, prelude::*, task::*, *};
+use leptos::{html::Textarea, logging::log, prelude::*, task::*, *};
 use leptos_dom::helpers::TimeoutHandle;
 use leptos_router::{
   components::{A, Form},
   hooks::use_navigate,
 };
 use leptos_use::{UseIntersectionObserverOptions, use_intersection_observer_with_options};
-use web_sys::{HtmlAnchorElement, HtmlImageElement, MouseEvent, PointerEvent, TouchEvent, WheelEvent, wasm_bindgen::JsCast};
+use web_sys::{DragEvent, HtmlAnchorElement, HtmlImageElement, MouseEvent, PointerEvent, TouchEvent, WheelEvent, wasm_bindgen::JsCast};
 
 #[component]
 pub fn Comment(
@@ -30,6 +30,7 @@ pub fn Comment(
   hidden_comments: RwSignal<Vec<i32>>,
   highlight_user_id: RwSignal<Option<PersonId>>,
   post_id: Signal<Option<i32>>,
+  selected_drag_offset: RwSignal<(usize, f64)>,
 ) -> impl IntoView {
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   let online = expect_context::<RwSignal<OnlineSetter>>();
@@ -286,6 +287,16 @@ pub fn Comment(
     );
   }
 
+  const MOVE_CANCEL_THRESHOLD: f64 = 2.0;
+  const MAX_DRAG_PX: f64 = 256.0;
+  const BASE_MARGIN_PX: f64 = 0.0;
+  // let drag_offset = RwSignal::new((level, 0.0_f64));
+  let start_x: StoredValue<Option<f64>> = StoredValue::new(None);
+
+  // Effect::new(move || {
+  //   drag_offset.set(parent_drag_offset.get());
+  // });
+
   view! {
     <div class={move || {
       format!(
@@ -294,7 +305,9 @@ pub fn Comment(
         if level == 1 { " odd:bg-base-200 pr-4 pt-2 pb-1" } else { "" },
         if !hidden_comments.get().contains(&parent_comment_id) { "" } else { " hidden" },
       )
-    }}>
+      }}
+      style:padding-left=move || format!("calc(var(--spacing) * 4 + {}px)", if level > 1 && level <= selected_drag_offset.get().0 { selected_drag_offset.get().1 / 16f64 } else { 0f64 })
+    >
       <div
         class={move || {
           format!(
@@ -337,6 +350,10 @@ pub fn Comment(
         on:touchstart={move |e: TouchEvent| {
           // if e.buttons() == 1 {
             // e.prevent_default();
+            if let Some(touch) = e.touches().get(0) {
+                start_x.set_value(Some(touch.client_x() as f64));
+            }
+
             touch_still_handle
               .set_value(
                 set_timeout_with_handle(
@@ -364,14 +381,103 @@ pub fn Comment(
             h.clear();
           }
         }}
-        on:touchmove={move |_e: TouchEvent| {
-          if let Some(h) = touch_still_handle.get_value() {
-            h.clear();
+        on:touchmove={move |e: TouchEvent| {
+          let Some(touch) = e.touches().get(0) else {
+              return;
+          };
+          let Some(sx) = start_x.get_value() else {
+              return;
+          };
+
+          let delta = touch.client_x() as f64 - sx;
+
+          if delta.abs() > MOVE_CANCEL_THRESHOLD {
+            if let Some(h) = touch_still_handle.get_value() {
+              h.clear();
+            }
+              // Real drag, not a hold in place: cancel the pending long-press.
+              // set_active.set(false);
+              // clear_timer();
+              // set_dragging.set(true);
           }
+
+          selected_drag_offset.set((level, (BASE_MARGIN_PX + delta).clamp(-MAX_DRAG_PX, 0f64)));
+
+          // if let Some(h) = touch_still_handle.get_value() {
+          //   h.clear();
+          // }
+        }}
+        on:mousedown={move |e: MouseEvent| {
+          // if e.buttons() == 1 {
+            // e.prevent_default();
+
+            start_x.set_value(Some(e.client_x() as f64));
+
+            pointer_still_handle
+              .set_value(
+                set_timeout_with_handle(
+                    move || {
+                      vote_show.set(!vote_show.get());
+                      still_down.set(true);
+                    },
+                    std::time::Duration::from_millis(500),
+                  )
+                  .ok(),
+              );
+          // } else {
+          //   if let Some(h) = pointer_still_handle.get_value() {
+          //     h.clear();
+          //   }
+          // }
+        }}
+        on:mouseup={move |_e: MouseEvent| {
+          start_x.set_value(None);
+          // if let Some(h) = pointer_still_handle.get_value() {
+          //   h.clear();
+          // }
+        }}
+        on:mouseleave={move |_e: MouseEvent| {
+          start_x.set_value(None);
+          // if let Some(h) = pointer_still_handle.get_value() {
+          //   h.clear();
+          // }
+        }}
+        on:mousemove={move |e: MouseEvent| {
+          // let Some(touch) = e.touches().get(0) else {
+          //     return;
+          // };
+            // log!("1");
+          let Some(sx) = start_x.get_value() else {
+              return;
+          };
+          // log!("2");
+
+          let delta = e.client_x() as f64 - sx;
+
+          if delta.abs() > MOVE_CANCEL_THRESHOLD {
+            if let Some(h) = pointer_still_handle.get_value() {
+              h.clear();
+            }
+              // Real drag, not a hold in place: cancel the pending long-press.
+              // set_active.set(false);
+              // clear_timer();
+              // set_dragging.set(true);
+          }
+
+          // log!("3");
+
+          selected_drag_offset.set((level, (BASE_MARGIN_PX + delta).clamp(-MAX_DRAG_PX, 0f64)));
+
+          // if let Some(h) = pointer_still_handle.get_value() {
+          //   h.clear();
+          // }
         }}
         on:pointerdown={move |e: PointerEvent| {
           if e.buttons() == 1 {
             // e.prevent_default();
+
+            // start_x.set_value(Some(e.client_x() as f64));
+
             pointer_still_handle
               .set_value(
                 set_timeout_with_handle(
@@ -390,23 +496,40 @@ pub fn Comment(
           }
         }}
         on:pointerup={move |_e: PointerEvent| {
+          // start_x.set_value(None);
           if let Some(h) = pointer_still_handle.get_value() {
             h.clear();
           }
         }}
         on:pointerleave={move |_e: PointerEvent| {
+          // start_x.set_value(None);
           if let Some(h) = pointer_still_handle.get_value() {
             h.clear();
           }
         }}
-        on:pointermove={move |_e: PointerEvent| {
+        on:pointermove={move |e: PointerEvent| {
+          //   log!("1");
+          // let Some(sx) = start_x.get_value() else {
+          //     return;
+          // };
+          // log!("2");
+
+          // let delta = e.client_x() as f64 - sx;
+
+          // if delta.abs() > MOVE_CANCEL_THRESHOLD {
+          //   if let Some(h) = pointer_still_handle.get_value() {
+          //     h.clear();
+          //   }
+          // }
+
+          // log!("3");
+
+          // selected_drag_offset.set((level, (BASE_MARGIN_PX + delta).clamp(-MAX_DRAG_PX, 0f64)));
+
           if let Some(h) = pointer_still_handle.get_value() {
             h.clear();
           }
         }}
-        // on:dblclick={move |_e: MouseEvent| {
-        //   vote_show.set(!vote_show.get());
-        // }}
       >
         <Show
           when={move || !(comment_view.get().creator_banned_from_community || comment_view.get().creator.banned)}
@@ -617,7 +740,7 @@ pub fn Comment(
           <Show when={move || reply_show.get()} fallback={|| {}}>
             <div class="form-control">
               <textarea
-                class="h-24 text-base textarea textarea-bordered"
+                class="h-24 w-full text-base textarea textarea-bordered"
                 placeholder="Comment text"
                 prop:value={move || reply_content.get()}
                 node_ref={_visibility_element}
@@ -663,7 +786,7 @@ pub fn Comment(
           <Show when={move || edit_show.get()} fallback={|| {}}>
             <div class="form-control">
               <textarea
-                class="h-24 text-base textarea textarea-bordered"
+                class="h-24 w-full text-base textarea textarea-bordered"
                 placeholder="Comment text"
                 prop:value={move || edit_content.get()}
                 on:wheel={move |e: WheelEvent| {
@@ -719,6 +842,7 @@ pub fn Comment(
           now_in_millis
           highlight_user_id
           post_id
+          selected_drag_offset
         />
       </For>
     </div>
