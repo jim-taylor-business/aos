@@ -300,13 +300,37 @@ pub fn Comment(
   view! {
     <div class={move || {
       format!(
-        "{}{}{}",
-        if level > 8 { "" } else { "pl-4" },
+        "{}{}", //{}",
+        // if level > 8 { "" } else { "pl-4" },
         if level == 1 { " odd:bg-base-200 pr-4 pt-2 pb-1" } else { "" },
         if !hidden_comments.get().contains(&parent_comment_id) { "" } else { " hidden" },
       )
       }}
-      style:padding-left=move || format!("calc(var(--spacing) * 4 + {}px)", if level > 1 && level <= selected_drag_offset.get().0 { selected_drag_offset.get().1 / 16f64 } else { 0f64 })
+      style:padding-left=move || {
+        if selected_drag_offset.get().0 > 1 {
+          if level > 1 && level < selected_drag_offset.get().0 {
+            if level > 8 {
+              format!("")
+            } else {
+              format!("calc(var(--spacing) * 4 + {}px)", selected_drag_offset.get().1 / 16f64)
+            }
+          } else if level > 1 && level >= selected_drag_offset.get().0 {
+            // if level > 8 {
+            //   format!("")
+            // } else {
+              format!("calc({}px * -1)", selected_drag_offset.get().1 / 4f64)
+            // }
+          } else {
+            format!("calc(var(--spacing) * 4)")
+          }
+        } else {
+          if level > 8 {
+            format!("")
+          } else {
+            format!("calc(var(--spacing) * 4)")
+          }
+        }
+      }
     >
       <div
         class={move || {
@@ -382,102 +406,25 @@ pub fn Comment(
           }
         }}
         on:touchmove={move |e: TouchEvent| {
+          // if !still_down.get() { return; }
           let Some(touch) = e.touches().get(0) else {
               return;
           };
           let Some(sx) = start_x.get_value() else {
               return;
           };
-
           let delta = touch.client_x() as f64 - sx;
-
           if delta.abs() > MOVE_CANCEL_THRESHOLD {
             if let Some(h) = touch_still_handle.get_value() {
               h.clear();
             }
-              // Real drag, not a hold in place: cancel the pending long-press.
-              // set_active.set(false);
-              // clear_timer();
-              // set_dragging.set(true);
           }
-
           selected_drag_offset.set((level, (BASE_MARGIN_PX + delta).clamp(-MAX_DRAG_PX, 0f64)));
-
-          // if let Some(h) = touch_still_handle.get_value() {
-          //   h.clear();
-          // }
         }}
         on:mousedown={move |e: MouseEvent| {
-          // if e.buttons() == 1 {
-            // e.prevent_default();
-
-            start_x.set_value(Some(e.client_x() as f64));
-
-            pointer_still_handle
-              .set_value(
-                set_timeout_with_handle(
-                    move || {
-                      vote_show.set(!vote_show.get());
-                      still_down.set(true);
-                    },
-                    std::time::Duration::from_millis(500),
-                  )
-                  .ok(),
-              );
-          // } else {
-          //   if let Some(h) = pointer_still_handle.get_value() {
-          //     h.clear();
-          //   }
-          // }
-        }}
-        on:mouseup={move |_e: MouseEvent| {
-          start_x.set_value(None);
-          // if let Some(h) = pointer_still_handle.get_value() {
-          //   h.clear();
-          // }
-        }}
-        on:mouseleave={move |_e: MouseEvent| {
-          start_x.set_value(None);
-          // if let Some(h) = pointer_still_handle.get_value() {
-          //   h.clear();
-          // }
-        }}
-        on:mousemove={move |e: MouseEvent| {
-          // let Some(touch) = e.touches().get(0) else {
-          //     return;
-          // };
-            // log!("1");
-          let Some(sx) = start_x.get_value() else {
-              return;
-          };
-          // log!("2");
-
-          let delta = e.client_x() as f64 - sx;
-
-          if delta.abs() > MOVE_CANCEL_THRESHOLD {
-            if let Some(h) = pointer_still_handle.get_value() {
-              h.clear();
-            }
-              // Real drag, not a hold in place: cancel the pending long-press.
-              // set_active.set(false);
-              // clear_timer();
-              // set_dragging.set(true);
-          }
-
-          // log!("3");
-
-          selected_drag_offset.set((level, (BASE_MARGIN_PX + delta).clamp(-MAX_DRAG_PX, 0f64)));
-
-          // if let Some(h) = pointer_still_handle.get_value() {
-          //   h.clear();
-          // }
-        }}
-        on:pointerdown={move |e: PointerEvent| {
           if e.buttons() == 1 {
             // e.prevent_default();
-
-            // start_x.set_value(Some(e.client_x() as f64));
-
+            start_x.set_value(Some(e.client_x() as f64));
             pointer_still_handle
               .set_value(
                 set_timeout_with_handle(
@@ -495,41 +442,89 @@ pub fn Comment(
             }
           }
         }}
-        on:pointerup={move |_e: PointerEvent| {
+        on:mouseup={move |_e: MouseEvent| {
+          start_x.set_value(None);
+          if let Some(h) = pointer_still_handle.get_value() {
+            h.clear();
+          }
+        }}
+        on:mouseleave={move |_e: MouseEvent| {
           // start_x.set_value(None);
           if let Some(h) = pointer_still_handle.get_value() {
             h.clear();
           }
         }}
-        on:pointerleave={move |_e: PointerEvent| {
-          // start_x.set_value(None);
-          if let Some(h) = pointer_still_handle.get_value() {
-            h.clear();
+        on:mousemove={move |e: MouseEvent| {
+          // if !still_down.get() { return; }
+          let Some(sx) = start_x.get_value() else {
+              return;
+          };
+          let delta = e.client_x() as f64 - sx;
+          if delta.abs() > MOVE_CANCEL_THRESHOLD {
+            if let Some(h) = pointer_still_handle.get_value() {
+              h.clear();
+            }
           }
+          selected_drag_offset.set((level, (BASE_MARGIN_PX + delta).clamp(-MAX_DRAG_PX, 0f64)));
         }}
-        on:pointermove={move |e: PointerEvent| {
-          //   log!("1");
-          // let Some(sx) = start_x.get_value() else {
-          //     return;
-          // };
-          // log!("2");
+        // on:pointerdown={move |e: PointerEvent| {
+        //   if e.buttons() == 1 {
+        //     // e.prevent_default();
 
-          // let delta = e.client_x() as f64 - sx;
+        //     // start_x.set_value(Some(e.client_x() as f64));
 
-          // if delta.abs() > MOVE_CANCEL_THRESHOLD {
-          //   if let Some(h) = pointer_still_handle.get_value() {
-          //     h.clear();
-          //   }
-          // }
+        //     pointer_still_handle
+        //       .set_value(
+        //         set_timeout_with_handle(
+        //             move || {
+        //               vote_show.set(!vote_show.get());
+        //               still_down.set(true);
+        //             },
+        //             std::time::Duration::from_millis(500),
+        //           )
+        //           .ok(),
+        //       );
+        //   } else {
+        //     if let Some(h) = pointer_still_handle.get_value() {
+        //       h.clear();
+        //     }
+        //   }
+        // }}
+        // on:pointerup={move |_e: PointerEvent| {
+        //   // start_x.set_value(None);
+        //   if let Some(h) = pointer_still_handle.get_value() {
+        //     h.clear();
+        //   }
+        // }}
+        // on:pointerleave={move |_e: PointerEvent| {
+        //   // start_x.set_value(None);
+        //   if let Some(h) = pointer_still_handle.get_value() {
+        //     h.clear();
+        //   }
+        // }}
+        // on:pointermove={move |e: PointerEvent| {
+        //   //   log!("1");
+        //   // let Some(sx) = start_x.get_value() else {
+        //   //     return;
+        //   // };
+        //   // log!("2");
 
-          // log!("3");
+        //   // let delta = e.client_x() as f64 - sx;
 
-          // selected_drag_offset.set((level, (BASE_MARGIN_PX + delta).clamp(-MAX_DRAG_PX, 0f64)));
+        //   // if delta.abs() > MOVE_CANCEL_THRESHOLD {
+        //   //   if let Some(h) = pointer_still_handle.get_value() {
+        //   //     h.clear();
+        //   //   }
+        //   // }
 
-          if let Some(h) = pointer_still_handle.get_value() {
-            h.clear();
-          }
-        }}
+        //   // log!("3");
+
+        //   // selected_drag_offset.set((level, (BASE_MARGIN_PX + delta).clamp(-MAX_DRAG_PX, 0f64)));
+
+        //   if let Some(h) = pointer_still_handle.get_value() {
+        //     h.clear();
+        //   }
+        // }}
       >
         <Show
           when={move || !(comment_view.get().creator_banned_from_community || comment_view.get().creator.banned)}
