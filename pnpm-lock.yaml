@@ -19,8 +19,8 @@ importers:
         specifier: ^4.3.3
         version: 4.3.3
       daisyui:
-        specifier: ^5.6.18
-        version: 5.6.18
+        specifier: ^5.7.15
+        version: 5.7.15
 
 packages:
 
@@ -235,8 +235,8 @@ packages:
     engines: {node: '>=4'}
     hasBin: true
 
-  daisyui@5.6.18:
-    resolution: {integrity: sha512-6y9rboRQl8fosnusy/5pg11yp+H0LtK3YdtfS4Vf2QVnaYOKasNdYm6hDxeiT6bwZPdl4WRPzVIlIApdo2ssBg==}
+  daisyui@5.7.15:
+    resolution: {integrity: sha512-62W6wiH6AhFKJ2ZcpJVcuPGQXbIgwq8BZZx78iJ3/T8lqrdY+UpQlYWb4IQQQXZ81NMwyX+CKS2+8HaTOE3ctA==}
 
   detect-libc@1.0.3:
     resolution: {integrity: sha512-pGjwhsmsp4kL2RTz08wcOlGN83otlqHeD/Z5T8GXZB+/YcpQ/dgo+lbU8ZsGxV0HIvqqxo9l7mqYwyYMD9bKDg==}
@@ -247,8 +247,8 @@ packages:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
 
-  enhanced-resolve@5.24.2:
-    resolution: {integrity: sha512-rpsZEGT1jFuve6QlpyRp9ckQ+kN61hvF9BzCPyMdaKTm8UJce96KBn3sorXOFXlzjPrs3Vc4T1NsSroZ3PxlFw==}
+  enhanced-resolve@5.24.5:
+    resolution: {integrity: sha512-L1l8TNvomm6UVW5B253AGxQagSQr+vGwhMlrrfRS2qmhx46AMpMVJKQYLvWYbysTMY8VoicOvzHzoHMbyzB+4A==}
     engines: {node: '>=10.13.0'}
 
   fill-range@7.1.1:
@@ -477,7 +477,7 @@ snapshots:
       '@parcel/watcher': 2.5.1
       '@tailwindcss/node': 4.3.3
       '@tailwindcss/oxide': 4.3.3
-      enhanced-resolve: 5.24.2
+      enhanced-resolve: 5.24.5
       mri: 1.2.0
       picocolors: 1.1.1
       tailwindcss: 4.3.3
@@ -485,7 +485,7 @@ snapshots:
   '@tailwindcss/node@4.3.3':
     dependencies:
       '@jridgewell/remapping': 2.3.5
-      enhanced-resolve: 5.24.2
+      enhanced-resolve: 5.24.5
       jiti: 2.7.0
       lightningcss: 1.32.0
       magic-string: 0.30.21
@@ -554,13 +554,13 @@ snapshots:
 
   cssesc@3.0.0: {}
 
-  daisyui@5.6.18: {}
+  daisyui@5.7.15: {}
 
   detect-libc@1.0.3: {}
 
   detect-libc@2.1.2: {}
 
-  enhanced-resolve@5.24.2:
+  enhanced-resolve@5.24.5:
     dependencies:
       graceful-fs: 4.2.11
       tapable: 2.3.3

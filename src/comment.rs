@@ -308,18 +308,18 @@ pub fn Comment(
       }}
       style:padding-left=move || {
         if selected_drag_offset.get().0 > 1 {
-          if level > 1 && level < selected_drag_offset.get().0 {
+          if level > 1 && level <= selected_drag_offset.get().0 {
             if level > 8 {
               format!("")
             } else {
               format!("calc(var(--spacing) * 4 + {}px)", selected_drag_offset.get().1 / 16f64)
             }
-          } else if level > 1 && level >= selected_drag_offset.get().0 {
-            // if level > 8 {
-            //   format!("")
-            // } else {
-              format!("calc({}px * -1)", selected_drag_offset.get().1 / 4f64)
-            // }
+          } else if level > 1 && level > selected_drag_offset.get().0 {
+            if level > 8 {
+              format!("calc({}px * -1)", selected_drag_offset.get().1 / 16f64)
+            } else {
+              format!("calc(var(--spacing) * 4)")
+            }
           } else {
             format!("calc(var(--spacing) * 4)")
           }
