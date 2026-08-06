@@ -30,7 +30,7 @@ pub fn Comment(
   hidden_comments: RwSignal<Vec<i32>>,
   highlight_user_id: RwSignal<Option<PersonId>>,
   post_id: Signal<Option<i32>>,
-  selected_drag_offset: RwSignal<(usize, f64)>,
+  selected_drag_offset: RwSignal<(usize, f64, i32)>,
 ) -> impl IntoView {
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   let online = expect_context::<RwSignal<OnlineSetter>>();
@@ -72,6 +72,11 @@ pub fn Comment(
 
   let children = RwSignal::new(comments_children);
   let descendants = RwSignal::new(comments_descendants);
+
+  // let is_there = Memo::new(move |_| {
+  //   children.get().iter().find(|ct| ct.comment.id.0 == selected_drag_offset.get().2).is_some()
+  //     || descendants.get().iter().find(|ct| ct.comment.id.0 == selected_drag_offset.get().2).is_some()
+  // });
 
   let comment_view = RwSignal::new(comment.get());
   let comment_copy = RwSignal::new(comment.get());
@@ -287,11 +292,11 @@ pub fn Comment(
     );
   }
 
-  const MOVE_CANCEL_THRESHOLD: f64 = 2.0;
-  const MAX_DRAG_PX: f64 = 256.0;
-  const BASE_MARGIN_PX: f64 = 0.0;
-  // let drag_offset = RwSignal::new((level, 0.0_f64));
-  let start_x: StoredValue<Option<f64>> = StoredValue::new(None);
+  // const MOVE_CANCEL_THRESHOLD: f64 = 2.0;
+  // const MAX_DRAG_PX: f64 = 256.0;
+  // const BASE_MARGIN_PX: f64 = 0.0;
+  // // let drag_offset = RwSignal::new((level, 0.0_f64));
+  // let start_x: StoredValue<Option<f64>> = StoredValue::new(None);
 
   // Effect::new(move || {
   //   drag_offset.set(parent_drag_offset.get());
@@ -300,38 +305,41 @@ pub fn Comment(
   view! {
     <div class={move || {
       format!(
-        "{}{}", //{}",
-        // if level > 8 { "" } else { "pl-4" },
+        "{}{}{}",
+        if level > 8 { "" } else { "pl-4" },
         if level == 1 { " odd:bg-base-200 pr-4 pt-2 pb-1" } else { "" },
         if !hidden_comments.get().contains(&parent_comment_id) { "" } else { " hidden" },
       )
       }}
-      style:padding-left=move || {
-        if selected_drag_offset.get().0 > 1 {
-          if level > 1 && level <= selected_drag_offset.get().0 {
-            if level > 8 {
-              format!("")
-            } else {
-              format!("calc(var(--spacing) * 4 + {}px)", selected_drag_offset.get().1 / 16f64)
-            }
-          } else if level > 1 && level > selected_drag_offset.get().0 {
-            if level > 8 {
-              format!("calc({}px * -1)", selected_drag_offset.get().1 / 16f64)
-            } else {
-              format!("calc(var(--spacing) * 4)")
-            }
-          } else {
-            format!("calc(var(--spacing) * 4)")
-          }
-        } else {
-          if level > 8 {
-            format!("")
-          } else {
-            format!("calc(var(--spacing) * 4)")
-          }
-        }
-      }
+      // style:padding-left=move || {
+      //   if selected_drag_offset.get().0 > 1 {
+      //     if level > 1 && level <= selected_drag_offset.get().0 {
+      //       if level > 8 {
+      //         format!("")
+      //       } else if !is_there.get() {
+      //         format!("calc(var(--spacing) * 4)")
+      //       } else {
+      //         format!("calc(var(--spacing) * 4 + {}px)", selected_drag_offset.get().1 / 16f64)
+      //       }
+      //     } else if level > 1 && level > selected_drag_offset.get().0 {
+      //       if level > 8 {
+      //         format!("calc({}px * -1)", selected_drag_offset.get().1 / 16f64)
+      //       } else {
+      //         format!("calc(var(--spacing) * 4)")
+      //       }
+      //     } else {
+      //       format!("calc(var(--spacing) * 4)")
+      //     }
+      //   } else {
+      //     if level > 8 {
+      //       format!("")
+      //     } else {
+      //       format!("calc(var(--spacing) * 4)")
+      //     }
+      //   }
+      // }
     >
+    // <span>{{move || is_there.get() }}</span>
       <div
         class={move || {
           format!(
@@ -372,11 +380,9 @@ pub fn Comment(
         }}
         on:contextmenu={move |ev| ev.prevent_default()}
         on:touchstart={move |e: TouchEvent| {
-          // if e.buttons() == 1 {
-            // e.prevent_default();
-            if let Some(touch) = e.touches().get(0) {
-                start_x.set_value(Some(touch.client_x() as f64));
-            }
+            // if let Some(touch) = e.touches().get(0) {
+            //     start_x.set_value(Some(touch.client_x() as f64));
+            // }
 
             touch_still_handle
               .set_value(
@@ -389,11 +395,6 @@ pub fn Comment(
                   )
                   .ok(),
               );
-          // } else {
-          //   if let Some(h) = still_handle.get() {
-          //     h.clear();
-          //   }
-          // }
         }}
         on:touchcancel={move |_e: TouchEvent| {
           if let Some(h) = touch_still_handle.get_value() {
@@ -406,25 +407,23 @@ pub fn Comment(
           }
         }}
         on:touchmove={move |e: TouchEvent| {
-          // if !still_down.get() { return; }
-          let Some(touch) = e.touches().get(0) else {
-              return;
-          };
-          let Some(sx) = start_x.get_value() else {
-              return;
-          };
-          let delta = touch.client_x() as f64 - sx;
-          if delta.abs() > MOVE_CANCEL_THRESHOLD {
-            if let Some(h) = touch_still_handle.get_value() {
-              h.clear();
-            }
-          }
-          selected_drag_offset.set((level, (BASE_MARGIN_PX + delta).clamp(-MAX_DRAG_PX, 0f64)));
+          // let Some(touch) = e.touches().get(0) else {
+          //     return;
+          // };
+          // let Some(sx) = start_x.get_value() else {
+          //     return;
+          // };
+          // let delta = touch.client_x() as f64 - sx;
+          // if delta.abs() > MOVE_CANCEL_THRESHOLD {
+          //   if let Some(h) = touch_still_handle.get_value() {
+          //     h.clear();
+          //   }
+          // }
+          // selected_drag_offset.set((level, (BASE_MARGIN_PX + delta).clamp(-MAX_DRAG_PX, 0f64), comment.get().comment.id.0));
         }}
         on:mousedown={move |e: MouseEvent| {
           if e.buttons() == 1 {
-            // e.prevent_default();
-            start_x.set_value(Some(e.client_x() as f64));
+            // start_x.set_value(Some(e.client_x() as f64));
             pointer_still_handle
               .set_value(
                 set_timeout_with_handle(
@@ -443,29 +442,27 @@ pub fn Comment(
           }
         }}
         on:mouseup={move |_e: MouseEvent| {
-          start_x.set_value(None);
-          if let Some(h) = pointer_still_handle.get_value() {
-            h.clear();
-          }
-        }}
-        on:mouseleave={move |_e: MouseEvent| {
           // start_x.set_value(None);
           if let Some(h) = pointer_still_handle.get_value() {
             h.clear();
           }
         }}
-        on:mousemove={move |e: MouseEvent| {
-          // if !still_down.get() { return; }
-          let Some(sx) = start_x.get_value() else {
-              return;
-          };
-          let delta = e.client_x() as f64 - sx;
-          if delta.abs() > MOVE_CANCEL_THRESHOLD {
-            if let Some(h) = pointer_still_handle.get_value() {
-              h.clear();
-            }
+        on:mouseleave={move |_e: MouseEvent| {
+          if let Some(h) = pointer_still_handle.get_value() {
+            h.clear();
           }
-          selected_drag_offset.set((level, (BASE_MARGIN_PX + delta).clamp(-MAX_DRAG_PX, 0f64)));
+        }}
+        on:mousemove={move |e: MouseEvent| {
+          // let Some(sx) = start_x.get_value() else {
+          //     return;
+          // };
+          // let delta = e.client_x() as f64 - sx;
+          // if delta.abs() > MOVE_CANCEL_THRESHOLD {
+          //   if let Some(h) = pointer_still_handle.get_value() {
+          //     h.clear();
+          //   }
+          // }
+          // selected_drag_offset.set((level, (BASE_MARGIN_PX + delta).clamp(-MAX_DRAG_PX, 0f64), comment.get().comment.id.0));
         }}
         // on:pointerdown={move |e: PointerEvent| {
         //   if e.buttons() == 1 {

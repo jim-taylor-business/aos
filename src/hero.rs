@@ -551,7 +551,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                     now_in_millis
                     highlight_user_id
                     post_id={Signal::derive(move || Some(post_id.get().0))}
-                    selected_drag_offset={RwSignal::new((1, 0f64))}
+                    selected_drag_offset={RwSignal::new((1, 0f64, 0))}
                   />
                 }
                   .into_any()
