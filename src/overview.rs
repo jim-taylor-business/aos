@@ -162,7 +162,8 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                 new_pages.push((
                   p.0,
                   form.clone(),
-                  chrono::Utc::now().timestamp_millis(),
+                  jiff::Zoned::now().timestamp().as_millisecond(),
+                  // chrono::Utc::now().timestamp_millis(),
                   Ok(o),
                   get_auth_cookie.get_untracked(),
                   do_not_render_scroll,
@@ -185,7 +186,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
         new_pages.push((
           p.0,
           form.clone(),
-          chrono::Utc::now().timestamp_millis(),
+          jiff::Zoned::now().timestamp().as_millisecond(),
           result,
           get_auth_cookie.get_untracked(),
           do_not_render_scroll,
@@ -439,7 +440,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                   }
                   next_page_cursor.set((p.0 + o.posts.len(), o.next_page.clone()));
                   #[cfg(not(feature = "ssr"))] loading.set(false);
-                  view! { <Listings hide={p.6} posts={o.posts.clone().into()} page_number={RwSignal::new(p.0)} /> }.into_any()
+                  view! { <Listings hide={p.6} posts={o.posts.clone().into()} page_number={RwSignal::new(p.0)} heroes={1} /> }.into_any()
                 }
                 Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
                   #[cfg(not(feature = "ssr"))] loading.set(false);

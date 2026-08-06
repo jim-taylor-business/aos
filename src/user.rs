@@ -101,16 +101,17 @@ pub fn User() -> impl IntoView {
     },
   );
 
-  let now_in_millis = RwSignal::new({
-    #[cfg(not(feature = "ssr"))]
-    {
-      chrono::offset::Utc::now().timestamp_millis() as u64
-    }
-    #[cfg(feature = "ssr")]
-    {
-      std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or(std::time::Duration::new(1000, 0)).as_millis() as u64
-    }
-  });
+  let now_in_millis = RwSignal::new(u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0));
+  // let now_in_millis = RwSignal::new({
+  //   #[cfg(not(feature = "ssr"))]
+  //   {
+  //     chrono::offset::Utc::now().timestamp_millis() as u64
+  //   }
+  //   #[cfg(feature = "ssr")]
+  //   {
+  //     std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or(std::time::Duration::new(1000, 0)).as_millis() as u64
+  //   }
+  // });
 
   #[derive(Debug, Clone)]
   struct PostWithComments {
@@ -184,9 +185,9 @@ pub fn User() -> impl IntoView {
                                 score: 0,
                                 upvotes: 0,
                                 downvotes: 0,
-                                published: chrono::offset::Utc::now(),
-                                newest_comment_time_necro: chrono::offset::Utc::now(),
-                                newest_comment_time: chrono::offset::Utc::now(),
+                                published: std::time::SystemTime::now().into(),
+                                newest_comment_time_necro: std::time::SystemTime::now().into(),
+                                newest_comment_time: std::time::SystemTime::now().into(),
                                 featured_community: false,
                                 featured_local: false,
                                 hot_rank: 0f64,

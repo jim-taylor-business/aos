@@ -52,7 +52,8 @@ web-sys = { version = "0", features = ["AbortController", "AbortSignal"] }
 pulldown-cmark = { branch = "deploy_demo", git = "https://github.com/jim-taylor-business/pulldown-cmark.git" }
 html-escape = "0"
 pretty-duration = { branch = "main", git = "https://github.com/jim-taylor-business/pretty-duration.git" }
-chrono = "0"
+# chrono = "0"
+jiff = { version = "0", features = ["js"] }
 thiserror = "2"
 uuid = { version = "1", default-features = false, features = ["js"] }
 

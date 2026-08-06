@@ -223,10 +223,14 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
               let community_title_encoded = html_escape::encode_safe(&community_title).to_string();
               let creator_name = &post_response.get().post_view.creator.actor_id.to_string()[8..];
               let creator_name_encoded = html_escape::encode_safe(creator_name).to_string();
-              let now_in_millis = {
-                #[cfg(not(feature = "ssr"))] { chrono::offset::Utc::now().timestamp_millis() as u64 }
-                #[cfg(feature = "ssr")] { std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64 }
-              };
+
+              let now_in_millis = u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0);
+              // let now_in_millis: u64 = if now >= 0 { now as u64 } else { 0 };
+
+              // let now_in_millis = {
+              //   #[cfg(not(feature = "ssr"))] { chrono::offset::Utc::now().timestamp_millis() as u64 }
+              //   #[cfg(feature = "ssr")] { std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64 }
+              // };
               let duration_in_text = pretty_duration::pretty_duration(
                 &std::time::Duration::from_millis(now_in_millis - post_response.get().post_view.post.published.timestamp_millis() as u64),
                 Some(pretty_duration::PrettyDurationOptions {
@@ -513,11 +517,12 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
               let mut comments_descendants = res.comments.clone();
               let first_comment = res.comments.first().map(|f| vec![f.clone()]).unwrap_or_default();
               let highlight_user_id = RwSignal::new(None);
-              let now_in_millis = RwSignal::new({
-                #[cfg(not(feature = "ssr"))] { chrono::offset::Utc::now().timestamp_millis() as u64 }
-                #[cfg(feature = "ssr")]
-                { std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or(std::time::Duration::new(1000, 0)).as_millis() as u64 }
-              });
+              let now_in_millis = RwSignal::new(u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0));
+              // let now_in_millis = RwSignal::new({
+              //   #[cfg(not(feature = "ssr"))] { chrono::offset::Utc::now().timestamp_millis() as u64 }
+              //   #[cfg(feature = "ssr")]
+              //   { std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or(std::time::Duration::new(1000, 0)).as_millis() as u64 }
+              // });
               let hidden_comments: RwSignal<Vec<i32>> = RwSignal::new(vec![]);
               #[cfg(not(feature = "ssr"))]
               spawn_local_scoped_with_cancellation(async move {

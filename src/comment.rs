@@ -234,7 +234,8 @@ pub fn Comment(
       match result {
         Ok(o) => {
           loading.set(false);
-          now_in_millis.set(chrono::offset::Utc::now().timestamp_millis() as u64);
+          let now_in_millis = u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0);
+          // now_in_millis.set(chrono::offset::Utc::now().timestamp_millis() as u64);
           children.update(|cs| cs.push(o.comment_view));
           reply_show.set(false);
           #[cfg(not(feature = "ssr"))]

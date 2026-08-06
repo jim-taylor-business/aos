@@ -82,16 +82,17 @@ pub trait LemmyApi: Fetch {
       }
     }
 
-    let now_in_millis = {
-      #[cfg(not(feature = "ssr"))]
-      {
-        chrono::offset::Utc::now().timestamp_millis() as u64
-      }
-      #[cfg(feature = "ssr")]
-      {
-        std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or(std::time::Duration::new(1000, 0)).as_millis() as u64
-      }
-    };
+    let now_in_millis = u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0);
+    // let now_in_millis = {
+    //   #[cfg(not(feature = "ssr"))]
+    //   {
+    //     chrono::offset::Utc::now().timestamp_millis() as u64
+    //   }
+    //   #[cfg(feature = "ssr")]
+    //   {
+    //     std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or(std::time::Duration::new(1000, 0)).as_millis() as u64
+    //   }
+    // };
 
     self.make_request(HttpType::Get, "site", GetSite { t: now_in_millis }).await
   }
@@ -283,7 +284,6 @@ mod client {
   use crate::OnlineSetter;
   use gloo_net::{http, http::RequestBuilder};
   use leptos::wasm_bindgen::UnwrapThrowExt;
-
 
   trait MaybeBearerAuth {
     fn maybe_bearer_auth(self, token: Option<&str>) -> Self;
