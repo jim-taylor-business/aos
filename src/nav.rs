@@ -103,6 +103,26 @@ pub fn TopNav(
     move || serde_json::from_str::<SortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(default_sort.get().unwrap_or(SortType::Active));
   let ssr_term = move || query.get().get("term").unwrap_or("".into());
 
+  let communities_menu = NodeRef::<html::Details>::new();
+  let sort_menu = NodeRef::<html::Details>::new();
+  let language_menu = NodeRef::<html::Details>::new();
+  let theme_menu = NodeRef::<html::Details>::new();
+
+  let reset_menus = move || {
+    if let Some(f) = communities_menu.get() {
+      f.remove_attribute("open");
+    }
+    if let Some(s) = sort_menu.get() {
+      s.remove_attribute("open");
+    }
+    if let Some(l) = language_menu.get() {
+      l.remove_attribute("open");
+    }
+    if let Some(t) = theme_menu.get() {
+      t.remove_attribute("open");
+    }
+  };
+
   let on_sort_click = move |s: SortType| {
     move |_e: MouseEvent| {
       let o = serde_json::to_string::<SortType>(&s).unwrap_or("Active".into());
@@ -146,6 +166,7 @@ pub fn TopNav(
           se.set_scroll_left(0i32);
         }
       }
+      reset_menus();
     }
   };
 
@@ -191,6 +212,7 @@ pub fn TopNav(
           se.set_scroll_left(0i32);
         }
       }
+      reset_menus()
     }
   };
 
@@ -459,7 +481,7 @@ pub fn TopNav(
                         </A>
                       </li>
                       <li class="hidden sm:flex z-[1]">
-                        <details>
+                        <details node_ref=communities_menu>
                           <summary>
                             <Icon icon={Community} />
                           </summary>
@@ -482,7 +504,7 @@ pub fn TopNav(
                         </details>
                       </li>
                       <li class="hidden sm:flex z-[1]">
-                        <details>
+                        <details node_ref=sort_menu>
                           <summary>
                             <Icon icon={Sort} />
                           </summary>
@@ -528,6 +550,12 @@ pub fn TopNav(
                               on:click={on_sort_click(SortType::Scaled)}
                             >
                               <span>{"Scaled"}</span>
+                            </li>
+                            <li
+                              class={move || { (if SortType::NewComments == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                              on:click={on_sort_click(SortType::NewComments)}
+                            >
+                              <span>{"Comment"}</span>
                             </li>
                           </ul>
                         </details>
@@ -666,7 +694,7 @@ pub fn TopNav(
                   <div class={move || { (if search_show.get() { "hidden" } else { "flex-none" }).to_string() }}>
                     <ul class="flex-nowrap items-center menu menu-horizontal">
                       <li class="hidden sm:flex">
-                        <details>
+                        <details node_ref=language_menu>
                           <summary>
                             <Icon icon={Translate} />
                           </summary>
@@ -691,7 +719,7 @@ pub fn TopNav(
                         </details>
                       </li>
                       <li class="hidden sm:flex">
-                        <details>
+                        <details node_ref=theme_menu>
                           <summary>
                             <Icon icon={Palette} />
                           </summary>
@@ -742,7 +770,7 @@ pub fn TopNav(
                             </summary>
                             <ul class="z-[1] [inset-inline-end:0]">
                               <li class="flex sm:hidden">
-                                <details>
+                                <details node_ref=theme_menu>
                                   <summary>
                                     <Icon icon={Palette} />
                                   </summary>
