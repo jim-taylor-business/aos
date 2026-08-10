@@ -103,23 +103,62 @@ pub fn TopNav(
     move || serde_json::from_str::<SortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(default_sort.get().unwrap_or(SortType::Active));
   let ssr_term = move || query.get().get("term").unwrap_or("".into());
 
-  let communities_menu = NodeRef::<html::Details>::new();
-  let sort_menu = NodeRef::<html::Details>::new();
-  let language_menu = NodeRef::<html::Details>::new();
-  let theme_menu = NodeRef::<html::Details>::new();
+  let lg_filter_menu = NodeRef::<html::Details>::new();
+  let lg_sort_menu = NodeRef::<html::Details>::new();
+  let lg_language_menu = NodeRef::<html::Details>::new();
+  let lg_theme_menu = NodeRef::<html::Details>::new();
+  let sm_content_menu = NodeRef::<html::Details>::new();
+  let sm_ui_menu = NodeRef::<html::Details>::new();
+
+  #[derive(PartialEq)]
+  enum MenuType {
+    LgFilter,
+    LgSort,
+    LgLanguage,
+    LgTheme,
+    SmContent,
+    SmUi,
+  }
 
   let reset_menus = move || {
-    if let Some(f) = communities_menu.get() {
+    if let Some(f) = lg_filter_menu.get() {
       f.remove_attribute("open");
     }
-    if let Some(s) = sort_menu.get() {
+    if let Some(s) = lg_sort_menu.get() {
       s.remove_attribute("open");
     }
-    if let Some(l) = language_menu.get() {
+    if let Some(l) = lg_language_menu.get() {
       l.remove_attribute("open");
     }
-    if let Some(t) = theme_menu.get() {
+    if let Some(t) = lg_theme_menu.get() {
       t.remove_attribute("open");
+    }
+    if let Some(f) = sm_content_menu.get() {
+      f.remove_attribute("open");
+    }
+    if let Some(s) = sm_ui_menu.get() {
+      s.remove_attribute("open");
+    }
+  };
+
+  let reset_others = move |this: MenuType| {
+    if this != MenuType::LgFilter && let Some(f) = lg_filter_menu.get() {
+      f.remove_attribute("open");
+    }
+    if this != MenuType::LgSort && let Some(s) = lg_sort_menu.get() {
+      s.remove_attribute("open");
+    }
+    if this != MenuType::LgLanguage  && let Some(l) = lg_language_menu.get() {
+      l.remove_attribute("open");
+    }
+    if this != MenuType::LgTheme  && let Some(t) = lg_theme_menu.get() {
+      t.remove_attribute("open");
+    }
+    if this != MenuType::SmContent  && let Some(f) = sm_content_menu.get() {
+      f.remove_attribute("open");
+    }
+    if this != MenuType::SmUi  && let Some(s) = sm_ui_menu.get() {
+      s.remove_attribute("open");
     }
   };
 
@@ -332,15 +371,17 @@ pub fn TopNav(
     move |e: MouseEvent| {
       e.prevent_default();
       set_theme_cookie.set(Some(theme_name.to_string()));
+      reset_menus();
     }
   };
 
   // let lang_action = ServerAction::<ChangeLangFn>::new();
 
-  // let on_lang_submit = move |lang: Locale| {
+  // let _on_lang_submit = move |lang: Locale| {
   //   move |ev: SubmitEvent| {
   //     ev.prevent_default();
-  //     i18n.set_locale(lang);
+  //     // i18n.set_locale(lang);
+  //     reset_menus();
   //   }
   // };
 
@@ -481,8 +522,8 @@ pub fn TopNav(
                         </A>
                       </li>
                       <li class="hidden sm:flex z-[1]">
-                        <details node_ref=communities_menu>
-                          <summary>
+                        <details node_ref=lg_filter_menu>
+                          <summary on:click={move |_| reset_others(MenuType::LgFilter)}>
                             <Icon icon={Community} />
                           </summary>
                           <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
@@ -504,8 +545,8 @@ pub fn TopNav(
                         </details>
                       </li>
                       <li class="hidden sm:flex z-[1]">
-                        <details node_ref=sort_menu>
-                          <summary>
+                        <details node_ref=lg_sort_menu>
+                          <summary on:click={move |_| reset_others(MenuType::LgSort)}>
                             <Icon icon={Sort} />
                           </summary>
                           <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
@@ -561,8 +602,8 @@ pub fn TopNav(
                         </details>
                       </li>
                       <li class="flex sm:hidden">
-                        <details>
-                          <summary>
+                        <details node_ref=sm_content_menu>
+                          <summary on:click={move |_| reset_others(MenuType::SmContent)}>
                             <Icon icon={Filter} />
                           </summary>
                           <ul class="z-[1]">
@@ -694,8 +735,8 @@ pub fn TopNav(
                   <div class={move || { (if search_show.get() { "hidden" } else { "flex-none" }).to_string() }}>
                     <ul class="flex-nowrap items-center menu menu-horizontal">
                       <li class="hidden sm:flex">
-                        <details node_ref=language_menu>
-                          <summary>
+                        <details node_ref=lg_language_menu>
+                          <summary on:click={move |_| reset_others(MenuType::LgLanguage)}>
                             <Icon icon={Translate} />
                           </summary>
                           <ul class="z-[1] [inset-inline-end:0]">
@@ -719,8 +760,8 @@ pub fn TopNav(
                         </details>
                       </li>
                       <li class="hidden sm:flex">
-                        <details node_ref=theme_menu>
-                          <summary>
+                        <details node_ref=lg_theme_menu>
+                          <summary on:click={move |_| reset_others(MenuType::LgTheme)}>
                             <Icon icon={Palette} />
                           </summary>
                           <ul class="z-[1] [inset-inline-end:0]">
@@ -764,13 +805,13 @@ pub fn TopNav(
                         }}
                       >
                         <li>
-                          <details>
-                            <summary>
+                          <details node_ref=sm_ui_menu>
+                            <summary on:click={move |_| reset_others(MenuType::SmUi)}>
                               <Icon icon={User} />
                             </summary>
                             <ul class="z-[1] [inset-inline-end:0]">
                               <li class="flex sm:hidden">
-                                <details node_ref=theme_menu>
+                                <details>
                                   <summary>
                                     <Icon icon={Palette} />
                                   </summary>
