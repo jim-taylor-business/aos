@@ -234,10 +234,9 @@ pub fn Comment(
       match result {
         Ok(o) => {
           loading.set(false);
-          let now_in_millis = u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0);
-          // now_in_millis.set(chrono::offset::Utc::now().timestamp_millis() as u64);
-          children.update(|cs| cs.push(o.comment_view));
           reply_show.set(false);
+          now_in_millis.set(u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0));
+          children.update(|cs| cs.push(o.comment_view));
           #[cfg(not(feature = "ssr"))]
           if let Ok(d) = IndexedDb::new().await {
             if let Ok(_c) = d.del(&CommentDraftKey { comment_id: comment_view.get().comment.id.0, draft: Draft::Reply }).await {}
