@@ -11,7 +11,7 @@ use lemmy_api_common::{
   post::{GetPostResponse, GetPosts, GetPostsResponse},
   site::GetSiteResponse,
 };
-use leptos::{html::Div, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local_scoped_with_cancellation, *};
+use leptos::{logging::log, html::Div, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local_scoped_with_cancellation, *};
 use leptos_router::{components::*, hooks::*, *};
 use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options};
 use std::collections::BTreeMap;
@@ -109,6 +109,9 @@ pub fn TopNav(
   let lg_theme_menu = NodeRef::<html::Details>::new();
   let sm_content_menu = NodeRef::<html::Details>::new();
   let sm_ui_menu = NodeRef::<html::Details>::new();
+
+  let instance_input = NodeRef::<html::Input>::new();
+  let search_input = NodeRef::<html::Input>::new();
 
   #[derive(PartialEq)]
   enum MenuType {
@@ -362,6 +365,7 @@ pub fn TopNav(
         use_navigate()("/", Default::default());
       }
     });
+    ssr_site.refetch();
   };
 
   let _online = expect_context::<RwSignal<OnlineSetter>>();
@@ -392,12 +396,13 @@ pub fn TopNav(
 
   let instance_timer_handle = RwSignal::new(None);
 
-  let on_pointer_down = {
+  let on_mouse_down = {
     let timer_id = instance_timer_handle.clone();
     move |_| {
       let timer = set_timeout_with_handle(
         move || {
           still_pressed.set(true);
+          instance_input.get().map(|i| i.focus());
         },
         std::time::Duration::from_millis(500),
       )
@@ -406,7 +411,32 @@ pub fn TopNav(
     }
   };
 
-  let on_pointer_up = {
+  let on_mouse_up = {
+    let timer_id = instance_timer_handle.clone();
+    move |_| {
+      if let Some(timer) = timer_id.get() {
+        timer.clear();
+      }
+      timer_id.set(None);
+    }
+  };
+
+  let on_touch_start = {
+    let timer_id = instance_timer_handle.clone();
+    move |_| {
+      let timer = set_timeout_with_handle(
+        move || {
+          still_pressed.set(true);
+          instance_input.get().map(|i| i.focus());
+        },
+        std::time::Duration::from_millis(500),
+      )
+      .ok();
+      timer_id.set(timer);
+    }
+  };
+
+  let on_touch_end = {
     let timer_id = instance_timer_handle.clone();
     move |_| {
       if let Some(timer) = timer_id.get() {
@@ -419,25 +449,36 @@ pub fn TopNav(
   view! {
     <Transition fallback={|| {}}>
       {move || {
-        match ssr_site.get() {
-          Some(Ok(s)) => {
+        let site = ssr_site.get();
+        // match ssr_site.get() {
+          // Some(Ok(s)) => {
             {
-              let site_details = Memo::new(move |_| s.site_view.site.name.clone());
-              let icon_details = Memo::new(move |_| s.site_view.site.icon.clone());
-              let user_details = Memo::new(move |_| s.my_user.clone());
-              let logged_in = Memo::new(move |_| user_details.get().is_some());
+            // let site_details = Memo::new(move |_| s.site_view.site.name.clone());
+            // let icon_details = Memo::new(move |_| s.site_view.site.icon.clone());
+            // let user_details = Memo::new(move |_| s.my_user.clone());
+            // let logged_in = Memo::new(move |_| user_details.get().is_some());
+
+            let site_details = Memo::new(move |_| if let Some(Ok(s)) = ssr_site.get() { s.site_view.site.name.clone() } else { String::new() });
+            let icon_details = Memo::new(move |_| { /* log!("ic"); */ if let Some(Ok(s)) = ssr_site.get() { Some(s.site_view.site.icon.clone()) } else { None }});
+            // let user_details = Memo::new(move |_| { log!("ud"); if let Some(Ok(s)) = ssr_site.get() { Some(s.my_user.clone()) } else { None }});
+            let logged_in = Memo::new(move |_| { /* log!("lo"); */ if let Some(Ok(GetSiteResponse { my_user: Some(m), .. })) = ssr_site.get() { true } else { false } });
 
               view! {
                 <nav class="flex flex-row py-0 navbar">
                   <div class={move || { (if search_show.get() { "hidden" } else { "flex" }).to_string() }}>
-                    // <ActionForm attr:class={move || { if still_pressed.get() { "" } else { "hidden" } }} action={instance_action}>
                     <div class={move || { if still_pressed.get() { "" } else { "hidden" } }}>
                       <input
-                        class="pl-6 w-40 text-xl input"
+                        class="pl-2 sm:pl-6 h-full w-46 text-xl input"
                         type="text"
                         name="instance"
+                        node_ref=instance_input
                         prop:value={move || instance_term.get()}
-                        // on:submit={on_instance_submit}
+                        on:keydown={move |e: KeyboardEvent| {
+                          if e.key() == "Escape" {
+                            e.prevent_default();
+                            still_pressed.set(false);
+                          }
+                        }}
                         on:keypress={move |e: KeyboardEvent| {
                           if e.key() == "Enter" {
                             e.prevent_default();
@@ -447,17 +488,22 @@ pub fn TopNav(
                         on:input={move |ev| {
                           instance_term.set(Some(event_target_value(&ev)));
                         }}
+                        on:blur={move |_| {
+                          still_pressed.set(false);
+                        }}
                       />
-                    // </ActionForm>
                     </div>
                     <ul class="flex-nowrap items-center menu menu-horizontal">
                       <li>
                         <A
                           href="/"
                           attr:class={move || { if still_pressed.get() { "hidden" } else { "select-none text-xl whitespace-nowrap py-1/2" } }}
-                          on:pointerdown={on_pointer_down}
-                          on:pointerup={on_pointer_up}
-                          on:pointerleave={on_pointer_up}
+                          on:mousedown={on_mouse_down}
+                          on:mouseup={on_mouse_up}
+                          // on:mouseleave={on_mouse_up}
+                          on:touchstart={on_touch_start}
+                          on:touchend={on_touch_end}
+                          // on:mouseleave={on_mouse_up}
                           on:click={move |e: MouseEvent| {
                             e.prevent_default();
                             if still_pressed.get() {
@@ -512,7 +558,7 @@ pub fn TopNav(
                           }}
                         >
                           {move || {
-                            if let Some(i) = icon_details.get() {
+                            if let Some(Some(i)) = icon_details.get() {
                               view! { <img class="h-8 sm:hidden" src={i.inner().to_string()} /> }.into_any()
                             } else {
                               view! { <img class="h-8" src="/favicon.png" /> }.into_any()
@@ -706,6 +752,7 @@ pub fn TopNav(
                         type="text"
                         name="term"
                         prop:value={move || display_title.get()}
+                        node_ref=search_input
                         on:keypress={move |e: KeyboardEvent| {
                           if e.key() == "Enter" {
                             e.prevent_default();
@@ -715,18 +762,36 @@ pub fn TopNav(
                         on:input={move |ev| {
                           search_term.set(event_target_value(&ev));
                         }}
+                        on:blur={move |_| {
+                          search_show.set(false);
+                        }}
                       />
                     // </ActionForm>
                     </div>
                   </div>
                   <div class="flex-none">
                     <button
-                      class="py-2 px-4"
+                      class={move || {
+                        (if search_show.get() { "hidden" } else { "py-2 px-4" }).to_string()
+                      }}
+                      // class="py-2 px-4"
                       on:click={move |_| {
-                        search_show
-                          .update(|b| {
-                            *b = !*b;
-                          })
+                        search_show.update(|b| { *b = !*b; });
+                        search_input.get().map(|i| i.focus());
+                      }}
+                    >
+                      <Icon icon={Search} />
+                    </button>
+                    <button
+                      class={move || {
+                        (if search_show.get() { "py-2 px-4" } else { "hidden" }).to_string()
+                      }}
+                      // class="py-2 px-4"
+                      on:click={move |_| {
+                        // e.prevent_default();
+                        use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
+                        // search_show.update(|b| { *b = !*b; });
+                        // search_input.get().map(|i| i.focus());
                       }}
                     >
                       <Icon icon={Search} />
@@ -793,7 +858,7 @@ pub fn TopNav(
                         </details>
                       </li>
                       <Show
-                        when={move || { if let Some(_u) = user_details.get() { true } else { false } }}
+                        when={move || { logged_in.get() }}
                         fallback={move || {
                           view! {
                             <li>
@@ -892,11 +957,10 @@ pub fn TopNav(
                   </div>
                 </nav>
               }
-            }
-              .into_any()
-          }
-          _ => view! {}.into_any(),
-        }
+            }.into_any()
+          // }
+        //   _ => view! {}.into_any(),
+        // }
       }}
     </Transition>
   }
