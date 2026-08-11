@@ -402,7 +402,14 @@ pub fn TopNav(
       let timer = set_timeout_with_handle(
         move || {
           still_pressed.set(true);
-          instance_input.get().map(|i| i.focus());
+          // instance_input.get().map(|i| i.focus());
+          let _ = set_timeout_with_handle(
+            move || {
+              instance_input.get().map(|i| i.focus());
+            },
+            std::time::Duration::from_millis(0),
+          )
+          .ok();
         },
         std::time::Duration::from_millis(500),
       )
@@ -427,7 +434,13 @@ pub fn TopNav(
       let timer = set_timeout_with_handle(
         move || {
           still_pressed.set(true);
-          instance_input.get().map(|i| i.focus());
+          let _ = set_timeout_with_handle(
+            move || {
+              instance_input.get().map(|i| i.focus());
+            },
+            std::time::Duration::from_millis(0),
+          )
+          .ok();
         },
         std::time::Duration::from_millis(500),
       )
@@ -777,7 +790,13 @@ pub fn TopNav(
                       // class="py-2 px-4"
                       on:click={move |_| {
                         search_show.update(|b| { *b = !*b; });
-                        search_input.get().map(|i| i.focus());
+                        let _ = set_timeout_with_handle(
+                          move || {
+                            search_input.get().map(|i| i.focus());
+                          },
+                          std::time::Duration::from_millis(0),
+                        )
+                        .ok();
                       }}
                     >
                       <Icon icon={Search} />
