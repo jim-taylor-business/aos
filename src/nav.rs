@@ -444,7 +444,6 @@ pub fn TopNav(
       let timer = set_timeout_with_handle(
         move || {
           still_pressed.set(true);
-          // instance_input.get().map(|i| i.focus());
           let _ = set_timeout_with_handle(
             move || {
               instance_input.get().map(|i| i.focus());
@@ -505,126 +504,204 @@ pub fn TopNav(
     <Transition fallback={|| {}}>
       {move || {
         let site = ssr_site.get();
-        // match ssr_site.get() {
-          // Some(Ok(s)) => {
-            {
-            // let site_details = Memo::new(move |_| s.site_view.site.name.clone());
-            // let icon_details = Memo::new(move |_| s.site_view.site.icon.clone());
-            // let user_details = Memo::new(move |_| s.my_user.clone());
-            // let logged_in = Memo::new(move |_| user_details.get().is_some());
 
-            let site_details = Memo::new(move |_| if let Some(Ok(s)) = ssr_site.get() { s.site_view.site.name.clone() } else { String::new() });
-            let icon_details = Memo::new(move |_| { /* log!("ic"); */ if let Some(Ok(s)) = ssr_site.get() { Some(s.site_view.site.icon.clone()) } else { None }});
-            // let user_details = Memo::new(move |_| { log!("ud"); if let Some(Ok(s)) = ssr_site.get() { Some(s.my_user.clone()) } else { None }});
-            let logged_in = Memo::new(move |_| { /* log!("lo"); */ if let Some(Ok(GetSiteResponse { my_user: Some(m), .. })) = ssr_site.get() { true } else { false } });
+        let site_details = Memo::new(move |_| if let Some(Ok(s)) = ssr_site.get() { s.site_view.site.name.clone() } else { String::new() });
+        let icon_details = Memo::new(move |_| { if let Some(Ok(s)) = ssr_site.get() { Some(s.site_view.site.icon.clone()) } else { None }});
+        let logged_in = Memo::new(move |_| { if let Some(Ok(GetSiteResponse { my_user: Some(m), .. })) = ssr_site.get() { true } else { false } });
 
-              view! {
-                <nav class="flex flex-row py-0 navbar">
-                  <div class={move || { (if search_show.get() { "hidden" } else { "flex" }).to_string() }}>
-                    <div class={move || { if still_pressed.get() { "" } else { "hidden" } }}>
-                      <input
-                        class="pl-2 sm:pl-6 h-full w-46 text-xl input"
-                        type="text"
-                        name="instance"
-                        node_ref=instance_input
-                        prop:value={move || instance_term.get()}
-                        on:keydown={move |e: KeyboardEvent| {
-                          if e.key() == "Escape" {
-                            e.prevent_default();
-                            still_pressed.set(false);
+        view! {
+          <nav class="flex flex-row py-0 navbar">
+            <div class={move || { (if search_show.get() { "hidden" } else { "flex" }).to_string() }}>
+              <div class={move || { if still_pressed.get() { "" } else { "hidden" } }}>
+                <input
+                  class="pl-2 sm:pl-6 h-full w-46 text-xl input"
+                  type="text"
+                  name="instance"
+                  node_ref=instance_input
+                  prop:value={move || instance_term.get()}
+                  on:keydown={move |e: KeyboardEvent| {
+                    if e.key_code() == 27 {
+                      e.prevent_default();
+                      still_pressed.set(false);
+                    }
+                  }}
+                  on:keypress={move |e: KeyboardEvent| {
+                    if e.key_code() == 13 {
+                      e.prevent_default();
+                      on_instance_submit()
+                    }
+                  }}
+                  on:input={move |ev| {
+                    instance_term.set(Some(event_target_value(&ev)));
+                  }}
+                  on:blur={move |_| {
+                    still_pressed.set(false);
+                  }}
+                />
+              </div>
+              <ul class="flex-nowrap items-center menu menu-horizontal">
+                <li>
+                  <A
+                    href="/"
+                    attr:class={move || { if still_pressed.get() { "hidden" } else { "select-none text-xl whitespace-nowrap py-1/2" } }}
+                    on:mousedown={on_mouse_down}
+                    on:mouseup={on_mouse_up}
+                    // on:mouseleave={on_mouse_up}
+                    on:touchstart={on_touch_start}
+                    on:touchend={on_touch_end}
+                    // on:mouseleave={on_mouse_up}
+                    on:click={move |e: MouseEvent| {
+                      e.prevent_default();
+                      if still_pressed.get() {
+                        still_pressed.set(false);
+                      } else {
+                        next_page_cursor.set((0, None));
+                        #[cfg(not(feature = "ssr"))]
+                        spawn_local_scoped_with_cancellation(async move {
+                          if let Ok(d) = IndexedDb::new().await {
+                            let _ = d
+                              .set(
+                                &ScrollPositionKey {
+                                  path: "/".into(),
+                                  query: "".into(),
+                                },
+                                &0i32,
+                              )
+                              .await;
                           }
-                        }}
-                        on:keypress={move |e: KeyboardEvent| {
-                          if e.key() == "Enter" {
-                            e.prevent_default();
-                            on_instance_submit()
+                          response_cache
+                            .update(move |rc| {
+                              rc.remove(
+                                &(
+                                  0usize,
+                                  GetPosts {
+                                    type_: Some(ListingType::All),
+                                    sort: Some(SortType::Active),
+                                    page: None,
+                                    limit: Some(50),
+                                    community_id: None,
+                                    community_name: None,
+                                    saved_only: None,
+                                    liked_only: None,
+                                    disliked_only: None,
+                                    show_hidden: Some(true),
+                                    show_read: Some(true),
+                                    show_nsfw: Some(false),
+                                    page_cursor: None,
+                                  },
+                                  get_auth_cookie.get_untracked(),
+                                ),
+                              );
+                            });
+                          use_navigate()("/", Default::default());
+                        });
+                        if let Some(on_scroll_element) = scroll_element.get() {
+                          if let Some(se) = on_scroll_element.get() {
+                            se.set_scroll_left(0i32);
                           }
-                        }}
-                        on:input={move |ev| {
-                          instance_term.set(Some(event_target_value(&ev)));
-                        }}
-                        on:blur={move |_| {
-                          still_pressed.set(false);
-                        }}
-                      />
-                    </div>
-                    <ul class="flex-nowrap items-center menu menu-horizontal">
-                      <li>
-                        <A
-                          href="/"
-                          attr:class={move || { if still_pressed.get() { "hidden" } else { "select-none text-xl whitespace-nowrap py-1/2" } }}
-                          on:mousedown={on_mouse_down}
-                          on:mouseup={on_mouse_up}
-                          // on:mouseleave={on_mouse_up}
-                          on:touchstart={on_touch_start}
-                          on:touchend={on_touch_end}
-                          // on:mouseleave={on_mouse_up}
-                          on:click={move |e: MouseEvent| {
-                            e.prevent_default();
-                            if still_pressed.get() {
-                              still_pressed.set(false);
-                            } else {
-                              next_page_cursor.set((0, None));
-                              #[cfg(not(feature = "ssr"))]
-                              spawn_local_scoped_with_cancellation(async move {
-                                if let Ok(d) = IndexedDb::new().await {
-                                  let _ = d
-                                    .set(
-                                      &ScrollPositionKey {
-                                        path: "/".into(),
-                                        query: "".into(),
-                                      },
-                                      &0i32,
-                                    )
-                                    .await;
-                                }
-                                response_cache
-                                  .update(move |rc| {
-                                    rc.remove(
-                                      &(
-                                        0usize,
-                                        GetPosts {
-                                          type_: Some(ListingType::All),
-                                          sort: Some(SortType::Active),
-                                          page: None,
-                                          limit: Some(50),
-                                          community_id: None,
-                                          community_name: None,
-                                          saved_only: None,
-                                          liked_only: None,
-                                          disliked_only: None,
-                                          show_hidden: Some(true),
-                                          show_read: Some(true),
-                                          show_nsfw: Some(false),
-                                          page_cursor: None,
-                                        },
-                                        get_auth_cookie.get_untracked(),
-                                      ),
-                                    );
-                                  });
-                                use_navigate()("/", Default::default());
-                              });
-                              if let Some(on_scroll_element) = scroll_element.get() {
-                                if let Some(se) = on_scroll_element.get() {
-                                  se.set_scroll_left(0i32);
-                                }
-                              }
-                            }
-                          }}
-                        >
-                          {move || {
-                            if let Some(Some(i)) = icon_details.get() {
-                              view! { <img class="h-8 sm:hidden" src={i.inner().to_string()} /> }.into_any()
-                            } else {
-                              view! { <img class="h-8" src="/favicon.png" /> }.into_any()
-                            }
-                          }}
-                          <span class="hidden sm:flex">{move || { let m = site_details.get(); if m.len() > 0 { m } else { "A.O.S".to_owned() } }}</span>
-                        </A>
+                        }
+                      }
+                    }}
+                  >
+                    {move || {
+                      if let Some(Some(i)) = icon_details.get() {
+                        view! { <img class="h-8 sm:hidden" src={i.inner().to_string()} /> }.into_any()
+                      } else {
+                        view! { <img class="h-8" src="/favicon.png" /> }.into_any()
+                      }
+                    }}
+                    <span class="hidden sm:flex">{move || { let m = site_details.get(); if m.len() > 0 { m } else { "A.O.S".to_owned() } }}</span>
+                  </A>
+                </li>
+                <li class="hidden sm:flex z-[1]">
+                  <details node_ref=lg_filter_menu>
+                    <summary on:click={move |_| reset_others(MenuType::LgFilter)}>
+                      <Icon icon={Community} />
+                    </summary>
+                    <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+                      <li class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}>
+                        <span>"All"</span>
                       </li>
-                      <li class="hidden sm:flex z-[1]">
-                        <details node_ref=lg_filter_menu>
-                          <summary on:click={move |_| reset_others(MenuType::LgFilter)}>
+                      <li class={move || highlight_csr_filter(ListingType::Local)} on:click={on_csr_filter_click(ListingType::Local)}>
+                        <span>"Local"</span>
+                      </li>
+                      <li
+                        class={move || {
+                          format!("{}{}", highlight_csr_filter(ListingType::Subscribed), if logged_in.get() { "" } else { " btn-disabled" })
+                        }}
+                        on:click={on_csr_filter_click(ListingType::Subscribed)}
+                      >
+                        <span>"Subscribed"</span>
+                      </li>
+                    </ul>
+                  </details>
+                </li>
+                <li class="hidden sm:flex z-[1]">
+                  <details node_ref=lg_sort_menu>
+                    <summary on:click={move |_| reset_others(MenuType::LgSort)}>
+                      <Icon icon={Sort} />
+                    </summary>
+                    <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+                      <li
+                        class={move || { (if SortType::Active == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                        on:click={on_sort_click(SortType::Active)}
+                      >
+                        <span>"Active"</span>
+                      </li>
+                      <li
+                        class={move || { (if SortType::TopAll == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                        on:click={on_sort_click(SortType::TopAll)}
+                      >
+                        <span>"Top"</span>
+                      </li>
+                      <li
+                        class={move || { (if SortType::Hot == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                        on:click={on_sort_click(SortType::Hot)}
+                      >
+                        <span>"Hot"</span>
+                      </li>
+                      <li
+                        class={move || { (if SortType::New == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                        on:click={on_sort_click(SortType::New)}
+                      >
+                        <span>"New"</span>
+                      </li>
+                      <li
+                        class={move || { (if SortType::Old == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                        on:click={on_sort_click(SortType::Old)}
+                      >
+                        <span>"Old"</span>
+                      </li>
+                      <li
+                        class={move || { (if SortType::Controversial == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                        on:click={on_sort_click(SortType::Controversial)}
+                      >
+                        <span>"Controversial"</span>
+                      </li>
+                      <li
+                        class={move || { (if SortType::Scaled == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                        on:click={on_sort_click(SortType::Scaled)}
+                      >
+                        <span>{"Scaled"}</span>
+                      </li>
+                      <li
+                        class={move || { (if SortType::NewComments == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                        on:click={on_sort_click(SortType::NewComments)}
+                      >
+                        <span>{"Comment"}</span>
+                      </li>
+                    </ul>
+                  </details>
+                </li>
+                <li class="flex sm:hidden">
+                  <details node_ref=sm_content_menu>
+                    <summary on:click={move |_| reset_others(MenuType::SmContent)}>
+                      <Icon icon={Filter} />
+                    </summary>
+                    <ul class="z-[1]">
+                      <li class="flex z-[1]">
+                        <details>
+                          <summary>
                             <Icon icon={Community} />
                           </summary>
                           <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
@@ -636,7 +713,11 @@ pub fn TopNav(
                             </li>
                             <li
                               class={move || {
-                                format!("{}{}", highlight_csr_filter(ListingType::Subscribed), if logged_in.get() { "" } else { " btn-disabled" })
+                                format!(
+                                  "{}{}",
+                                  highlight_csr_filter(ListingType::Subscribed),
+                                  if logged_in.get() { "" } else { " btn-disabled" },
+                                )
                               }}
                               on:click={on_csr_filter_click(ListingType::Subscribed)}
                             >
@@ -645,9 +726,9 @@ pub fn TopNav(
                           </ul>
                         </details>
                       </li>
-                      <li class="hidden sm:flex z-[1]">
-                        <details node_ref=lg_sort_menu>
-                          <summary on:click={move |_| reset_others(MenuType::LgSort)}>
+                      <li class="flex z-[1]">
+                        <details>
+                          <summary>
                             <Icon icon={Sort} />
                           </summary>
                           <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
@@ -693,345 +774,212 @@ pub fn TopNav(
                             >
                               <span>{"Scaled"}</span>
                             </li>
-                            <li
-                              class={move || { (if SortType::NewComments == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                              on:click={on_sort_click(SortType::NewComments)}
-                            >
-                              <span>{"Comment"}</span>
-                            </li>
-                          </ul>
-                        </details>
-                      </li>
-                      <li class="flex sm:hidden">
-                        <details node_ref=sm_content_menu>
-                          <summary on:click={move |_| reset_others(MenuType::SmContent)}>
-                            <Icon icon={Filter} />
-                          </summary>
-                          <ul class="z-[1]">
-                            <li class="flex z-[1]">
-                              <details>
-                                <summary>
-                                  <Icon icon={Community} />
-                                </summary>
-                                <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
-                                  <li class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}>
-                                    <span>"All"</span>
-                                  </li>
-                                  <li class={move || highlight_csr_filter(ListingType::Local)} on:click={on_csr_filter_click(ListingType::Local)}>
-                                    <span>"Local"</span>
-                                  </li>
-                                  <li
-                                    class={move || {
-                                      format!(
-                                        "{}{}",
-                                        highlight_csr_filter(ListingType::Subscribed),
-                                        if logged_in.get() { "" } else { " btn-disabled" },
-                                      )
-                                    }}
-                                    on:click={on_csr_filter_click(ListingType::Subscribed)}
-                                  >
-                                    <span>"Subscribed"</span>
-                                  </li>
-                                </ul>
-                              </details>
-                            </li>
-                            <li class="flex z-[1]">
-                              <details>
-                                <summary>
-                                  <Icon icon={Sort} />
-                                </summary>
-                                <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
-                                  <li
-                                    class={move || { (if SortType::Active == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                                    on:click={on_sort_click(SortType::Active)}
-                                  >
-                                    <span>"Active"</span>
-                                  </li>
-                                  <li
-                                    class={move || { (if SortType::TopAll == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                                    on:click={on_sort_click(SortType::TopAll)}
-                                  >
-                                    <span>"Top"</span>
-                                  </li>
-                                  <li
-                                    class={move || { (if SortType::Hot == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                                    on:click={on_sort_click(SortType::Hot)}
-                                  >
-                                    <span>"Hot"</span>
-                                  </li>
-                                  <li
-                                    class={move || { (if SortType::New == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                                    on:click={on_sort_click(SortType::New)}
-                                  >
-                                    <span>"New"</span>
-                                  </li>
-                                  <li
-                                    class={move || { (if SortType::Old == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                                    on:click={on_sort_click(SortType::Old)}
-                                  >
-                                    <span>"Old"</span>
-                                  </li>
-                                  <li
-                                    class={move || { (if SortType::Controversial == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                                    on:click={on_sort_click(SortType::Controversial)}
-                                  >
-                                    <span>"Controversial"</span>
-                                  </li>
-                                  <li
-                                    class={move || { (if SortType::Scaled == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                                    on:click={on_sort_click(SortType::Scaled)}
-                                  >
-                                    <span>{"Scaled"}</span>
-                                  </li>
-                                </ul>
-                              </details>
-                            </li>
                           </ul>
                         </details>
                       </li>
                     </ul>
-                  </div>
-                  <div class="flex flex-grow">
-                    <div class={move || {
-                      (if search_show.get() { "form-control flex flex-grow" } else { "form-control hidden sm:flex flex-grow" }).to_string()
-                    }}>
-                      // <ActionForm
-                      // attr:class={move || {
-                      // (if search_show.get() { "form-control flex flex-grow" } else { "form-control hidden sm:flex flex-grow" }).to_string()
-                      // }}
-                      // action={search_action}
-                      // >
-                      <input
-                        title={move || display_title.get()}
-                        class="w-full input"
-                        type="text"
-                        name="term"
-                        prop:value={move || display_title.get()}
-                        node_ref=search_input
-                        on:keypress={move |e: KeyboardEvent| {
-                          if e.key() == "Enter" {
-                            e.prevent_default();
-                            use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
-                          }
-                        }}
-                        on:input={move |ev| {
-                          search_term.set(event_target_value(&ev));
-                        }}
-                        on:blur={move |_| {
-                          search_show.set(false);
-                        }}
-                      />
-                    // </ActionForm>
-                    </div>
-                  </div>
-                  <div class="flex-none">
-                    <button
-                      class={move || {
-                        (if search_show.get() { "hidden" } else { "py-2 px-4" }).to_string()
-                      }}
-                      // class="py-2 px-4"
-                      on:click={move |_| {
-                        search_show.update(|b| { *b = !*b; });
-                        let _ = set_timeout_with_handle(
-                          move || {
-                            search_input.get().map(|i| i.focus());
-                          },
-                          std::time::Duration::from_millis(0),
-                        )
-                        .ok();
-                      }}
-                    >
-                      <Icon icon={Search} />
-                    </button>
-                    <button
-                      class={move || {
-                        (if search_show.get() { "py-2 px-4" } else { "hidden" }).to_string()
-                      }}
-                      // class="py-2 px-4"
-                      on:click={move |_| {
-                        // e.prevent_default();
-                        use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
-                        // search_show.update(|b| { *b = !*b; });
-                        // search_input.get().map(|i| i.focus());
-                      }}
-                    >
-                      <Icon icon={Search} />
-                    </button>
-                  </div>
-                  <div class={move || { (if search_show.get() { "hidden" } else { "flex-none" }).to_string() }}>
-                    <ul class="flex-nowrap items-center menu menu-horizontal">
-                      <li class="hidden sm:flex">
-                        <details node_ref=lg_language_menu>
-                          <summary on:click={move |_| reset_others(MenuType::LgLanguage)}>
-                            <Icon icon={Translate} />
-                          </summary>
-                          <ul class="z-[1] [inset-inline-end:0]">
-                            <li>
-                              // <ActionForm attr:class="p-0" action={lang_action}>
-                              // <input type="hidden" name="lang" value="FR" />
-                              <button class="py-2 px-4" type="submit">
-                                "FR"
-                              </button>
-                            // </ActionForm>
-                            </li>
-                            <li>
-                              // <ActionForm attr:class="p-0" action={lang_action}>
-                              // <input type="hidden" name="lang" value="EN" />
-                              <button class="py-2 px-4" type="submit">
-                                "EN"
-                              </button>
-                            // </ActionForm>
-                            </li>
-                          </ul>
-                        </details>
+                  </details>
+                </li>
+              </ul>
+            </div>
+            <div class="flex flex-grow">
+              <div class={move || {
+                (if search_show.get() { "form-control flex flex-grow" } else { "form-control hidden sm:flex flex-grow" }).to_string()
+              }}>
+                // <ActionForm
+                // attr:class={move || {
+                // (if search_show.get() { "form-control flex flex-grow" } else { "form-control hidden sm:flex flex-grow" }).to_string()
+                // }}
+                // action={search_action}
+                // >
+                <input
+                  title={move || display_title.get()}
+                  class="w-full input"
+                  type="text"
+                  name="term"
+                  prop:value={move || display_title.get()}
+                  node_ref=search_input
+                  on:keypress={move |e: KeyboardEvent| {
+                    if e.key() == "Enter" {
+                      e.prevent_default();
+                      use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
+                    }
+                  }}
+                  on:input={move |ev| {
+                    search_term.set(event_target_value(&ev));
+                  }}
+                  on:blur={move |_| {
+                    search_show.set(false);
+                  }}
+                />
+              // </ActionForm>
+              </div>
+            </div>
+            <div class="flex-none">
+              <button
+                class={move || {
+                  (if search_show.get() { "hidden" } else { "py-2 px-4" }).to_string()
+                }}
+                on:click={move |_| {
+                  search_show.update(|b| { *b = !*b; });
+                  let _ = set_timeout_with_handle(
+                    move || {
+                      search_input.get().map(|i| i.focus());
+                    },
+                    std::time::Duration::from_millis(0),
+                  )
+                  .ok();
+                }}
+              >
+                <Icon icon={Search} />
+              </button>
+              <button
+                class={move || {
+                  (if search_show.get() { "py-2 px-4" } else { "hidden" }).to_string()
+                }}
+                on:click={move |_| {
+                  use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
+                }}
+              >
+                <Icon icon={Search} />
+              </button>
+            </div>
+            <div class={move || { (if search_show.get() { "hidden" } else { "flex-none" }).to_string() }}>
+              <ul class="flex-nowrap items-center menu menu-horizontal">
+                <li class="hidden sm:flex">
+                  <details node_ref=lg_language_menu>
+                    <summary on:click={move |_| reset_others(MenuType::LgLanguage)}>
+                      <Icon icon={Translate} />
+                    </summary>
+                    <ul class="z-[1] [inset-inline-end:0]">
+                      <li>
+                        // <ActionForm attr:class="p-0" action={lang_action}>
+                        // <input type="hidden" name="lang" value="FR" />
+                        <button class="py-2 px-4" type="submit">
+                          "FR"
+                        </button>
+                      // </ActionForm>
                       </li>
-                      <li class="hidden sm:flex">
-                        <details node_ref=lg_theme_menu>
-                          <summary on:click={move |_| reset_others(MenuType::LgTheme)}>
-                            <Icon icon={Palette} />
-                          </summary>
-                          <ul class="z-[1] [inset-inline-end:0]">
-                            <li data-theme="dark">
-                              <ActionForm attr:class="p-0" action={change_theme}>
-                                <input type="hidden" name="theme" value="dark" />
-                                <button class="py-2 px-4" type="submit" on:click={on_theme_submit("dark")}>
-                                  "Dark"
-                                </button>
-                              </ActionForm>
-                            </li>
-                            <li data-theme="light">
-                              <ActionForm attr:class="p-0" action={change_theme}>
-                                <input type="hidden" name="theme" value="light" />
-                                <button class="py-2 px-4" type="submit" on:click={on_theme_submit("light")}>
-                                  "Light"
-                                </button>
-                              </ActionForm>
-                            </li>
-                            <li data-theme="retro">
-                              <ActionForm attr:class="p-0" action={change_theme}>
-                                <input type="hidden" name="theme" value="retro" />
-                                <button class="py-2 px-4" type="submit" on:click={on_theme_submit("retro")}>
-                                  "Retro"
-                                </button>
-                              </ActionForm>
-                            </li>
-                          </ul>
-                        </details>
+                      <li>
+                        // <ActionForm attr:class="p-0" action={lang_action}>
+                        // <input type="hidden" name="lang" value="EN" />
+                        <button class="py-2 px-4" type="submit">
+                          "EN"
+                        </button>
+                      // </ActionForm>
                       </li>
-                      <Show
-                        when={move || { logged_in.get() }}
-                        fallback={move || {
-                          view! {
-                            <li>
-                              <form method="post" action="/l">
-                                <input type="hidden" name="source_url" value={move || format!("{}{}", use_location().pathname.get(), query.get().to_query_string())} />
-                                <button type="submit"
-                                  on:click={move |e: MouseEvent| {
-                                    e.prevent_default();
-                                    let passed = expect_context::<RwSignal<PassedUrl>>();
-                                    passed.set(PassedUrl(Some(format!("{}{}", use_location().pathname.get(), query.get().to_query_string()))));
-                                    use_navigate()("/l", NavigateOptions::default());
-                                  }}
-                                >
-                                  <Icon icon={SignIn} />
-                                </button>
-                              </form>
-                            </li>
-                          }
-                        }}
-                      >
-                        <li>
-                          <details node_ref=sm_ui_menu>
-                            <summary on:click={move |_| reset_others(MenuType::SmUi)}>
-                              <Icon icon={User} />
+                    </ul>
+                  </details>
+                </li>
+                <li class="hidden sm:flex">
+                  <details node_ref=lg_theme_menu>
+                    <summary on:click={move |_| reset_others(MenuType::LgTheme)}>
+                      <Icon icon={Palette} />
+                    </summary>
+                    <ul class="z-[1] [inset-inline-end:0]">
+                      <li data-theme="dark">
+                        <ActionForm attr:class="p-0" action={change_theme}>
+                          <input type="hidden" name="theme" value="dark" />
+                          <button class="py-2 px-4" type="submit" on:click={on_theme_submit("dark")}>
+                            "Dark"
+                          </button>
+                        </ActionForm>
+                      </li>
+                      <li data-theme="light">
+                        <ActionForm attr:class="p-0" action={change_theme}>
+                          <input type="hidden" name="theme" value="light" />
+                          <button class="py-2 px-4" type="submit" on:click={on_theme_submit("light")}>
+                            "Light"
+                          </button>
+                        </ActionForm>
+                      </li>
+                      <li data-theme="retro">
+                        <ActionForm attr:class="p-0" action={change_theme}>
+                          <input type="hidden" name="theme" value="retro" />
+                          <button class="py-2 px-4" type="submit" on:click={on_theme_submit("retro")}>
+                            "Retro"
+                          </button>
+                        </ActionForm>
+                      </li>
+                    </ul>
+                  </details>
+                </li>
+                <Show
+                  when={move || { logged_in.get() }}
+                  fallback={move || {
+                    view! {
+                      <li>
+                        <form method="post" action="/l">
+                          <input type="hidden" name="source_url" value={move || format!("{}{}", use_location().pathname.get(), query.get().to_query_string())} />
+                          <button type="submit"
+                            on:click={move |e: MouseEvent| {
+                              e.prevent_default();
+                              let passed = expect_context::<RwSignal<PassedUrl>>();
+                              passed.set(PassedUrl(Some(format!("{}{}", use_location().pathname.get(), query.get().to_query_string()))));
+                              use_navigate()("/l", NavigateOptions::default());
+                            }}
+                          >
+                            <Icon icon={SignIn} />
+                          </button>
+                        </form>
+                      </li>
+                    }
+                  }}
+                >
+                  <li>
+                    <details node_ref=sm_ui_menu>
+                      <summary on:click={move |_| reset_others(MenuType::SmUi)}>
+                        <Icon icon={User} />
+                      </summary>
+                      <ul class="z-[1] [inset-inline-end:0]">
+                        <li class="flex sm:hidden">
+                          <details>
+                            <summary>
+                              <Icon icon={Palette} />
                             </summary>
                             <ul class="z-[1] [inset-inline-end:0]">
-                              <li class="flex sm:hidden">
-                                <details>
-                                  <summary>
-                                    <Icon icon={Palette} />
-                                  </summary>
-                                  <ul class="z-[1] [inset-inline-end:0]">
-                                    <li data-theme="dark">
-                                      <ActionForm attr:class="p-0" action={change_theme}>
-                                        <input type="hidden" name="theme" value="dark" />
-                                        <button data-theme="dark" class="py-2 px-4" type="submit" on:click={on_theme_submit("dark")}>
-                                          "Dark"
-                                        </button>
-                                      </ActionForm>
-                                    </li>
-                                    <li data-theme="light">
-                                      <ActionForm attr:class="p-0" action={change_theme}>
-                                        <input type="hidden" name="theme" value="light" />
-                                        <button data-theme="light" class="py-2 px-4" type="submit" on:click={on_theme_submit("light")}>
-                                          "Light"
-                                        </button>
-                                      </ActionForm>
-                                    </li>
-                                    <li data-theme="retro">
-                                      <ActionForm attr:class="p-0" action={change_theme}>
-                                        <input type="hidden" name="theme" value="retro" />
-                                        <button data-theme="retro" class="py-2 px-4" type="submit" on:click={on_theme_submit("retro")}>
-                                          "Retro"
-                                        </button>
-                                      </ActionForm>
-                                    </li>
-                                  </ul>
-                                </details>
+                              <li data-theme="dark">
+                                <ActionForm attr:class="p-0" action={change_theme}>
+                                  <input type="hidden" name="theme" value="dark" />
+                                  <button data-theme="dark" class="py-2 px-4" type="submit" on:click={on_theme_submit("dark")}>
+                                    "Dark"
+                                  </button>
+                                </ActionForm>
                               </li>
-                              // <div class="flex my-0 sm:hidden divider" />
-                              // <li>
-                              // <A href="/notifications">"Notifications"</A>
-                              // </li>
-                              // <li>
-                              // <A
-                              // on:click={move |e: MouseEvent| {
-                              // if e.ctrl_key() && e.shift_key() {
-                              // e.stop_propagation();
-                              // if let Some(Ok(GetSiteResponse { my_user: Some(m), .. })) = ssr_site_signal.get() {
-                              // let _ = window().location().set_href(&format!("//lemmy.world/u/{}", m.local_user_view.person.name));
-                              // }
-                              // }
-                              // }}
-                              // href={move || {
-                              // format!(
-                              // "/u/{}",
-                              // if let Some(Ok(GetSiteResponse { my_user: Some(m), .. })) = ssr_site_signal.get() {
-                              // m.local_user_view.person.name
-                              // } else {
-                              // String::default()
-                              // },
-                              // )
-                              // }}
-                              // >
-                              // "Profile"
-                              // </A>
-                              // </li>
-                              // <li>
-                              // <A attr:class="pointer-events-none text-base-content/50" href="/settings">
-                              // "Settings"
-                              // </A>
-                              // </li>
-                              // <div class="my-0 divider" />
-                              <li>
-                                <ActionForm action={logout_action}>
-                                  <button type="submit" on:click={on_logout_submit}>
-                                    <Icon icon={SignOut} />
+                              <li data-theme="light">
+                                <ActionForm attr:class="p-0" action={change_theme}>
+                                  <input type="hidden" name="theme" value="light" />
+                                  <button data-theme="light" class="py-2 px-4" type="submit" on:click={on_theme_submit("light")}>
+                                    "Light"
+                                  </button>
+                                </ActionForm>
+                              </li>
+                              <li data-theme="retro">
+                                <ActionForm attr:class="p-0" action={change_theme}>
+                                  <input type="hidden" name="theme" value="retro" />
+                                  <button data-theme="retro" class="py-2 px-4" type="submit" on:click={on_theme_submit("retro")}>
+                                    "Retro"
                                   </button>
                                 </ActionForm>
                               </li>
                             </ul>
                           </details>
                         </li>
-                      </Show>
-                    </ul>
-                  </div>
-                </nav>
-              }
-            }.into_any()
-          // }
-        //   _ => view! {}.into_any(),
-        // }
+                        <li>
+                          <ActionForm action={logout_action}>
+                            <button type="submit" on:click={on_logout_submit}>
+                              <Icon icon={SignOut} />
+                            </button>
+                          </ActionForm>
+                        </li>
+                      </ul>
+                    </details>
+                  </li>
+                </Show>
+              </ul>
+            </div>
+          </nav>
+        }.into_any()
       }}
     </Transition>
   }

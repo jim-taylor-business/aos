@@ -1,6 +1,6 @@
 [package]
 name = "aos"
-version = "0.19.18-aos-demo-alpha"
+version = "0.19.20-aos-demo-beta"
 edition = "2024"
 
 [lib]
@@ -12,8 +12,9 @@ lemmy_api_common = { branch = "deploy_demo", git = "https://github.com/jim-taylo
 leptos = { version = "0" }
 leptos_meta = { version = "0" }
 leptos_axum = { version = "0", optional = true }
-# leptos_router = { version = "=0.8.13" }
 leptos_router = { version = "0" }
+
+# leptos_router = { version = "=0.8.13" }
 
 # leptos = { path = "../leptos/leptos" }
 # leptos_meta = { path = "../leptos/meta" }
@@ -25,8 +26,6 @@ leptos_router = { version = "0" }
 # leptos_axum = { git = "https://github.com/jim-taylor-business/leptos.git", branch = "deploy_demo", optional = true }
 # leptos_router = { git = "https://github.com/jim-taylor-business/leptos.git", branch = "deploy_demo" }
 
-
-
 # leptos = { git = "https://github.com/jim-taylor-business/leptos.git", commit = "49b95378" }
 # leptos_meta = { git = "https://github.com/jim-taylor-business/leptos.git", commit = "49b95378" }
 # leptos_axum = { git = "https://github.com/jim-taylor-business/leptos.git", commit = "49b95378", optional = true }
@@ -35,27 +34,27 @@ leptos_router = { version = "0" }
 # leptos_i18n = { version = "0", features = ["track_locale_files"] , optional = true }
 
 leptos-use = { version = "0", optional = true }
-# leptos-use = { path = "../leptos-use", optional = true }
 
+# leptos-use = { path = "../leptos-use", optional = true }
 # leptos-use = { git = "https://github.com/Synphonyte/leptos-use.git", commit = "355b2af2", optional = true }
 # leptos-use = { git = "https://github.com/jim-taylor-business/leptos-use.git", branch = "deploy_demo", optional = true }
 
-cookie = "0"
+send_wrapper = { version = "0", features = ["futures"] }
+strum = "0"
+strum_macros = "0"
+thiserror = "2"
 
 serde = { version = "1", features = ["derive"] }
 serde_urlencoded = "0"
 serde_json = "1"
-strum = "0"
-strum_macros = "0"
-thiserror = "2"
 uuid = { version = "1", default-features = false, features = ["js"] }
+cookie = "0"
 web-sys = { version = "0", features = ["AbortController", "AbortSignal"] }
 http = "1"
 pulldown-cmark = { branch = "deploy_demo", git = "https://github.com/jim-taylor-business/pulldown-cmark.git" }
 html-escape = "0"
 pretty-duration = { branch = "main", git = "https://github.com/jim-taylor-business/pretty-duration.git" }
 jiff = { version = "0", features = ["js"] }
-send_wrapper = { version = "0", features = ["futures"] }
 
 gloo-net = { version = "0", optional = true, features = ["http"] }
 console_error_panic_hook = { version = "0", optional = true }
@@ -71,7 +70,7 @@ tracing = { version = "0", optional = true }
 reqwest = { version = "0", features = ["json", "query", "form", "blocking", "brotli", "gzip", "deflate", "zstd"], optional = true }
 
 [features]
-default = ["ssr"]
+default = ["csr"]
 csr = [
   "leptos/csr",
   # "leptos_i18n/csr",

@@ -6,12 +6,11 @@ use leptos::{
 };
 use serde::{Deserialize, Serialize};
 use serde_urlencoded::ser;
-use strum_macros::Display;
 use web_sys::MouseEvent;
 
 pub type LemmyAppResult<T> = Result<T, LemmyAppError>;
 
-#[derive(Default, Display, Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Default, strum_macros::Display, Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "error", content = "message", rename_all = "snake_case")]
 pub enum LemmyAppErrorType {
   #[default]

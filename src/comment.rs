@@ -17,8 +17,8 @@ use leptos_router::{
   components::{A, Form},
   hooks::use_navigate,
 };
-use leptos_use::{UseIntersectionObserverOptions, use_intersection_observer_with_options};
-use web_sys::{DragEvent, HtmlAnchorElement, HtmlImageElement, MouseEvent, PointerEvent, TouchEvent, WheelEvent, wasm_bindgen::JsCast};
+use leptos_use::*;
+use web_sys::{Event, DragEvent, HtmlAnchorElement, HtmlImageElement, MouseEvent, PointerEvent, TouchEvent, WheelEvent, wasm_bindgen::JsCast};
 
 #[component]
 pub fn Comment(
@@ -292,6 +292,28 @@ pub fn Comment(
     );
   }
 
+  let on_scroll = move |_e: Event| {
+    if let Some(h) = touch_still_handle.get_value() {
+      h.clear();
+    }
+
+    // #[cfg(not(feature = "ssr"))]
+    // if let Some(se) = on_scroll_element.get() {
+    //   spawn_local_scoped_with_cancellation(async move {
+    //     if let Ok(d) = IndexedDb::new().await {
+    //       let _ = d
+    //         .set(&ScrollPositionKey { path: use_location().pathname.get(), query: use_query_map().get().to_query_string() }, &se.scroll_left())
+    //         .await;
+    //     }
+    //   });
+    // }
+  };
+
+  // #[cfg(not(feature = "ssr"))]
+  // {
+  //   let UseScrollReturn { .. } = use_scroll_with_options(on_scroll_element, UseScrollOptions::default().on_scroll(on_scroll));
+  // }
+
   // const MOVE_CANCEL_THRESHOLD: f64 = 2.0;
   // const MAX_DRAG_PX: f64 = 256.0;
   // const BASE_MARGIN_PX: f64 = 0.0;
@@ -407,6 +429,9 @@ pub fn Comment(
           }
         }}
         on:touchmove={move |e: TouchEvent| {
+          if let Some(h) = touch_still_handle.get_value() {
+            h.clear();
+          }
           // let Some(touch) = e.touches().get(0) else {
           //     return;
           // };

@@ -22,7 +22,7 @@ use leptos::{
 };
 use leptos_meta::*;
 use leptos_router::{components::A, hooks::*};
-use leptos_use::{UseIntersectionObserverOptions, use_intersection_observer_with_options, *};
+use leptos_use::*;
 use web_sys::{Event, HtmlAnchorElement, HtmlImageElement, WheelEvent, wasm_bindgen::JsCast};
 
 #[component]
