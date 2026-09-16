@@ -163,7 +163,6 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                   p.0,
                   form.clone(),
                   jiff::Zoned::now().timestamp().as_millisecond(),
-                  // chrono::Utc::now().timestamp_millis(),
                   Ok(o),
                   get_auth_cookie.get_untracked(),
                   do_not_render_scroll,

@@ -166,7 +166,6 @@ pub fn Post() -> impl IntoView {
 
   view! {
     <main class="flex flex-col">
-      // ={post_view.into()} />
       <TopNav scroll_element={on_scroll_element.into()} default_sort={SortType::TopAll.into()} post_view />
       <div class="flex flex-grow">
         <div
@@ -298,10 +297,6 @@ pub fn Post() -> impl IntoView {
                     let creator_name = &post_response.get().post_view.creator.actor_id.to_string()[8..];
                     let creator_name_encoded = html_escape::encode_safe(creator_name).to_string();
                     let now_in_millis = u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0);
-                    // let now_in_millis = {
-                    //   #[cfg(not(feature = "ssr"))] { chrono::offset::Utc::now().timestamp_millis() as u64 }
-                    //   #[cfg(feature = "ssr")] { std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis() as u64 }
-                    // };
                     let duration_in_text = pretty_duration::pretty_duration(
                       &std::time::Duration::from_millis(now_in_millis - post_response.get().post_view.post.published.timestamp_millis() as u64),
                       Some(pretty_duration::PrettyDurationOptions {
@@ -504,7 +499,6 @@ pub fn Post() -> impl IntoView {
                             Some(Ok(s)) => {
                               {
                                 let logged_in = Memo::new(move |_| { s.my_user.is_some() });
-                                // log!("UP");
                                 view! {
                                   <Show when={move || reply_show.get()} fallback={|| {}}>
                                     <div class="pr-4 pl-4 mb-3 space-y-3 before:content-[''] before:block before:w-24 before:overflow-hidden">

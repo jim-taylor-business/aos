@@ -1,9 +1,5 @@
 use crate::{
-  OnlineSetter, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
-  client::*,
-  db::csr_indexed_db::*,
-  errors::{LemmyAppError, LemmyAppResult},
-  icon::{IconType::*, *},
+  OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie, client::*, db::csr_indexed_db::*, errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult}, icon::{IconType::*, *},
 };
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SortType},
@@ -34,7 +30,11 @@ pub async fn logout_fn() -> Result<(), ServerFnError> {
   let result = LemmyClient.logout().await;
   match result {
     Ok(_o) => {
-      set_auth_cookie.set(None);
+      // set_auth_cookie.set(None);
+      let response = expect_context::<leptos_axum::ResponseOptions>();
+      if let Ok(header_value) = format!("jwt=; SameSite=Lax; Path=/; Max-Age=691200").parse::<http::HeaderValue>() {
+        response.insert_header(axum::http::header::SET_COOKIE, header_value);
+      }
       Ok(())
     }
     Err(e) => {
@@ -74,9 +74,51 @@ pub async fn change_lang_fn(lang: String) -> Result<(), ServerFnError> {
 
 #[server]
 pub async fn change_theme(theme: String) -> Result<(), ServerFnError> {
-  let (_, set_theme_cookie) =
-    use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
-  set_theme_cookie.set(Some(theme));
+  // let (_, set_theme_cookie) =
+  //   use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
+  // set_theme_cookie.set(Some(theme));
+  //
+  // let theme_clone = theme.clone();
+  // let theme_str = &theme_clone[..];
+
+  // let (_, set_theme_cookie) =
+  //   use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax)
+  //     .ssr_set_cookie(move |cookie: &cookie::Cookie| {
+  //       #[cfg(feature = "ssr")]
+  //       {
+  //         if let Some(response) = use_context::<leptos_axum::ResponseOptions>() {
+  //           // if let Ok(h) = http::HeaderValue::from_str(&cookie::Cookie::build(cookie.to_string()) //::Cookie::new("theme", theme))
+  //           //     .path("/")
+  //           //     .same_site(cookie::SameSite::Lax)
+  //           //     .max_age(cookie::time::SignedDuration::seconds(691200))
+  //           //     .finish().to_string()) {
+  //           //   response.insert_header(
+  //           //     axum::http::header::SET_COOKIE,
+  //           //     h,
+  //           //   );
+  //           // }
+  //           if let Ok(h) = http::HeaderValue::from_str(&cookie.to_string()) {
+  //             response.insert_header(
+  //               axum::http::header::SET_COOKIE,
+  //               h,
+  //             );
+  //           }
+  //         }
+  //       }
+  //     }));
+  // set_theme_cookie.set(Some(theme));
+
+  let response = use_context::<leptos_axum::ResponseOptions>().ok_or(LemmyAppErrorType::InternalServerError)?;
+  response.insert_header(
+      axum::http::header::SET_COOKIE,
+      http::HeaderValue::from_str(&cookie::Cookie::build(cookie::Cookie::new("theme", theme))
+          .path("/")
+          .same_site(cookie::SameSite::Lax)
+          .max_age(cookie::time::SignedDuration::seconds(691200))
+          .to_string()
+      )?,
+  );
+
   Ok(())
 }
 
@@ -262,7 +304,7 @@ pub fn TopNav(
     if l == ssr_list() { "menu-active" } else { "" }
   };
 
-  // let logout_action = ServerAction::<LogoutFn>::new();
+  let logout_action = ServerAction::<LogoutFn>::new();
 
   let search_show = RwSignal::new(false);
   let still_pressed = RwSignal::new(false);
@@ -369,7 +411,7 @@ pub fn TopNav(
   };
 
   let _online = expect_context::<RwSignal<OnlineSetter>>();
-  // let change_theme = ServerAction::<ChangeTheme>::new();
+  let change_theme = ServerAction::<ChangeTheme>::new();
 
   let on_theme_submit = move |theme_name: &'static str| {
     move |e: MouseEvent| {
@@ -850,28 +892,28 @@ pub fn TopNav(
                           </summary>
                           <ul class="z-[1] [inset-inline-end:0]">
                             <li data-theme="dark">
-                              // <ActionForm attr:class="p-0" action={change_theme}>
-                              // <input type="hidden" name="theme" value="dark" />
-                              <button class="py-2 px-4" type="submit" on:click={on_theme_submit("dark")}>
-                                "Dark"
-                              </button>
-                            // </ActionForm>
+                              <ActionForm attr:class="p-0" action={change_theme}>
+                                <input type="hidden" name="theme" value="dark" />
+                                <button class="py-2 px-4" type="submit" on:click={on_theme_submit("dark")}>
+                                  "Dark"
+                                </button>
+                              </ActionForm>
                             </li>
                             <li data-theme="light">
-                              // <ActionForm attr:class="p-0" action={change_theme}>
-                              // <input type="hidden" name="theme" value="light" />
-                              <button class="py-2 px-4" type="submit" on:click={on_theme_submit("light")}>
-                                "Light"
-                              </button>
-                            // </ActionForm>
+                              <ActionForm attr:class="p-0" action={change_theme}>
+                                <input type="hidden" name="theme" value="light" />
+                                <button class="py-2 px-4" type="submit" on:click={on_theme_submit("light")}>
+                                  "Light"
+                                </button>
+                              </ActionForm>
                             </li>
                             <li data-theme="retro">
-                              // <ActionForm attr:class="p-0" action={change_theme}>
-                              // <input type="hidden" name="theme" value="retro" />
-                              <button class="py-2 px-4" type="submit" on:click={on_theme_submit("retro")}>
-                                "Retro"
-                              </button>
-                            // </ActionForm>
+                              <ActionForm attr:class="p-0" action={change_theme}>
+                                <input type="hidden" name="theme" value="retro" />
+                                <button class="py-2 px-4" type="submit" on:click={on_theme_submit("retro")}>
+                                  "Retro"
+                                </button>
+                              </ActionForm>
                             </li>
                           </ul>
                         </details>
@@ -881,9 +923,19 @@ pub fn TopNav(
                         fallback={move || {
                           view! {
                             <li>
-                              <A href="/l">
-                                <Icon icon={SignIn} />
-                              </A>
+                              <form method="post" action="/l">
+                                <input type="hidden" name="source_url" value={move || format!("{}{}", use_location().pathname.get(), query.get().to_query_string())} />
+                                <button type="submit"
+                                  on:click={move |e: MouseEvent| {
+                                    e.prevent_default();
+                                    let passed = expect_context::<RwSignal<PassedUrl>>();
+                                    passed.set(PassedUrl(Some(format!("{}{}", use_location().pathname.get(), query.get().to_query_string()))));
+                                    use_navigate()("/l", NavigateOptions::default());
+                                  }}
+                                >
+                                  <Icon icon={SignIn} />
+                                </button>
+                              </form>
                             </li>
                           }
                         }}
@@ -901,28 +953,28 @@ pub fn TopNav(
                                   </summary>
                                   <ul class="z-[1] [inset-inline-end:0]">
                                     <li data-theme="dark">
-                                      // <ActionForm attr:class="p-0" action={change_theme}>
-                                      // <input type="hidden" name="theme" value="dark" />
-                                      <button data-theme="dark" class="py-2 px-4" type="submit" on:click={on_theme_submit("dark")}>
-                                        "Dark"
-                                      </button>
-                                    // </ActionForm>
+                                      <ActionForm attr:class="p-0" action={change_theme}>
+                                        <input type="hidden" name="theme" value="dark" />
+                                        <button data-theme="dark" class="py-2 px-4" type="submit" on:click={on_theme_submit("dark")}>
+                                          "Dark"
+                                        </button>
+                                      </ActionForm>
                                     </li>
                                     <li data-theme="light">
-                                      // <ActionForm attr:class="p-0" action={change_theme}>
-                                      // <input type="hidden" name="theme" value="light" />
-                                      <button data-theme="light" class="py-2 px-4" type="submit" on:click={on_theme_submit("light")}>
-                                        "Light"
-                                      </button>
-                                    // </ActionForm>
+                                      <ActionForm attr:class="p-0" action={change_theme}>
+                                        <input type="hidden" name="theme" value="light" />
+                                        <button data-theme="light" class="py-2 px-4" type="submit" on:click={on_theme_submit("light")}>
+                                          "Light"
+                                        </button>
+                                      </ActionForm>
                                     </li>
                                     <li data-theme="retro">
-                                      // <ActionForm attr:class="p-0" action={change_theme}>
-                                      // <input type="hidden" name="theme" value="retro" />
-                                      <button data-theme="retro" class="py-2 px-4" type="submit" on:click={on_theme_submit("retro")}>
-                                        "Retro"
-                                      </button>
-                                    // </ActionForm>
+                                      <ActionForm attr:class="p-0" action={change_theme}>
+                                        <input type="hidden" name="theme" value="retro" />
+                                        <button data-theme="retro" class="py-2 px-4" type="submit" on:click={on_theme_submit("retro")}>
+                                          "Retro"
+                                        </button>
+                                      </ActionForm>
                                     </li>
                                   </ul>
                                 </details>
@@ -962,11 +1014,11 @@ pub fn TopNav(
                               // </li>
                               // <div class="my-0 divider" />
                               <li>
-                                // <ActionForm action={logout_action}>
-                                <button type="submit" on:click={on_logout_submit}>
-                                  <Icon icon={SignOut} />
-                                </button>
-                              // </ActionForm>
+                                <ActionForm action={logout_action}>
+                                  <button type="submit" on:click={on_logout_submit}>
+                                    <Icon icon={SignOut} />
+                                  </button>
+                                </ActionForm>
                               </li>
                             </ul>
                           </details>

@@ -23,16 +23,12 @@ use web_sys::{MouseEvent, WheelEvent};
 #[component]
 pub fn User() -> impl IntoView {
   // let i18n = use_i18n();
-  let _ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
-  let param = use_params_map();
-  let ssr_name = move || param.get().get("name").unwrap_or("".into());
-
   let query = use_query_map();
+  let param = use_params_map();
 
+  let ssr_name = move || param.get().get("name").unwrap_or("".into());
   let ssr_page = move || serde_json::from_str::<Vec<u32>>(&query.get().get("page").unwrap_or("".into())).unwrap_or(vec![1u32]);
-
   let next_page_cursor: RwSignal<u32> = RwSignal::new(0);
-
   let intersection_element = NodeRef::<Div>::new();
   let on_scroll_element = NodeRef::<Div>::new();
 
@@ -102,16 +98,6 @@ pub fn User() -> impl IntoView {
   );
 
   let now_in_millis = RwSignal::new(u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0));
-  // let now_in_millis = RwSignal::new({
-  //   #[cfg(not(feature = "ssr"))]
-  //   {
-  //     chrono::offset::Utc::now().timestamp_millis() as u64
-  //   }
-  //   #[cfg(feature = "ssr")]
-  //   {
-  //     std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or(std::time::Duration::new(1000, 0)).as_millis() as u64
-  //   }
-  // });
 
   #[derive(Debug, Clone)]
   struct PostWithComments {
@@ -185,9 +171,9 @@ pub fn User() -> impl IntoView {
                                 score: 0,
                                 upvotes: 0,
                                 downvotes: 0,
-                                published: std::time::SystemTime::now().into(),
-                                newest_comment_time_necro: std::time::SystemTime::now().into(),
-                                newest_comment_time: std::time::SystemTime::now().into(),
+                                published: std::time::SystemTime::from(jiff::Timestamp::now()).into(),
+                                newest_comment_time_necro: std::time::SystemTime::from(jiff::Timestamp::now()).into(),
+                                newest_comment_time: std::time::SystemTime::from(jiff::Timestamp::now()).into(),
                                 featured_community: false,
                                 featured_local: false,
                                 hot_rank: 0f64,

@@ -219,3 +219,10 @@ impl From<ServerFnError> for LemmyAppError {
     Self { error_type: LemmyAppErrorType::InternalServerError, content: format!("{:#?}", value) }
   }
 }
+
+#[cfg(feature = "ssr")]
+impl From<LemmyAppErrorType> for ServerFnError {
+  fn from(value: LemmyAppErrorType) -> Self {
+    Self::ServerError(format!("{:#?}", value))
+  }
+}

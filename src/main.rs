@@ -5,6 +5,15 @@
 // #[tokio::main]
 // async
 fn main() {
+  use axum::{body::{Body, to_bytes}, extract::State, response::IntoResponse};
+  use http::Request;
+  use leptos::config::LeptosOptions;
+  use leptos::context::provide_context;
+  use leptos_axum::render_app_to_stream_with_context;
+  use serde::Deserialize;
+  use aos::{PassedUrl, App, html_template};
+  use leptos::prelude::*;
+
   let stack_size_bytes = 8 * 1024 * 1024;
   let runtime = tokio::runtime::Builder::new_multi_thread()
     .worker_threads(4)
@@ -13,9 +22,32 @@ fn main() {
     .build()
     .expect("failed to build Tokio runtime with custom stack size");
 
+  #[derive(Deserialize, Default)]
+  struct SourceUrlForm {
+      source_url: String,
+  }
+
+  async fn destination_post_handler(
+      State(leptos_options): State<LeptosOptions>,
+      req: Request<Body>,
+  ) -> impl IntoResponse {
+      let (parts, body) = req.into_parts();
+      let bytes = to_bytes(body, usize::MAX).await.unwrap_or_default();
+      let form: SourceUrlForm = serde_urlencoded::from_bytes(&bytes).unwrap_or_default();
+      let req = Request::from_parts(parts, Body::empty());
+      let passed_url = form.source_url;
+      let handler = render_app_to_stream_with_context(
+          move || provide_context(PassedUrl(Some(passed_url.clone()))),
+          move || html_template(leptos_options.clone()),
+      );
+      handler(/* State(leptos_options),  */req).await.into_response()
+  }
+
   runtime.block_on(async {
     use aos::{App, html_template};
     use axum::Router;
+    use axum::routing::post;
+    use axum::routing::get;
     use leptos::{config::get_configuration, logging::log};
     use leptos_axum::{LeptosRoutes, generate_route_list};
 
@@ -25,6 +57,7 @@ fn main() {
       let app_routes = generate_route_list(App);
 
       let service_router = Router::new()
+        .route("/l", post(destination_post_handler))
         .leptos_routes(&leptos_options, app_routes, {
           let leptos_options = leptos_options.clone();
           move || html_template(leptos_options.clone())

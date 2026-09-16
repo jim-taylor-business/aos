@@ -38,6 +38,7 @@ use lemmy_api_common::{
   site::GetSiteResponse,
 };
 use leptos::prelude::*;
+use leptos::logging::log;
 use leptos_meta::{Link, MetaTags, Stylesheet, provide_meta_context, *};
 use leptos_router::{
   StaticSegment,
@@ -71,6 +72,9 @@ pub struct WriteInstanceCookie(WriteSignal<Option<String>>);
 pub struct ReadThemeCookie(Signal<Option<String>>);
 #[derive(Clone)]
 pub struct WriteThemeCookie(WriteSignal<Option<String>>);
+
+#[derive(Clone, Debug, Default)]
+pub struct PassedUrl(pub Option<String>);
 
 pub fn html_template(options: LeptosOptions) -> impl IntoView {
   view! {
@@ -189,6 +193,7 @@ pub fn App() -> impl IntoView {
   );
 
   provide_context(ssr_site);
+  provide_context(RwSignal::new(PassedUrl(Some("face".to_string()))));
 
   view! {
     <Transition fallback={|| {}}>

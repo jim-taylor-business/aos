@@ -8,7 +8,7 @@ use lemmy_api_common::{
   person::{Login, LoginResponse},
   site::GetSiteResponse,
 };
-use leptos::{prelude::*, task::spawn_local_scoped_with_cancellation};
+use leptos::{logging::log, prelude::*, task::spawn_local_scoped_with_cancellation};
 use leptos_meta::Title;
 use leptos_router::hooks::*;
 use web_sys::MouseEvent;
@@ -46,23 +46,31 @@ async fn try_login(form: Login) -> Result<LoginResponse, LemmyAppError> {
 
 #[server]
 pub async fn login_fn(username_or_email: String, password: String, uri: String) -> Result<(), ServerFnError> {
-  let (get_auth_cookie, set_auth_cookie) =
-    use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
-  provide_context(ReadAuthCookie(get_auth_cookie));
-  provide_context(WriteAuthCookie(set_auth_cookie));
   let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
     "instance",
     UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
   );
   provide_context(ReadInstanceCookie(get_instance_cookie));
   provide_context(WriteInstanceCookie(set_instance_cookie));
+  let (get_auth_cookie, set_auth_cookie) =
+    use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
+  provide_context(ReadAuthCookie(get_auth_cookie));
+  provide_context(WriteAuthCookie(set_auth_cookie));
   use leptos_axum::redirect;
   let req = Login { username_or_email: username_or_email.into(), password: password.into(), totp_2fa_token: None };
   let result = try_login(req).await;
   match result {
     Ok(LoginResponse { jwt, .. }) => {
-      let WriteAuthCookie(set_auth_cookie) = expect_context::<WriteAuthCookie>();
-      set_auth_cookie.set(Some(jwt.unwrap_or_default().into_inner()));
+      // log!("Login successful, JWT: {:?}", jwt.clone().unwrap().to_string());
+      // let WriteAuthCookie(set_auth_cookie) = expect_context::<WriteAuthCookie>();
+      // let (get_auth_cookie, set_auth_cookie) =
+      //   use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
+      // set_auth_cookie.set(Some(jwt.unwrap_or_default().into_inner()));
+      let response = expect_context::<leptos_axum::ResponseOptions>();
+      if let Ok(header_value) = format!("jwt={}; SameSite=Lax; Path=/; Max-Age=691200", jwt.unwrap_or_default().into_inner()).parse::<http::HeaderValue>() {
+        response.insert_header(axum::http::header::SET_COOKIE, header_value);
+      }
+      // set_auth_cookie.set(Some(jwt.clone().unwrap().to_string()));
       if uri.len() > 0 {
         redirect(&uri);
       } else {
@@ -88,6 +96,14 @@ pub fn LoginForm() -> impl IntoView {
   let ssr_error = move || query.with(|params| params.get("error"));
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
 
+
+  #[cfg(feature = "ssr")]
+  let passed = RwSignal::new(use_context::<PassedUrl>().unwrap_or_default());
+  #[cfg(not(feature = "ssr"))]
+  let passed = RwSignal::new(expect_context::<RwSignal<PassedUrl>>().get());
+
+  // log!("Passed URL: {:?}", passed.get());
+
   if let Some(e) = ssr_error() {
     let le = serde_json::from_str::<LemmyAppError>(&e[..]);
 
@@ -111,7 +127,11 @@ pub fn LoginForm() -> impl IntoView {
           let WriteAuthCookie(set_auth_cookie) = expect_context::<WriteAuthCookie>();
           set_auth_cookie.set(Some(jwt.clone().into_inner()));
           ssr_site.refetch();
-          use_navigate()("/", Default::default());
+          if let PassedUrl(Some(url)) = passed.get() {
+            use_navigate()(&url, Default::default());
+          } else {
+            use_navigate()("/", Default::default());
+          }
         }
         Ok(LoginResponse { jwt: None, .. }) => {}
         Err(e) => {
@@ -134,7 +154,10 @@ pub fn LoginForm() -> impl IntoView {
   view! {
     <div>
       <ActionForm attr:class="space-y-3" action={login}>
-        <input type="hidden" name="uri" value={move || query.get().get("uri").unwrap_or("".into())} />
+        <input type="hidden" name="uri" value={move || if let PassedUrl(Some(url)) = passed.get() {
+          url
+        } else {
+          "/".to_string() }} />
         <TextInput id="username" autocomplete="username" name="username_or_email" input_value={name} label="Username" />
         <TextInput
           id="password"

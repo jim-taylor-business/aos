@@ -10,16 +10,6 @@ pub fn Comments(comments: Signal<Vec<CommentView>>, post_id: Signal<Option<i32>>
   let highlight_user_id = RwSignal::new(None);
 
   let now_in_millis = RwSignal::new(u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0));
-  // let now_in_millis = RwSignal::new({
-  //   #[cfg(not(feature = "ssr"))]
-  //   {
-  //     chrono::offset::Utc::now().timestamp_millis() as u64
-  //   }
-  //   #[cfg(feature = "ssr")]
-  //   {
-  //     std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or(std::time::Duration::new(1000, 0)).as_millis() as u64
-  //   }
-  // });
 
   let hidden_comments: RwSignal<Vec<i32>> = RwSignal::new(vec![]);
 
