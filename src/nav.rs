@@ -800,7 +800,7 @@ pub fn TopNav(
                   prop:value={move || display_title.get()}
                   node_ref=search_input
                   on:keypress={move |e: KeyboardEvent| {
-                    if e.key() == "Enter" {
+                    if e.key_code() == 13 {
                       e.prevent_default();
                       use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
                     }

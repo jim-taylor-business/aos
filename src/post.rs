@@ -333,7 +333,21 @@ pub fn Post() -> impl IntoView {
                         <PostToolbar post_view={post_response.get().post_view.into()} reply_show content post_id />
                       </div>
                       <div class="py-2 px-4">
-                        <span class="overflow-y-auto text-xl wrap-anywhere" inner_html={title_encoded} />
+                        <span
+                          on:click={move |e: MouseEvent| {
+                            if let Some(t) = e.target() {
+                              if let Some(l) = t.dyn_ref::<HtmlAnchorElement>() {
+                                e.prevent_default();
+                                if l.host().eq(&window().location().host().unwrap_or("".to_owned())) {
+                                  use_navigate()(&l.href(), Default::default());
+                                } else {
+                                  let _ = window().open_with_url_and_target(&l.href(), "_blank");
+                                }
+                              }
+                            }
+                          }}
+                          class="overflow-y-auto text-xl wrap-anywhere" inner_html={title_encoded}
+                        />
                         <span class="block mb-1 wrap-anywhere text-md">
                           <span>{abbr_duration}</span>
                           " ago by "
