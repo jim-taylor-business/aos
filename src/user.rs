@@ -134,7 +134,7 @@ pub fn User() -> impl IntoView {
           <Transition fallback={|| {}}>
             {move || {
               match user_resource.get() {
-                Some(Err(e)) => view! { <Error error={e} on_retry_click={None::<fn(MouseEvent) -> ()>} /> }.into_any(),
+                Some(Err(e)) => view! { <Error description="Error loading user history" error={e} on_retry_click={move |_| { user_resource.refetch() }} /> }.into_any(),
                 Some(Ok(Some(s))) => {
                   let t = s.clone();
                   let name = s.person_view.person.name;

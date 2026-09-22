@@ -217,7 +217,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
     post_list_resource.refetch();
   };
 
-  let on_retry_site_click = move |_e: MouseEvent| {
+  let on_retry_site_click = move |_| {
     spawn_local_scoped_with_cancellation(async move {
       let _ = LemmyClient.get_site().await;
     });
@@ -263,7 +263,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
           <Transition fallback={|| {}}>
             {move || {
               match ssr_site.get() {
-                Some(Err(e)) => view! { <Error error={e} on_retry_click={Some(on_retry_site_click)} /> }.into_any(),
+                Some(Err(e)) => view! { <Error description="Error loading site information".to_owned() error={e} on_retry_click={on_retry_site_click} /> }.into_any(),
                 Some(Ok(_s)) => view! {}.into_any(),
                 _ => view! {}.into_any(),
               }
@@ -272,7 +272,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
           <Transition fallback={|| {}}>
             {move || {
               match details_resource.get() {
-                Some(Err(e)) => view! { <Error error={e} on_retry_click={None::<fn(MouseEvent) -> ()>} /> }.into_any(),
+                Some(Err(e)) => view! { <Error description="Error loading community details" error={e} /> }.into_any(),
                 Some(Ok(Some(s))) => {
                   let community_title_encoded = html_escape::encode_safe(&s.community_view.community.title).to_string();
                   let description = if let Some(description) = s.community_view.community.description {
@@ -443,12 +443,12 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                 }
                 Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
                   #[cfg(not(feature = "ssr"))] loading.set(false);
-                  view! { <Offline on_retry_click={Some(on_retry_click)} /> }.into_any()
+                  view! { <Offline on_retry_click={on_retry_click} /> }.into_any()
                 }
                 Err(e) => {
                   #[cfg(not(feature = "ssr"))] loading.set(false);
                   error!("{:#?}", e);
-                  view! { <Error error={e} on_retry_click={Some(on_retry_click)} /> }.into_any()
+                  view! { <Error description="Error loading post list"  error={e} on_retry_click={on_retry_click} /> }.into_any()
                 }
               }}
             </For>

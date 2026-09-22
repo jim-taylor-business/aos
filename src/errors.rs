@@ -4,6 +4,7 @@ use leptos::{
   logging::error,
   prelude::*,
 };
+use leptos_router::{components::*, location::State, *, hooks::*};
 use serde::{Deserialize, Serialize};
 use serde_urlencoded::ser;
 use web_sys::MouseEvent;
@@ -51,18 +52,17 @@ pub fn message_from_error(error: &LemmyAppError) -> String {
 }
 
 #[component]
-pub fn Offline(on_retry_click: Option<impl Fn(MouseEvent) + 'static>) -> impl IntoView {
+pub fn Offline(#[prop(optional, into)] on_retry_click: Option<Callback<MouseEvent>>) -> impl IntoView {
   view! {
     <div class="py-4 px-8 break-inside-avoid">
       <div class="flex justify-between alert alert-warning alert-soft">
         <span class="text-lg">{"Offline"}</span>
         {if let Some(o) = on_retry_click {
           view! {
-            <span on:click={o} class="btn btn-sm">
+            <span on:click={ move |e: MouseEvent| { o.run(e); } } class="btn btn-sm">
               "Retry"
             </span>
-          }
-            .into_any()
+          }.into_any()
         } else {
           view! {}.into_any()
         }}
@@ -73,22 +73,49 @@ pub fn Offline(on_retry_click: Option<impl Fn(MouseEvent) + 'static>) -> impl In
 }
 
 #[component]
-pub fn Error(error: LemmyAppError, on_retry_click: Option<impl Fn(MouseEvent) + 'static>) -> impl IntoView {
+pub fn Error(#[prop(optional, into)] get_url: Option<bool>, #[prop(optional, into)] description: Option<String>, error: LemmyAppError, #[prop(optional, into)] on_retry_click: Option<Callback<MouseEvent>>) -> impl IntoView {
   error!("{:#?}", error);
+  let description_value = description.unwrap_or("Error".to_owned());
+  let location = use_location();
+  let search = location.search.get();
+
   view! {
     <div class="py-4 px-8 break-inside-avoid">
-      <div class="flex justify-between alert alert-error alert-soft">
-        <span class="text-lg">{"Error"}</span>
-        {if let Some(o) = on_retry_click {
-          view! {
-            <span on:click={o} class="btn btn-sm">
-              "Retry"
-            </span>
-          }
-            .into_any()
-        } else {
-          view! {}.into_any()
-        }}
+      <div class="flex alert alert-error alert-soft">
+        <details class="w-full min-w-0">
+          <summary class="flex justify-between list-none">
+            <span class="text-lg"> { description_value } </span>
+            {if let Some(o) = on_retry_click {
+              {if let Some(true) = get_url {
+                view! {
+                  <a href=format!("{}{}", location.pathname.get(), if search.len() > 0 { format!("?{}", search) } else { "".into() }) on:click={ move |e: MouseEvent| { e.prevent_default(); o.run(e); } } class="btn btn-sm">
+                    "Retry"
+                  </a>
+                }.into_any()
+              } else {
+                view! {
+                  <span on:click={ move |e: MouseEvent| { e.prevent_default(); o.run(e); } } class="btn btn-sm">
+                    "Retry"
+                  </span>
+                }.into_any()
+              }}
+            } else {
+              {if let Some(true) = get_url {
+                view! {
+                  <a href=format!("{}{}", location.pathname.get(), if search.len() > 0 { format!("?{}", search) } else { "".into() }) class="btn btn-sm">
+                    "Retry"
+                  </a>
+                }.into_any()
+              } else {
+                view! {}.into_any()
+              }}
+            }}
+          </summary>
+          <div class="overflow-auto">
+            <pre> { format!("{:#?}", error.error_type) } </pre>
+            <pre> { error.content } </pre>
+          </div>
+        </details>
       </div>
     </div>
   }

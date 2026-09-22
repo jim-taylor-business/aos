@@ -512,7 +512,7 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                   view! { <Loading loading={loading.get()} /> }
                 }}
                 <Show when={move || error.get()} fallback={|| {}}>
-                  <Error error={latest_error.get()} on_retry_click={Some(|_| {})} />
+                  <Error description="Error upvoting post" error={latest_error.get()} />
                 </Show>
               }
             }

@@ -3,7 +3,7 @@ use crate::{
   client::*,
   comments::Comments,
   db::csr_indexed_db::*,
-  errors::{LemmyAppError, LemmyAppErrorType, Loading},
+  errors::{Error, Offline, LemmyAppError, LemmyAppErrorType, Loading},
   nav::TopNav,
   toolbar::PostToolbar,
 };
@@ -199,45 +199,53 @@ pub fn Post() -> impl IntoView {
                     #[cfg(not(feature = "ssr"))] loading.set(false);
                     view! {
                       <Title text="Error loading post" />
-                      <div class="py-4 px-8">
-                        <div class="flex justify-between alert alert-warning alert-soft">
-                          <span>"Offline"</span>
-                          <div>
-                            <button
-                              on:click={move |_| {
-                                post_resource.refetch();
-                                comments_resource.refetch();
-                              }}
-                              class="btn btn-sm"
-                            >
-                              "Retry"
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                      <Offline on_retry_click={move |_| {
+                        post_resource.refetch();
+                        comments_resource.refetch();
+                      }} />
+                      // <div class="py-4 px-8">
+                      //   <div class="flex justify-between alert alert-warning alert-soft">
+                      //     <span>"Offline"</span>
+                      //     <div>
+                      //       <button
+                      //         on:click={move |_| {
+                      //           post_resource.refetch();
+                      //           comments_resource.refetch();
+                      //         }}
+                      //         class="btn btn-sm"
+                      //       >
+                      //         "Retry"
+                      //       </button>
+                      //     </div>
+                      //   </div>
+                      // </div>
                     }
                       .into_any()
                   }
-                  Some(Some(Err(_))) => {
+                  Some(Some(Err(e))) => {
                     #[cfg(not(feature = "ssr"))] loading.set(false);
                     view! {
                       <Title text="Error loading post" />
-                      <div class="py-4 px-8">
-                        <div class="flex justify-between alert alert-error alert-soft">
-                          <span>"Error"</span>
-                          <div>
-                            <button
-                              on:click={move |_| {
-                                post_resource.refetch();
-                                comments_resource.refetch();
-                              }}
-                              class="btn btn-sm"
-                            >
-                              "Retry"
-                            </button>
-                          </div>
-                        </div>
-                      </div>
+                      <Error description="Error loading post" error={e} on_retry_click={move |_| {
+                        post_resource.refetch();
+                        comments_resource.refetch();
+                      }} />
+                      // <div class="py-4 px-8">
+                      //   <div class="flex justify-between alert alert-error alert-soft">
+                      //     <span>"Error"</span>
+                      //     <div>
+                      //       <button
+                      //         on:click={move |_| {
+                      //           post_resource.refetch();
+                      //           comments_resource.refetch();
+                      //         }}
+                      //         class="btn btn-sm"
+                      //       >
+                      //         "Retry"
+                      //       </button>
+                      //     </div>
+                      //   </div>
+                      // </div>
                     }
                       .into_any()
                   }
