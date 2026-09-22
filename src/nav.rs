@@ -45,20 +45,32 @@ pub async fn logout_fn() -> Result<(), ServerFnError> {
 }
 
 #[server]
-pub async fn search_fn(term: String) -> Result<(), ServerFnError> {
+pub async fn search_action(term: String) -> Result<(), ServerFnError> {
   use leptos_axum::redirect;
   redirect(&format!("/s?term={}", &term));
   Ok(())
 }
 
 #[server]
-pub async fn instance_fn(instance: String) -> Result<(), ServerFnError> {
-  let WriteInstanceCookie(set_instance_cookie) = expect_context::<WriteInstanceCookie>();
-  if instance.len() > 0 {
-    set_instance_cookie.set(Some(instance));
-  } else {
-    set_instance_cookie.set(Some("lemmy.world".to_owned()));
-  }
+pub async fn change_instance(instance: String) -> Result<(), ServerFnError> {
+  // let WriteInstanceCookie(set_instance_cookie) = expect_context::<WriteInstanceCookie>();
+  // if instance.len() > 0 {
+  //   set_instance_cookie.set(Some(instance));
+  // } else {
+  //   set_instance_cookie.set(Some("lemmy.world".to_owned()));
+  // }
+
+  let response = use_context::<leptos_axum::ResponseOptions>().ok_or(LemmyAppErrorType::InternalServerError)?;
+  response.insert_header(
+    axum::http::header::SET_COOKIE,
+    http::HeaderValue::from_str(&cookie::Cookie::build(cookie::Cookie::new("instance", instance))
+      .path("/")
+      .same_site(cookie::SameSite::Lax)
+      .max_age(cookie::time::SignedDuration::seconds(691200))
+      .to_string()
+    )?,
+  );
+
   Ok(())
 }
 
@@ -110,13 +122,13 @@ pub async fn change_theme(theme: String) -> Result<(), ServerFnError> {
 
   let response = use_context::<leptos_axum::ResponseOptions>().ok_or(LemmyAppErrorType::InternalServerError)?;
   response.insert_header(
-      axum::http::header::SET_COOKIE,
-      http::HeaderValue::from_str(&cookie::Cookie::build(cookie::Cookie::new("theme", theme))
-          .path("/")
-          .same_site(cookie::SameSite::Lax)
-          .max_age(cookie::time::SignedDuration::seconds(691200))
-          .to_string()
-      )?,
+    axum::http::header::SET_COOKIE,
+    http::HeaderValue::from_str(&cookie::Cookie::build(cookie::Cookie::new("theme", theme))
+      .path("/")
+      .same_site(cookie::SameSite::Lax)
+      .max_age(cookie::time::SignedDuration::seconds(691200))
+      .to_string()
+    )?,
   );
 
   Ok(())
@@ -412,6 +424,8 @@ pub fn TopNav(
 
   let _online = expect_context::<RwSignal<OnlineSetter>>();
   let change_theme = ServerAction::<ChangeTheme>::new();
+  let change_instance = ServerAction::<ChangeInstance>::new();
+  let search_action = ServerAction::<SearchAction>::new();
 
   let on_theme_submit = move |theme_name: &'static str| {
     move |e: MouseEvent| {
@@ -513,37 +527,39 @@ pub fn TopNav(
           <nav class="flex flex-row py-0 navbar">
             <div class={move || { (if search_show.get() { "hidden" } else { "flex" }).to_string() }}>
               <div class={move || { if still_pressed.get() { "" } else { "hidden" } }}>
-                <input
-                  class="pl-2 sm:pl-6 h-full w-46 text-xl input"
-                  type="text"
-                  name="instance"
-                  node_ref=instance_input
-                  prop:value={move || instance_term.get()}
-                  on:keydown={move |e: KeyboardEvent| {
-                    if e.key_code() == 27 {
-                      e.prevent_default();
+                // <ActionForm action={change_instance}>
+                  <input
+                    class="pl-2 sm:pl-6 h-full w-46 text-xl input"
+                    type="text"
+                    name="instance"
+                    node_ref=instance_input
+                    prop:value={move || instance_term.get()}
+                    on:keydown={move |e: KeyboardEvent| {
+                      if e.key_code() == 27 {
+                        e.prevent_default();
+                        still_pressed.set(false);
+                      }
+                    }}
+                    on:keypress={move |e: KeyboardEvent| {
+                      if e.key_code() == 13 {
+                        e.prevent_default();
+                        on_instance_submit()
+                      }
+                    }}
+                    on:input={move |ev| {
+                      instance_term.set(Some(event_target_value(&ev)));
+                    }}
+                    on:blur={move |_| {
                       still_pressed.set(false);
-                    }
-                  }}
-                  on:keypress={move |e: KeyboardEvent| {
-                    if e.key_code() == 13 {
-                      e.prevent_default();
-                      on_instance_submit()
-                    }
-                  }}
-                  on:input={move |ev| {
-                    instance_term.set(Some(event_target_value(&ev)));
-                  }}
-                  on:blur={move |_| {
-                    still_pressed.set(false);
-                  }}
-                />
+                    }}
+                  />
+                // </ActionForm>
               </div>
               <ul class="flex-nowrap items-center menu menu-horizontal">
                 <li>
                   <A
                     href="/"
-                    attr:class={move || { if still_pressed.get() { "hidden" } else { "select-none text-xl whitespace-nowrap py-1/2" } }}
+                    attr:class={move || { if still_pressed.get() { "hidden" } else { "bg-transparent select-none text-xl whitespace-nowrap py-1/2" } }}
                     on:mousedown={on_mouse_down}
                     on:mouseup={on_mouse_up}
                     // on:mouseleave={on_mouse_up}
@@ -786,33 +802,28 @@ pub fn TopNav(
               <div class={move || {
                 (if search_show.get() { "form-control flex flex-grow" } else { "form-control hidden sm:flex flex-grow" }).to_string()
               }}>
-                // <ActionForm
-                // attr:class={move || {
-                // (if search_show.get() { "form-control flex flex-grow" } else { "form-control hidden sm:flex flex-grow" }).to_string()
-                // }}
-                // action={search_action}
-                // >
-                <input
-                  title={move || display_title.get()}
-                  class="w-full input"
-                  type="text"
-                  name="term"
-                  prop:value={move || display_title.get()}
-                  node_ref=search_input
-                  on:keypress={move |e: KeyboardEvent| {
-                    if e.key_code() == 13 {
-                      e.prevent_default();
-                      use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
-                    }
-                  }}
-                  on:input={move |ev| {
-                    search_term.set(event_target_value(&ev));
-                  }}
-                  on:blur={move |_| {
-                    search_show.set(false);
-                  }}
-                />
-              // </ActionForm>
+                <ActionForm attr:class="w-full" action={search_action}>
+                  <input
+                    title={move || display_title.get()}
+                    class="w-full input"
+                    type="text"
+                    name="term"
+                    prop:value={move || display_title.get()}
+                    node_ref=search_input
+                    on:keypress={move |e: KeyboardEvent| {
+                      if e.key_code() == 13 {
+                        e.prevent_default();
+                        use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
+                      }
+                    }}
+                    on:input={move |ev| {
+                      search_term.set(event_target_value(&ev));
+                    }}
+                    on:blur={move |_| {
+                      search_show.set(false);
+                    }}
+                  />
+                </ActionForm>
               </div>
             </div>
             <div class="flex-none">
