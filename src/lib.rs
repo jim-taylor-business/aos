@@ -16,7 +16,6 @@ pub mod login;
 pub mod nav;
 pub mod overview;
 pub mod post;
-pub mod root;
 pub mod search;
 pub mod toolbar;
 pub mod user;
@@ -41,14 +40,11 @@ use leptos::prelude::*;
 use leptos::logging::log;
 use leptos_meta::{Link, MetaTags, Stylesheet, provide_meta_context, *};
 use leptos_router::{
-  StaticSegment,
-  components::{ParentRoute, Route, Router, Routes},
-  *,
+  StaticSegment, components::{Outlet, ParentRoute, Route, Router, Routes}, *,
 };
 #[cfg(not(feature = "ssr"))]
 use leptos_use::use_document_visibility;
 use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options};
-use root::Root;
 use std::collections::BTreeMap;
 
 // leptos_i18n::load_locales!();
@@ -98,6 +94,16 @@ pub fn html_template(options: LeptosOptions) -> impl IntoView {
 }
 
 #[component]
+pub fn Root() -> impl IntoView {
+  let ReadThemeCookie(get_theme_cookie) = expect_context::<ReadThemeCookie>();
+  view! {
+    <div class="flex flex-col min-h-screen" data-theme={move || get_theme_cookie.get()}>
+      <Outlet />
+    </div>
+  }
+}
+
+#[component]
 fn NotFound() -> impl IntoView {
   #[cfg(feature = "ssr")]
   {
@@ -105,13 +111,28 @@ fn NotFound() -> impl IntoView {
     resp.set_status(http::StatusCode::NOT_FOUND);
   }
   let ReadThemeCookie(get_theme_cookie) = expect_context::<ReadThemeCookie>();
+
+  let on_scroll_element = NodeRef::<leptos::html::Div>::new();
+
+  let location = hooks::use_location();
+  let search = location.search.get();
+  let url = format!("{}{}", location.pathname.get(), if search.len() > 0 { format!("?{}", search) } else { "".into() });
+
   view! {
     <div class="flex flex-col min-h-screen" data-theme={move || get_theme_cookie.get()}>
-      <div class="py-4 px-8 break-inside-avoid">
-        <div class="flex justify-between alert alert-warning alert-soft">
-          <span class="text-lg">"Not Found"</span>
+      <main class="flex flex-col">
+        <nav::TopNav scroll_element={on_scroll_element.into()} lost_path={RwSignal::new(url)} />
+        <div class="flex flex-grow">
+          <div
+            node_ref={on_scroll_element}
+            class="min-w-full sm:overflow-x-auto sm:overflow-y-hidden sm:absolute sm:px-4 gap-4{} sm:h-[calc(100%-4rem)] sm:columns-[23rem]"
+          >
+            <div class="flex justify-between alert alert-warning alert-soft">
+              <span class="text-lg"> "Link not found, try searching instead" </span>
+            </div>
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   }
 }

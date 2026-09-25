@@ -1,16 +1,27 @@
 use crate::{
-  OnlineSetter, ReadInstanceCookie,
+  OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
   client::*,
   errors::{Error, LemmyAppError, LemmyAppErrorType, Loading},
   icon::{IconType::*, *},
 };
 use lemmy_api_common::{lemmy_db_views::structs::*, person::*, post::*, site::GetSiteResponse};
-use leptos::{html::Img, logging::*, prelude::*};
+use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options};
+use leptos::{html::Img, logging::*, prelude::*, server::codee::string::FromToStringCodec};
 use leptos_router::{components::*, hooks::*};
 use web_sys::MouseEvent;
 
 #[server]
 pub async fn vote_post_fn(post_id: i32, score: i16) -> Result<Option<PostResponse>, ServerFnError> {
+  let (get_auth_cookie, set_auth_cookie) =
+    use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
+  provide_context(ReadAuthCookie(get_auth_cookie));
+  provide_context(WriteAuthCookie(set_auth_cookie));
+  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+    "instance",
+    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
+  );
+  provide_context(ReadInstanceCookie(get_instance_cookie));
+  provide_context(WriteInstanceCookie(set_instance_cookie));
   use lemmy_api_common::lemmy_db_schema::newtypes::PostId;
   let form = CreatePostLike { post_id: PostId(post_id), score };
   let result = LemmyClient.like_post(form).await;
@@ -26,6 +37,16 @@ pub async fn vote_post_fn(post_id: i32, score: i16) -> Result<Option<PostRespons
 
 #[server]
 pub async fn save_post_fn(post_id: i32, save: bool) -> Result<Option<PostResponse>, ServerFnError> {
+  let (get_auth_cookie, set_auth_cookie) =
+    use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
+  provide_context(ReadAuthCookie(get_auth_cookie));
+  provide_context(WriteAuthCookie(set_auth_cookie));
+  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+    "instance",
+    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
+  );
+  provide_context(ReadInstanceCookie(get_instance_cookie));
+  provide_context(WriteInstanceCookie(set_instance_cookie));
   use lemmy_api_common::lemmy_db_schema::newtypes::PostId;
   let form = SavePost { post_id: PostId(post_id), save };
   let result = LemmyClient.save_post(form).await;
@@ -41,6 +62,16 @@ pub async fn save_post_fn(post_id: i32, save: bool) -> Result<Option<PostRespons
 
 #[server]
 pub async fn block_user_fn(person_id: i32, block: bool) -> Result<Option<BlockPersonResponse>, ServerFnError> {
+  let (get_auth_cookie, set_auth_cookie) =
+    use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
+  provide_context(ReadAuthCookie(get_auth_cookie));
+  provide_context(WriteAuthCookie(set_auth_cookie));
+  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+    "instance",
+    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
+  );
+  provide_context(ReadInstanceCookie(get_instance_cookie));
+  provide_context(WriteInstanceCookie(set_instance_cookie));
   use lemmy_api_common::lemmy_db_schema::newtypes::PersonId;
   let form = BlockPerson { person_id: PersonId(person_id), block };
   let result = LemmyClient.block_user(form).await;
@@ -77,8 +108,17 @@ async fn try_report(form: CreatePostReport) -> Result<PostReportResponse, LemmyA
 
 #[server]
 pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostReportResponse>, ServerFnError> {
+  let (get_auth_cookie, set_auth_cookie) =
+    use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
+  provide_context(ReadAuthCookie(get_auth_cookie));
+  provide_context(WriteAuthCookie(set_auth_cookie));
+  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+    "instance",
+    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
+  );
+  provide_context(ReadInstanceCookie(get_instance_cookie));
+  provide_context(WriteInstanceCookie(set_instance_cookie));
   use lemmy_api_common::lemmy_db_schema::newtypes::PostId;
-
   let form = CreatePostReport { post_id: PostId(post_id), reason };
   let result = try_report(form).await;
   use leptos_axum::redirect;

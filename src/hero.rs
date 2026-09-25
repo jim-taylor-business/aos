@@ -124,24 +124,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
               view! {
                 <Title text="App offline" />
                 <Offline />
-                // <div class="py-4 px-8">
-                //   <div class="flex justify-between alert alert-warning alert-soft">
-                //     <span>"Offline"</span>
-                //     <div>
-                //       <button
-                //         on:click={move |_| {
-                //           post_resource.refetch();
-                //           comments_resource.refetch();
-                //         }}
-                //         class="btn btn-sm"
-                //       >
-                //         "Retry"
-                //       </button>
-                //     </div>
-                //   </div>
-                // </div>
-              }
-                .into_any()
+              }.into_any()
             }
             Some(Some(Err(e))) => {
               view! {
@@ -150,24 +133,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                   post_resource.refetch();
                   comments_resource.refetch();
                 }} />
-                // <div class="py-4 px-8">
-                //   <div class="flex justify-between alert alert-error alert-soft">
-                //     <span>"Error"</span>
-                //     <div>
-                //       <button
-                //         on:click={move |_| {
-                //           post_resource.refetch();
-                //           comments_resource.refetch();
-                //         }}
-                //         class="btn btn-sm"
-                //       >
-                //         "Retry"
-                //       </button>
-                //     </div>
-                //   </div>
-                // </div>
-              }
-                .into_any()
+              }.into_any()
             }
             Some(Some(Ok(res))) => {
               #[cfg(not(feature = "ssr"))]
@@ -479,15 +445,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
             Some(None) | None => {
               view! {
                 <Loading loading={loading.get()} />
-                // <div class="overflow-hidden animate-[popdown_1s_step-end_1]">
-                //   <div class="py-4 px-8">
-                //     <div class="alert alert-info alert-soft">
-                //       <span>"Loading"</span>
-                //     </div>
-                //   </div>
-                // </div>
-              }
-                .into_any()
+              }.into_any()
             }
           }
         }}

@@ -394,47 +394,43 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                       if let Some(c) = cancel_handle.get_untracked() {
                         c.clear();
                       }
-                      cancel_handle
-                        .set(
-                          set_timeout_with_handle(
-                              move || {
-                                if let Some(s) = on_scroll_element.get() {
-                                  spawn_local_scoped_with_cancellation(async move {
-                                    if let Ok(d) = IndexedDb::new().await {
-                                      let l: Result<Option<i32>, Error> = d
-                                        .get(
-                                          &ScrollPositionKey {
-                                            path: use_location().pathname.get(),
-                                            query: use_query_map().get().to_query_string(),
-                                          },
-                                        )
-                                        .await;
-                                      if let Ok(Some(l)) = l {
-                                        s.set_scroll_left(l);
-                                      }
-                                    }
-                                  });
+                      cancel_handle.set(
+                        set_timeout_with_handle(
+                          move || {
+                            if let Some(s) = on_scroll_element.get() {
+                              spawn_local_scoped_with_cancellation(async move {
+                                if let Ok(d) = IndexedDb::new().await {
+                                  let l: Result<Option<i32>, Error> = d
+                                    .get(
+                                      &ScrollPositionKey {
+                                        path: use_location().pathname.get(),
+                                        query: use_query_map().get().to_query_string(),
+                                      },
+                                    )
+                                    .await;
+                                  if let Ok(Some(l)) = l {
+                                    s.set_scroll_left(l);
+                                  }
                                 }
-                              },
-                              std::time::Duration::new(0, 750_000_000),
-                            )
-                            .ok(),
-                        );
+                              });
+                            }
+                          },
+                          std::time::Duration::new(0, 750_000_000),
+                        ).ok(),
+                      );
                     }
                     if p.6 {
                       if let Some(c) = cancel_refresh_handle.get_untracked() {
                         c.clear();
                       }
-                      cancel_refresh_handle
-                        .set(
-                          set_timeout_with_handle(
-                              move || {
-                                post_list_resource.refetch();
-                              },
-                              std::time::Duration::new(0, 750_000_000),
-                            )
-                            .ok(),
-                        );
+                      cancel_refresh_handle.set(
+                        set_timeout_with_handle(
+                          move || {
+                            post_list_resource.refetch();
+                          },
+                          std::time::Duration::new(0, 750_000_000),
+                        ).ok(),
+                      );
                     }
                   }
                   next_page_cursor.set((p.0 + o.posts.len(), o.next_page.clone()));

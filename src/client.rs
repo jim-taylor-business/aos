@@ -212,7 +212,7 @@ mod client {
       let m = match method {
         HttpType::Get => client.get(&route).maybe_bearer_auth(jwt.clone()).query(&form).send(),
         HttpType::Post => client.post(&route).maybe_bearer_auth(jwt.clone()).json(&form).send(),
-        HttpType::Put => client.put(&route).maybe_bearer_auth(jwt.clone()).form(&form).send(),
+        HttpType::Put => client.put(&route).maybe_bearer_auth(jwt.clone()).json(&form).send(),
       }
       .await;
 

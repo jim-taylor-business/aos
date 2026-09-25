@@ -203,22 +203,6 @@ pub fn Post() -> impl IntoView {
                         post_resource.refetch();
                         comments_resource.refetch();
                       }} />
-                      // <div class="py-4 px-8">
-                      //   <div class="flex justify-between alert alert-warning alert-soft">
-                      //     <span>"Offline"</span>
-                      //     <div>
-                      //       <button
-                      //         on:click={move |_| {
-                      //           post_resource.refetch();
-                      //           comments_resource.refetch();
-                      //         }}
-                      //         class="btn btn-sm"
-                      //       >
-                      //         "Retry"
-                      //       </button>
-                      //     </div>
-                      //   </div>
-                      // </div>
                     }
                       .into_any()
                   }

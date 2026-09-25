@@ -1,12 +1,13 @@
 use crate::{
-  OnlineSetter, ReadInstanceCookie,
+  OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
   client::*,
   db::csr_indexed_db::*,
   errors::{LemmyAppError, LemmyAppErrorType},
   icon::{IconType::*, *},
 };
 use lemmy_api_common::{lemmy_db_views::structs::*, person::*, post::*, site::GetSiteResponse};
-use leptos::{html::Img, prelude::*, task::*};
+use leptos::{logging::*, html::Img, prelude::*, task::*, server::codee::string::FromToStringCodec};
+use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options};
 use leptos_router::{
   components::{A, Form},
   hooks::*,
@@ -15,6 +16,16 @@ use web_sys::MouseEvent;
 
 #[server]
 pub async fn vote_post_fn(post_id: i32, score: i16) -> Result<Option<PostResponse>, ServerFnError> {
+  let (get_auth_cookie, set_auth_cookie) =
+    use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
+  provide_context(ReadAuthCookie(get_auth_cookie));
+  provide_context(WriteAuthCookie(set_auth_cookie));
+  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+    "instance",
+    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
+  );
+  provide_context(ReadInstanceCookie(get_instance_cookie));
+  provide_context(WriteInstanceCookie(set_instance_cookie));
   use lemmy_api_common::lemmy_db_schema::newtypes::PostId;
   let form = CreatePostLike { post_id: PostId(post_id), score };
   let result = LemmyClient.like_post(form).await;
@@ -30,6 +41,16 @@ pub async fn vote_post_fn(post_id: i32, score: i16) -> Result<Option<PostRespons
 
 #[server]
 pub async fn save_post_fn(post_id: i32, save: bool) -> Result<Option<PostResponse>, ServerFnError> {
+  let (get_auth_cookie, set_auth_cookie) =
+    use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
+  provide_context(ReadAuthCookie(get_auth_cookie));
+  provide_context(WriteAuthCookie(set_auth_cookie));
+  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+    "instance",
+    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
+  );
+  provide_context(ReadInstanceCookie(get_instance_cookie));
+  provide_context(WriteInstanceCookie(set_instance_cookie));
   use lemmy_api_common::lemmy_db_schema::newtypes::PostId;
   let form = SavePost { post_id: PostId(post_id), save };
   let result = LemmyClient.save_post(form).await;
@@ -45,6 +66,16 @@ pub async fn save_post_fn(post_id: i32, save: bool) -> Result<Option<PostRespons
 
 #[server]
 pub async fn block_user_fn(person_id: i32, block: bool) -> Result<Option<BlockPersonResponse>, ServerFnError> {
+  let (get_auth_cookie, set_auth_cookie) =
+    use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
+  provide_context(ReadAuthCookie(get_auth_cookie));
+  provide_context(WriteAuthCookie(set_auth_cookie));
+  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+    "instance",
+    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
+  );
+  provide_context(ReadInstanceCookie(get_instance_cookie));
+  provide_context(WriteInstanceCookie(set_instance_cookie));
   use lemmy_api_common::lemmy_db_schema::newtypes::PersonId;
   let form = BlockPerson { person_id: PersonId(person_id), block };
   let result = LemmyClient.block_user(form).await;
@@ -81,6 +112,16 @@ async fn try_report(form: CreatePostReport) -> Result<PostReportResponse, LemmyA
 
 #[server]
 pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostReportResponse>, ServerFnError> {
+  let (get_auth_cookie, set_auth_cookie) =
+    use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
+  provide_context(ReadAuthCookie(get_auth_cookie));
+  provide_context(WriteAuthCookie(set_auth_cookie));
+  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+    "instance",
+    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
+  );
+  provide_context(ReadInstanceCookie(get_instance_cookie));
+  provide_context(WriteInstanceCookie(set_instance_cookie));
   use lemmy_api_common::lemmy_db_schema::newtypes::PostId;
 
   let form = CreatePostReport { post_id: PostId(post_id), reason };
@@ -132,7 +173,7 @@ pub fn PostToolbar(
     on_vote_submit(e, score);
   };
 
-  let _save_post_action = ServerAction::<SavePostFn>::new();
+  let save_post_action = ServerAction::<SavePostFn>::new();
 
   let on_save_submit = move |e: MouseEvent| {
     e.prevent_default();
@@ -263,6 +304,11 @@ pub fn PostToolbar(
   let _thumbnail_element = NodeRef::<Img>::new();
   let _thumbnail = RwSignal::new(String::from(""));
 
+  // #[cfg(feature = "ssr")]
+  let enable_reply = RwSignal::new(false);
+  // #[cfg(not(feature = "ssr"))]
+  // let enable_reply = RwSignal::new(true);
+
   view! {
     <Transition fallback={|| {}}>
       {move || {
@@ -270,6 +316,26 @@ pub fn PostToolbar(
           Some(Ok(s)) => {
             {
               let logged_in = Memo::new(move |_| { s.my_user.is_some() });
+
+              // let enable_reply = RwSignal::new(false);
+              #[cfg(not(feature = "ssr"))]
+              // spawn_local_scoped_with_cancellation(async move {
+              //   enable_reply.set(true);
+              //   log!("PostToolbar: enable_reply set to true");
+              // });
+              //
+              let _ = set_timeout_with_handle(
+                move || {
+                  enable_reply.set(true);
+                },
+                std::time::Duration::new(0, 0),
+              ).ok();
+
+              // #[cfg(not(feature = "ssr"))]
+              // enable_reply.set(true);
+              // #[cfg(not(feature = "ssr"))]
+              // log!("PostToolbar: enable_reply set to true");
+
               view! {
                 <div class="px-4 break-inside-avoid">
                   <div class="flex flex-wrap gap-x-2 items-center pb-2">
@@ -338,7 +404,7 @@ pub fn PostToolbar(
                         "".to_owned()
                       }}
                     </span>
-                    <Form action="PUT" attr:class="flex items-center">
+                    <ActionForm action={save_post_action} attr:class="flex items-center">
                       <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
                       <input type="hidden" name="save" value={move || format!("{}", !post_view.get().saved)} />
                       <button
@@ -356,15 +422,17 @@ pub fn PostToolbar(
                       >
                         <Icon icon={Save} />
                       </button>
-                    </Form>
+                    </ActionForm>
                     <button
                       class={move || {
                         format!(
                           "cursor-pointer{}",
-                          { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+                          { if !enable_reply.get() || !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+                          // { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
                         )
                       }}
                       on:click={move |_| {
+                        // log!("Reply button clicked");
                         if let Some(id) = post_id.get_untracked() {
                           #[cfg(not(feature = "ssr"))]
                           spawn_local_scoped_with_cancellation(async move {
@@ -386,8 +454,12 @@ pub fn PostToolbar(
                         reply_show.update(|b| *b = !*b);
                       }}
                       title="Reply"
-                      disabled={move || !logged_in.get() || !online.get().0}
+                      disabled={move || !enable_reply.get() || !logged_in.get() || !online.get().0}
+                      // disabled={move || !logged_in.get() || !online.get().0}
                     >
+                    // {
+                    //   move || { log!("{}", !enable_reply.get() || !logged_in.get() || !online.get().0); }
+                    // }
                       <Icon icon={Reply} />
                     </button>
                     <span class={format!("text-base-content{}", if post_view.get_untracked().post.local { " hidden" } else { "" })} title="Original">
@@ -461,8 +533,7 @@ pub fn PostToolbar(
                   </div>
                 </div>
               }
-            }
-              .into_any()
+            }.into_any()
           }
           _ => view! {}.into_any(),
         }
