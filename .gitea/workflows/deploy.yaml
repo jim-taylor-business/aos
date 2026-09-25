@@ -49,7 +49,7 @@ jobs:
             target/
           key: ${{ runner.os }}-cargo-aos
 
-      - uses: tiyee/action-ssh@release
+      - uses: tiyee/action-ssh@latest
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
@@ -75,7 +75,7 @@ jobs:
           source: "target/site"
           target: ${{ secrets.WORK_DIR }}
 
-      - uses: tiyee/action-ssh@release
+      - uses: tiyee/action-ssh@latest
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT }}
