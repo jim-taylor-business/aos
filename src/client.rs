@@ -50,6 +50,10 @@ pub trait LemmyApi: Fetch {
     self.make_request(HttpType::Get, "community/list", form).await
   }
 
+  async fn follow_communities(&self, form: FollowCommunity) -> LemmyAppResult<CommunityResponse> {
+    self.make_request(HttpType::Post, "community/follow", form).await
+  }
+
   async fn get_community(&self, form: GetCommunity) -> LemmyAppResult<GetCommunityResponse> {
     self.make_request(HttpType::Get, "community", form).await
   }

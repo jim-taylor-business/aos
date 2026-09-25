@@ -1,4 +1,5 @@
-use crate::{ReadAuthCookie, db::csr_indexed_db::*, errors::Offline};
+use crate::{  OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
+ db::csr_indexed_db::*, errors::Offline};
 use crate::{
   // i18n::*,
   client::*,
@@ -8,19 +9,45 @@ use crate::{
   nav::TopNav,
 };
 use hooks::*;
+use lemmy_api_common::community::CommunityResponse;
 use lemmy_api_common::{
-  community::GetCommunity,
+  community::{FollowCommunity, GetCommunity},
   lemmy_db_schema::{ListingType, SortType, SubscribedType},
   lemmy_db_views::structs::PaginationCursor,
   post::{GetPosts, GetPostsResponse},
   site::GetSiteResponse,
 };
-use leptos::{html::Div, leptos_dom::helpers::TimeoutHandle, logging::error, prelude::*, task::*, *};
+use leptos::{html::Div, leptos_dom::helpers::TimeoutHandle, logging::error, prelude::*, task::*, *, server::codee::string::FromToStringCodec};
 use leptos_router::{components::*, location::State, *};
-use leptos_use::*;
+use leptos_use::{*, SameSite, UseCookieOptions, use_cookie_with_options};
 use send_wrapper::SendWrapper;
 use std::{collections::BTreeMap, usize, vec};
 use web_sys::{Event, MouseEvent, WheelEvent};
+
+#[server]
+pub async fn toggle_subscription(community_id: i32, follow: bool) -> Result<Option<CommunityResponse>, ServerFnError> {
+  let (get_auth_cookie, set_auth_cookie) =
+    use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
+  provide_context(ReadAuthCookie(get_auth_cookie));
+  provide_context(WriteAuthCookie(set_auth_cookie));
+  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
+    "instance",
+    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
+  );
+  provide_context(ReadInstanceCookie(get_instance_cookie));
+  provide_context(WriteInstanceCookie(set_instance_cookie));
+  use lemmy_api_common::lemmy_db_schema::newtypes::CommunityId;
+  let form = FollowCommunity { community_id: CommunityId(community_id), follow };
+  let result = LemmyClient.follow_community(form).await;
+  use leptos_axum::redirect;
+  match result {
+    Ok(o) => Ok(Some(o)),
+    Err(e) => {
+      redirect(&format!("/?error={}", serde_json::to_string(&e)?)[..]);
+      Ok(None)
+    }
+  }
+}
 
 #[component]
 pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl IntoView {
@@ -213,6 +240,22 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
     },
   );
 
+  let follow_action = ServerAction::<ToggleSubscription>::new();
+
+  // let on_toggle_subscription = move |e: MouseEvent| {
+  //   e.prevent_default();
+  //   spawn_local_scoped_with_cancellation(async move {
+  //     let form = FollowCommunity { community_id: CommunityId(community_id), follow: !follow.get().eq(&SubscribedType::Subscribed) };
+  //     let result = LemmyClient.follow_community(form).await;
+  //     match result {
+  //       Ok(o) => {
+  //         details_resource.refetch();
+  //       }
+  //       Err(_e) => {}
+  //     }
+  //   });
+  // };
+
   let on_retry_click = move |_e: MouseEvent| {
     post_list_resource.refetch();
   };
@@ -347,15 +390,30 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                               <Icon icon={Rules} />
                             </button>
                           </Form>
-                          <Form action="PUT" attr:class="flex items-center">
+                          <ActionForm action={follow_action} attr:class="flex items-center">
+                            <input type="hidden" name="community_id" value={move || s.community_view.community.id.0} />
+                            <input type="hidden" name="follow" value={move || follow.get().eq(&SubscribedType::Subscribed)} />
                             <button
                               type="submit"
                               title="Subscribed"
+                              on:click={move |e: MouseEvent| {
+                                e.prevent_default();
+                                spawn_local_scoped_with_cancellation(async move {
+                                  let form = FollowCommunity { community_id: s.community_view.community.id, follow: !follow.get().eq(&SubscribedType::Subscribed) };
+                                  let result = LemmyClient.follow_community(form).await;
+                                  match result {
+                                    Ok(o) => {
+                                      details_resource.refetch();
+                                    }
+                                    Err(_e) => {}
+                                  }
+                                });
+                              }}
                               class={move || { format!("{}", { if follow.get() == SubscribedType::Subscribed { "text-accent" } else { "" } }) }}
                             >
                               <Icon icon={Subscribe} />
                             </button>
-                          </Form>
+                          </ActionForm>
                         </div>
                       </div>
                       <div class="py-2 px-4" style={move || { if show_rules.get() { "display: block;" } else { "display: none;" } }}>
