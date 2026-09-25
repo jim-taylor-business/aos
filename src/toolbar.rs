@@ -318,12 +318,13 @@ pub fn PostToolbar(
               let logged_in = Memo::new(move |_| { s.my_user.is_some() });
 
               // let enable_reply = RwSignal::new(false);
-              #[cfg(not(feature = "ssr"))]
+              // #[cfg(not(feature = "ssr"))]
               // spawn_local_scoped_with_cancellation(async move {
               //   enable_reply.set(true);
               //   log!("PostToolbar: enable_reply set to true");
               // });
               //
+              #[cfg(not(feature = "ssr"))]
               let _ = set_timeout_with_handle(
                 move || {
                   enable_reply.set(true);
