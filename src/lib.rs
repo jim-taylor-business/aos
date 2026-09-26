@@ -77,13 +77,12 @@ pub fn html_template(options: LeptosOptions) -> impl IntoView {
     <!DOCTYPE html>
     <html lang="en">
       <head>
-        <Link rel="preload" href="/AdwaitaSans-Italic.ttf" as_="font" crossorigin="anonymous" />
-        <Link rel="preload" href="/AdwaitaSans-Regular.ttf" as_="font" crossorigin="anonymous" />
-        <Link rel="preload" href="/icons.svg" as_="image" />
+        <Link rel="preload" href="/AdwaitaSans-Italic.ttf" as_="font" type_="font/ttf" crossorigin="anonymous" />
+        <Link rel="preload" href="/AdwaitaSans-Regular.ttf" as_="font" type_="font/ttf" crossorigin="anonymous" />
+        <Link rel="prefetch" href="/icons.svg" as_="image" type_="image/svg+xml" />
         <MetaTags />
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        // <AutoReload options={options.clone()} />
         <HydrationScripts options />
       </head>
       <body>
@@ -111,9 +110,7 @@ fn NotFound() -> impl IntoView {
     resp.set_status(http::StatusCode::NOT_FOUND);
   }
   let ReadThemeCookie(get_theme_cookie) = expect_context::<ReadThemeCookie>();
-
   let on_scroll_element = NodeRef::<leptos::html::Div>::new();
-
   let location = hooks::use_location();
   let search = location.search.get();
   let url = format!("{}{}", location.pathname.get(), if search.len() > 0 { format!("?{}", search) } else { "".into() });
@@ -127,9 +124,10 @@ fn NotFound() -> impl IntoView {
             node_ref={on_scroll_element}
             class="min-w-full sm:overflow-x-auto sm:overflow-y-hidden sm:absolute sm:px-4 gap-4{} sm:h-[calc(100%-4rem)] sm:columns-[23rem]"
           >
-            <div class="flex justify-between alert alert-warning alert-soft">
-              <span class="text-lg"> "Link not found, try searching instead" </span>
-            </div>
+            <errors::Warning description="Link not found, try searching instead" />
+            // <div class="flex justify-between alert alert-warning alert-soft">
+            //   <span class="text-lg"> "Link not found, try searching instead" </span>
+            // </div>
           </div>
         </div>
       </main>

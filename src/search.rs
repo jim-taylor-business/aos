@@ -23,7 +23,6 @@ pub fn Search() -> impl IntoView {
   let ssr_name = move || param.get().get("name").unwrap_or("".into());
 
   let query = use_query_map();
-
   let ssr_list = move || serde_json::from_str::<ListingType>(&query.get().get("list").unwrap_or("".into())).unwrap_or(ListingType::All);
   let ssr_sort = move || serde_json::from_str::<SortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(SortType::Active);
   let ssr_page = move || serde_json::from_str::<Vec<u32>>(&query.get().get("page").unwrap_or("".into())).unwrap_or(vec![1u32]);

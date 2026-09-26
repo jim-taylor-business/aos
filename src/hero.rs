@@ -3,7 +3,7 @@ use crate::{
   client::*,
   comment::Comment,
   db::csr_indexed_db::*,
-  errors::{Error, Offline, Loading, LemmyAppError, LemmyAppErrorType, LemmyAppResult},
+  errors::{Error, Warning, Loading, LemmyAppError, LemmyAppErrorType, LemmyAppResult},
   icon::{Icon, IconType},
   toolbar::PostToolbar,
 };
@@ -123,7 +123,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
             Some(Some(Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }))) => {
               view! {
                 <Title text="App offline" />
-                <Offline />
+                <Warning />
               }.into_any()
             }
             Some(Some(Err(e))) => {

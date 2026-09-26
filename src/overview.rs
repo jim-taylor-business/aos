@@ -1,5 +1,5 @@
 use crate::{  OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
- db::csr_indexed_db::*, errors::Offline};
+ db::csr_indexed_db::*, errors::Warning};
 use crate::{
   // i18n::*,
   client::*,
@@ -497,7 +497,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                 }
                 Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
                   #[cfg(not(feature = "ssr"))] loading.set(false);
-                  view! { <Offline on_retry_click={on_retry_click} /> }.into_any()
+                  view! { <Warning on_retry_click={on_retry_click} /> }.into_any()
                 }
                 Err(e) => {
                   #[cfg(not(feature = "ssr"))] loading.set(false);

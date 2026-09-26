@@ -3,7 +3,7 @@ use crate::{
   client::*,
   comments::Comments,
   db::csr_indexed_db::*,
-  errors::{Error, Offline, LemmyAppError, LemmyAppErrorType, Loading},
+  errors::{Error, Warning, LemmyAppError, LemmyAppErrorType, Loading},
   nav::TopNav,
   toolbar::PostToolbar,
 };
@@ -199,7 +199,7 @@ pub fn Post() -> impl IntoView {
                     #[cfg(not(feature = "ssr"))] loading.set(false);
                     view! {
                       <Title text="Error loading post" />
-                      <Offline on_retry_click={move |_| {
+                      <Warning on_retry_click={move |_| {
                         post_resource.refetch();
                         comments_resource.refetch();
                       }} />

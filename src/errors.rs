@@ -52,11 +52,12 @@ pub fn message_from_error(error: &LemmyAppError) -> String {
 }
 
 #[component]
-pub fn Offline(#[prop(optional, into)] on_retry_click: Option<Callback<MouseEvent>>) -> impl IntoView {
+pub fn Warning(#[prop(optional, into)] description: Option<String>, #[prop(optional, into)] on_retry_click: Option<Callback<MouseEvent>>) -> impl IntoView {
+  let description_value = description.unwrap_or("Offline".to_owned());
   view! {
     <div class="py-4 px-8 break-inside-avoid">
-      <div class="flex justify-between alert alert-warning alert-soft">
-        <span class="text-lg">{"Offline"}</span>
+      <div class="flex items-center justify-between alert alert-warning alert-soft">
+        <span> { description_value } </span>
         {if let Some(o) = on_retry_click {
           view! {
             <span on:click={ move |e: MouseEvent| { o.run(e); } } class="btn btn-sm">
@@ -68,8 +69,7 @@ pub fn Offline(#[prop(optional, into)] on_retry_click: Option<Callback<MouseEven
         }}
       </div>
     </div>
-  }
-  .into_any()
+  }.into_any()
 }
 
 #[component]
@@ -78,13 +78,12 @@ pub fn Error(#[prop(optional, into)] get_url: Option<bool>, #[prop(optional, int
   let description_value = description.unwrap_or("Error".to_owned());
   let location = use_location();
   let search = location.search.get();
-
   view! {
     <div class="py-4 px-8 break-inside-avoid">
       <div class="flex alert alert-error alert-soft">
         <details class="w-full min-w-0">
-          <summary class="flex justify-between list-none">
-            <span class="text-lg"> { description_value } </span>
+          <summary class="flex items-center justify-between list-none">
+            <span> { description_value } </span>
             {if let Some(o) = on_retry_click {
               {if let Some(true) = get_url {
                 view! {
@@ -118,8 +117,7 @@ pub fn Error(#[prop(optional, into)] get_url: Option<bool>, #[prop(optional, int
         </details>
       </div>
     </div>
-  }
-  .into_any()
+  }.into_any()
 }
 
 #[component]
@@ -133,8 +131,7 @@ pub fn Loading(loading: bool) -> impl IntoView {
           </div>
         </div>
       </div>
-    }
-    .into_any()
+    }.into_any()
   } else {
     view! {}.into_any()
   }
