@@ -253,7 +253,7 @@ pub fn TopNav(
             show_nsfw: Some(false),
             page_cursor: None,
           },
-          get_auth_cookie.get_untracked(),
+          get_auth_cookie.get(),
         ));
       });
       let mut query_params = query.get();
@@ -320,7 +320,7 @@ pub fn TopNav(
             show_nsfw: Some(false),
             page_cursor: None,
           },
-          get_auth_cookie.get_untracked(),
+          get_auth_cookie.get(),
         ));
       });
       let mut query_params = query.get();
@@ -352,8 +352,13 @@ pub fn TopNav(
 
   let logout_action = ServerAction::<LogoutFn>::new();
 
-  // let search_show = RwSignal::new(false);
-  let still_pressed = RwSignal::new(false);
+  #[derive(PartialEq, Clone)]
+  enum InputFocusState {
+    Instance,
+    Unfocused,
+    Search,
+  }
+  let input_focus = RwSignal::new(InputFocusState::Unfocused);
 
   #[cfg(not(feature = "ssr"))]
   let visibility = expect_context::<Signal<VisibilityState>>();
@@ -416,7 +421,7 @@ pub fn TopNav(
 
   let instance_term = RwSignal::new(get_instance_cookie.get());
   let on_instance_submit = move || {
-    still_pressed.set(false);
+    input_focus.set(InputFocusState::Unfocused);
     if instance_term.get().unwrap_or("".into()).len() > 0 {
       set_instance_cookie.set(instance_term.get());
     } else {
@@ -445,7 +450,7 @@ pub fn TopNav(
           show_nsfw: Some(false),
           page_cursor: None,
         },
-        get_auth_cookie.get_untracked(),
+        get_auth_cookie.get(),
       ));
     });
     #[cfg(not(feature = "ssr"))]
@@ -493,7 +498,7 @@ pub fn TopNav(
     move |_| {
       let timer = set_timeout_with_handle(
         move || {
-          still_pressed.set(true);
+          input_focus.set(InputFocusState::Instance);
           let _ = set_timeout_with_handle(
             move || {
               instance_input.get().map(|i| i.focus());
@@ -524,7 +529,7 @@ pub fn TopNav(
     move |_| {
       let timer = set_timeout_with_handle(
         move || {
-          still_pressed.set(true);
+          input_focus.set(InputFocusState::Instance);
           let _ = set_timeout_with_handle(
             move || {
               instance_input.get().map(|i| i.focus());
@@ -550,6 +555,46 @@ pub fn TopNav(
     }
   };
 
+  // let input_focus = RwSignal::new(false);
+  let search_term = RwSignal::new("".to_owned());
+
+  let query = use_query_map();
+  let on_filter_ssr = move |l: ListingType| {
+    let mut query_params = query.get();
+    query_params.remove("page");
+    query_params.remove("list");
+    if l != ListingType::All {
+      query_params.insert("list", serde_json::to_string(&l).ok().unwrap_or("All".into()));
+    }
+    let params = query_params.clone();
+    format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
+  };
+
+  let display_title = Signal::derive(move || {
+    let s = if ssr_term().len() > 0 {
+      ssr_term()
+    } else if let Some(l) = lost_path {
+      l.get().replace(".", " ").replace("/", " ").replace("&", " ").replace("%", " ").replace("?", " ").replace("=", " ").replace("+", " ").replace("-", " ").replace("_", " ")
+    } else {
+      if let Some(pv) = post_view.get() {
+        let community_title = if pv.post_view.community.local {
+          format!("{}", pv.post_view.community.name)
+        } else {
+          format!(
+            "{}@{}",
+            pv.post_view.community.name,
+            if let Some(h) = pv.post_view.community.actor_id.inner().host() { h.to_string() } else { "".to_owned() }
+          )
+        };
+        format!("{} by {} in {}", pv.post_view.post.name, pv.post_view.creator.actor_id.to_string()[8..].to_string(), community_title)
+      } else {
+        "".to_owned()
+      }
+    };
+    search_term.set(s.clone());
+    s
+  });
+
   view! {
     <Transition fallback={|| {}}>
       {move || {
@@ -559,50 +604,15 @@ pub fn TopNav(
         let icon_details = Memo::new(move |_| { if let Some(Ok(s)) = ssr_site.get() { Some(s.site_view.site.icon.clone()) } else { None }});
         let logged_in = Memo::new(move |_| { if let Some(Ok(GetSiteResponse { my_user: Some(m), .. })) = ssr_site.get() { true } else { false } });
 
-        let search_show = RwSignal::new(false);
-        let search_term = RwSignal::new("".to_owned());
-
-        let query = use_query_map();
-        let on_filter_ssr = move |l: ListingType| {
-          let mut query_params = query.get();
-          query_params.remove("page");
-          query_params.remove("list");
-          if l != ListingType::All {
-            query_params.insert("list", serde_json::to_string(&l).ok().unwrap_or("All".into()));
-          }
-          let params = query_params.clone();
-          format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
-        };
-
-        let display_title = Signal::derive(move || {
-          let s = if ssr_term().len() > 0 {
-            ssr_term()
-          } else if let Some(l) = lost_path {
-            l.get().replace(".", " ").replace("/", " ").replace("&", " ").replace("%", " ").replace("?", " ").replace("=", " ").replace("+", " ").replace("-", " ")
-          } else {
-            if let Some(pv) = post_view.get() {
-              let community_title = if pv.post_view.community.local {
-                format!("{}", pv.post_view.community.name)
-              } else {
-                format!(
-                  "{}@{}",
-                  pv.post_view.community.name,
-                  if let Some(h) = pv.post_view.community.actor_id.inner().host() { h.to_string() } else { "".to_owned() }
-                )
-              };
-              format!("{} by {} in {}", pv.post_view.post.name, pv.post_view.creator.actor_id.to_string()[8..].to_string(), community_title)
-            } else {
-              "".to_owned()
-            }
-          };
-          search_term.set(s.clone());
-          s
-        });
-
         view! {
           <nav class="flex flex-row py-0 navbar">
-            <div class={move || { (if search_show.get() { "hidden" } else { "flex" }).to_string() }}>
-              <div class={move || { if still_pressed.get() { "" } else { "hidden" } }}>
+            <div
+              class=
+                {move || { (if input_focus.get() == InputFocusState::Search { "hidden" } else {
+                  "flex"
+                }).to_string() }}
+            >
+              <div class={move || { if input_focus.get() == InputFocusState::Instance { "" } else { "hidden" } }}>
                 // <ActionForm action={change_instance}>
                   <input
                     class="pl-2 sm:pl-6 h-full w-46 text-xl input"
@@ -613,7 +623,7 @@ pub fn TopNav(
                     on:keydown={move |e: KeyboardEvent| {
                       if e.key_code() == 27 {
                         e.prevent_default();
-                        still_pressed.set(false);
+                        input_focus.set(InputFocusState::Unfocused);
                       }
                     }}
                     on:keypress={move |e: KeyboardEvent| {
@@ -626,7 +636,7 @@ pub fn TopNav(
                       instance_term.set(Some(event_target_value(&ev)));
                     }}
                     on:blur={move |_| {
-                      still_pressed.set(false);
+                      input_focus.set(InputFocusState::Unfocused);
                     }}
                   />
                 // </ActionForm>
@@ -636,7 +646,7 @@ pub fn TopNav(
                   <a
                     // exact=true
                     href="/"
-                    class={move || { if still_pressed.get() { "hidden" } else { "select-none text-xl whitespace-nowrap py-1/2" } }}
+                    class={move || { if input_focus.get() == InputFocusState::Instance { "hidden" } else { "select-none text-xl whitespace-nowrap py-1/2" } }}
                     on:mousedown={on_mouse_down}
                     on:mouseup={on_mouse_up}
                     // on:mouseleave={on_mouse_up}
@@ -645,8 +655,8 @@ pub fn TopNav(
                     // on:mouseleave={on_mouse_up}
                     on:click={move |e: MouseEvent| {
                       e.prevent_default();
-                      if still_pressed.get() {
-                        still_pressed.set(false);
+                      if input_focus.get() == InputFocusState::Instance {
+                        input_focus.set(InputFocusState::Unfocused);
                       } else {
                         next_page_cursor.set((0, None));
                         #[cfg(not(feature = "ssr"))]
@@ -682,7 +692,7 @@ pub fn TopNav(
                                     show_nsfw: Some(false),
                                     page_cursor: None,
                                   },
-                                  get_auth_cookie.get_untracked(),
+                                  get_auth_cookie.get(),
                                 ),
                               );
                             });
@@ -976,9 +986,13 @@ pub fn TopNav(
               </ul>
             </div>
             <div class="flex flex-grow">
-              <div class={move || {
-                (if search_show.get() { "form-control flex flex-grow" } else { "form-control hidden sm:flex flex-grow" }).to_string()
-              }}>
+              <div class=
+              {move || {
+                (if input_focus.get() == InputFocusState::Search { "form-control flex flex-grow" } else {
+              "form-control hidden sm:flex flex-grow"
+              }).to_string()
+              }}
+              >
                 <ActionForm attr:class="w-full" action={search_action}>
                   <input
                     title={move || display_title.get()}
@@ -990,22 +1004,32 @@ pub fn TopNav(
                     on:keypress={move |e: KeyboardEvent| {
                       if e.key_code() == 13 {
                         e.prevent_default();
-                        #[cfg(not(feature = "ssr"))]
-                        let _ = set_timeout_with_handle(
-                          move || {
-                            use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
-                          },
-                          std::time::Duration::new(0, 0),
-                        ).ok();
+                        // #[cfg(not(feature = "ssr"))]
+                        // let _ = set_timeout_with_handle(
+                        //   move || {
+                        //     use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
+                        //   },
+                        //   std::time::Duration::new(0, 750_000_000),
+                        // ).ok();
 
-                        // use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
+                        use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
                       }
                     }}
                     on:input={move |ev| {
                       search_term.set(event_target_value(&ev));
                     }}
                     on:blur={move |_| {
-                      search_show.set(false);
+                      let _ = set_timeout_with_handle(
+                        move || {
+                          // log!("  BLUR");
+                          input_focus.set(InputFocusState::Unfocused);
+                        },
+                        std::time::Duration::new(0, 750_000_000),
+                      ).ok();
+                      // if input_focus.get() == InputFocusState::Search {
+                      //   input_focus.set(InputFocusState::Unfocused);
+                      // }
+                      // input_focus.set(InputFocusState::Unfocused);
                     }}
                   />
                 </ActionForm>
@@ -1013,11 +1037,18 @@ pub fn TopNav(
             </div>
             <div class="flex-none">
               <button
-                class={move || {
-                  (if search_show.get() { "hidden" } else { "py-2 px-4" }).to_string()
+                class=
+                {move || {
+                  (if input_focus.get() == InputFocusState::Search { "hidden" } else {
+                    "py-2 px-4 sm:hidden"
+                  }).to_string()
                 }}
                 on:click={move |_| {
-                  search_show.update(|b| { *b = !*b; });
+                  if input_focus.get() == InputFocusState::Search {
+                    input_focus.set(InputFocusState::Unfocused);
+                  } else {
+                    input_focus.set(InputFocusState::Search);
+                  }
                   let _ = set_timeout_with_handle(
                     move || {
                       search_input.get().map(|i| i.focus());
@@ -1030,8 +1061,11 @@ pub fn TopNav(
                 <Icon icon={Search} />
               </button>
               <button
-                class={move || {
-                  (if search_show.get() { "py-2 px-4" } else { "hidden" }).to_string()
+                class=
+                {move || {
+                  (if input_focus.get() == InputFocusState::Search {
+                    "py-2 px-4"
+                  } else { "hidden sm:inline-block sm:py-2 sm:px-4" }).to_string()
                 }}
                 on:click={move |_| {
                   use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
@@ -1040,7 +1074,11 @@ pub fn TopNav(
                 <Icon icon={Search} />
               </button>
             </div>
-            <div class={move || { (if search_show.get() { "hidden" } else { "flex-none" }).to_string() }}>
+            <div class=
+            {move || { format!("{}", if input_focus.get() == InputFocusState::Search { "hidden" } else {
+              "flex-none"
+            }) }}
+            >
               <ul class="flex-nowrap items-center menu menu-horizontal">
                 <li class="hidden sm:flex">
                   <details node_ref=lg_language_menu>
@@ -1051,7 +1089,7 @@ pub fn TopNav(
                       <li>
                         // <ActionForm attr:class="p-0" action={lang_action}>
                         // <input type="hidden" name="lang" value="FR" />
-                        <button class="py-2 px-4" type="submit">
+                        <button disabled class="py-2 px-4" type="submit">
                           "FR"
                         </button>
                       // </ActionForm>
@@ -1059,7 +1097,7 @@ pub fn TopNav(
                       <li>
                         // <ActionForm attr:class="p-0" action={lang_action}>
                         // <input type="hidden" name="lang" value="EN" />
-                        <button class="py-2 px-4" type="submit">
+                        <button disabled class="py-2 px-4" type="submit">
                           "EN"
                         </button>
                       // </ActionForm>
