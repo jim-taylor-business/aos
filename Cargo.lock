@@ -1771,7 +1771,7 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 [[package]]
 name = "lemmy_api_common"
 version = "0.19.20"
-source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#a3f2547fdb163628594ae90f5594803168f7b062"
+source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#e1b94e18def59f30254dc86be6db1af58a86eade"
 dependencies = [
  "anyhow",
  "chrono",
@@ -1795,7 +1795,7 @@ dependencies = [
 [[package]]
 name = "lemmy_db_schema"
 version = "0.19.20"
-source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#a3f2547fdb163628594ae90f5594803168f7b062"
+source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#e1b94e18def59f30254dc86be6db1af58a86eade"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -1815,7 +1815,7 @@ dependencies = [
 [[package]]
 name = "lemmy_db_views"
 version = "0.19.20"
-source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#a3f2547fdb163628594ae90f5594803168f7b062"
+source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#e1b94e18def59f30254dc86be6db1af58a86eade"
 dependencies = [
  "chrono",
  "lemmy_db_schema",
@@ -1826,7 +1826,7 @@ dependencies = [
 [[package]]
 name = "lemmy_db_views_actor"
 version = "0.19.20"
-source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#a3f2547fdb163628594ae90f5594803168f7b062"
+source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#e1b94e18def59f30254dc86be6db1af58a86eade"
 dependencies = [
  "chrono",
  "lemmy_db_schema",
@@ -1838,7 +1838,7 @@ dependencies = [
 [[package]]
 name = "lemmy_db_views_moderator"
 version = "0.19.20"
-source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#a3f2547fdb163628594ae90f5594803168f7b062"
+source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#e1b94e18def59f30254dc86be6db1af58a86eade"
 dependencies = [
  "lemmy_db_schema",
  "serde",
@@ -1848,7 +1848,7 @@ dependencies = [
 [[package]]
 name = "lemmy_utils"
 version = "0.19.20"
-source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#a3f2547fdb163628594ae90f5594803168f7b062"
+source = "git+https://github.com/jim-taylor-business/lemmy.git?branch=deploy_demo#e1b94e18def59f30254dc86be6db1af58a86eade"
 dependencies = [
  "cfg-if",
  "clearurls",

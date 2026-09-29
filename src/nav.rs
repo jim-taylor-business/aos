@@ -1,5 +1,9 @@
 use crate::{
-  OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie, client::*, db::csr_indexed_db::*, errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult}, icon::{IconType::*, *},
+  OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
+  client::*,
+  db::csr_indexed_db::*,
+  errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult},
+  icon::{IconType::*, *},
 };
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SortType},
@@ -7,7 +11,7 @@ use lemmy_api_common::{
   post::{GetPostResponse, GetPosts, GetPostsResponse},
   site::GetSiteResponse,
 };
-use leptos::{logging::log, html::Div, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local_scoped_with_cancellation, *};
+use leptos::{html::Div, logging::log, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local_scoped_with_cancellation, *};
 use leptos_router::{components::*, hooks::*, *};
 use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options};
 use std::collections::BTreeMap;
@@ -62,11 +66,12 @@ pub async fn change_instance(instance: String) -> Result<(), ServerFnError> {
   let response = use_context::<leptos_axum::ResponseOptions>().ok_or(LemmyAppErrorType::InternalServerError)?;
   response.insert_header(
     axum::http::header::SET_COOKIE,
-    http::HeaderValue::from_str(&cookie::Cookie::build(cookie::Cookie::new("instance", instance))
-      .path("/")
-      .same_site(cookie::SameSite::Lax)
-      .max_age(cookie::time::SignedDuration::seconds(691200))
-      .to_string()
+    http::HeaderValue::from_str(
+      &cookie::Cookie::build(cookie::Cookie::new("instance", instance))
+        .path("/")
+        .same_site(cookie::SameSite::Lax)
+        .max_age(cookie::time::SignedDuration::seconds(691200))
+        .to_string(),
     )?,
   );
 
@@ -122,11 +127,12 @@ pub async fn change_theme(theme: String) -> Result<(), ServerFnError> {
   let response = use_context::<leptos_axum::ResponseOptions>().ok_or(LemmyAppErrorType::InternalServerError)?;
   response.insert_header(
     axum::http::header::SET_COOKIE,
-    http::HeaderValue::from_str(&cookie::Cookie::build(cookie::Cookie::new("theme", theme))
-      .path("/")
-      .same_site(cookie::SameSite::Lax)
-      .max_age(cookie::time::SignedDuration::seconds(691200))
-      .to_string()
+    http::HeaderValue::from_str(
+      &cookie::Cookie::build(cookie::Cookie::new("theme", theme))
+        .path("/")
+        .same_site(cookie::SameSite::Lax)
+        .max_age(cookie::time::SignedDuration::seconds(691200))
+        .to_string(),
     )?,
   );
 
@@ -199,22 +205,34 @@ pub fn TopNav(
   };
 
   let reset_others = move |this: MenuType| {
-    if this != MenuType::LgFilter && let Some(f) = lg_filter_menu.get() {
+    if this != MenuType::LgFilter
+      && let Some(f) = lg_filter_menu.get()
+    {
       f.remove_attribute("open");
     }
-    if this != MenuType::LgSort && let Some(s) = lg_sort_menu.get() {
+    if this != MenuType::LgSort
+      && let Some(s) = lg_sort_menu.get()
+    {
       s.remove_attribute("open");
     }
-    if this != MenuType::LgLanguage  && let Some(l) = lg_language_menu.get() {
+    if this != MenuType::LgLanguage
+      && let Some(l) = lg_language_menu.get()
+    {
       l.remove_attribute("open");
     }
-    if this != MenuType::LgTheme  && let Some(t) = lg_theme_menu.get() {
+    if this != MenuType::LgTheme
+      && let Some(t) = lg_theme_menu.get()
+    {
       t.remove_attribute("open");
     }
-    if this != MenuType::SmContent  && let Some(f) = sm_content_menu.get() {
+    if this != MenuType::SmContent
+      && let Some(f) = sm_content_menu.get()
+    {
       f.remove_attribute("open");
     }
-    if this != MenuType::SmUi  && let Some(s) = sm_ui_menu.get() {
+    if this != MenuType::SmUi
+      && let Some(s) = sm_ui_menu.get()
+    {
       s.remove_attribute("open");
     }
   };
@@ -279,26 +297,26 @@ pub fn TopNav(
     }
   };
 
-//   let on_filter_ssr = move |l: ListingType| {
-//     let mut query_params = query.get();
-//     query_params.remove("page");
-//     query_params.remove("list");
-//     if l != ListingType::All {
-//       query_params.insert("list", serde_json::to_string(&l).ok().unwrap_or("All".into()));
-//     }
-//     let params = query_params.clone();
-//     format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
-//
-//     // let o = serde_json::to_string::<SortType>(&s).unwrap_or("Active".into());
-//     // let mut query_params = query.get();
-//     // query_params.remove("sort");
-//     // query_params.remove("page");
-//     // if default_sort.get().unwrap_or(SortType::Active) != s {
-//     //   query_params.insert("sort", o);
-//     // }
-//     // let params = query_params.clone();
-//     // format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
-//   };
+  //   let on_filter_ssr = move |l: ListingType| {
+  //     let mut query_params = query.get();
+  //     query_params.remove("page");
+  //     query_params.remove("list");
+  //     if l != ListingType::All {
+  //       query_params.insert("list", serde_json::to_string(&l).ok().unwrap_or("All".into()));
+  //     }
+  //     let params = query_params.clone();
+  //     format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
+  //
+  //     // let o = serde_json::to_string::<SortType>(&s).unwrap_or("Active".into());
+  //     // let mut query_params = query.get();
+  //     // query_params.remove("sort");
+  //     // query_params.remove("page");
+  //     // if default_sort.get().unwrap_or(SortType::Active) != s {
+  //     //   query_params.insert("sort", o);
+  //     // }
+  //     // let params = query_params.clone();
+  //     // format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
+  //   };
 
   let on_csr_filter_click = move |l: ListingType| {
     move |e: MouseEvent| {
@@ -386,31 +404,31 @@ pub fn TopNav(
 
   // let search_term = RwSignal::new("".to_owned());
 
-//   let display_title = Signal::derive(move || {
-//     let s = if ssr_term().len() > 0 {
-//       ssr_term()
-//     } else if let Some(l) = lost_path {
-//       l.get().replace("/", " ").replace("&", " ").replace("%", " ").replace("?", " ").replace("=", " ").replace("+", " ").replace("-", " ")
-//     } else {
-//       if let Some(pv) = post_view.get() {
-//         let community_title = if pv.post_view.community.local {
-//           format!("{}", pv.post_view.community.name)
-//         } else {
-//           format!(
-//             "{}@{}",
-//             pv.post_view.community.name,
-//             if let Some(h) = pv.post_view.community.actor_id.inner().host() { h.to_string() } else { "".to_owned() }
-//           )
-//         };
-//         format!("{} by {} in {}", pv.post_view.post.name, pv.post_view.creator.actor_id.to_string()[8..].to_string(), community_title)
-//       } else {
-//         "".to_owned()
-//       }
-//     };
-//     search_term.set(s.clone());
-//     s
-//   });
-//
+  //   let display_title = Signal::derive(move || {
+  //     let s = if ssr_term().len() > 0 {
+  //       ssr_term()
+  //     } else if let Some(l) = lost_path {
+  //       l.get().replace("/", " ").replace("&", " ").replace("%", " ").replace("?", " ").replace("=", " ").replace("+", " ").replace("-", " ")
+  //     } else {
+  //       if let Some(pv) = post_view.get() {
+  //         let community_title = if pv.post_view.community.local {
+  //           format!("{}", pv.post_view.community.name)
+  //         } else {
+  //           format!(
+  //             "{}@{}",
+  //             pv.post_view.community.name,
+  //             if let Some(h) = pv.post_view.community.actor_id.inner().host() { h.to_string() } else { "".to_owned() }
+  //           )
+  //         };
+  //         format!("{} by {} in {}", pv.post_view.post.name, pv.post_view.creator.actor_id.to_string()[8..].to_string(), community_title)
+  //       } else {
+  //         "".to_owned()
+  //       }
+  //     };
+  //     search_term.set(s.clone());
+  //     s
+  //   });
+  //
   // let _on_search_submit = move |e: SubmitEvent| {
   //   e.prevent_default();
   //   use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
@@ -574,7 +592,16 @@ pub fn TopNav(
     let s = if ssr_term().len() > 0 {
       ssr_term()
     } else if let Some(l) = lost_path {
-      l.get().replace(".", " ").replace("/", " ").replace("&", " ").replace("%", " ").replace("?", " ").replace("=", " ").replace("+", " ").replace("-", " ").replace("_", " ")
+      l.get()
+        .replace(".", " ")
+        .replace("/", " ")
+        .replace("&", " ")
+        .replace("%", " ")
+        .replace("?", " ")
+        .replace("=", " ")
+        .replace("+", " ")
+        .replace("-", " ")
+        .replace("_", " ")
     } else {
       if let Some(pv) = post_view.get() {
         let community_title = if pv.post_view.community.local {
@@ -986,14 +1013,14 @@ pub fn TopNav(
               </ul>
             </div>
             <div class="flex flex-grow">
-              <div class=
-              {move || {
-                (if input_focus.get() == InputFocusState::Search { "form-control flex flex-grow" } else {
-              "form-control hidden sm:flex flex-grow"
-              }).to_string()
-              }}
-              >
-                <ActionForm attr:class="w-full" action={search_action}>
+              <ActionForm attr:class="flex flex-grow" action={search_action}>
+                <div class=
+                {move || {
+                  (if input_focus.get() == InputFocusState::Search { "form-control flex flex-grow" } else {
+                "form-control hidden sm:flex flex-grow"
+                }).to_string()
+                }}
+                >
                   <input
                     title={move || display_title.get()}
                     class="w-full input"
@@ -1032,47 +1059,49 @@ pub fn TopNav(
                       // input_focus.set(InputFocusState::Unfocused);
                     }}
                   />
-                </ActionForm>
-              </div>
-            </div>
-            <div class="flex-none">
-              <button
-                class=
-                {move || {
-                  (if input_focus.get() == InputFocusState::Search { "hidden" } else {
-                    "py-2 px-4 sm:hidden"
-                  }).to_string()
-                }}
-                on:click={move |_| {
-                  if input_focus.get() == InputFocusState::Search {
-                    input_focus.set(InputFocusState::Unfocused);
-                  } else {
-                    input_focus.set(InputFocusState::Search);
-                  }
-                  let _ = set_timeout_with_handle(
-                    move || {
-                      search_input.get().map(|i| i.focus());
-                    },
-                    std::time::Duration::from_millis(0),
-                  )
-                  .ok();
-                }}
-              >
-                <Icon icon={Search} />
-              </button>
-              <button
-                class=
-                {move || {
-                  (if input_focus.get() == InputFocusState::Search {
-                    "py-2 px-4"
-                  } else { "hidden sm:inline-block sm:py-2 sm:px-4" }).to_string()
-                }}
-                on:click={move |_| {
-                  use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
-                }}
-              >
-                <Icon icon={Search} />
-              </button>
+                </div>
+                <div class="flex-none">
+                  <button
+                    type="submit"
+                    class=
+                    {move || {
+                      (if input_focus.get() == InputFocusState::Search { "hidden" } else {
+                        "py-2 px-4 sm:hidden"
+                      }).to_string()
+                    }}
+                    on:click={move |e| {
+                      e.prevent_default();
+                      if input_focus.get() == InputFocusState::Search {
+                        input_focus.set(InputFocusState::Unfocused);
+                      } else {
+                        input_focus.set(InputFocusState::Search);
+                      }
+                      let _ = set_timeout_with_handle(
+                        move || {
+                          search_input.get().map(|i| i.focus());
+                        },
+                        std::time::Duration::from_millis(0),
+                      )
+                      .ok();
+                    }}
+                  >
+                    <Icon icon={Search} />
+                  </button>
+                  <button
+                    class=
+                    {move || {
+                      (if input_focus.get() == InputFocusState::Search {
+                        "py-2 px-4"
+                      } else { "hidden sm:inline-block sm:py-2 sm:px-4" }).to_string()
+                    }}
+                    on:click={move |_| {
+                      use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
+                    }}
+                  >
+                    <Icon icon={Search} />
+                  </button>
+                </div>
+              </ActionForm>
             </div>
             <div class=
             {move || { format!("{}", if input_focus.get() == InputFocusState::Search { "hidden" } else {

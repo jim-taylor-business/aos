@@ -2,7 +2,7 @@ use crate::{
   OnlineSetter,
   client::*,
   db::csr_indexed_db::*,
-  errors::LemmyAppError,
+  errors::*,
   icon::{Icon, IconType::*},
 };
 use lemmy_api_common::{
@@ -18,7 +18,7 @@ use leptos_router::{
   hooks::use_navigate,
 };
 use leptos_use::*;
-use web_sys::{Event, DragEvent, HtmlAnchorElement, HtmlImageElement, MouseEvent, PointerEvent, TouchEvent, WheelEvent, wasm_bindgen::JsCast};
+use web_sys::{DragEvent, Event, HtmlAnchorElement, HtmlImageElement, MouseEvent, PointerEvent, TouchEvent, WheelEvent, wasm_bindgen::JsCast};
 
 #[component]
 pub fn Comment(
@@ -117,6 +117,8 @@ pub fn Comment(
   let reply_show = RwSignal::new(false);
   let edit_show = RwSignal::new(false);
   let loading = RwSignal::new(false);
+  let error = RwSignal::new(None::<LemmyAppError>);
+  let description = RwSignal::new("None");
 
   let touch_still_handle: StoredValue<Option<TimeoutHandle>> = StoredValue::new(None);
   let pointer_still_handle: StoredValue<Option<TimeoutHandle>> = StoredValue::new(None);
@@ -144,14 +146,20 @@ pub fn Comment(
   let on_vote_submit = move |e: MouseEvent, score: i16| {
     e.prevent_default();
     spawn_local_scoped_with_cancellation(async move {
+      loading.set(true);
+      error.set(None);
+      description.set("Voting");
       let form = CreateCommentLike { comment_id: comment_view.get().comment.id, score };
       let result = LemmyClient.like_comment(form).await;
       match result {
         Ok(o) => {
           comment_view.set(o.comment_view);
         }
-        Err(_e) => {}
+        Err(e) => {
+          error.set(Some(e));
+        }
       }
+      loading.set(false);
     });
   };
 
@@ -168,34 +176,49 @@ pub fn Comment(
   let on_save_submit = move |e: MouseEvent| {
     e.prevent_default();
     spawn_local_scoped_with_cancellation(async move {
+      loading.set(true);
+      error.set(None);
+      description.set("Save");
       let form = SaveComment { comment_id: comment_view.get().comment.id, save: !comment_view.get().saved };
       let result = LemmyClient.save_comment(form).await;
       match result {
         Ok(o) => {
           comment_view.set(o.comment_view);
         }
-        Err(_e) => {}
+        Err(e) => {
+          error.set(Some(e));
+        }
       }
+      loading.set(false);
     });
   };
 
   let on_get_click = move |e: MouseEvent| {
     e.stop_propagation();
     spawn_local_scoped_with_cancellation(async move {
+      loading.set(true);
+      error.set(None);
+      description.set("Loading comment");
       let form = GetComment { id: comment_view.get().comment.id };
       let result = LemmyClient.get_comment(form).await;
       match result {
         Ok(o) => {
           comment_view.set(o.comment_view);
         }
-        Err(_e) => {}
+        Err(e) => {
+          error.set(Some(e));
+        }
       }
+      loading.set(false);
     });
   };
 
   let on_mod_log_click = move |e: MouseEvent| {
     e.stop_propagation();
     spawn_local_scoped_with_cancellation(async move {
+      loading.set(true);
+      error.set(None);
+      description.set("Loading log");
       let form = GetModlog {
         comment_id: Some(comment_view.get().comment.id),
         community_id: None,
@@ -215,8 +238,11 @@ pub fn Comment(
             });
           }
         }
-        Err(_e) => {}
+        Err(e) => {
+          error.set(Some(e));
+        }
       }
+      loading.set(false);
     });
   };
 
@@ -224,6 +250,8 @@ pub fn Comment(
     e.prevent_default();
     spawn_local_scoped_with_cancellation(async move {
       loading.set(true);
+      error.set(None);
+      description.set("Replying");
       let form = CreateComment {
         content: reply_content.get(),
         post_id: comment_view.get().comment.post_id,
@@ -233,7 +261,6 @@ pub fn Comment(
       let result = LemmyClient.reply_comment(form).await;
       match result {
         Ok(o) => {
-          loading.set(false);
           reply_show.set(false);
           now_in_millis.set(u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0));
           children.update(|cs| cs.push(o.comment_view));
@@ -242,10 +269,11 @@ pub fn Comment(
             if let Ok(_c) = d.del(&CommentDraftKey { comment_id: comment_view.get().comment.id.0, draft: Draft::Reply }).await {}
           }
         }
-        Err(_e) => {
-          loading.set(false);
+        Err(e) => {
+          error.set(Some(e));
         }
       }
+      loading.set(false);
     });
   };
 
@@ -253,21 +281,23 @@ pub fn Comment(
     e.prevent_default();
     spawn_local_scoped_with_cancellation(async move {
       loading.set(true);
+      error.set(None);
+      description.set("Editing");
       let form = EditComment { content: Some(edit_content.get()), comment_id: comment_view.get().comment.id, language_id: None };
       let result = LemmyClient.edit_comment(form).await;
       match result {
         Ok(_o) => {
-          loading.set(false);
           edit_show.set(false);
           #[cfg(not(feature = "ssr"))]
           if let Ok(d) = IndexedDb::new().await {
             if let Ok(_c) = d.del(&CommentDraftKey { comment_id: comment_view.get().comment.id.0, draft: Draft::Edit }).await {}
           }
         }
-        Err(_e) => {
-          loading.set(false);
+        Err(e) => {
+          error.set(Some(e));
         }
       }
+      loading.set(false);
     });
   };
 
@@ -585,13 +615,13 @@ pub fn Comment(
                       view! {
                         <Form action="POST" attr:class="flex items-center">
                           <input type="hidden" name="post_id" value={format!("{}", comment_view.get_untracked().post.id)} />
-                          <input type="hidden" name="score" value={move || if Some(1) == comment_view.get_untracked().my_vote { 0 } else { 1 }} />
+                          <input type="hidden" name="score" value={move || if Some(1) == comment_view.get().my_vote { 0 } else { 1 }} />
                           <button
                             type="submit"
                             class={move || {
                               format!(
                                 "{}{}",
-                                { if Some(1) == comment_view.get_untracked().my_vote { "text-secondary" } else { "" } },
+                                { if Some(1) == comment_view.get().my_vote { "text-secondary" } else { "" } },
                                 { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
                               )
                             }}
@@ -605,13 +635,13 @@ pub fn Comment(
                         <span class="text-sm">{move || comment_view.get().counts.score}</span>
                         <Form action="POST" attr:class="flex items-center">
                           <input type="hidden" name="post_id" value={format!("{}", comment_view.get_untracked().post.id)} />
-                          <input type="hidden" name="score" value={move || if Some(-1) == comment_view.get_untracked().my_vote { 0 } else { -1 }} />
+                          <input type="hidden" name="score" value={move || if Some(-1) == comment_view.get().my_vote { 0 } else { -1 }} />
                           <button
                             type="submit"
                             class={move || {
                               format!(
                                 "{}{}",
-                                { if Some(-1) == comment_view.get_untracked().my_vote { "text-primary" } else { "" } },
+                                { if Some(-1) == comment_view.get().my_vote { "text-primary" } else { "" } },
                                 { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-primary/50" } },
                               )
                             }}
@@ -624,14 +654,14 @@ pub fn Comment(
                         </Form>
                         <Form action="POST" attr:class="flex items-center">
                           <input type="hidden" name="post_id" value={format!("{}", comment_view.get_untracked().post.id)} />
-                          <input type="hidden" name="save" value={move || format!("{}", !comment_view.get_untracked().saved)} />
+                          <input type="hidden" name="save" value={move || format!("{}", !comment_view.get().saved)} />
                           <button
                             type="submit"
                             title="Save"
                             class={move || {
                               format!(
                                 "{}{}",
-                                { if comment_view.get_untracked().saved { "text-accent" } else { "" } },
+                                { if comment_view.get().saved { "text-accent" } else { "" } },
                                 { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
                               )
                             }}
@@ -688,7 +718,7 @@ pub fn Comment(
                                 {
                                   edit_content.set(c);
                                 } else {
-                                  edit_content.set(comment_view.get_untracked().comment.content);
+                                  edit_content.set(comment_view.get().comment.content);
                                 }
                               }
                             });
@@ -783,7 +813,7 @@ pub fn Comment(
                   });
                 }}
               >
-                {reply_content.get_untracked()}
+                {reply_content.get()}
               </textarea>
             </div>
             <div class="form-control">
@@ -829,7 +859,7 @@ pub fn Comment(
                   });
                 }}
               >
-                {edit_content.get_untracked()}
+                {edit_content.get()}
               </textarea>
             </div>
             <div class="form-control">
@@ -848,10 +878,19 @@ pub fn Comment(
           </Show>
         </div>
       </Show>
-
+      <Show when={move || loading.get()} fallback={|| {}}>
+      {move || {
+        view! { <Loading loading={loading.get()} /> }
+      }}
+      </Show>
+      <Show when={move || error.get().is_some()} fallback={|| {}}>
+      {move || {
+        view! { <Error description={description.get()} error={error.get().unwrap_or_else(|| LemmyAppError { error_type: LemmyAppErrorType::Unknown, content: "Unknown".to_owned() })} /> }
+      }}
+      </Show>
       <For each={move || children.get()} key={|cv| cv.comment.id} let:cv>
         <Comment
-          parent_comment_id={comment_view.get().comment.id.0}
+          parent_comment_id={comment_view.get_untracked().comment.id.0}
           hidden_comments={hidden_comments}
           comment={cv.into()}
           comments={descendants.get().into()}

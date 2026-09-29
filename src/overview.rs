@@ -1,11 +1,13 @@
-use crate::{  OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
- db::csr_indexed_db::*, errors::Warning};
+use crate::{
+  OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie, db::csr_indexed_db::*,
+  errors::Warning,
+};
 use crate::{
   // i18n::*,
   client::*,
   errors::{Error, LemmyAppError, LemmyAppErrorType, LemmyAppResult, Loading},
   icon::{IconType::*, *},
-  listings::Listings,
+  listing::Listings,
   nav::TopNav,
 };
 use hooks::*;
@@ -17,12 +19,25 @@ use lemmy_api_common::{
   post::{GetPosts, GetPostsResponse},
   site::GetSiteResponse,
 };
-use leptos::{html::Div, leptos_dom::helpers::TimeoutHandle, logging::error, prelude::*, task::*, *, server::codee::string::FromToStringCodec};
+use leptos::logging::*;
+use leptos::{html::Div, leptos_dom::helpers::TimeoutHandle, logging::error, prelude::*, server::codee::string::FromToStringCodec, task::*, *};
 use leptos_router::{components::*, location::State, *};
-use leptos_use::{*, SameSite, UseCookieOptions, use_cookie_with_options};
+use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options, *};
 use send_wrapper::SendWrapper;
 use std::{collections::BTreeMap, usize, vec};
 use web_sys::{Event, MouseEvent, WheelEvent};
+
+#[component]
+pub fn Default() -> impl IntoView {
+  view! { <Overview /> }
+}
+
+#[component]
+pub fn Community() -> impl IntoView {
+  let param = use_params_map();
+  let ssr_name = Signal::derive(move || param.get().get("name"));
+  view! { <Overview ssr_name /> }
+}
 
 #[server]
 pub async fn toggle_subscription(community_id: i32, follow: bool) -> Result<Option<CommunityResponse>, ServerFnError> {
@@ -148,7 +163,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
       let do_not_render_scroll = false;
 
       #[cfg(feature = "ssr")]
-      let csr_cache_render = true && pages.len() > 0;
+      let csr_cache_render = true && pages.len() > 1;
       #[cfg(not(feature = "ssr"))]
       let csr_cache_render = false;
 
@@ -276,6 +291,8 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
     e.prevent_default();
     show_rules.set(!show_rules.get());
   };
+
+  let show_next = RwSignal::new(true);
 
   view! {
     <main class="flex flex-col">
@@ -428,6 +445,13 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
             }}
           </Transition>
           <Transition fallback={|| {}}>
+            // <div class="overflow-hidden break-inside-avoid animate-[popdown_1s_step-end_1]">
+            //   <div class="py-4 px-8">
+            //     <div class="alert alert-soft">
+            //       <button>"Prev"</button>
+            //     </div>
+            //   </div>
+            // </div>
             <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| (p.1.clone(), p.2, p.4.clone())} let:p>
               {match p.3 {
                 Ok(ref o) => {
@@ -492,8 +516,80 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                     }
                   }
                   next_page_cursor.set((p.0 + o.posts.len(), o.next_page.clone()));
+                  // log!("Next page cursor: {:?}", next_page_cursor.get());
                   #[cfg(not(feature = "ssr"))] loading.set(false);
-                  view! { <Listings hide={p.6} posts={o.posts.clone().into()} page_number={RwSignal::new(p.0)} heroes={1} /> }.into_any()
+                  view! {
+                    // {
+                    //   let (key, _) = next_page_cursor.get();
+                    //   // if key > 0 {
+                    //     // let mut st = ssr_page();
+                    //     let mut st: Vec<(usize, String)> = vec![];
+                    //     if let (_, Some(PaginationCursor(next_page))) = next_page_cursor.get() {
+                    //       // if st.len() == 0 {
+                    //       //   st.push((0usize, "".into()));
+                    //       // }
+                    //       // if st.iter().find(|s| s.0 == key).is_none() {
+                    //         st.push((key, next_page));
+                    //       // }
+                    //     }
+                    //     let mut query_params = use_query_map().get();
+                    //     query_params.remove("page");
+                    //     query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+                    //     view! {
+                    //       // <div class="flex justify-items-end">
+                    //       // <div class="overflow-hidden break-inside-avoid animate-[popdown_1s_step-end_1]">
+                    //         <div class="py-4 px-8">
+                    //           <A href=format!("{}{}", use_location().pathname.get(), query_params.to_query_string()) attr:class="btn btn-soft">
+                    //             "Prev"
+                    //           </A>
+                    //         </div>
+                    //       // </div>
+                    //     }.into_any()
+                    //   // } else {
+                    //   //   view! {}.into_any()
+                    //   // }
+                    // }
+                    <Listings hide={p.6} posts={o.posts.clone().into()} page_number={RwSignal::new(p.0)} heroes={1} />
+                    {
+                      let (key, _) = next_page_cursor.get();
+                      if key > 0 {
+                        // let mut st = ssr_page();
+                        let mut st: Vec<(usize, String)> = vec![];
+                        if let (_, Some(PaginationCursor(next_page))) = next_page_cursor.get() {
+                          // if st.len() == 0 {
+                          //   st.push((0usize, "".into()));
+                          // }
+                          // if st.iter().find(|s| s.0 == key).is_none() {
+                            st.push((key, next_page));
+                          // }
+                        }
+                        let mut query_params = use_query_map().get();
+                        query_params.remove("page");
+                        query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+
+                        #[cfg(not(feature = "ssr"))]
+                        set_timeout_with_handle(
+                          move || {
+                            show_next.set(false);
+                          },
+                          std::time::Duration::new(0, 50_000_000),
+                        );
+
+                        view! {
+                          // <div class="flex justify-items-end">
+                          // <div class="overflow-hidden break-inside-avoid animate-[popdown_1s_step-end_1]">
+                            <div class=move || format!("py-4 px-8 flex justify-end{}", if show_next.get() { "" } else { " hidden" })>
+                              <A href=format!("{}{}", use_location().pathname.get(), query_params.to_query_string()) attr:class="btn btn-soft">
+                                "Next"
+                              </A>
+                            </div>
+                          // </div>
+                        }.into_any()
+                      } else {
+                        view! {}.into_any()
+                      }
+                    }
+                  }.into_any()
                 }
                 Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
                   #[cfg(not(feature = "ssr"))] loading.set(false);
@@ -502,10 +598,25 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                 Err(e) => {
                   #[cfg(not(feature = "ssr"))] loading.set(false);
                   error!("{:#?}", e);
-                  view! { <Error description="Error loading post list"  error={e} on_retry_click={on_retry_click} /> }.into_any()
+                  view! {
+                    <Error description="Error loading post list"  error={e} on_retry_click={on_retry_click} />
+                  }.into_any()
                 }
               }}
             </For>
+            // <div class="overflow-hidden break-inside-avoid animate-[popdown_1s_step-end_1]">
+            //   <div class="py-4 px-8">
+            //     // <div class="alert alert-info alert-soft">
+            //       <A
+            //         href="/"
+            //         attr:class="btn btn-soft"
+            //       >
+            //         "Next"
+            //       </A>
+            //       // <button>"Next"</button>
+            //     // </div>
+            //   </div>
+            // </div>
           </Transition>
           <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
           {move || {

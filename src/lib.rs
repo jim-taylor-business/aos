@@ -4,14 +4,11 @@
 pub mod client;
 pub mod comment;
 pub mod comments;
-pub mod community;
 pub mod db;
-pub mod default;
 pub mod errors;
 pub mod hero;
 pub mod icon;
 pub mod listing;
-pub mod listings;
 pub mod login;
 pub mod nav;
 pub mod overview;
@@ -23,24 +20,20 @@ pub mod user;
 use crate::{
   client::{LemmyApi, LemmyClient},
   errors::{LemmyAppError, LemmyAppResult},
-  login::Login,
-  post::Post,
-  search::Search,
-  user::User,
 };
 use codee::string::FromToStringCodec;
-use community::Community;
-use default::Default;
 use lemmy_api_common::{
   comment::{GetComments, GetCommentsResponse},
   post::{GetPost, GetPostResponse, GetPosts, GetPostsResponse},
-  site::GetSiteResponse,
+  site::{GetSiteResponse, Search, SearchResponse},
 };
-use leptos::prelude::*;
 use leptos::logging::log;
+use leptos::prelude::*;
 use leptos_meta::{Link, MetaTags, Stylesheet, provide_meta_context, *};
 use leptos_router::{
-  StaticSegment, components::{Outlet, ParentRoute, Route, Router, Routes}, *,
+  StaticSegment,
+  components::{Outlet, ParentRoute, Route, Router, Routes},
+  *,
 };
 #[cfg(not(feature = "ssr"))]
 use leptos_use::use_document_visibility;
@@ -168,6 +161,9 @@ pub fn App() -> impl IntoView {
   let comments_browser_cache: RwSignal<BTreeMap<(GetComments, Option<String>), (i64, LemmyAppResult<GetCommentsResponse>)>> =
     RwSignal::new(BTreeMap::new());
   provide_context(comments_browser_cache);
+  let search_browser_cache: RwSignal<BTreeMap<(usize, Search, Option<String>), (i64, LemmyAppResult<SearchResponse>)>> =
+    RwSignal::new(BTreeMap::new());
+  provide_context(search_browser_cache);
 
   let (get_auth_cookie, set_auth_cookie) =
     use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
@@ -263,12 +259,12 @@ pub fn App() -> impl IntoView {
     <Router>
       <Routes fallback={NotFound}>
         <ParentRoute path={StaticSegment("")} view={Root} ssr={SsrMode::Async}>
-          <Route path={StaticSegment("")} view={Default} />
-          <Route path={StaticSegment("l")} view={Login} />
-          <Route path={(StaticSegment("p"), ParamSegment("id"))} view={Post} />
-          <Route path={(StaticSegment("c"), ParamSegment("name"))} view={Community} />
-          <Route path={(StaticSegment("u"), ParamSegment("name"))} view={User} />
-          <Route path={StaticSegment("s")} view={Search} />
+          <Route path={StaticSegment("")} view={overview::Default} />
+          <Route path={StaticSegment("l")} view={login::Login} />
+          <Route path={(StaticSegment("p"), ParamSegment("id"))} view={post::Post} />
+          <Route path={(StaticSegment("c"), ParamSegment("name"))} view={overview::Community} />
+          <Route path={(StaticSegment("u"), ParamSegment("name"))} view={user::User} />
+          <Route path={StaticSegment("s")} view={search::Search} />
         </ParentRoute>
       </Routes>
     </Router>

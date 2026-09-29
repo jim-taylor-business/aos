@@ -203,8 +203,7 @@ pub fn Post() -> impl IntoView {
                         post_resource.refetch();
                         comments_resource.refetch();
                       }} />
-                    }
-                      .into_any()
+                    }.into_any()
                   }
                   Some(Some(Err(e))) => {
                     #[cfg(not(feature = "ssr"))] loading.set(false);
@@ -450,7 +449,6 @@ pub fn Post() -> impl IntoView {
                           }
                         }}
                       </a>
-
                       {if let Some(ref content) = text {
                         let mut options = pulldown_cmark::Options::empty();
                         options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
@@ -571,8 +569,7 @@ pub fn Post() -> impl IntoView {
                           }
                         }}
                       </Transition>
-                    }
-                      .into_any()
+                    }.into_any()
                   }
                   Some(None) | None => view! {}.into_any(),
                 }
@@ -626,7 +623,6 @@ pub fn Post() -> impl IntoView {
                       }
                     }
                     let res = res.1.clone();
-
                     view! {
                       <div class="w-full before:content-[''] before:block before:w-24 before:overflow-hidden">
                         <Comments comments={res.comments.into()} post_id />

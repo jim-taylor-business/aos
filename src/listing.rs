@@ -2,13 +2,32 @@ use crate::{
   OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
   client::*,
   errors::{Error, LemmyAppError, LemmyAppErrorType, Loading},
+  hero::Hero,
   icon::{IconType::*, *},
 };
 use lemmy_api_common::{lemmy_db_views::structs::*, person::*, post::*, site::GetSiteResponse};
-use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options};
 use leptos::{html::Img, logging::*, prelude::*, server::codee::string::FromToStringCodec};
 use leptos_router::{components::*, hooks::*};
+use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options};
 use web_sys::MouseEvent;
+
+#[component]
+pub fn Listings(posts: Signal<Vec<PostView>>, page_number: RwSignal<usize>, hide: bool, #[prop(optional)] heroes: usize) -> impl IntoView {
+  let post_number = RwSignal::new(page_number.get());
+  view! {
+    <For each={move || posts.get()} key={|pv| pv.post.id} let:pv>
+      {
+        post_number.set(post_number.get() + 1);
+        if post_number.get() <= heroes {
+          view! { <Hero hide post_id={Signal::derive(move || pv.post.id)} /*_post_number={post_number.get()}*/ /> }.into_any()
+        } else {
+          view! { <Listing hide post_view={pv} post_number={post_number.get()} /*reply_show={RwSignal::new(false)}*/ /> }.into_any()
+        }
+      }
+    </For>
+  }
+  .into_any()
+}
 
 #[server]
 pub async fn vote_post_fn(post_id: i32, score: i16) -> Result<Option<PostResponse>, ServerFnError> {
