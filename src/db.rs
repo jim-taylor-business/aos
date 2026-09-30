@@ -1,5 +1,6 @@
 pub mod csr_indexed_db {
   use lemmy_api_common::{comment::*, community::*, person::*, post::*, private_message::GetPrivateMessages, site::*};
+  use leptos::logging::*;
   use serde::{Deserialize, Serialize, de::DeserializeOwned};
   use thiserror::Error;
 
@@ -202,6 +203,8 @@ pub mod csr_indexed_db {
   #[cfg(not(feature = "ssr"))]
   use rexie::{ObjectStore, Rexie, TransactionMode};
 
+  use crate::errors::LemmyAppError;
+
   #[derive(Debug, Error)]
   pub enum Error {
     #[cfg(not(feature = "ssr"))]
@@ -213,6 +216,8 @@ pub mod csr_indexed_db {
     // #[cfg(not(feature = "ssr"))]
     #[error("serde json error: {0}")]
     SerdeJson(#[from] serde_json::Error),
+    #[error("lemmy error: {0}")]
+    Lemmy(#[from] LemmyAppError),
   }
 
   #[derive(Clone)]
@@ -224,6 +229,7 @@ pub mod csr_indexed_db {
   #[cfg(not(feature = "ssr"))]
   impl IndexedDb {
     pub async fn new() -> Result<Self, Error> {
+      // log!("Creating IndexedDb");
       let rexie = Rexie::builder("cache_v5")
         .version(1)
         .add_object_store(ObjectStore::new("post_closed_comments"))
@@ -232,6 +238,7 @@ pub mod csr_indexed_db {
         .add_object_store(ObjectStore::new("scroll_positions"))
         .build()
         .await?;
+      // log!("IndexedDb created");
       Ok(Self { rexie })
     }
   }
@@ -247,7 +254,11 @@ pub mod csr_indexed_db {
       //   .add_object_store(ObjectStore::new("scroll_positions"))
       //   .build()
       //   .await?;
-      Ok(Self {})
+      Err(Error::Lemmy(LemmyAppError {
+        error_type: crate::errors::LemmyAppErrorType::Unknown,
+        content: "IndexedDb is not available on the server".to_string(),
+      }))
+      // Ok(Self {})
     }
   }
 
@@ -304,6 +315,40 @@ pub mod csr_indexed_db {
       let post_meta_key = serde_wasm_bindgen::to_value(&serde_json::to_string(key)?)?;
       let _id = posts.delete(post_meta_key).await?;
       transaction.done().await?;
+      Ok(())
+    }
+  }
+
+  #[cfg(feature = "ssr")]
+  impl IndexedDb {
+    pub async fn get<Form, Response>(&self, key: &Form) -> Result<Option<Response>, Error>
+    where
+      Form: Serialize + Store,
+      Response: DeserializeOwned,
+    {
+      Ok(None)
+    }
+
+    pub async fn load<Form, Response>(&self, key: &Form) -> Result<Option<Response>, Error>
+    where
+      Form: Serialize + Store,
+      Response: DeserializeOwned,
+    {
+      Ok(None)
+    }
+
+    pub async fn set<Form, Response>(&self, key: &Form, t: &Response) -> Result<(), Error>
+    where
+      Form: Serialize + Store,
+      Response: Serialize,
+    {
+      Ok(())
+    }
+
+    pub async fn del<Form>(&self, key: &Form) -> Result<(), Error>
+    where
+      Form: Serialize + Store,
+    {
       Ok(())
     }
   }

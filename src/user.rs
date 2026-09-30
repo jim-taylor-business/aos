@@ -44,7 +44,7 @@ pub fn User() -> impl IntoView {
     let on_scroll = move |_e: Event| {
       if let Some(se) = on_scroll_element.get() {
         #[cfg(not(feature = "ssr"))]
-        spawn_local_scoped_with_cancellation(async move {
+        spawn_local_scoped(async move {
           let query_params = query.get();
           if let Ok(d) = IndexedDb::new().await {
             let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: query_params.to_query_string() }, &se.scroll_left()).await;

@@ -3,7 +3,7 @@ use crate::{
   client::*,
   comments::Comments,
   db::csr_indexed_db::*,
-  errors::{Error, Warning, LemmyAppError, LemmyAppErrorType, Loading},
+  errors::{Error, LemmyAppError, LemmyAppErrorType, Loading, Warning},
   nav::TopNav,
   toolbar::PostToolbar,
 };
@@ -108,7 +108,7 @@ pub fn Post() -> impl IntoView {
 
   let on_reply_click = move |e: MouseEvent| {
     e.prevent_default();
-    spawn_local_scoped_with_cancellation(async move {
+    spawn_local_scoped(async move {
       if let Some(id) = post_id.get() {
         let form = CreateComment { content: content.get(), post_id: PostId(id), parent_id: None, language_id: None };
         let result = LemmyClient.reply_comment(form).await;
@@ -116,7 +116,7 @@ pub fn Post() -> impl IntoView {
           Ok(_o) => {
             comments_resource.refetch();
             reply_show.update(|b| *b = !*b);
-            #[cfg(not(feature = "ssr"))]
+            // #[cfg(not(feature = "ssr"))]
             if let Ok(d) = IndexedDb::new().await {
               if let Ok(_c) = d.del(&CommentDraftKey { comment_id: id, draft: Draft::Post }).await {}
             }
@@ -133,7 +133,7 @@ pub fn Post() -> impl IntoView {
   let on_scroll = move |_e: Event| {
     #[cfg(not(feature = "ssr"))]
     if let Some(se) = on_scroll_element.get() {
-      spawn_local_scoped_with_cancellation(async move {
+      spawn_local_scoped(async move {
         if let Ok(d) = IndexedDb::new().await {
           let _ = d
             .set(&ScrollPositionKey { path: use_location().pathname.get(), query: use_query_map().get().to_query_string() }, &se.scroll_left())
@@ -238,7 +238,7 @@ pub fn Post() -> impl IntoView {
                       let rw = res.1.clone();
                       let fm = res.0.clone();
                       use crate::db::csr_indexed_db::*;
-                      spawn_local_scoped_with_cancellation(async move {
+                      spawn_local_scoped(async move {
                         if let Ok(d) = IndexedDb::new().await {
                           if let Ok(_c) = d.set(&fm, &rw).await {}
                         }
@@ -367,7 +367,7 @@ pub fn Post() -> impl IntoView {
                             on:click={move |e: MouseEvent| {
                               e.prevent_default();
                               #[cfg(not(feature = "ssr"))]
-                              spawn_local_scoped_with_cancellation(async move {
+                              spawn_local_scoped(async move {
                                 if let Ok(d) = IndexedDb::new().await {
                                   let _ = d
                                     .set(
@@ -519,7 +519,7 @@ pub fn Post() -> impl IntoView {
                                             content.set(event_target_value(&ev));
                                             if let Some(id) = post_id.get() {
                                               #[cfg(not(feature = "ssr"))]
-                                              spawn_local_scoped_with_cancellation(async move {
+                                              spawn_local_scoped(async move {
                                                 if let Ok(d) = IndexedDb::new().await {
                                                   if let Ok(_c) = d
                                                     .set(
@@ -584,7 +584,7 @@ pub fn Post() -> impl IntoView {
                       let rw = res.1.clone();
                       let fm = res.0.clone();
                       use crate::db::csr_indexed_db::*;
-                      spawn_local_scoped_with_cancellation(async move {
+                      spawn_local_scoped(async move {
                         if let Ok(d) = IndexedDb::new().await {
                           if let Ok(_c) = d.set(&fm, &rw).await {}
                         }
@@ -599,7 +599,7 @@ pub fn Post() -> impl IntoView {
                             set_timeout_with_handle(
                                 move || {
                                   if let Some(s) = on_scroll_element.get() {
-                                    spawn_local_scoped_with_cancellation(async move {
+                                    spawn_local_scoped(async move {
                                       if let Ok(d) = IndexedDb::new().await {
                                         let l: Result<Option<i32>, Error> = d
                                           .get(

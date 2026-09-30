@@ -42,7 +42,7 @@ pub fn Comment(
       hidden_comments.update(|hc| hc.push(i));
     }
     #[cfg(not(feature = "ssr"))]
-    spawn_local_scoped_with_cancellation(async move {
+    spawn_local_scoped(async move {
       if let Some(p) = post_id.get() {
         if let Ok(d) = IndexedDb::new().await {
           if let Ok(_) = d.set(&p, &hidden_comments.get()).await {}
@@ -145,7 +145,7 @@ pub fn Comment(
 
   let on_vote_submit = move |e: MouseEvent, score: i16| {
     e.prevent_default();
-    spawn_local_scoped_with_cancellation(async move {
+    spawn_local_scoped(async move {
       loading.set(true);
       error.set(None);
       description.set("Voting");
@@ -175,7 +175,7 @@ pub fn Comment(
 
   let on_save_submit = move |e: MouseEvent| {
     e.prevent_default();
-    spawn_local_scoped_with_cancellation(async move {
+    spawn_local_scoped(async move {
       loading.set(true);
       error.set(None);
       description.set("Save");
@@ -195,7 +195,7 @@ pub fn Comment(
 
   let on_get_click = move |e: MouseEvent| {
     e.stop_propagation();
-    spawn_local_scoped_with_cancellation(async move {
+    spawn_local_scoped(async move {
       loading.set(true);
       error.set(None);
       description.set("Loading comment");
@@ -215,7 +215,7 @@ pub fn Comment(
 
   let on_mod_log_click = move |e: MouseEvent| {
     e.stop_propagation();
-    spawn_local_scoped_with_cancellation(async move {
+    spawn_local_scoped(async move {
       loading.set(true);
       error.set(None);
       description.set("Loading log");
@@ -248,7 +248,7 @@ pub fn Comment(
 
   let on_reply_click = move |e: MouseEvent| {
     e.prevent_default();
-    spawn_local_scoped_with_cancellation(async move {
+    spawn_local_scoped(async move {
       loading.set(true);
       error.set(None);
       description.set("Replying");
@@ -264,7 +264,7 @@ pub fn Comment(
           reply_show.set(false);
           now_in_millis.set(u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0));
           children.update(|cs| cs.push(o.comment_view));
-          #[cfg(not(feature = "ssr"))]
+          // #[cfg(not(feature = "ssr"))]
           if let Ok(d) = IndexedDb::new().await {
             if let Ok(_c) = d.del(&CommentDraftKey { comment_id: comment_view.get().comment.id.0, draft: Draft::Reply }).await {}
           }
@@ -279,7 +279,7 @@ pub fn Comment(
 
   let on_edit_click = move |e: MouseEvent| {
     e.prevent_default();
-    spawn_local_scoped_with_cancellation(async move {
+    spawn_local_scoped(async move {
       loading.set(true);
       error.set(None);
       description.set("Editing");
@@ -288,9 +288,17 @@ pub fn Comment(
       match result {
         Ok(_o) => {
           edit_show.set(false);
-          #[cfg(not(feature = "ssr"))]
+          // log!("Editing comment {}", comment_view.get().comment.id.0);
+          // #[cfg(not(feature = "ssr"))]
+          // {
+          // log!("1 Deleting edit draft for comment {} ", comment_view.get().comment.id.0);
           if let Ok(d) = IndexedDb::new().await {
+            // log!("2 Deleting edit draft for comment {}", comment_view.get().comment.id.0);
             if let Ok(_c) = d.del(&CommentDraftKey { comment_id: comment_view.get().comment.id.0, draft: Draft::Edit }).await {}
+            // log!("3 Deleted edit draft for comment {}", comment_view.get().comment.id.0);
+            // } else if let Err(e) = IndexedDb::new().await {
+            //   log!("Error deleting edit draft for comment {}: {:?}", comment_view.get().comment.id.0, e);
+            // }
           }
         }
         Err(e) => {
@@ -298,6 +306,7 @@ pub fn Comment(
         }
       }
       loading.set(false);
+      // log!("Finished editing comment {}", comment_view.get().comment.id.0);
     });
   };
 
@@ -329,7 +338,7 @@ pub fn Comment(
 
     // #[cfg(not(feature = "ssr"))]
     // if let Some(se) = on_scroll_element.get() {
-    //   spawn_local_scoped_with_cancellation(async move {
+    //   spawn_local_scoped(async move {
     //     if let Ok(d) = IndexedDb::new().await {
     //       let _ = d
     //         .set(&ScrollPositionKey { path: use_location().pathname.get(), query: use_query_map().get().to_query_string() }, &se.scroll_left())
@@ -675,8 +684,8 @@ pub fn Comment(
                           on:click={move |_| {
                             edit_show.set(false);
                             reply_show.update(|b| *b = !*b);
-                            spawn_local_scoped_with_cancellation(async move {
-                              #[cfg(not(feature = "ssr"))]
+                            spawn_local_scoped(async move {
+                              // #[cfg(not(feature = "ssr"))]
                               if let Ok(d) = IndexedDb::new().await {
                                 if let Ok(Some(c)) = d
                                   .get(
@@ -704,8 +713,8 @@ pub fn Comment(
                           on:click={move |_| {
                             reply_show.set(false);
                             edit_show.update(|b| *b = !*b);
-                            spawn_local_scoped_with_cancellation(async move {
-                              #[cfg(not(feature = "ssr"))]
+                            spawn_local_scoped(async move {
+                              // #[cfg(not(feature = "ssr"))]
                               if let Ok(d) = IndexedDb::new().await {
                                 if let Ok(Some(c)) = d
                                   .get(
@@ -796,8 +805,8 @@ pub fn Comment(
                 }}
                 on:input={move |ev| {
                   reply_content.set(event_target_value(&ev));
-                  spawn_local_scoped_with_cancellation(async move {
-                    #[cfg(not(feature = "ssr"))]
+                  spawn_local_scoped(async move {
+                    // #[cfg(not(feature = "ssr"))]
                     if let Ok(d) = IndexedDb::new().await {
                       if let Ok(_comment_ids) = d
                         .set(
@@ -842,8 +851,8 @@ pub fn Comment(
                 on:input={move |ev| {
                   edit_content.set(event_target_value(&ev));
                   comment_view.update(|cv| cv.comment.content = event_target_value(&ev));
-                  spawn_local_scoped_with_cancellation(async move {
-                    #[cfg(not(feature = "ssr"))]
+                  spawn_local_scoped(async move {
+                    // #[cfg(not(feature = "ssr"))]
                     if let Ok(d) = IndexedDb::new().await {
                       if let Ok(_comment_ids) = d
                         .set(

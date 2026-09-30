@@ -141,7 +141,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                 let rw = res.1.clone();
                 let fm = res.0.clone();
                 use crate::db::csr_indexed_db::*;
-                spawn_local_scoped_with_cancellation(async move {
+                spawn_local_scoped(async move {
                   if let Ok(d) = IndexedDb::new().await {
                     if let Ok(_c) = d.set(&fm, &rw).await {}
                   }
@@ -297,7 +297,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                         on:click={move |e: MouseEvent| {
                           e.prevent_default();
                           #[cfg(not(feature = "ssr"))]
-                          spawn_local_scoped_with_cancellation(async move {
+                          spawn_local_scoped(async move {
                             if let Ok(d) = IndexedDb::new().await {
                               let _ = d
                                 .set(
@@ -461,7 +461,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                 let rw = res.1.clone();
                 let fm = res.0.clone();
                 use crate::db::csr_indexed_db::*;
-                spawn_local_scoped_with_cancellation(async move {
+                spawn_local_scoped(async move {
                   if let Ok(d) = IndexedDb::new().await {
                     if let Ok(_c) = d.set(&fm, &rw).await {}
                   }
@@ -478,7 +478,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
               let now_in_millis = RwSignal::new(u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0));
               let hidden_comments: RwSignal<Vec<i32>> = RwSignal::new(vec![]);
               #[cfg(not(feature = "ssr"))]
-              spawn_local_scoped_with_cancellation(async move {
+              spawn_local_scoped(async move {
                 let p = post_id.get();
                 if let Ok(d) = IndexedDb::new().await {
                   if let Ok(Some(mut comment_ids)) = d.get::<i32, Vec<i32>>(&p.0).await {

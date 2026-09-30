@@ -151,7 +151,7 @@ pub fn PostToolbar(
 
   let on_vote_submit = move |e: MouseEvent, score: i16| {
     e.prevent_default();
-    spawn_local_scoped_with_cancellation(async move {
+    spawn_local_scoped(async move {
       let form = CreatePostLike { post_id: post_view.get().post.id, score };
       let result = LemmyClient.like_post(form).await;
       match result {
@@ -177,7 +177,7 @@ pub fn PostToolbar(
 
   let on_save_submit = move |e: MouseEvent| {
     e.prevent_default();
-    spawn_local_scoped_with_cancellation(async move {
+    spawn_local_scoped(async move {
       let form = SavePost { post_id: post_view.get().post.id, save: !post_view.get().saved };
 
       let result = LemmyClient.save_post(form).await;
@@ -194,7 +194,7 @@ pub fn PostToolbar(
 
   let on_block_submit = move |e: MouseEvent| {
     e.prevent_default();
-    spawn_local_scoped_with_cancellation(async move {
+    spawn_local_scoped(async move {
       let form = BlockPerson { person_id: post_view.get().creator.id, block: true };
       let result = LemmyClient.block_user(form).await;
       match result {
@@ -232,7 +232,7 @@ pub fn PostToolbar(
 
   let on_report_submit = move |e: MouseEvent| {
     e.prevent_default();
-    spawn_local_scoped_with_cancellation(async move {
+    spawn_local_scoped(async move {
       let form = CreatePostReport { post_id: post_view.get().post.id, reason: reason.get() };
       let result = try_report(form).await;
       match result {
@@ -319,7 +319,7 @@ pub fn PostToolbar(
 
               // let enable_reply = RwSignal::new(false);
               // #[cfg(not(feature = "ssr"))]
-              // spawn_local_scoped_with_cancellation(async move {
+              // spawn_local_scoped(async move {
               //   enable_reply.set(true);
               //   log!("PostToolbar: enable_reply set to true");
               // });
@@ -436,7 +436,7 @@ pub fn PostToolbar(
                         // log!("Reply button clicked");
                         if let Some(id) = post_id.get_untracked() {
                           #[cfg(not(feature = "ssr"))]
-                          spawn_local_scoped_with_cancellation(async move {
+                          spawn_local_scoped(async move {
                             if let Ok(d) = IndexedDb::new().await {
                               if let Ok(Some(c)) = d
                                 .get(

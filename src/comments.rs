@@ -1,6 +1,6 @@
 use crate::{comment::Comment, db::csr_indexed_db::*};
 use lemmy_api_common::lemmy_db_views::structs::CommentView;
-use leptos::{prelude::*, task::spawn_local_scoped_with_cancellation};
+use leptos::{prelude::*, task::spawn_local_scoped};
 
 #[component]
 pub fn Comments(comments: Signal<Vec<CommentView>>, post_id: Signal<Option<i32>>) -> impl IntoView {
@@ -14,7 +14,7 @@ pub fn Comments(comments: Signal<Vec<CommentView>>, post_id: Signal<Option<i32>>
   let hidden_comments: RwSignal<Vec<i32>> = RwSignal::new(vec![]);
 
   #[cfg(not(feature = "ssr"))]
-  spawn_local_scoped_with_cancellation(async move {
+  spawn_local_scoped(async move {
     if let Some(p) = post_id.get() {
       if let Ok(d) = IndexedDb::new().await {
         if let Ok(Some(comment_ids)) = d.get::<i32, Vec<i32>>(&p).await {

@@ -8,7 +8,7 @@ use lemmy_api_common::{
   person::{Login, LoginResponse},
   site::GetSiteResponse,
 };
-use leptos::{logging::log, prelude::*, task::spawn_local_scoped_with_cancellation};
+use leptos::{logging::log, prelude::*, task::spawn_local_scoped};
 use leptos_meta::Title;
 use leptos_router::hooks::*;
 use web_sys::MouseEvent;
@@ -119,7 +119,7 @@ pub fn LoginForm() -> impl IntoView {
 
   let on_login_submit = move |e: MouseEvent| {
     e.prevent_default();
-    spawn_local_scoped_with_cancellation(async move {
+    spawn_local_scoped(async move {
       let req = Login { username_or_email: name.get().into(), password: password.get().into(), totp_2fa_token: None };
       let result = try_login(req.clone()).await;
       match result {

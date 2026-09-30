@@ -84,7 +84,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
   let on_scroll = move |_e: Event| {
     #[cfg(not(feature = "ssr"))]
     if let Some(se) = on_scroll_element.get() {
-      spawn_local_scoped_with_cancellation(async move {
+      spawn_local_scoped(async move {
         if let Ok(d) = IndexedDb::new().await {
           let _ = d
             .set(&ScrollPositionKey { path: use_location().pathname.get(), query: use_query_map().get().to_query_string() }, &se.scroll_left())
@@ -120,7 +120,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
             #[cfg(not(feature = "ssr"))]
             if let Some(se) = on_scroll_element.get() {
               let params = query_params.clone();
-              spawn_local_scoped_with_cancellation(async move {
+              spawn_local_scoped(async move {
                 if let Ok(d) = IndexedDb::new().await {
                   let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &se.scroll_left()).await;
                 }
@@ -259,7 +259,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
 
   // let on_toggle_subscription = move |e: MouseEvent| {
   //   e.prevent_default();
-  //   spawn_local_scoped_with_cancellation(async move {
+  //   spawn_local_scoped(async move {
   //     let form = FollowCommunity { community_id: CommunityId(community_id), follow: !follow.get().eq(&SubscribedType::Subscribed) };
   //     let result = LemmyClient.follow_community(form).await;
   //     match result {
@@ -276,7 +276,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
   };
 
   let on_retry_site_click = move |_| {
-    spawn_local_scoped_with_cancellation(async move {
+    spawn_local_scoped(async move {
       let _ = LemmyClient.get_site().await;
     });
   };
@@ -415,7 +415,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                               title="Subscribed"
                               on:click={move |e: MouseEvent| {
                                 e.prevent_default();
-                                spawn_local_scoped_with_cancellation(async move {
+                                spawn_local_scoped(async move {
                                   let form = FollowCommunity { community_id: s.community_view.community.id, follow: !follow.get().eq(&SubscribedType::Subscribed) };
                                   let result = LemmyClient.follow_community(form).await;
                                   match result {
@@ -460,7 +460,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                     let rw = p.3.clone();
                     let fm = p.1.clone();
                     use crate::db::csr_indexed_db::*;
-                    spawn_local_scoped_with_cancellation(async move {
+                    spawn_local_scoped(async move {
                       if p.6 {} else {
                         if let Ok(d) = IndexedDb::new().await {
                           if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&fm, &rw).await {}
@@ -480,7 +480,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                         set_timeout_with_handle(
                           move || {
                             if let Some(s) = on_scroll_element.get() {
-                              spawn_local_scoped_with_cancellation(async move {
+                              spawn_local_scoped(async move {
                                 if let Ok(d) = IndexedDb::new().await {
                                   let l: Result<Option<i32>, Error> = d
                                     .get(

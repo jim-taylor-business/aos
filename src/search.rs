@@ -49,7 +49,7 @@ pub fn Search() -> impl IntoView {
       if ssr_page().len() > 1 {
         if let Some(se) = on_scroll_element.get() {
           #[cfg(not(feature = "ssr"))]
-          spawn_local_scoped_with_cancellation(async move {
+          spawn_local_scoped(async move {
             let query_params = query.get();
             if let Ok(d) = IndexedDb::new().await {
               let _ =
@@ -199,7 +199,7 @@ pub fn Search() -> impl IntoView {
                       let result_clone = r.3.clone();
                       // let fm = p.1.clone();
                       use crate::db::csr_indexed_db::*;
-                      spawn_local_scoped_with_cancellation(async move {
+                      spawn_local_scoped(async move {
                         // if p.6 {} else {
                           if let Ok(d) = IndexedDb::new().await {
                             if let Ok(_c) = d.set::<Search, Result<SearchResponse, LemmyAppError>>(&r.1, &result_clone).await {}
@@ -218,7 +218,7 @@ pub fn Search() -> impl IntoView {
                           set_timeout_with_handle(
                             move || {
                               if let Some(s) = on_scroll_element.get() {
-                                spawn_local_scoped_with_cancellation(async move {
+                                spawn_local_scoped(async move {
                                   if let Ok(d) = IndexedDb::new().await {
                                     let l: Result<Option<i32>, Error> = d
                                       .get(

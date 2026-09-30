@@ -11,7 +11,7 @@ use lemmy_api_common::{
   post::{GetPostResponse, GetPosts, GetPostsResponse},
   site::GetSiteResponse,
 };
-use leptos::{html::Div, logging::log, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local_scoped_with_cancellation, *};
+use leptos::{html::Div, logging::log, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local_scoped, *};
 use leptos_router::{components::*, hooks::*, *};
 use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options};
 use std::collections::BTreeMap;
@@ -282,7 +282,7 @@ pub fn TopNav(
       }
       let params = query_params.clone();
       #[cfg(not(feature = "ssr"))]
-      spawn_local_scoped_with_cancellation(async move {
+      spawn_local_scoped(async move {
         if let Ok(d) = IndexedDb::new().await {
           let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &0i32).await;
         }
@@ -349,7 +349,7 @@ pub fn TopNav(
       }
       let params = query_params.clone();
       #[cfg(not(feature = "ssr"))]
-      spawn_local_scoped_with_cancellation(async move {
+      spawn_local_scoped(async move {
         if let Ok(d) = IndexedDb::new().await {
           let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &0i32).await;
         }
@@ -389,7 +389,7 @@ pub fn TopNav(
 
   let on_logout_submit = move |e: MouseEvent| {
     e.prevent_default();
-    spawn_local_scoped_with_cancellation(async move {
+    spawn_local_scoped(async move {
       let result = LemmyClient.logout().await;
       match result {
         Ok(_o) => {
@@ -472,7 +472,7 @@ pub fn TopNav(
       ));
     });
     #[cfg(not(feature = "ssr"))]
-    spawn_local_scoped_with_cancellation(async move {
+    spawn_local_scoped(async move {
       if let Ok(d) = IndexedDb::new().await {
         let _ = d.set(&ScrollPositionKey { path: "/".into(), query: "".into() }, &0i32).await;
         use_navigate()("/", Default::default());
@@ -687,7 +687,7 @@ pub fn TopNav(
                       } else {
                         next_page_cursor.set((0, None));
                         #[cfg(not(feature = "ssr"))]
-                        spawn_local_scoped_with_cancellation(async move {
+                        spawn_local_scoped(async move {
                           if let Ok(d) = IndexedDb::new().await {
                             let _ = d
                               .set(

@@ -70,7 +70,7 @@ tracing = { version = "0", optional = true }
 reqwest = { version = "0", features = ["json", "query", "form", "blocking", "brotli", "gzip", "deflate", "zstd"], optional = true }
 
 [features]
-default = ["csr"]
+default = ["ssr"]
 csr = [
   "leptos/csr",
   # "leptos_i18n/csr",
