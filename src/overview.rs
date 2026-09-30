@@ -76,6 +76,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
   let next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
 
   let loading = RwSignal::new(false);
+  let error = RwSignal::new(None::<LemmyAppError>);
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
 
   let intersection_element = NodeRef::<Div>::new();
@@ -412,18 +413,23 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                             <input type="hidden" name="follow" value={move || follow.get().eq(&SubscribedType::Subscribed)} />
                             <button
                               type="submit"
-                              title="Subscribed"
+                              title="Subscribe"
                               on:click={move |e: MouseEvent| {
                                 e.prevent_default();
                                 spawn_local_scoped(async move {
+                                  loading.set(true);
+                                  error.set(None);
                                   let form = FollowCommunity { community_id: s.community_view.community.id, follow: !follow.get().eq(&SubscribedType::Subscribed) };
                                   let result = LemmyClient.follow_community(form).await;
                                   match result {
                                     Ok(o) => {
                                       details_resource.refetch();
                                     }
-                                    Err(_e) => {}
+                                    Err(e) => {
+                                      error.set(Some(e));
+                                    }
                                   }
+                                  loading.set(false);
                                 });
                               }}
                               class={move || { format!("{}", { if follow.get() == SubscribedType::Subscribed { "text-accent" } else { "" } }) }}
@@ -432,6 +438,16 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                             </button>
                           </ActionForm>
                         </div>
+                        <Show when={move || loading.get()} fallback={|| {}}>
+                        {move || {
+                          view! { <Loading loading={loading.get()} /> }
+                        }}
+                        </Show>
+                        <Show when={move || error.get().is_some()} fallback={|| {}}>
+                        {move || {
+                          view! { <Error description={"Subscribe"} error={error.get().unwrap_or_else(|| LemmyAppError { error_type: LemmyAppErrorType::Unknown, content: "Unknown".to_owned() })} /> }
+                        }}
+                        </Show>
                       </div>
                       <div class="py-2 px-4" style={move || { if show_rules.get() { "display: block;" } else { "display: none;" } }}>
                         <div class="select-none prose" inner_html={description} />

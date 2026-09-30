@@ -2,16 +2,16 @@ use crate::{
   OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
   client::*,
   db::csr_indexed_db::*,
-  errors::{LemmyAppError, LemmyAppErrorType},
+  errors::*,
   icon::{IconType::*, *},
 };
 use lemmy_api_common::{lemmy_db_views::structs::*, person::*, post::*, site::GetSiteResponse};
-use leptos::{logging::*, html::Img, prelude::*, task::*, server::codee::string::FromToStringCodec};
-use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options};
+use leptos::{html::Img, logging::*, prelude::*, server::codee::string::FromToStringCodec, task::*};
 use leptos_router::{
   components::{A, Form},
   hooks::*,
 };
+use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options};
 use web_sys::MouseEvent;
 
 #[server]
@@ -148,18 +148,27 @@ pub fn PostToolbar(
   let online = expect_context::<RwSignal<OnlineSetter>>();
   let post_view = RwSignal::new(post_view.get());
   let vote_action = ServerAction::<VotePostFn>::new();
+  let loading = RwSignal::new(false);
+  let error = RwSignal::new(None::<LemmyAppError>);
+  let description = RwSignal::new("None");
 
   let on_vote_submit = move |e: MouseEvent, score: i16| {
     e.prevent_default();
     spawn_local_scoped(async move {
+      loading.set(true);
+      error.set(None);
+      description.set("Voting");
       let form = CreatePostLike { post_id: post_view.get().post.id, score };
       let result = LemmyClient.like_post(form).await;
       match result {
         Ok(o) => {
           post_view.set(o.post_view);
         }
-        Err(_e) => {}
+        Err(e) => {
+          error.set(Some(e));
+        }
       }
+      loading.set(false);
     });
   };
 
@@ -178,15 +187,20 @@ pub fn PostToolbar(
   let on_save_submit = move |e: MouseEvent| {
     e.prevent_default();
     spawn_local_scoped(async move {
+      loading.set(true);
+      error.set(None);
+      description.set("Save");
       let form = SavePost { post_id: post_view.get().post.id, save: !post_view.get().saved };
-
       let result = LemmyClient.save_post(form).await;
       match result {
         Ok(o) => {
           post_view.set(o.post_view);
         }
-        Err(_e) => {}
+        Err(e) => {
+          error.set(Some(e));
+        }
       }
+      loading.set(false);
     });
   };
 
@@ -195,12 +209,18 @@ pub fn PostToolbar(
   let on_block_submit = move |e: MouseEvent| {
     e.prevent_default();
     spawn_local_scoped(async move {
+      loading.set(true);
+      error.set(None);
+      description.set("Block");
       let form = BlockPerson { person_id: post_view.get().creator.id, block: true };
       let result = LemmyClient.block_user(form).await;
       match result {
         Ok(_o) => {}
-        Err(_e) => {}
+        Err(e) => {
+          error.set(Some(e));
+        }
       }
+      loading.set(false);
     });
   };
 
@@ -233,6 +253,9 @@ pub fn PostToolbar(
   let on_report_submit = move |e: MouseEvent| {
     e.prevent_default();
     spawn_local_scoped(async move {
+      loading.set(true);
+      error.set(None);
+      description.set("Report");
       let form = CreatePostReport { post_id: post_view.get().post.id, reason: reason.get() };
       let result = try_report(form).await;
       match result {
@@ -249,6 +272,7 @@ pub fn PostToolbar(
           }
         }
       }
+      loading.set(false);
     });
   };
 
@@ -540,5 +564,15 @@ pub fn PostToolbar(
         }
       }}
     </Transition>
+    <Show when={move || loading.get()} fallback={|| {}}>
+    {move || {
+      view! { <Loading loading={loading.get()} /> }
+    }}
+    </Show>
+    <Show when={move || error.get().is_some()} fallback={|| {}}>
+    {move || {
+      view! { <Error description={description.get()} error={error.get().unwrap_or_else(|| LemmyAppError { error_type: LemmyAppErrorType::Unknown, content: "Unknown".to_owned() })} /> }
+    }}
+    </Show>
   }
 }

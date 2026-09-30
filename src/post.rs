@@ -38,6 +38,7 @@ pub fn Post() -> impl IntoView {
   let reply_show = RwSignal::new(false);
   let content = RwSignal::new(String::default());
   let loading = RwSignal::new(false);
+  let error = RwSignal::new(None::<LemmyAppError>);
 
   let post_view = RwSignal::new(None::<GetPostResponse>);
 
@@ -110,6 +111,8 @@ pub fn Post() -> impl IntoView {
     e.prevent_default();
     spawn_local_scoped(async move {
       if let Some(id) = post_id.get() {
+        loading.set(true);
+        error.set(None);
         let form = CreateComment { content: content.get(), post_id: PostId(id), parent_id: None, language_id: None };
         let result = LemmyClient.reply_comment(form).await;
         match result {
@@ -121,8 +124,11 @@ pub fn Post() -> impl IntoView {
               if let Ok(_c) = d.del(&CommentDraftKey { comment_id: id, draft: Draft::Post }).await {}
             }
           }
-          Err(_e) => {}
+          Err(e) => {
+            error.set(Some(e));
+          }
         }
+        loading.set(false);
       }
     });
   };
@@ -569,6 +575,16 @@ pub fn Post() -> impl IntoView {
                           }
                         }}
                       </Transition>
+                      <Show when={move || loading.get()} fallback={|| {}}>
+                      {move || {
+                        view! { <Loading loading={loading.get()} /> }
+                      }}
+                      </Show>
+                      <Show when={move || error.get().is_some()} fallback={|| {}}>
+                      {move || {
+                        view! { <Error description={"Reply"} error={error.get().unwrap_or_else(|| LemmyAppError { error_type: LemmyAppErrorType::Unknown, content: "Unknown".to_owned() })} /> }
+                      }}
+                      </Show>
                     }.into_any()
                   }
                   Some(None) | None => view! {}.into_any(),
