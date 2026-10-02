@@ -67,7 +67,9 @@ pub async fn login_fn(username_or_email: String, password: String, uri: String) 
       //   use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
       // set_auth_cookie.set(Some(jwt.unwrap_or_default().into_inner()));
       let response = expect_context::<leptos_axum::ResponseOptions>();
-      if let Ok(header_value) = format!("jwt={}; SameSite=Lax; Path=/; Max-Age=691200", jwt.unwrap_or_default().into_inner()).parse::<http::HeaderValue>() {
+      if let Ok(header_value) =
+        format!("jwt={}; SameSite=Lax; Path=/; Max-Age=691200", jwt.unwrap_or_default().into_inner()).parse::<http::HeaderValue>()
+      {
         response.insert_header(axum::http::header::SET_COOKIE, header_value);
       }
       // set_auth_cookie.set(Some(jwt.clone().unwrap().to_string()));
@@ -95,7 +97,6 @@ pub fn LoginForm() -> impl IntoView {
   let password_validation = RwSignal::new("".to_owned());
   let ssr_error = move || query.with(|params| params.get("error"));
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
-
 
   #[cfg(feature = "ssr")]
   let passed = RwSignal::new(use_context::<PassedUrl>().unwrap_or_default());
@@ -168,7 +169,7 @@ pub fn LoginForm() -> impl IntoView {
           input_type={InputType::Password}
           label="Password"
         />
-        <button class="btn btn-neutral" on:click={on_login_submit} type="submit">
+        <button class="btn btn-soft" on:click={on_login_submit} type="submit">
           "Login"
         </button>
       </ActionForm>

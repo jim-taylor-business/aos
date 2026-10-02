@@ -551,7 +551,7 @@ pub fn Post() -> impl IntoView {
                                           type="button"
                                           class={move || {
                                             format!(
-                                              "btn btn-neutral{}",
+                                              "btn btn-soft{}",
                                               {
                                                 if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" }
                                               },
@@ -561,7 +561,7 @@ pub fn Post() -> impl IntoView {
                                         >
                                           "Comment"
                                         </button>
-                                        <button on:click={move |_| reply_show.set(false)} type="button" class="btn btn-neutral">
+                                        <button on:click={move |_| reply_show.set(false)} type="button" class="btn btn-soft">
                                           "Cancel"
                                         </button>
                                       </div>

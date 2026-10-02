@@ -6,8 +6,8 @@ use crate::{
   icon::{Icon, IconType::*},
 };
 use lemmy_api_common::{
-  comment::{CreateComment, CreateCommentLike, EditComment, GetComment, SaveComment},
-  lemmy_db_schema::newtypes::PersonId,
+  comment::*,
+  lemmy_db_schema::newtypes::*,
   lemmy_db_views::structs::{CommentView, LocalUserView},
   site::{GetModlog, GetSiteResponse, MyUserInfo},
 };
@@ -34,6 +34,29 @@ pub fn Comment(
 ) -> impl IntoView {
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   let online = expect_context::<RwSignal<OnlineSetter>>();
+
+  // let is_there = Memo::new(move |_| {
+  //   children.get().iter().find(|ct| ct.comment.id.0 == selected_drag_offset.get().2).is_some()
+  //     || descendants.get().iter().find(|ct| ct.comment.id.0 == selected_drag_offset.get().2).is_some()
+  // });
+
+  let comment_view = RwSignal::new(comment.get());
+  let comment_copy = RwSignal::new(comment.get());
+
+  let highlight_show = RwSignal::new(false);
+  let still_down = RwSignal::new(false);
+  let vote_show = RwSignal::new(false);
+  let reply_show = RwSignal::new(false);
+  let edit_show = RwSignal::new(false);
+  let loading = RwSignal::new(false);
+  let error = RwSignal::new(None::<LemmyAppError>);
+  let description = RwSignal::new("None");
+
+  let touch_still_handle: StoredValue<Option<TimeoutHandle>> = StoredValue::new(None);
+  let pointer_still_handle: StoredValue<Option<TimeoutHandle>> = StoredValue::new(None);
+
+  let reply_content = RwSignal::new(String::default());
+  let edit_content = RwSignal::new(String::default());
 
   let on_toggle = move |i: i32| {
     if hidden_comments.get().contains(&i) {
@@ -73,13 +96,57 @@ pub fn Comment(
   let children = RwSignal::new(comments_children);
   let descendants = RwSignal::new(comments_descendants);
 
-  // let is_there = Memo::new(move |_| {
-  //   children.get().iter().find(|ct| ct.comment.id.0 == selected_drag_offset.get().2).is_some()
-  //     || descendants.get().iter().find(|ct| ct.comment.id.0 == selected_drag_offset.get().2).is_some()
-  // });
-
-  let comment_view = RwSignal::new(comment.get());
-  let comment_copy = RwSignal::new(comment.get());
+  let load_comments = move || {
+    #[cfg(not(feature = "ssr"))]
+    spawn_local_scoped(async move {
+      loading.set(true);
+      error.set(None);
+      description.set("Loading comments");
+      let form = GetComments {
+        post_id: None,
+        community_id: None,
+        type_: None,
+        sort: None,
+        max_depth: Some(128),
+        page: None,
+        limit: None,
+        community_name: None,
+        parent_id: Some(comment.get().comment.id),
+        saved_only: None,
+        disliked_only: None,
+        liked_only: None,
+      };
+      let result = LemmyClient.get_comments(form.clone()).await;
+      match result {
+        Ok(o) => {
+          let mut comments_descendants = o.comments;
+          let mut comments_children: Vec<CommentView> = vec![];
+          let id = comment.get().comment.id.to_string();
+          comments_descendants.retain(|ct| {
+            let tree = ct.comment.path.split('.').collect::<Vec<_>>();
+            if tree.len() == level + 2 {
+              if tree.get(level).unwrap_or(&"").eq(&id) {
+                comments_children.push(ct.clone());
+              }
+              false
+            } else if tree.len() > level + 2 {
+              tree.get(level).unwrap_or(&"").eq(&id)
+            } else {
+              false
+            }
+          });
+          children.set(comments_children);
+          log!("{}", children.get().len());
+          descendants.set(comments_descendants);
+          log!("{}", descendants.get().len());
+        },
+        Err(e) => {
+          error.set(Some(e));
+        }
+      }
+      loading.set(false);
+    });
+  };
 
   let safe_html = Signal::derive(move || {
     let content = comment_view.get().comment.content;
@@ -110,21 +177,6 @@ pub fn Comment(
 
     safe_html
   });
-
-  let highlight_show = RwSignal::new(false);
-  let still_down = RwSignal::new(false);
-  let vote_show = RwSignal::new(false);
-  let reply_show = RwSignal::new(false);
-  let edit_show = RwSignal::new(false);
-  let loading = RwSignal::new(false);
-  let error = RwSignal::new(None::<LemmyAppError>);
-  let description = RwSignal::new("None");
-
-  let touch_still_handle: StoredValue<Option<TimeoutHandle>> = StoredValue::new(None);
-  let pointer_still_handle: StoredValue<Option<TimeoutHandle>> = StoredValue::new(None);
-
-  let reply_content = RwSignal::new(String::default());
-  let edit_content = RwSignal::new(String::default());
 
   let duration_in_text = pretty_duration::pretty_duration(
     &std::time::Duration::from_millis(now_in_millis.get() - comment_view.get().comment.published.timestamp_millis() as u64),
@@ -416,27 +468,31 @@ pub fn Comment(
           )
         }}
         on:click={move |e: MouseEvent| {
-          if still_down.get() {
-            still_down.set(false);
-          } else {
-            if let Some(t) = e.target() {
-              if let Some(i) = t.dyn_ref::<HtmlImageElement>() {
-                let _ = window().open_with_url_and_target(&i.src(), "_blank");
-              } else if let Some(l) = t.dyn_ref::<HtmlAnchorElement>() {
-                e.prevent_default();
-                if l.host().eq(&window().location().host().unwrap_or("".to_owned())) {
-                  use_navigate()(&l.href(), Default::default());
+          if comment_view.get().counts.child_count as usize == (children.get().len() + descendants.get().len()) {
+            if still_down.get() {
+              still_down.set(false);
+            } else {
+              if let Some(t) = e.target() {
+                if let Some(i) = t.dyn_ref::<HtmlImageElement>() {
+                  let _ = window().open_with_url_and_target(&i.src(), "_blank");
+                } else if let Some(l) = t.dyn_ref::<HtmlAnchorElement>() {
+                  e.prevent_default();
+                  if l.host().eq(&window().location().host().unwrap_or("".to_owned())) {
+                    use_navigate()(&l.href(), Default::default());
+                  } else {
+                    let _ = window().open_with_url_and_target(&l.href(), "_blank");
+                  }
+                } else if let Some(s) = t.dyn_ref::<web_sys::Element>() {
+                  if s.tag_name().eq("SUMMARY") {} else {
+                    on_toggle(comment_view.get().comment.id.0);
+                  }
                 } else {
-                  let _ = window().open_with_url_and_target(&l.href(), "_blank");
-                }
-              } else if let Some(s) = t.dyn_ref::<web_sys::Element>() {
-                if s.tag_name().eq("SUMMARY") {} else {
                   on_toggle(comment_view.get().comment.id.0);
                 }
-              } else {
-                on_toggle(comment_view.get().comment.id.0);
               }
             }
+          } else {
+            load_comments();
           }
         }}
         on:contextmenu={move |ev| ev.prevent_default()}
@@ -602,9 +658,7 @@ pub fn Comment(
             </Show>
           </Show>
         </Show>
-
         <div class={move || format!("prose select-none{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html} />
-
         <Show when={move || vote_show.get()} fallback={|| view! {}}>
           <div on:click={cancel} class="flex flex-wrap gap-x-2 items-center break-inside-avoid">
             <Transition fallback={|| {}}>
@@ -768,7 +822,6 @@ pub fn Comment(
                 }
               }}
             </Transition>
-
             <span class="overflow-hidden wrap-anywhere">
               <span>{abbr_duration.clone()}</span>
               " ago by "
@@ -789,6 +842,12 @@ pub fn Comment(
           fallback={|| {}}
         >
           <span class="inline-block whitespace-nowrap badge badge-neutral">{children.get().len() + descendants.get().len()} " replies"</span>
+        </Show>
+        <Show
+          when={move || comment_view.get().counts.child_count as usize != (children.get().len() + descendants.get().len())}
+          fallback={|| {}}
+        >
+          <span class="inline-block whitespace-nowrap badge badge-neutral">{comment_view.get().counts.child_count} " replies"</span>
         </Show>
       </div>
       <Show when={move || reply_show.get() || edit_show.get()} fallback={|| {}}>
@@ -830,11 +889,11 @@ pub fn Comment(
                 on:click={on_reply_click}
                 type="button"
                 disabled={move || !online.get().0}
-                class={move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })}
+                class={move || format!("btn btn-soft{}", if loading.get() { " btn-disabled" } else { "" })}
               >
                 "Reply"
               </button>
-              <button on:click={move |_| reply_show.set(false)} type="button" class="btn btn-neutral">
+              <button on:click={move |_| reply_show.set(false)} type="button" class="btn btn-soft">
                 "Cancel"
               </button>
             </div>
@@ -876,11 +935,11 @@ pub fn Comment(
                 on:click={on_edit_click}
                 type="button"
                 disabled={move || !online.get().0}
-                class={move || format!("btn btn-neutral{}", if loading.get() { " btn-disabled" } else { "" })}
+                class={move || format!("btn btn-soft{}", if loading.get() { " btn-disabled" } else { "" })}
               >
                 "Edit"
               </button>
-              <button on:click={on_cancel_click} type="button" class="btn btn-neutral">
+              <button on:click={on_cancel_click} type="button" class="btn btn-soft">
                 "Cancel"
               </button>
             </div>
