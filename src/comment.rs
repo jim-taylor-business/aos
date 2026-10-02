@@ -136,9 +136,9 @@ pub fn Comment(
             }
           });
           children.set(comments_children);
-          log!("{}", children.get().len());
+          // log!("{}", children.get().len());
           descendants.set(comments_descendants);
-          log!("{}", descendants.get().len());
+          // log!("{}", descendants.get().len());
         },
         Err(e) => {
           error.set(Some(e));
