@@ -351,7 +351,7 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                 class={move || {
                   format!(
                     "grid gap-x-4 px-4 grid-cols-[6rem_1fr] break-inside-avoid {}{}",
-                    if post_number != 0 { "grid-rows-[1fr_2rem] pb-6" } else { "grid-rows-[1fr] pl-8 pb-2" },
+                    if post_number != 0 { "grid-rows-[1fr_2rem] pb-6" } else { "grid-rows-[1fr] pb-2" },
                     if hide { " invisible" } else { "" },
                   )
                 }}>
