@@ -139,7 +139,10 @@ pub fn Comment(
           // log!("{}", children.get().len());
           descendants.set(comments_descendants);
           // log!("{}", descendants.get().len());
-        },
+          comment_view.update(|v| {
+            v.counts.child_count = TryInto::<i32>::try_into(children.get().len() + descendants.get().len()).unwrap_or_default();
+          });
+        }
         Err(e) => {
           error.set(Some(e));
         }
@@ -316,6 +319,9 @@ pub fn Comment(
           reply_show.set(false);
           now_in_millis.set(u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0));
           children.update(|cs| cs.push(o.comment_view));
+          comment_view.update(|v| {
+            v.counts.child_count = v.counts.child_count + 1;
+          });
           // #[cfg(not(feature = "ssr"))]
           if let Ok(d) = IndexedDb::new().await {
             if let Ok(_c) = d.del(&CommentDraftKey { comment_id: comment_view.get().comment.id.0, draft: Draft::Reply }).await {}
@@ -844,7 +850,7 @@ pub fn Comment(
           <span class="inline-block whitespace-nowrap badge badge-neutral">{children.get().len() + descendants.get().len()} " replies"</span>
         </Show>
         <Show
-          when={move || comment_view.get().counts.child_count as usize != (children.get().len() + descendants.get().len())}
+          when={move || TryInto::<usize>::try_into(comment_view.get().counts.child_count).unwrap_or_default() != (children.get().len() + descendants.get().len())}
           fallback={|| {}}
         >
           <span class="inline-block whitespace-nowrap badge badge-neutral">{comment_view.get().counts.child_count} " replies"</span>
