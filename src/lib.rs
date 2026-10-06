@@ -24,6 +24,7 @@ use crate::{
 use codee::string::FromToStringCodec;
 use lemmy_api_common::{
   comment::{GetComments, GetCommentsResponse},
+  person::*,
   post::{GetPost, GetPostResponse, GetPosts, GetPostsResponse},
   site::{GetSiteResponse, Search, SearchResponse},
 };
@@ -164,6 +165,9 @@ pub fn App() -> impl IntoView {
   let search_browser_cache: RwSignal<BTreeMap<(usize, Search, Option<String>), (i64, LemmyAppResult<SearchResponse>)>> =
     RwSignal::new(BTreeMap::new());
   provide_context(search_browser_cache);
+  let user_browser_cache: RwSignal<BTreeMap<(usize, GetPersonDetails, Option<String>), (i64, LemmyAppResult<GetPersonDetailsResponse>)>> =
+    RwSignal::new(BTreeMap::new());
+  provide_context(user_browser_cache);
 
   let (get_auth_cookie, set_auth_cookie) =
     use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));

@@ -104,7 +104,7 @@ pub fn Search() -> impl IntoView {
           sort: Some(sort),
           community_name: None,
           community_id: None,
-          page: Some(p as i64),
+          page: Some(p.try_into().unwrap_or(1i64)),
           limit: Some(50),
           creator_id: None,
           listing_type: None,
@@ -285,12 +285,14 @@ pub fn Search() -> impl IntoView {
                           view! {
                             // <div class="flex justify-items-end">
                             // <div class="overflow-hidden break-inside-avoid animate-[popdown_1s_step-end_1]">
-                              <div class=move || format!("py-4 px-8 flex justify-end{}", if show_next.get() { "" } else { " hidden" })>
+                            <Show when=move || { show_next.get() } fallback=||{}>
+                              <div class="py-4 px-8 flex justify-end{}">
+                              // <div class=move || format!("py-4 px-8 flex justify-end{}", if show_next.get() { "" } else { " hidden" })>
                                 <A href=format!("{}{}", use_location().pathname.get(), query_params.to_query_string()) attr:class="btn btn-soft">
                                   "Next"
                                 </A>
                               </div>
-                            // </div>
+                            </Show>
                           }.into_any()
                         // } else {
                         //   view! {}.into_any()

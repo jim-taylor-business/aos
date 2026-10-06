@@ -594,12 +594,14 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                         view! {
                           // <div class="flex justify-items-end">
                           // <div class="overflow-hidden break-inside-avoid animate-[popdown_1s_step-end_1]">
-                            <div class=move || format!("py-4 px-8 flex justify-end{}", if show_next.get() { "" } else { " hidden" })>
+                          <Show when=move || { show_next.get() } fallback=||{}>
+                            <div class="py-4 px-8 flex justify-end{}">
+                            // <div class=move || format!("py-4 px-8 flex justify-end{}", if show_next.get() { "" } else { " hidden" })>
                               <A href=format!("{}{}", use_location().pathname.get(), query_params.to_query_string()) attr:class="btn btn-soft">
                                 "Next"
                               </A>
                             </div>
-                          // </div>
+                          </Show>
                         }.into_any()
                       } else {
                         view! {}.into_any()
