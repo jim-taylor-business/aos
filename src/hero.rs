@@ -3,7 +3,7 @@ use crate::{
   client::*,
   comment::Comment,
   db::csr_indexed_db::*,
-  errors::{Error, Warning, Loading, LemmyAppError, LemmyAppErrorType, LemmyAppResult},
+  errors::{Error, LemmyAppError, LemmyAppErrorType, LemmyAppResult, Loading, Warning},
   icon::{Icon, IconType},
   toolbar::PostToolbar,
 };
@@ -296,7 +296,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                         }}
                         on:click={move |e: MouseEvent| {
                           e.prevent_default();
-                          #[cfg(not(feature = "ssr"))]
+                          // #[cfg(not(feature = "ssr"))]
                           spawn_local_scoped(async move {
                             if let Ok(d) = IndexedDb::new().await {
                               let _ = d
@@ -477,7 +477,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
               let highlight_user_id = RwSignal::new(None);
               let now_in_millis = RwSignal::new(u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0));
               let hidden_comments: RwSignal<Vec<i32>> = RwSignal::new(vec![]);
-              #[cfg(not(feature = "ssr"))]
+              // #[cfg(not(feature = "ssr"))]
               spawn_local_scoped(async move {
                 let p = post_id.get();
                 if let Ok(d) = IndexedDb::new().await {

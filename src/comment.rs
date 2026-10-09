@@ -56,7 +56,9 @@ pub fn Comment(
   let pointer_still_handle: StoredValue<Option<TimeoutHandle>> = StoredValue::new(None);
 
   let reply_content = RwSignal::new(String::default());
+  // let initial_reply_content = RwSignal::new(String::default());
   let edit_content = RwSignal::new(String::default());
+  // let initial_edit_content = RwSignal::new(String::default());
 
   let on_toggle = move |i: i32| {
     if hidden_comments.get().contains(&i) {
@@ -291,6 +293,9 @@ pub fn Comment(
             comment_view.update(|u| {
               u.comment = c.comment.clone();
             });
+          } else {
+            description.set("No comment found");
+            error.set(Some(LemmyAppError { error_type: LemmyAppErrorType::NotFound, content: "No comment found".to_owned() }));
           }
         }
         Err(e) => {
@@ -887,7 +892,7 @@ pub fn Comment(
                   });
                 }}
               >
-                {reply_content.get()}
+                {reply_content.get_untracked()}
               </textarea>
             </div>
             <div class="form-control">
@@ -933,7 +938,7 @@ pub fn Comment(
                   });
                 }}
               >
-                {edit_content.get()}
+                {edit_content.get_untracked()}
               </textarea>
             </div>
             <div class="form-control">
