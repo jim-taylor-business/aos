@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use crate::{
   OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
   client::*,
@@ -163,6 +165,29 @@ pub fn PostToolbar(
       match result {
         Ok(o) => {
           post_view.set(o.post_view);
+          let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>), (i64, LemmyAppResult<GetPostsResponse>)>>>();
+          response_cache.update(|rc| {
+            rc.iter_mut().for_each(|(f, r)| {
+              if let (_, Ok(w)) = r {
+                let id = post_view.get().post.id.0;
+                for p in w.posts.iter_mut() {
+                  if p.post.id.0 == id {
+                    *p = post_view.get();
+                    // log!("PostToolbar: updated post in response_cache {:#?}", post_view.get().my_vote);
+                    // v.0 = jiff::Zoned::now().timestamp().as_millisecond();
+                    let result_clone = r.1.clone();
+                    let form_clone = f.1.clone();
+                    spawn_local_scoped(async move {
+                      if let Ok(d) = IndexedDb::new().await {
+                        if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&form_clone, &result_clone).await {}
+                      }
+                    });
+                    break;
+                  }
+                }
+              }
+            });
+          });
         }
         Err(e) => {
           error.set(Some(e));

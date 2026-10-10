@@ -197,6 +197,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
         #[cfg(not(feature = "ssr"))]
         if let Some((t, Ok(r))) = rc.get(&(p.0, form.clone(), get_auth_cookie.get_untracked())) {
           new_pages.push((p.0, form.clone(), t.clone(), Ok(r.clone()), get_auth_cookie.get_untracked(), do_not_render_scroll, csr_cache_render));
+          // log!("Cache hit for page {} with cursor {:?}", p.0, p.1);
           continue;
         } else {
           if many_pages {
@@ -473,17 +474,18 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                 Ok(ref o) => {
                   #[cfg(not(feature = "ssr"))]
                   {
-                    let rw = p.3.clone();
-                    let fm = p.1.clone();
+                    // log!("page {}", p.0);
+                    let result_clone = p.3.clone();
+                    let form_clone = p.1.clone();
                     use crate::db::csr_indexed_db::*;
                     spawn_local_scoped(async move {
                       if p.6 {} else {
                         if let Ok(d) = IndexedDb::new().await {
-                          if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&fm, &rw).await {}
+                          if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&form_clone, &result_clone).await {}
                         }
                         response_cache
                           .update(move |rc| {
-                            rc.insert((p.0, fm, p.4), (p.2, rw));
+                            rc.insert((p.0, form_clone, p.4), (p.2, result_clone));
                           });
                       }
                     });
