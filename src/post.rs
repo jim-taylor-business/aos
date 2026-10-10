@@ -372,7 +372,7 @@ pub fn Post() -> impl IntoView {
                             }}
                             on:click={move |e: MouseEvent| {
                               e.prevent_default();
-                              #[cfg(not(feature = "ssr"))]
+                              // #[cfg(not(feature = "ssr"))]
                               spawn_local_scoped(async move {
                                 if let Ok(d) = IndexedDb::new().await {
                                   let _ = d
@@ -524,7 +524,7 @@ pub fn Post() -> impl IntoView {
                                           on:input={move |ev| {
                                             content.set(event_target_value(&ev));
                                             if let Some(id) = post_id.get() {
-                                              #[cfg(not(feature = "ssr"))]
+                                              // #[cfg(not(feature = "ssr"))]
                                               spawn_local_scoped(async move {
                                                 if let Ok(d) = IndexedDb::new().await {
                                                   if let Ok(_c) = d

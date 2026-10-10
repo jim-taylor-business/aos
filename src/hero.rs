@@ -296,7 +296,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                         }}
                         on:click={move |e: MouseEvent| {
                           e.prevent_default();
-                          #[cfg(not(feature = "ssr"))]
+                          // #[cfg(not(feature = "ssr"))]
                           spawn_local_scoped(async move {
                             if let Ok(d) = IndexedDb::new().await {
                               let _ = d
