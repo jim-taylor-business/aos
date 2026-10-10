@@ -431,7 +431,7 @@ pub fn Comment(
       format!(
         "{}{}{}",
         if level > 8 { "" } else { "pl-4" },
-        if level == 1 { " odd:bg-base-200 pr-4 pt-2 pb-1" } else { "" },
+        if level == 1 { " odd:bg-base-200 pr-4 pt-2" } else { "" },
         if !hidden_comments.get().contains(&parent_comment_id) { "" } else { " hidden" },
       )
       }}
@@ -467,7 +467,7 @@ pub fn Comment(
       <div
         class={move || {
           format!(
-            "pb-2 cursor-pointer{}{}",
+            "pb-1 cursor-pointer{}{}",
             if comment_view.get().creator.id.eq(&comment_view.get().post.creator_id) { " border-l-4 pl-2 border-accent" } else { "" },
             if highlight_user_id.get().is_some() && highlight_user_id.get().eq(&Some(comment_view.get().creator.id)) {
               " border-l-4 pl-2"
@@ -852,13 +852,13 @@ pub fn Comment(
           when={move || (hidden_comments.get().contains(&comment_view.get().comment.id.0)) && (children.get().len() + descendants.get().len()) > 0}
           fallback={|| {}}
         >
-          <span class="inline-block whitespace-nowrap badge badge-neutral">{children.get().len() + descendants.get().len()} " replies"</span>
+          <span class="mb-1 inline-block whitespace-nowrap badge badge-neutral">{children.get().len() + descendants.get().len()} " replies"</span>
         </Show>
         <Show
           when={move || TryInto::<usize>::try_into(comment_view.get().counts.child_count).unwrap_or_default() != (children.get().len() + descendants.get().len())}
           fallback={|| {}}
         >
-          <span class="inline-block whitespace-nowrap badge badge-neutral">{comment_view.get().counts.child_count} " replies"</span>
+          <span class="mb-1 inline-block whitespace-nowrap badge badge-neutral">{comment_view.get().counts.child_count} " replies"</span>
         </Show>
       </div>
       <Show when={move || reply_show.get() || edit_show.get()} fallback={|| {}}>
