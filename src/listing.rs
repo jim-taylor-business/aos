@@ -20,7 +20,7 @@ pub fn Listings(posts: Signal<Vec<PostView>>, page_number: RwSignal<usize>, hide
   view! {
     <For each={move || posts.get()} key={|pv| pv.post.id} let:pv>
       {
-        post_number.set(post_number.get() + 1);
+        post_number.update(|n| *n = *n + 1usize);
         if post_number.get() <= heroes {
           view! { <Hero hide post_id={Signal::derive(move || pv.post.id)} /*_post_number={post_number.get()}*/ /> }.into_any()
         } else {

@@ -588,6 +588,71 @@ pub fn TopNav(
     format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
   };
 
+
+  let on_kind_ssr = move |l: ListingType| {
+    let mut query_params = query.get();
+    query_params.remove("page");
+    query_params.remove("list");
+    if l != ListingType::All {
+      query_params.insert("list", serde_json::to_string(&l).ok().unwrap_or("All".into()));
+    }
+    let params = query_params.clone();
+    format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
+  };
+
+  let highlight_csr_kind = move |l: ListingType| {
+    if l == ssr_list() { "menu-active" } else { "" }
+  };
+
+  let on_csr_kind_click = move |l: ListingType| {
+    move |e: MouseEvent| {
+      response_cache.update(move |rc| {
+        rc.remove(&(
+          0usize,
+          GetPosts {
+            type_: Some(l),
+            sort: Some(ssr_sort()),
+            page: None,
+            limit: Some(50),
+            community_id: None,
+            community_name: None,
+            saved_only: None,
+            liked_only: None,
+            disliked_only: None,
+            show_hidden: Some(true),
+            show_read: Some(true),
+            show_nsfw: Some(false),
+            page_cursor: None,
+          },
+          get_auth_cookie.get(),
+        ));
+      });
+      let mut query_params = query.get();
+      query_params.remove("page");
+      query_params.remove("list");
+      if l != ListingType::All {
+        query_params.insert("list", serde_json::to_string(&l).ok().unwrap_or("All".into()));
+      }
+      let params = query_params.clone();
+      #[cfg(not(feature = "ssr"))]
+      spawn_local_scoped(async move {
+        if let Ok(d) = IndexedDb::new().await {
+          let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &0i32).await;
+        }
+        use_navigate()(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), Default::default());
+      });
+      if let Some(on_scroll_element) = scroll_element.get() {
+        if let Some(se) = on_scroll_element.get() {
+          se.set_scroll_left(0i32);
+        }
+      }
+      reset_menus()
+    }
+  };
+
+
+
+
   let display_title = Signal::derive(move || {
     let s = if ssr_term().len() > 0 {
       ssr_term()
@@ -743,12 +808,12 @@ pub fn TopNav(
                     <span class="hidden sm:flex">{move || { let m = site_details.get(); if m.len() > 0 { m } else { "A.O.S".to_owned() } }}</span>
                   </a>
                 </li>
-                <li class="hidden sm:flex z-[1]">
+                <li class="hidden sm:flex">
                   <details node_ref=lg_filter_menu>
                     <summary on:click={move |_| reset_others(MenuType::LgFilter)}>
                       <Icon icon={Community} />
                     </summary>
-                    <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+                    <ul class="z-[1] bg-base-200">
                       <li
                         // class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}
                       >
@@ -773,12 +838,12 @@ pub fn TopNav(
                     </ul>
                   </details>
                 </li>
-                <li class="hidden sm:flex z-[1]">
+                <li class="hidden sm:flex">
                   <details node_ref=lg_sort_menu>
                     <summary on:click={move |_| reset_others(MenuType::LgSort)}>
                       <Icon icon={Sort} />
                     </summary>
-                    <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+                    <ul class="z-[1] bg-base-200">
                       <li
                         // class={move || { (if SortType::Active == ssr_sort() { "menu-active" } else { "bg-transparent" }).to_string() }}
                       >
@@ -837,18 +902,36 @@ pub fn TopNav(
                     </ul>
                   </details>
                 </li>
+                <li class="hidden sm:flex">
+                  <details node_ref=lg_filter_menu>
+                    <summary on:click={move |_| reset_others(MenuType::LgFilter)}>
+                      <Icon icon={Cube} />
+                    </summary>
+                    <ul class="z-[1] bg-base-200">
+                      <li>
+                        <a href={on_filter_ssr(ListingType::All)} class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}>"Posts"</a>
+                      </li>
+                      <li>
+                        <a href={on_filter_ssr(ListingType::Local)} class={move || highlight_csr_filter(ListingType::Local)} on:click={on_csr_filter_click(ListingType::Local)}>"Comments"</a>
+                      </li>
+                      <li>
+                        <a href={on_filter_ssr(ListingType::Subscribed)} class={move || highlight_csr_filter(ListingType::Subscribed)} on:click={on_csr_filter_click(ListingType::Subscribed)}>"Users"</a>
+                      </li>
+                    </ul>
+                  </details>
+                </li>
                 <li class="flex sm:hidden">
                   <details node_ref=sm_content_menu>
                     <summary on:click={move |_| reset_others(MenuType::SmContent)}>
                       <Icon icon={Filter} />
                     </summary>
-                    <ul class="z-[1]">
-                      <li class="flex z-[1]">
+                    <ul class="z-[1] bg-base-200">
+                      <li class="flex">
                         <details>
                           <summary> // on:click={move |_| reset_others(MenuType::LgFilter)}>
                             <Icon icon={Community} />
                           </summary>
-                          <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+                          <ul>
                             <li
                               // class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}
                             >
@@ -874,7 +957,7 @@ pub fn TopNav(
                           // <summary>
                           //   <Icon icon={Community} />
                           // </summary>
-                          // <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+                          // <ul class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
                           //   <li class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}>
                           //     <span>"All"</span>
                           //   </li>
@@ -896,12 +979,12 @@ pub fn TopNav(
                           // </ul>
                         </details>
                       </li>
-                      <li class="flex z-[1]">
+                      <li class="flex">
                         <details>
                           <summary> // on:click={move |_| reset_others(MenuType::LgSort)}>
                             <Icon icon={Sort} />
                           </summary>
-                          <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+                          <ul>
                             <li
                               // class={move || { (if SortType::Active == ssr_sort() { "menu-active" } else { "bg-transparent" }).to_string() }}
                             >
@@ -961,7 +1044,7 @@ pub fn TopNav(
                           // <summary>
                           //   <Icon icon={Sort} />
                           // </summary>
-                          // <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
+                          // <ul class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
                           //   <li
                           //     class={move || { (if SortType::Active == ssr_sort() { "menu-active" } else { "" }).to_string() }}
                           //     on:click={on_sort_click(SortType::Active)}
@@ -1110,11 +1193,26 @@ pub fn TopNav(
             >
               <ul class="flex-nowrap items-center menu menu-horizontal">
                 <li class="hidden sm:flex">
+                  <details node_ref=lg_filter_menu>
+                    <summary on:click={move |_| reset_others(MenuType::LgFilter)}>
+                      <Icon icon={Ban} />
+                    </summary>
+                    <ul class="z-[1] [inset-inline-end:0] bg-base-200">
+                      <li>
+                        <a href={on_filter_ssr(ListingType::All)} class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}>"NSFW"</a>
+                      </li>
+                      <li>
+                        <a href={on_filter_ssr(ListingType::Local)} class={move || highlight_csr_filter(ListingType::Local)} on:click={on_csr_filter_click(ListingType::Local)}>"Banned"</a>
+                      </li>
+                    </ul>
+                  </details>
+                </li>
+                <li class="hidden sm:flex">
                   <details node_ref=lg_language_menu>
                     <summary on:click={move |_| reset_others(MenuType::LgLanguage)}>
                       <Icon icon={Translate} />
                     </summary>
-                    <ul class="z-[1] [inset-inline-end:0]">
+                    <ul class="z-[1] [inset-inline-end:0] bg-base-200">
                       <li>
                         // <ActionForm attr:class="p-0" action={lang_action}>
                         // <input type="hidden" name="lang" value="FR" />
@@ -1139,7 +1237,7 @@ pub fn TopNav(
                     <summary on:click={move |_| reset_others(MenuType::LgTheme)}>
                       <Icon icon={Palette} />
                     </summary>
-                    <ul class="z-[1] [inset-inline-end:0]">
+                    <ul class="z-[1] [inset-inline-end:0] bg-base-200">
                       <li data-theme="dark">
                         <ActionForm attr:class="p-0" action={change_theme}>
                           <input type="hidden" name="theme" value="dark" />
@@ -1194,13 +1292,13 @@ pub fn TopNav(
                       <summary on:click={move |_| reset_others(MenuType::SmUi)}>
                         <Icon icon={User} />
                       </summary>
-                      <ul class="z-[1] [inset-inline-end:0]">
+                      <ul class="z-[1] [inset-inline-end:0] bg-base-200">
                         <li class="flex sm:hidden">
                           <details>
                             <summary>
                               <Icon icon={Palette} />
                             </summary>
-                            <ul class="z-[1] [inset-inline-end:0]">
+                            <ul class="[inset-inline-end:0]">
                               <li data-theme="dark">
                                 <ActionForm attr:class="p-0" action={change_theme}>
                                   <input type="hidden" name="theme" value="dark" />
