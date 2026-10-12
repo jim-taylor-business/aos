@@ -116,7 +116,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
 
   view! {
-    <div class={format!("bg-base-200 mb-6{}", if hide { " invisible" } else { "" })}>
+    <div class={format!("bg-base-300 mb-6{}", if hide { " invisible" } else { "" })}>
       <Transition fallback={|| {}}>
         {move || {
           match post_resource.get() {

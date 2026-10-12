@@ -1,7 +1,7 @@
 use crate::{
   OnlineSetter, ReadInstanceCookie,
   client::*,
-  comments::Comments,
+  comment::Comments,
   db::csr_indexed_db::*,
   errors::{Error, LemmyAppError, LemmyAppErrorType, Loading, Warning},
   nav::TopNav,

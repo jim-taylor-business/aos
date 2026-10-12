@@ -3,7 +3,7 @@
 
 pub mod client;
 pub mod comment;
-pub mod comments;
+// pub mod comments;
 pub mod db;
 pub mod errors;
 pub mod hero;

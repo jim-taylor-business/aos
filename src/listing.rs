@@ -1,12 +1,15 @@
+use std::collections::BTreeMap;
+
 use crate::{
   OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
   client::*,
-  errors::{Error, LemmyAppError, LemmyAppErrorType, Loading},
+  db::csr_indexed_db::IndexedDb,
+  errors::*,
   hero::Hero,
   icon::{IconType::*, *},
 };
 use lemmy_api_common::{lemmy_db_views::structs::*, person::*, post::*, site::GetSiteResponse};
-use leptos::{html::Img, logging::*, prelude::*, server::codee::string::FromToStringCodec};
+use leptos::{html::Img, logging::*, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local_scoped};
 use leptos_router::{components::*, hooks::*};
 use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options};
 use web_sys::MouseEvent;
@@ -173,6 +176,29 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
         match result {
           Ok(o) => {
             post_view.set(o.post_view);
+            let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>), (i64, LemmyAppResult<GetPostsResponse>)>>>();
+            response_cache.update(|rc| {
+              rc.iter_mut().for_each(|(f, r)| {
+                if let (_, Ok(w)) = r {
+                  let id = post_view.get().post.id.0;
+                  for p in w.posts.iter_mut() {
+                    if p.post.id.0 == id {
+                      *p = post_view.get();
+                      // log!("PostToolbar: updated post in response_cache {:#?}", post_view.get().my_vote);
+                      // v.0 = jiff::Zoned::now().timestamp().as_millisecond();
+                      let result_clone = r.1.clone();
+                      let form_clone = f.1.clone();
+                      spawn_local_scoped(async move {
+                        if let Ok(d) = IndexedDb::new().await {
+                          if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&form_clone, &result_clone).await {}
+                        }
+                      });
+                      break;
+                    }
+                  }
+                }
+              });
+            });
           }
           Err(e) => {
             error.set(true);
