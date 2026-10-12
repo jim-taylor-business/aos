@@ -14,6 +14,7 @@ use lemmy_api_common::{
 use leptos::{html::Div, logging::log, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local_scoped, *};
 use leptos_router::{components::*, hooks::*, *};
 use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options};
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use web_sys::{KeyboardEvent, MouseEvent, SubmitEvent, VisibilityState};
 
@@ -162,6 +163,7 @@ pub fn TopNav(
   let ssr_sort =
     move || serde_json::from_str::<SortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(default_sort.get().unwrap_or(SortType::Active));
   let ssr_term = move || query.get().get("term").unwrap_or("".into());
+  let ssr_kind = move || serde_json::from_str::<KindType>(&query.get().get("kind").unwrap_or("".into())).unwrap_or(KindType::Post);
 
   let lg_filter_menu = NodeRef::<html::Details>::new();
   let lg_sort_menu = NodeRef::<html::Details>::new();
@@ -588,50 +590,57 @@ pub fn TopNav(
     format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
   };
 
+  #[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
+  enum KindType {
+    Post,
+    Comment,
+    Community,
+    User,
+  }
 
-  let on_kind_ssr = move |l: ListingType| {
+  let on_kind_ssr = move |l: KindType| {
     let mut query_params = query.get();
     query_params.remove("page");
-    query_params.remove("list");
-    if l != ListingType::All {
-      query_params.insert("list", serde_json::to_string(&l).ok().unwrap_or("All".into()));
+    query_params.remove("kind");
+    if l != KindType::Post {
+      query_params.insert("kind", serde_json::to_string(&l).ok().unwrap_or("All".into()));
     }
     let params = query_params.clone();
     format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
   };
 
-  let highlight_csr_kind = move |l: ListingType| {
-    if l == ssr_list() { "menu-active" } else { "" }
+  let highlight_csr_kind = move |l: KindType| {
+    if l == ssr_kind() { "menu-active" } else { "" }
   };
 
-  let on_csr_kind_click = move |l: ListingType| {
+  let on_csr_kind_click = move |l: KindType| {
     move |e: MouseEvent| {
-      response_cache.update(move |rc| {
-        rc.remove(&(
-          0usize,
-          GetPosts {
-            type_: Some(l),
-            sort: Some(ssr_sort()),
-            page: None,
-            limit: Some(50),
-            community_id: None,
-            community_name: None,
-            saved_only: None,
-            liked_only: None,
-            disliked_only: None,
-            show_hidden: Some(true),
-            show_read: Some(true),
-            show_nsfw: Some(false),
-            page_cursor: None,
-          },
-          get_auth_cookie.get(),
-        ));
-      });
+      // response_cache.update(move |rc| {
+      //   rc.remove(&(
+      //     0usize,
+      //     GetPosts {
+      //       type_: Some(l),
+      //       sort: Some(ssr_sort()),
+      //       page: None,
+      //       limit: Some(50),
+      //       community_id: None,
+      //       community_name: None,
+      //       saved_only: None,
+      //       liked_only: None,
+      //       disliked_only: None,
+      //       show_hidden: Some(true),
+      //       show_read: Some(true),
+      //       show_nsfw: Some(false),
+      //       page_cursor: None,
+      //     },
+      //     get_auth_cookie.get(),
+      //   ));
+      // });
       let mut query_params = query.get();
       query_params.remove("page");
-      query_params.remove("list");
-      if l != ListingType::All {
-        query_params.insert("list", serde_json::to_string(&l).ok().unwrap_or("All".into()));
+      query_params.remove("kind");
+      if l != KindType::Post {
+        query_params.insert("kind", serde_json::to_string(&l).ok().unwrap_or("All".into()));
       }
       let params = query_params.clone();
       #[cfg(not(feature = "ssr"))]
@@ -649,9 +658,6 @@ pub fn TopNav(
       reset_menus()
     }
   };
-
-
-
 
   let display_title = Signal::derive(move || {
     let s = if ssr_term().len() > 0 {
@@ -913,6 +919,9 @@ pub fn TopNav(
                       </li>
                       <li>
                         <a href={on_filter_ssr(ListingType::Local)} class={move || highlight_csr_filter(ListingType::Local)} on:click={on_csr_filter_click(ListingType::Local)}>"Comments"</a>
+                      </li>
+                      <li>
+                        <a href={on_filter_ssr(ListingType::Local)} class={move || highlight_csr_filter(ListingType::Local)} on:click={on_csr_filter_click(ListingType::Local)}>"Community"</a>
                       </li>
                       <li>
                         <a href={on_filter_ssr(ListingType::Subscribed)} class={move || highlight_csr_filter(ListingType::Subscribed)} on:click={on_csr_filter_click(ListingType::Subscribed)}>"Users"</a>
