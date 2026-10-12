@@ -471,7 +471,7 @@ pub fn Comment(
       format!(
         "{}{}{}",
         if level > 8 { "" } else { "pl-4" },
-        if level == 1 { " odd:bg-base-300 pr-4 pt-2" } else { "" },
+        if level == 1 { " odd:bg-base-300 pr-4 pt-2 pb-1" } else { "" },
         if !hidden_comments.get().contains(&parent_comment_id) { "" } else { " hidden" },
       )
       }}
