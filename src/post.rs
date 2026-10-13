@@ -1,5 +1,5 @@
 use crate::{
-  OnlineSetter, ReadInstanceCookie,
+  OnlineSetter, ReadAuthCookie, ReadInstanceCookie,
   client::*,
   comment::Comments,
   db::csr_indexed_db::*,
@@ -42,9 +42,12 @@ pub fn Post() -> impl IntoView {
 
   let post_view = RwSignal::new(None::<GetPostResponse>);
 
+  let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
+  let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
+
   let post_resource = Resource::new(
-    move || post_id.get(),
-    move |id_string| async move {
+    move || (post_id.get(), get_auth_cookie.get(), get_instance_cookie.get()),
+    move |(id_string, auth, instance)| async move {
       if let Some(id) = id_string {
         let form = GetPost { id: Some(PostId(id)), comment_id: None };
         #[cfg(not(feature = "ssr"))]
@@ -61,8 +64,8 @@ pub fn Post() -> impl IntoView {
   );
 
   let comments_resource = Resource::new(
-    move || (post_id.get(), ssr_sort()),
-    move |(post_id, sort_type)| async move {
+    move || (post_id.get(), ssr_sort(), get_auth_cookie.get(), get_instance_cookie.get()),
+    move |(post_id, sort_type, auth, instance)| async move {
       if let Some(id) = post_id {
         let form = GetComments {
           post_id: Some(PostId(id)),

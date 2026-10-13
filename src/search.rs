@@ -1,4 +1,4 @@
-use crate::ReadAuthCookie;
+use crate::{ReadAuthCookie, ReadInstanceCookie};
 use crate::{
   client::*,
   errors::*,
@@ -90,9 +90,12 @@ pub fn Search() -> impl IntoView {
   // let search_cache: RwSignal<BTreeMap<(usize, Search, Option<String>), (i64, LemmyAppResult<SearchResponse>)>> = RwSignal::new(BTreeMap::new());
   let search_cache = expect_context::<RwSignal<BTreeMap<(usize, Search, Option<String>), (i64, LemmyAppResult<SearchResponse>)>>>();
 
+  let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
+  let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
+
   let search_cache_resource = Resource::new(
-    move || (ssr_list(), ssr_sort(), ssr_name(), ssr_page(), ssr_term()),
-    move |(_list, sort, _name, pages, term)| async move {
+    move || (ssr_list(), ssr_sort(), ssr_name(), ssr_page(), ssr_term(), get_auth_cookie.get(), get_instance_cookie.get()),
+    move |(_list, sort, _name, pages, term, _auth, _instance)| async move {
       let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
       let sc = search_cache.get_untracked();
       let mut new_pages: Vec<(usize, Search, i64, LemmyAppResult<SearchResponse>, Option<String>)> = Vec::new();

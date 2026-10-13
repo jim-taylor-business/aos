@@ -921,7 +921,7 @@ pub fn TopNav(
                         <a href={on_filter_ssr(ListingType::Local)} class={move || highlight_csr_filter(ListingType::Local)} on:click={on_csr_filter_click(ListingType::Local)}>"Comments"</a>
                       </li>
                       <li>
-                        <a href={on_filter_ssr(ListingType::Subscribed)} class={move || highlight_csr_filter(ListingType::Local)} on:click={on_csr_filter_click(ListingType::Local)}>"Community"</a>
+                        <a href={on_filter_ssr(ListingType::Subscribed)} class={move || highlight_csr_filter(ListingType::Local)} on:click={on_csr_filter_click(ListingType::Local)}>"Communities"</a>
                       </li>
                       <li>
                         <a href={on_filter_ssr(ListingType::Subscribed)} class={move || highlight_csr_filter(ListingType::Subscribed)} on:click={on_csr_filter_click(ListingType::Subscribed)}>"Users"</a>

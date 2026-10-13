@@ -213,6 +213,17 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                 .to_string();
               let url = Memo::new(move |_| post_response.get().post_view.post.url);
               let thumbnail_url = Memo::new(move |_| post_response.get().post_view.post.thumbnail_url);
+              let display_url = Memo::new(move |_| {
+                if let Some(d) = url.get() {
+                  if let Some(f) = d.inner().host_str() {
+                    if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { Some(f.to_string()) } else { None }
+                  } else {
+                    None
+                  }
+                } else {
+                  None
+                }
+              });
 
               view! {
                 <div class="break-inside-avoid">
@@ -375,17 +386,18 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                       </A>
                       <span
                         class="overflow-y-auto"
-                        inner_html={move || {
-                          if let Some(d) = url.get() {
-                            if let Some(f) = d.inner().host_str() {
-                              if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { format!(" from {}", f) } else { "".to_owned() }
-                            } else {
-                              "".to_owned()
-                            }
-                          } else {
-                            "".to_owned()
-                          }
-                        }}
+                        inner_html={move || display_url.get()}
+                        // inner_html={move || {
+                        //   if let Some(d) = url.get() {
+                        //     if let Some(f) = d.inner().host_str() {
+                        //       if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { format!(" from {}", f) } else { "".to_owned() }
+                        //     } else {
+                        //       "".to_owned()
+                        //     }
+                        //   } else {
+                        //     "".to_owned()
+                        //   }
+                        // }}
                       />
                     </span>
                   </div>

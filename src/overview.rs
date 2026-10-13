@@ -153,10 +153,28 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
     })
   }
 
+  // let user_id_and_site_id_as_string = move || {
+  //   if let Some(Ok(s)) = ssr_site.get() {
+  //     if let Some(my_user) = s.my_user {
+  //       return Some(format!("{}-{}", my_user.local_user_view.local_user.id.0, s.site_view.local_site.id.0));
+  //     }
+  //   }
+  //   None
+  // };
+
+  let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
+  let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
+
   let post_list_resource = Resource::new(
-    move || (ssr_list(), ssr_sort(), ssr_name.get(), ssr_page()),
-    move |(list, sort, name, mut pages)| async move {
+    // move || (ssr_list(), ssr_sort(), ssr_name.get(), ssr_page(), get_auth_cookie.get()),
+    move || (ssr_list(), ssr_sort(), ssr_name.get(), ssr_page(), get_auth_cookie.get(), get_instance_cookie.get()),
+    // move || (ssr_list(), ssr_sort(), ssr_name.get(), ssr_page(), user_id_and_site_id_as_string()),
+    // move |(list, sort, name, mut pages, auth)| async move {
+    move |(list, sort, name, mut pages, auth, instance)| async move {
+      // move |(list, sort, name, mut pages, auth)| async move {
       let many_pages = pages.len() > 0;
+      let auth = Some(format!("{}{}", auth.unwrap_or("".to_owned()), instance.unwrap_or("".to_owned())));
+      // let auth = Some(user_id_and_site_id_as_string(site));
 
       #[cfg(feature = "ssr")]
       let do_not_render_scroll = true && pages.len() == 0;
@@ -171,7 +189,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
       #[cfg(not(feature = "ssr"))]
       loading.set(true);
 
-      let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
+      // let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
       let rc = response_cache.get_untracked();
       let mut new_pages: Vec<(usize, GetPosts, i64, LemmyAppResult<GetPostsResponse>, Option<String>, bool, bool)> = vec![];
       if pages.len() == 0 {
@@ -195,8 +213,8 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
         };
 
         #[cfg(not(feature = "ssr"))]
-        if let Some((t, Ok(r))) = rc.get(&(p.0, form.clone(), get_auth_cookie.get_untracked())) {
-          new_pages.push((p.0, form.clone(), t.clone(), Ok(r.clone()), get_auth_cookie.get_untracked(), do_not_render_scroll, csr_cache_render));
+        if let Some((t, Ok(r))) = rc.get(&(p.0, form.clone(), auth.clone())) {
+          new_pages.push((p.0, form.clone(), t.clone(), Ok(r.clone()), auth.clone(), do_not_render_scroll, csr_cache_render));
           // log!("Cache hit for page {} with cursor {:?}", p.0, p.1);
           continue;
         } else {
@@ -208,7 +226,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                   form.clone(),
                   jiff::Zoned::now().timestamp().as_millisecond(),
                   Ok(o),
-                  get_auth_cookie.get_untracked(),
+                  auth.clone(),
                   do_not_render_scroll,
                   csr_cache_render,
                 ));
@@ -231,7 +249,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
           form.clone(),
           jiff::Zoned::now().timestamp().as_millisecond(),
           result,
-          get_auth_cookie.get_untracked(),
+          auth.clone(),
           do_not_render_scroll,
           csr_cache_render,
         ));
@@ -242,8 +260,8 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
   );
 
   let details_resource = Resource::new(
-    move || ssr_name.get(),
-    move |name| async move {
+    move || (ssr_name.get(), get_auth_cookie.get(), get_instance_cookie.get()),
+    move |(name, _auth, _instance)| async move {
       if let Some(name) = name {
         let form = GetCommunity { id: None, name: Some(name) };
         let result = match LemmyClient.get_community(form.clone()).await {
@@ -462,6 +480,11 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
             }}
           </Transition>
           <Transition fallback={|| {}}>
+            // {move || {
+            //   match ssr_site.get() {
+            //     _ => {
+            //       view! {
+
             // <div class="overflow-hidden break-inside-avoid animate-[popdown_1s_step-end_1]">
             //   <div class="py-4 px-8">
             //     <div class="alert alert-soft">
@@ -637,6 +660,11 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
             //     // </div>
             //   </div>
             // </div>
+
+            //       }
+            //     }
+            //   }
+            // }}
           </Transition>
           <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
           {move || {
