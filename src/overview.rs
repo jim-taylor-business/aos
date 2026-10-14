@@ -1,6 +1,6 @@
 use crate::{
-  OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie, db::csr_indexed_db::*,
-  errors::Warning,
+  BanType, OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
+  db::csr_indexed_db::*, errors::Warning,
 };
 use crate::{
   // i18n::*,
@@ -24,7 +24,7 @@ use leptos::{html::Div, leptos_dom::helpers::TimeoutHandle, logging::error, prel
 use leptos_router::{components::*, location::State, *};
 use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options, *};
 use send_wrapper::SendWrapper;
-use std::{collections::BTreeMap, usize, vec};
+use std::collections::BTreeMap;
 use web_sys::{Event, MouseEvent, WheelEvent};
 
 #[component]
@@ -71,8 +71,9 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
   let ssr_list = move || serde_json::from_str::<ListingType>(&use_query_map().get().get("list").unwrap_or("".into())).unwrap_or(ListingType::All);
   let ssr_sort = move || serde_json::from_str::<SortType>(&use_query_map().get().get("sort").unwrap_or("".into())).unwrap_or(SortType::Active);
   let ssr_page = move || serde_json::from_str::<Vec<(usize, String)>>(&use_query_map().get().get("page").unwrap_or("".into())).unwrap_or(vec![]);
+  let ssr_bans = move || serde_json::from_str::<Vec<BanType>>(&use_query_map().get().get("bans").unwrap_or("".into())).unwrap_or(vec![]);
 
-  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>), (i64, LemmyAppResult<GetPostsResponse>)>>>();
+  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>, bool), (i64, LemmyAppResult<GetPostsResponse>)>>>();
   let next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
 
   let loading = RwSignal::new(false);
@@ -167,11 +168,13 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
 
   let post_list_resource = Resource::new(
     // move || (ssr_list(), ssr_sort(), ssr_name.get(), ssr_page(), get_auth_cookie.get()),
-    move || (ssr_list(), ssr_sort(), ssr_name.get(), ssr_page(), get_auth_cookie.get(), get_instance_cookie.get()),
+    move || (ssr_list(), ssr_sort(), ssr_name.get(), ssr_page(), ssr_bans(), get_auth_cookie.get(), get_instance_cookie.get()),
     // move || (ssr_list(), ssr_sort(), ssr_name.get(), ssr_page(), user_id_and_site_id_as_string()),
     // move |(list, sort, name, mut pages, auth)| async move {
-    move |(list, sort, name, mut pages, auth, instance)| async move {
+    move |(list, sort, name, mut pages, bans, auth, instance)| async move {
       // move |(list, sort, name, mut pages, auth)| async move {
+      let nsfw = bans.contains(&BanType::Nsfw);
+      let ban = bans.contains(&BanType::Ban);
       let many_pages = pages.len() > 0;
       let auth = Some(format!("{}{}", auth.unwrap_or("".to_owned()), instance.unwrap_or("".to_owned())));
       // let auth = Some(user_id_and_site_id_as_string(site));
@@ -191,7 +194,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
 
       // let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
       let rc = response_cache.get_untracked();
-      let mut new_pages: Vec<(usize, GetPosts, i64, LemmyAppResult<GetPostsResponse>, Option<String>, bool, bool)> = vec![];
+      let mut new_pages: Vec<(usize, GetPosts, i64, LemmyAppResult<GetPostsResponse>, Option<String>, bool, bool, bool)> = vec![];
       if pages.len() == 0 {
         pages = vec![(0usize, "".to_owned())];
       }
@@ -208,13 +211,13 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
           liked_only: None,
           page_cursor: if p.0 == 0usize { None } else { Some(PaginationCursor(p.1.clone())) },
           show_hidden: Some(true),
-          show_nsfw: Some(false),
+          show_nsfw: Some(nsfw),
           show_read: Some(true),
         };
 
         #[cfg(not(feature = "ssr"))]
-        if let Some((t, Ok(r))) = rc.get(&(p.0, form.clone(), auth.clone())) {
-          new_pages.push((p.0, form.clone(), t.clone(), Ok(r.clone()), auth.clone(), do_not_render_scroll, csr_cache_render));
+        if let Some((t, Ok(r))) = rc.get(&(p.0, form.clone(), auth.clone(), ban)) {
+          new_pages.push((p.0, form.clone(), t.clone(), Ok(r.clone()), auth.clone(), do_not_render_scroll, csr_cache_render, ban));
           // log!("Cache hit for page {} with cursor {:?}", p.0, p.1);
           continue;
         } else {
@@ -229,6 +232,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                   auth.clone(),
                   do_not_render_scroll,
                   csr_cache_render,
+                  ban,
                 ));
                 continue;
               }
@@ -239,7 +243,9 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
 
         let result = match LemmyClient.list_posts(form.clone()).await {
           Ok(mut o) => {
-            o.posts.retain(|p| !p.banned_from_community);
+            if !ban {
+              o.posts.retain(|p| !p.banned_from_community);
+            }
             Ok(o)
           }
           Err(e) => Err(e),
@@ -252,6 +258,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
           auth.clone(),
           do_not_render_scroll,
           csr_cache_render,
+          ban,
         ));
       }
 
@@ -291,11 +298,13 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
   //   });
   // };
 
-  let on_retry_click = move |_e: MouseEvent| {
+  let on_retry_click = move |e: MouseEvent| {
+    e.prevent_default();
     post_list_resource.refetch();
   };
 
-  let on_retry_site_click = move |_| {
+  let on_retry_site_click = move |e: MouseEvent| {
+    e.prevent_default();
     spawn_local_scoped(async move {
       let _ = LemmyClient.get_site().await;
     });
@@ -508,7 +517,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                         }
                         response_cache
                           .update(move |rc| {
-                            rc.insert((p.0, form_clone, p.4), (p.2, result_clone));
+                            rc.insert((p.0, form_clone, p.4, p.7), (p.2, result_clone));
                           });
                       }
                     });

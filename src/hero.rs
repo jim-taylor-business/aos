@@ -37,7 +37,8 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
 
   let post_view = RwSignal::new(None::<GetPostResponse>);
 
-  let listing_response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>), (i64, LemmyAppResult<GetPostsResponse>)>>>();
+  let listing_response_cache =
+    expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>, bool), (i64, LemmyAppResult<GetPostsResponse>)>>>();
   let post_response_cache = expect_context::<RwSignal<BTreeMap<(GetPost, Option<String>), (i64, LemmyAppResult<GetPostResponse>)>>>();
   let comments_response_cache = expect_context::<RwSignal<BTreeMap<(GetComments, Option<String>), (i64, LemmyAppResult<GetCommentsResponse>)>>>();
   let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
@@ -361,6 +362,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                                       page_cursor: None,
                                     },
                                     get_auth_cookie.get_untracked(),
+                                    false,
                                   ),
                                 );
                               });

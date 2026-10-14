@@ -176,7 +176,8 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
         match result {
           Ok(o) => {
             post_view.set(o.post_view);
-            let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>), (i64, LemmyAppResult<GetPostsResponse>)>>>();
+            let response_cache =
+              expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>, bool), (i64, LemmyAppResult<GetPostsResponse>)>>>();
             response_cache.update(|rc| {
               rc.iter_mut().for_each(|(f, r)| {
                 if let (_, Ok(w)) = r {

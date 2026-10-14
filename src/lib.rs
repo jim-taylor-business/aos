@@ -39,8 +39,8 @@ use leptos_router::{
 #[cfg(not(feature = "ssr"))]
 use leptos_use::use_document_visibility;
 use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options};
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
-
 // leptos_i18n::load_locales!();
 
 #[derive(Clone)]
@@ -65,6 +65,20 @@ pub struct WriteThemeCookie(WriteSignal<Option<String>>);
 
 #[derive(Clone, Debug, Default)]
 pub struct PassedUrl(pub Option<String>);
+
+#[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
+pub enum BanType {
+  Nsfw,
+  Ban,
+}
+
+#[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
+pub enum KindType {
+  Post,
+  Comment,
+  Community,
+  User,
+}
 
 pub fn html_template(options: LeptosOptions) -> impl IntoView {
   view! {
@@ -154,7 +168,7 @@ pub fn App() -> impl IntoView {
   let _offline_handle = window_event_listener_untyped("offline", on_online(false));
   let _online_handle = window_event_listener_untyped("online", on_online(true));
 
-  let listing_browser_cache: RwSignal<BTreeMap<(usize, GetPosts, Option<String>), (i64, LemmyAppResult<GetPostsResponse>)>> =
+  let listing_browser_cache: RwSignal<BTreeMap<(usize, GetPosts, Option<String>, bool), (i64, LemmyAppResult<GetPostsResponse>)>> =
     RwSignal::new(BTreeMap::new());
   provide_context(listing_browser_cache);
   let post_browser_cache: RwSignal<BTreeMap<(GetPost, Option<String>), (i64, LemmyAppResult<GetPostResponse>)>> = RwSignal::new(BTreeMap::new());

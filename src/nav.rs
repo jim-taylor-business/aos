@@ -1,5 +1,5 @@
 use crate::{
-  OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
+  BanType, KindType, OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
   client::*,
   db::csr_indexed_db::*,
   errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult},
@@ -154,7 +154,7 @@ pub fn TopNav(
   let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
   let WriteThemeCookie(set_theme_cookie) = expect_context::<WriteThemeCookie>();
   let _online = expect_context::<RwSignal<OnlineSetter>>();
-  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>), (i64, LemmyAppResult<GetPostsResponse>)>>>();
+  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>, bool), (i64, LemmyAppResult<GetPostsResponse>)>>>();
 
   let query = use_query_map();
   let _ssr_query_error =
@@ -164,6 +164,7 @@ pub fn TopNav(
     move || serde_json::from_str::<SortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(default_sort.get().unwrap_or(SortType::Active));
   let ssr_term = move || query.get().get("term").unwrap_or("".into());
   let ssr_kind = move || serde_json::from_str::<KindType>(&query.get().get("kind").unwrap_or("".into())).unwrap_or(KindType::Post);
+  let ssr_bans = move || serde_json::from_str::<Vec<BanType>>(&query.get().get("bans").unwrap_or("".into())).unwrap_or(vec![]);
 
   let lg_filter_menu = NodeRef::<html::Details>::new();
   let lg_sort_menu = NodeRef::<html::Details>::new();
@@ -274,6 +275,7 @@ pub fn TopNav(
             page_cursor: None,
           },
           get_auth_cookie.get(),
+          false,
         ));
       });
       let mut query_params = query.get();
@@ -341,6 +343,7 @@ pub fn TopNav(
             page_cursor: None,
           },
           get_auth_cookie.get(),
+          false,
         ));
       });
       let mut query_params = query.get();
@@ -471,6 +474,7 @@ pub fn TopNav(
           page_cursor: None,
         },
         get_auth_cookie.get(),
+        false,
       ));
     });
     #[cfg(not(feature = "ssr"))]
@@ -590,14 +594,6 @@ pub fn TopNav(
     format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
   };
 
-  #[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
-  enum KindType {
-    Post,
-    Comment,
-    Community,
-    User,
-  }
-
   let on_kind_ssr = move |l: KindType| {
     let mut query_params = query.get();
     query_params.remove("page");
@@ -641,6 +637,82 @@ pub fn TopNav(
       query_params.remove("kind");
       if l != KindType::Post {
         query_params.insert("kind", serde_json::to_string(&l).ok().unwrap_or("All".into()));
+      }
+      let params = query_params.clone();
+      #[cfg(not(feature = "ssr"))]
+      spawn_local_scoped(async move {
+        if let Ok(d) = IndexedDb::new().await {
+          let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &0i32).await;
+        }
+        use_navigate()(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), Default::default());
+      });
+      if let Some(on_scroll_element) = scroll_element.get() {
+        if let Some(se) = on_scroll_element.get() {
+          se.set_scroll_left(0i32);
+        }
+      }
+      reset_menus()
+    }
+  };
+
+  let on_bans_ssr = move |l: BanType| {
+    let mut query_params = query.get();
+    query_params.remove("page");
+    query_params.remove("bans");
+    let mut bans = ssr_bans();
+    if bans.contains(&l) {
+      bans.retain(|b| *b != l)
+    } else {
+      bans.push(l.clone());
+    }
+    if bans.len() > 0 {
+      query_params.insert("bans", serde_json::to_string(&bans).ok().unwrap_or("".into()));
+    }
+    let params = query_params.clone();
+    format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
+  };
+
+  let highlight_csr_bans = move |l: BanType| {
+    if ssr_bans().contains(&l) { "menu-active" } else { "" }
+  };
+
+  let on_csr_bans_click = move |l: BanType| {
+    move |e: MouseEvent| {
+      let mut bans = ssr_bans();
+      if bans.contains(&l) {
+        bans.retain(|b| *b != l)
+      } else {
+        bans.push(l.clone());
+      }
+      let nsfw = bans.contains(&BanType::Nsfw);
+      let ban = bans.contains(&BanType::Ban);
+      response_cache.update(move |rc| {
+        rc.remove(&(
+          0usize,
+          GetPosts {
+            type_: Some(ssr_list()),
+            sort: Some(ssr_sort()),
+            page: None,
+            limit: Some(50),
+            community_id: None,
+            community_name: None,
+            saved_only: None,
+            liked_only: None,
+            disliked_only: None,
+            show_hidden: Some(true),
+            show_read: Some(true),
+            show_nsfw: Some(nsfw),
+            page_cursor: None,
+          },
+          get_auth_cookie.get(),
+          ban,
+        ));
+      });
+      let mut query_params = query.get();
+      query_params.remove("page");
+      query_params.remove("bans");
+      if bans.len() > 0 {
+        query_params.insert("bans", serde_json::to_string(&bans).ok().unwrap_or("".into()));
       }
       let params = query_params.clone();
       #[cfg(not(feature = "ssr"))]
@@ -791,6 +863,7 @@ pub fn TopNav(
                                     page_cursor: None,
                                   },
                                   get_auth_cookie.get(),
+                                  false,
                                 ),
                               );
                             });
@@ -1208,10 +1281,10 @@ pub fn TopNav(
                     </summary>
                     <ul class="z-[1] [inset-inline-end:0] bg-base-200">
                       <li>
-                        <a href={on_filter_ssr(ListingType::All)} class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}>"NSFW"</a>
+                        <a href={on_bans_ssr(BanType::Nsfw)} class={move || highlight_csr_bans(BanType::Nsfw)} on:click={on_csr_bans_click(BanType::Nsfw)}>"NSFW"</a>
                       </li>
                       <li>
-                        <a href={on_filter_ssr(ListingType::Local)} class={move || highlight_csr_filter(ListingType::Local)} on:click={on_csr_filter_click(ListingType::Local)}>"Banned"</a>
+                        <a href={on_bans_ssr(BanType::Ban)} class={move || highlight_csr_bans(BanType::Ban)} on:click={on_csr_bans_click(BanType::Ban)}>"Banned"</a>
                       </li>
                     </ul>
                   </details>
@@ -1279,9 +1352,10 @@ pub fn TopNav(
                   fallback={move || {
                     view! {
                       <li>
-                        <form method="post" action="/l">
+                        <form method="post" action="/l" class="p-0">
                           <input type="hidden" name="source_url" value={move || format!("{}{}", use_location().pathname.get(), query.get().to_query_string())} />
                           <button type="submit"
+                            class="py-2 px-4"
                             on:click={move |e: MouseEvent| {
                               e.prevent_default();
                               let passed = expect_context::<RwSignal<PassedUrl>>();
@@ -1336,8 +1410,8 @@ pub fn TopNav(
                           </details>
                         </li>
                         <li>
-                          <ActionForm action={logout_action}>
-                            <button type="submit" on:click={on_logout_submit}>
+                          <ActionForm attr:class="p-0" action={logout_action}>
+                            <button type="submit" class="py-2 px-4" on:click={on_logout_submit}>
                               <Icon icon={SignOut} />
                             </button>
                           </ActionForm>

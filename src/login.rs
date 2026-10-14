@@ -228,10 +228,36 @@ pub fn TextInput(
 
 #[component]
 pub fn Login() -> impl IntoView {
+  let ReadThemeCookie(get_theme_cookie) = expect_context::<ReadThemeCookie>();
+  let on_scroll_element = NodeRef::<leptos::html::Div>::new();
+  // let location = hooks::use_location();
+  // let search = location.search.get();
+  // let url = format!("{}{}", location.pathname.get(), if search.len() > 0 { format!("?{}", search) } else { "".into() });
+
   view! {
-    <Title text="Login" />
-    <main class="p-3 mx-auto max-w-screen-md">
-      <LoginForm />
-    </main>
+    <div class="flex flex-col min-h-screen" data-theme={move || get_theme_cookie.get()}>
+      <main class="flex flex-col">
+        <nav::TopNav scroll_element={on_scroll_element.into()} /*lost_path={RwSignal::new(url)}*/ />
+        <div class="flex flex-grow">
+          <div
+            node_ref={on_scroll_element}
+            class="min-w-full sm:overflow-x-auto sm:overflow-y-hidden sm:absolute sm:px-4 gap-4{} sm:h-[calc(100%-4rem)] sm:columns-[23rem]"
+            style="column-fill: auto"
+          >
+            <Title text="Login" />
+            <div class="p-3 mx-auto max-w-screen-md">
+              <LoginForm />
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
   }
+
+  // view! {
+  //   <Title text="Login" />
+  //   <main class="p-3 mx-auto max-w-screen-md">
+  //     <LoginForm />
+  //   </main>
+  // }
 }
