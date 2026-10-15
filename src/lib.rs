@@ -265,7 +265,7 @@ pub fn App() -> impl IntoView {
                 }
               }
               _ => {
-                view! { <Title formatter={|text: String| if text.len() > 0 { format!("{} - AOS", text) } else { format!("AOS") }} text="" /> }
+                view! { <Title formatter={|text: String| if text.len() > 0 { format!("{} - AOS", text) } else { "AOS".to_owned() }} text="" /> }
               }
             }
           })

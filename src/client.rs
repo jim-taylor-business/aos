@@ -78,7 +78,7 @@ pub trait LemmyApi: Fetch {
     #[derive(Debug, Clone, Serialize)]
     struct GetSite {
       t: u64,
-    };
+    }
 
     impl Store for GetSite {
       fn store_name(&self) -> &'static str {

@@ -3,13 +3,12 @@ use crate::{client::*, errors::*, nav::TopNav};
 use crate::{comment::Comment, db::csr_indexed_db::*, listing::Listing};
 use lemmy_api_common::{
   lemmy_db_schema::{
-    ListingType, SortType, SubscribedType,
+    SortType, SubscribedType,
     aggregates::structs::PostAggregates,
     newtypes::{InstanceId, PostId},
   },
   lemmy_db_views::structs::{CommentView, PostView},
   person::{GetPersonDetails, GetPersonDetailsResponse},
-  site::GetSiteResponse,
 };
 use leptos::{html::Div, logging::*, prelude::*, task::*, *};
 use leptos_meta::Title;

@@ -1,10 +1,7 @@
 use core::num::ParseIntError;
 use lemmy_api_common::LemmyErrorType;
-use leptos::{
-  logging::error,
-  prelude::*,
-};
-use leptos_router::{components::*, location::State, *, hooks::*};
+use leptos::{logging::error, prelude::*};
+use leptos_router::{hooks::*, *};
 use serde::{Deserialize, Serialize};
 use serde_urlencoded::ser;
 use web_sys::MouseEvent;
@@ -52,7 +49,10 @@ pub fn message_from_error(error: &LemmyAppError) -> String {
 }
 
 #[component]
-pub fn Warning(#[prop(optional, into)] description: Option<String>, #[prop(optional, into)] on_retry_click: Option<Callback<MouseEvent>>) -> impl IntoView {
+pub fn Warning(
+  #[prop(optional, into)] description: Option<String>,
+  #[prop(optional, into)] on_retry_click: Option<Callback<MouseEvent>>,
+) -> impl IntoView {
   let description_value = description.unwrap_or("Offline".to_owned());
   view! {
     <div class="py-4 px-8 break-inside-avoid">
@@ -69,11 +69,17 @@ pub fn Warning(#[prop(optional, into)] description: Option<String>, #[prop(optio
         }}
       </div>
     </div>
-  }.into_any()
+  }
+  .into_any()
 }
 
 #[component]
-pub fn Error(#[prop(optional, into)] get_url: Option<bool>, #[prop(optional, into)] description: Option<String>, error: LemmyAppError, #[prop(optional, into)] on_retry_click: Option<Callback<MouseEvent>>) -> impl IntoView {
+pub fn Error(
+  #[prop(optional, into)] get_url: Option<bool>,
+  #[prop(optional, into)] description: Option<String>,
+  error: LemmyAppError,
+  #[prop(optional, into)] on_retry_click: Option<Callback<MouseEvent>>,
+) -> impl IntoView {
   error!("{:#?}", error);
   let description_value = description.unwrap_or("Error".to_owned());
   let location = use_location();
@@ -131,7 +137,8 @@ pub fn Loading(loading: bool) -> impl IntoView {
           </div>
         </div>
       </div>
-    }.into_any()
+    }
+    .into_any()
   } else {
     view! {}.into_any()
   }

@@ -11,14 +11,14 @@ use lemmy_api_common::{
   lemmy_db_views::structs::{CommentView, LocalUserView},
   site::{GetModlog, GetSiteResponse, MyUserInfo},
 };
-use leptos::{html::Textarea, logging::log, prelude::*, task::*, *};
+use leptos::{html::Textarea, logging::*, prelude::*, task::*, *};
 use leptos_dom::helpers::TimeoutHandle;
 use leptos_router::{
   components::{A, Form},
   hooks::use_navigate,
 };
 use leptos_use::*;
-use web_sys::{DragEvent, Event, HtmlAnchorElement, HtmlImageElement, MouseEvent, PointerEvent, TouchEvent, WheelEvent, wasm_bindgen::JsCast};
+use web_sys::{Event, HtmlAnchorElement, HtmlImageElement, MouseEvent, TouchEvent, WheelEvent, wasm_bindgen::JsCast};
 
 #[component]
 pub fn Comments(comments: Signal<Vec<CommentView>>, post_id: Signal<Option<i32>>) -> impl IntoView {
@@ -698,10 +698,10 @@ pub fn Comment(
           when={move || !(comment_view.get().creator_banned_from_community || comment_view.get().creator.banned)}
           fallback={move || view! { <Icon on:click={on_mod_log_click} icon={Hammer} /> }}
         >
-          <Show when={move || !(comment_view.get().comment.removed)} fallback={move || view! { <Icon on:click={on_mod_log_click} icon={Block} /> }}>
-            <Show when={move || !(comment_view.get().comment.deleted)} fallback={move || view! { <Icon icon={Eraser} /> }}>
+          <Show when={move || !comment_view.get().comment.removed} fallback={move || view! { <Icon on:click={on_mod_log_click} icon={Block} /> }}>
+            <Show when={move || !comment_view.get().comment.deleted} fallback={move || view! { <Icon icon={Eraser} /> }}>
               <Show
-                when={move || !(comment_view.get().creator_blocked)}
+                when={move || !comment_view.get().creator_blocked}
                 fallback={move || view! { <Icon on:click={on_get_click} icon={EyeSlash} /> }}
               >
                 {()}

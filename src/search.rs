@@ -9,12 +9,12 @@ use crate::{
 use crate::{db::csr_indexed_db::*, errors::Loading};
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SearchType, SortType},
-  site::{GetSiteResponse, Search, SearchResponse},
+  site::{Search, SearchResponse},
 };
 use leptos::{html::Div, logging::error, prelude::*, task::*, *};
 use leptos_meta::Title;
 use leptos_router::{components::*, hooks::*};
-use std::{collections::BTreeMap, usize, vec};
+use std::{collections::BTreeMap, vec};
 use web_sys::{MouseEvent, WheelEvent};
 
 #[component]
@@ -259,7 +259,7 @@ pub fn Search() -> impl IntoView {
                     #[cfg(not(feature = "ssr"))] loading.set(false);
                     next_page_cursor.set(r.0 + 1);
                     view! {
-                      <Listings hide=false posts={o.posts.clone().into()} page_number={RwSignal::new(((r.0 - 1) * 50) as usize)} />
+                      <Listings hide=false posts={o.posts.clone().into()} page_number={RwSignal::new((r.0 - 1) * 50)} />
                       {
                         // let (key, _) = next_page_cursor.get();
                         // if key > 0 {

@@ -188,22 +188,22 @@ pub fn TopNav(
 
   let reset_menus = move || {
     if let Some(f) = lg_filter_menu.get() {
-      f.remove_attribute("open");
+      let _ = f.remove_attribute("open");
     }
     if let Some(s) = lg_sort_menu.get() {
-      s.remove_attribute("open");
+      let _ = s.remove_attribute("open");
     }
     if let Some(l) = lg_language_menu.get() {
-      l.remove_attribute("open");
+      let _ = l.remove_attribute("open");
     }
     if let Some(t) = lg_theme_menu.get() {
-      t.remove_attribute("open");
+      let _ = t.remove_attribute("open");
     }
     if let Some(f) = sm_content_menu.get() {
-      f.remove_attribute("open");
+      let _ = f.remove_attribute("open");
     }
     if let Some(s) = sm_ui_menu.get() {
-      s.remove_attribute("open");
+      let _ = s.remove_attribute("open");
     }
   };
 
@@ -211,32 +211,32 @@ pub fn TopNav(
     if this != MenuType::LgFilter
       && let Some(f) = lg_filter_menu.get()
     {
-      f.remove_attribute("open");
+      let _ = f.remove_attribute("open");
     }
     if this != MenuType::LgSort
       && let Some(s) = lg_sort_menu.get()
     {
-      s.remove_attribute("open");
+      let _ = s.remove_attribute("open");
     }
     if this != MenuType::LgLanguage
       && let Some(l) = lg_language_menu.get()
     {
-      l.remove_attribute("open");
+      let _ = l.remove_attribute("open");
     }
     if this != MenuType::LgTheme
       && let Some(t) = lg_theme_menu.get()
     {
-      t.remove_attribute("open");
+      let _ = t.remove_attribute("open");
     }
     if this != MenuType::SmContent
       && let Some(f) = sm_content_menu.get()
     {
-      f.remove_attribute("open");
+      let _ = f.remove_attribute("open");
     }
     if this != MenuType::SmUi
       && let Some(s) = sm_ui_menu.get()
     {
-      s.remove_attribute("open");
+      let _ = s.remove_attribute("open");
     }
   };
 

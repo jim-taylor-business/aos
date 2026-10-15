@@ -1,5 +1,5 @@
 use crate::{
-  OnlineSetter, ReadAuthCookie, ReadInstanceCookie,
+  ReadAuthCookie, ReadInstanceCookie,
   client::*,
   comment::Comment,
   db::csr_indexed_db::*,
@@ -9,7 +9,7 @@ use crate::{
 };
 use ev::MouseEvent;
 use lemmy_api_common::{
-  comment::{CreateComment, GetComments, GetCommentsResponse},
+  comment::{GetComments, GetCommentsResponse},
   lemmy_db_schema::{CommentSortType, ListingType, SortType, newtypes::PostId},
   lemmy_db_views::structs::PaginationCursor,
   post::{GetPost, GetPostResponse, GetPosts, GetPostsResponse},
