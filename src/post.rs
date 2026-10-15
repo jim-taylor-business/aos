@@ -1,13 +1,8 @@
 use crate::{
-  OnlineSetter, ReadAuthCookie, ReadInstanceCookie,
-  client::*,
-  comment::Comments,
-  db::csr_indexed_db::*,
-  errors::{Error, LemmyAppError, LemmyAppErrorType, Loading, Warning},
-  nav::TopNav,
-  toolbar::PostToolbar,
+  OnlineSetter, ReadAuthCookie, ReadInstanceCookie, client::*, comment::Comments, db::csr_indexed_db::*, errors::*, nav::TopNav, toolbar::PostToolbar,
 };
 use ev::MouseEvent;
+use lemmy_api_common::post::{GetPosts, GetPostsResponse};
 use lemmy_api_common::{
   comment::{CreateComment, GetComments},
   lemmy_db_schema::{CommentSortType, SortType, newtypes::PostId},
@@ -23,6 +18,7 @@ use leptos::{
 use leptos_meta::*;
 use leptos_router::{components::A, hooks::*};
 use leptos_use::*;
+use std::collections::BTreeMap;
 use web_sys::{Event, HtmlAnchorElement, HtmlImageElement, WheelEvent, wasm_bindgen::JsCast};
 
 #[component]
@@ -44,6 +40,7 @@ pub fn Post() -> impl IntoView {
 
   let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
+  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>, bool), (i64, LemmyAppResult<GetPostsResponse>)>>>();
 
   let post_resource = Resource::new(
     move || (post_id.get(), get_auth_cookie.get(), get_instance_cookie.get()),
@@ -246,11 +243,35 @@ pub fn Post() -> impl IntoView {
                     {
                       let rw = res.1.clone();
                       let fm = res.0.clone();
+                      let post_view = RwSignal::new(rw.post_view.clone());
                       use crate::db::csr_indexed_db::*;
                       spawn_local_scoped(async move {
                         if let Ok(d) = IndexedDb::new().await {
                           if let Ok(_c) = d.set(&fm, &rw).await {}
                         }
+                        response_cache.update(|rc| {
+                          rc.iter_mut().for_each(|(f, r)| {
+                            if let (_, Ok(w)) = r {
+                              let id = post_view.get().post.id.0;
+                              for p in w.posts.iter_mut() {
+                                if p.post.id.0 == id {
+                                  *p = post_view.get();
+                                  // log!("PostToolbar: updated post in response_cache {:#?}", post_view.get().my_vote);
+                                  // v.0 = jiff::Zoned::now().timestamp().as_millisecond();
+                                  let result_clone = r.1.clone();
+                                  let form_clone = f.1.clone();
+                                  spawn_local_scoped(async move {
+                                    if let Ok(d) = IndexedDb::new().await {
+                                      if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&form_clone, &result_clone).await {}
+                                    }
+                                  });
+                                  break;
+                                }
+                              }
+                            }
+                          });
+                        });
+
                       });
                     }
                     post_view.set(Some(res.1.clone()));

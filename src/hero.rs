@@ -217,7 +217,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
               let display_url = Memo::new(move |_| {
                 if let Some(d) = url.get() {
                   if let Some(f) = d.inner().host_str() {
-                    if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { Some(f.to_string()) } else { None }
+                    if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { Some(format!(" from {}", f)) } else { None }
                   } else {
                     None
                   }
