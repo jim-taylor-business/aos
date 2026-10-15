@@ -56,14 +56,20 @@ pub fn Warning(
   let description_value = description.unwrap_or("Offline".to_owned());
   view! {
     <div class="py-4 px-8 break-inside-avoid">
-      <div class="flex items-center justify-between alert alert-warning alert-soft">
-        <span> { description_value } </span>
+      <div class="flex justify-between items-center alert alert-warning alert-soft">
+        <span>{description_value}</span>
         {if let Some(o) = on_retry_click {
           view! {
-            <span on:click={ move |e: MouseEvent| { o.run(e); } } class="btn btn-sm">
+            <span
+              on:click={move |e: MouseEvent| {
+                o.run(e);
+              }}
+              class="btn btn-sm"
+            >
               "Retry"
             </span>
-          }.into_any()
+          }
+            .into_any()
         } else {
           view! {}.into_any()
         }}
@@ -88,37 +94,60 @@ pub fn Error(
     <div class="py-4 px-8 break-inside-avoid">
       <div class="flex alert alert-error alert-soft">
         <details class="w-full min-w-0">
-          <summary class="flex items-center justify-between list-none">
-            <span> { description_value } </span>
+          <summary class="flex justify-between items-center list-none">
+            <span>{description_value}</span>
             {if let Some(o) = on_retry_click {
-              {if let Some(true) = get_url {
-                view! {
-                  <a href=format!("{}{}", location.pathname.get(), if search.len() > 0 { format!("?{}", search) } else { "".into() }) on:click={ move |e: MouseEvent| { e.prevent_default(); o.run(e); } } class="btn btn-sm">
-                    "Retry"
-                  </a>
-                }.into_any()
-              } else {
-                view! {
-                  <span on:click={ move |e: MouseEvent| { e.prevent_default(); o.run(e); } } class="btn btn-sm">
-                    "Retry"
-                  </span>
-                }.into_any()
-              }}
+              {
+                if let Some(true) = get_url {
+                  view! {
+                    <a
+                      href={format!("{}{}", location.pathname.get(), if search.len() > 0 { format!("?{}", search) } else { "".into() })}
+                      on:click={move |e: MouseEvent| {
+                        e.prevent_default();
+                        o.run(e);
+                      }}
+                      class="btn btn-sm"
+                    >
+                      "Retry"
+                    </a>
+                  }
+                    .into_any()
+                } else {
+                  view! {
+                    <span
+                      on:click={move |e: MouseEvent| {
+                        e.prevent_default();
+                        o.run(e);
+                      }}
+                      class="btn btn-sm"
+                    >
+                      "Retry"
+                    </span>
+                  }
+                    .into_any()
+                }
+              }
             } else {
-              {if let Some(true) = get_url {
-                view! {
-                  <a href=format!("{}{}", location.pathname.get(), if search.len() > 0 { format!("?{}", search) } else { "".into() }) class="btn btn-sm">
-                    "Retry"
-                  </a>
-                }.into_any()
-              } else {
-                view! {}.into_any()
-              }}
+              {
+                if let Some(true) = get_url {
+                  view! {
+                    <a
+                      href={format!("{}{}", location.pathname.get(), if search.len() > 0 { format!("?{}", search) } else { "".into() })}
+                      class="btn btn-sm"
+                    >
+                      "Retry"
+                    </a>
+                  }
+                    .into_any()
+                } else {
+                  view! {}.into_any()
+                }
+              }
             }}
           </summary>
           <div class="overflow-auto">
-            <pre> { format!("{:#?}", error.error_type) } </pre>
-            <pre> { error.content } </pre>
+            <pre>{format!("{:#?}", error.error_type)}</pre>
+            <pre>{error.content}</pre>
           </div>
         </details>
       </div>

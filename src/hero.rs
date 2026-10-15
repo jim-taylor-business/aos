@@ -125,16 +125,22 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
               view! {
                 <Title text="App offline" />
                 <Warning />
-              }.into_any()
+              }
+                .into_any()
             }
             Some(Some(Err(e))) => {
               view! {
                 <Title text="Error loading post" />
-                <Error description="Error loading post" error={e} on_retry_click={move |_| {
-                  post_resource.refetch();
-                  comments_resource.refetch();
-                }} />
-              }.into_any()
+                <Error
+                  description="Error loading post"
+                  error={e}
+                  on_retry_click={move |_| {
+                    post_resource.refetch();
+                    comments_resource.refetch();
+                  }}
+                />
+              }
+                .into_any()
             }
             Some(Some(Ok(res))) => {
               #[cfg(not(feature = "ssr"))]
@@ -195,7 +201,6 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
               let community_title_encoded = html_escape::encode_safe(&community_title).to_string();
               let creator_name = &post_response.get().post_view.creator.actor_id.to_string()[8..];
               let creator_name_encoded = html_escape::encode_safe(creator_name).to_string();
-
               let now_in_millis = u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0);
               let duration_in_text = pretty_duration::pretty_duration(
                 &std::time::Duration::from_millis(now_in_millis - post_response.get().post_view.post.published.timestamp_millis() as u64),
@@ -384,10 +389,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                       >
                         <span class="overflow-y-auto" inner_html={community_title_encoded} />
                       </A>
-                      <span
-                        class="overflow-y-auto"
-                        inner_html={move || display_url.get()}
-                      />
+                      <span class="overflow-y-auto" inner_html={move || display_url.get()} />
                     </span>
                   </div>
                 </div>
@@ -443,11 +445,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
               }
                 .into_any()
             }
-            Some(None) | None => {
-              view! {
-                <Loading loading={loading.get()} />
-              }.into_any()
-            }
+            Some(None) | None => view! { <Loading loading={loading.get()} /> }.into_any(),
           }
         }}
       </Transition>

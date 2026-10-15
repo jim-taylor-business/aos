@@ -208,16 +208,21 @@ pub fn Post() -> impl IntoView {
                         post_resource.refetch();
                         comments_resource.refetch();
                       }} />
-                    }.into_any()
+                    }
+                      .into_any()
                   }
                   Some(Some(Err(e))) => {
                     #[cfg(not(feature = "ssr"))] loading.set(false);
                     view! {
                       <Title text="Error loading post" />
-                      <Error description="Error loading post" error={e} on_retry_click={move |_| {
-                        post_resource.refetch();
-                        comments_resource.refetch();
-                      }} />
+                      <Error
+                        description="Error loading post"
+                        error={e}
+                        on_retry_click={move |_| {
+                          post_resource.refetch();
+                          comments_resource.refetch();
+                        }}
+                      />
                     }
                       .into_any()
                   }
@@ -232,27 +237,29 @@ pub fn Post() -> impl IntoView {
                         if let Ok(d) = IndexedDb::new().await {
                           if let Ok(_c) = d.set(&fm, &rw).await {}
                         }
-                        response_cache.update(|rc| {
-                          rc.iter_mut().for_each(|(f, r)| {
-                            if let (_, Ok(w)) = r {
-                              let id = post_view.get().post.id.0;
-                              for p in w.posts.iter_mut() {
-                                if p.post.id.0 == id {
-                                  *p = post_view.get();
-                                  let result_clone = r.1.clone();
-                                  let form_clone = f.1.clone();
-                                  spawn_local_scoped(async move {
-                                    if let Ok(d) = IndexedDb::new().await {
-                                      if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&form_clone, &result_clone).await {}
+                        response_cache
+                          .update(|rc| {
+                            rc.iter_mut()
+                              .for_each(|(f, r)| {
+                                if let (_, Ok(w)) = r {
+                                  let id = post_view.get().post.id.0;
+                                  for p in w.posts.iter_mut() {
+                                    if p.post.id.0 == id {
+                                      *p = post_view.get();
+                                      let result_clone = r.1.clone();
+                                      let form_clone = f.1.clone();
+                                      spawn_local_scoped(async move {
+                                        if let Ok(d) = IndexedDb::new().await {
+                                          if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&form_clone, &result_clone).await
+                                          {}
+                                        }
+                                      });
+                                      break;
                                     }
-                                  });
-                                  break;
+                                  }
                                 }
-                              }
-                            }
+                              });
                           });
-                        });
-
                       });
                     }
                     post_view.set(Some(res.1.clone()));
@@ -348,7 +355,8 @@ pub fn Post() -> impl IntoView {
                               }
                             }
                           }}
-                          class="overflow-y-auto text-xl wrap-anywhere" inner_html={title_encoded}
+                          class="overflow-y-auto text-xl wrap-anywhere"
+                          inner_html={title_encoded}
                         />
                         <span class="block mb-1 wrap-anywhere text-md">
                           <span>{abbr_duration}</span>
@@ -517,7 +525,7 @@ pub fn Post() -> impl IntoView {
                                     <div class="pr-4 pl-4 mb-3 space-y-3 before:content-[''] before:block before:w-24 before:overflow-hidden">
                                       <div class="form-control">
                                         <textarea
-                                          class="h-24 w-full text-base textarea textarea-bordered"
+                                          class="w-full h-24 text-base textarea textarea-bordered"
                                           placeholder="Comment text"
                                           prop:value={move || content.get()}
                                           node_ref={_visibility_element}
@@ -578,16 +586,27 @@ pub fn Post() -> impl IntoView {
                         }}
                       </Transition>
                       <Show when={move || loading.get()} fallback={|| {}}>
-                      {move || {
-                        view! { <Loading loading={loading.get()} /> }
-                      }}
+                        {move || {
+                          view! { <Loading loading={loading.get()} /> }
+                        }}
                       </Show>
                       <Show when={move || error.get().is_some()} fallback={|| {}}>
-                      {move || {
-                        view! { <Error description={"Reply"} error={error.get().unwrap_or_else(|| LemmyAppError { error_type: LemmyAppErrorType::Unknown, content: "Unknown".to_owned() })} /> }
-                      }}
+                        {move || {
+                          view! {
+                            <Error
+                              description="Reply"
+                              error={error
+                                .get()
+                                .unwrap_or_else(|| LemmyAppError {
+                                  error_type: LemmyAppErrorType::Unknown,
+                                  content: "Unknown".to_owned(),
+                                })}
+                            />
+                          }
+                        }}
                       </Show>
-                    }.into_any()
+                    }
+                      .into_any()
                   }
                   Some(None) | None => view! {}.into_any(),
                 }

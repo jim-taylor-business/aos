@@ -673,51 +673,47 @@ pub fn TopNav(
     <Transition fallback={|| {}}>
       {move || {
         let site = ssr_site.get();
-
         let site_details = Memo::new(move |_| if let Some(Ok(s)) = ssr_site.get() { s.site_view.site.name.clone() } else { String::new() });
-        let icon_details = Memo::new(move |_| { if let Some(Ok(s)) = ssr_site.get() { Some(s.site_view.site.icon.clone()) } else { None }});
+        let icon_details = Memo::new(move |_| { if let Some(Ok(s)) = ssr_site.get() { Some(s.site_view.site.icon.clone()) } else { None } });
         let logged_in = Memo::new(move |_| { if let Some(Ok(GetSiteResponse { my_user: Some(m), .. })) = ssr_site.get() { true } else { false } });
 
         view! {
           <nav class="flex flex-row py-0 navbar">
-            <div
-              class=
-                {move || { (if input_focus.get() == InputFocusState::Search { "hidden" } else {
-                  "flex"
-                }).to_string() }}
-            >
+            <div class={move || { (if input_focus.get() == InputFocusState::Search { "hidden" } else { "flex" }).to_string() }}>
               <div class={move || { if input_focus.get() == InputFocusState::Instance { "" } else { "hidden" } }}>
-                  <input
-                    class="pl-2 sm:pl-6 h-full w-46 text-xl input"
-                    type="text"
-                    name="instance"
-                    node_ref=instance_input
-                    prop:value={move || instance_term.get()}
-                    on:keydown={move |e: KeyboardEvent| {
-                      if e.key_code() == 27 {
-                        e.prevent_default();
-                        input_focus.set(InputFocusState::Unfocused);
-                      }
-                    }}
-                    on:keypress={move |e: KeyboardEvent| {
-                      if e.key_code() == 13 {
-                        e.prevent_default();
-                        on_instance_submit()
-                      }
-                    }}
-                    on:input={move |ev| {
-                      instance_term.set(Some(event_target_value(&ev)));
-                    }}
-                    on:blur={move |_| {
+                <input
+                  class="pl-2 h-full text-xl sm:pl-6 w-46 input"
+                  type="text"
+                  name="instance"
+                  node_ref={instance_input}
+                  prop:value={move || instance_term.get()}
+                  on:keydown={move |e: KeyboardEvent| {
+                    if e.key_code() == 27 {
+                      e.prevent_default();
                       input_focus.set(InputFocusState::Unfocused);
-                    }}
-                  />
+                    }
+                  }}
+                  on:keypress={move |e: KeyboardEvent| {
+                    if e.key_code() == 13 {
+                      e.prevent_default();
+                      on_instance_submit()
+                    }
+                  }}
+                  on:input={move |ev| {
+                    instance_term.set(Some(event_target_value(&ev)));
+                  }}
+                  on:blur={move |_| {
+                    input_focus.set(InputFocusState::Unfocused);
+                  }}
+                />
               </div>
               <ul class="flex-nowrap items-center menu menu-horizontal">
                 <li>
                   <a
                     href="/"
-                    class={move || { if input_focus.get() == InputFocusState::Instance { "hidden" } else { "select-none text-xl whitespace-nowrap py-1/2" } }}
+                    class={move || {
+                      if input_focus.get() == InputFocusState::Instance { "hidden" } else { "select-none text-xl whitespace-nowrap py-1/2" }
+                    }}
                     on:mousedown={on_mouse_down}
                     on:mouseup={on_mouse_up}
                     on:touchstart={on_touch_start}
@@ -783,94 +779,178 @@ pub fn TopNav(
                         view! { <img class="h-8" src="/favicon.png" /> }.into_any()
                       }
                     }}
-                    <span class="hidden sm:flex">{move || { let m = site_details.get(); if m.len() > 0 { m } else { "A.O.S".to_owned() } }}</span>
+                    <span class="hidden sm:flex">
+                      {move || {
+                        let m = site_details.get();
+                        if m.len() > 0 { m } else { "A.O.S".to_owned() }
+                      }}
+                    </span>
                   </a>
                 </li>
                 <li class="hidden sm:flex">
-                  <details node_ref=lg_filter_menu>
+                  <details node_ref={lg_filter_menu}>
                     <summary on:click={move |_| reset_others(MenuType::LgFilter)}>
                       <Icon icon={Community} />
                     </summary>
                     <ul class="z-[1] bg-base-200">
-                      <li
-                      >
-                        <a href={on_filter_ssr(ListingType::All)} class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}>"All"</a>
+                      <li>
+                        <a
+                          href={on_filter_ssr(ListingType::All)}
+                          class={move || highlight_csr_filter(ListingType::All)}
+                          on:click={on_csr_filter_click(ListingType::All)}
+                        >
+                          "All"
+                        </a>
                       </li>
-                      <li
-                      >
-                        <a href={on_filter_ssr(ListingType::Local)} class={move || highlight_csr_filter(ListingType::Local)} on:click={on_csr_filter_click(ListingType::Local)}>"Local"</a>
+                      <li>
+                        <a
+                          href={on_filter_ssr(ListingType::Local)}
+                          class={move || highlight_csr_filter(ListingType::Local)}
+                          on:click={on_csr_filter_click(ListingType::Local)}
+                        >
+                          "Local"
+                        </a>
                       </li>
-                      <li
-                      >
-                        <a href={on_filter_ssr(ListingType::Subscribed)} class={move || highlight_csr_filter(ListingType::Subscribed)} on:click={on_csr_filter_click(ListingType::Subscribed)}>"Subscribed"</a>
+                      <li>
+                        <a
+                          href={on_filter_ssr(ListingType::Subscribed)}
+                          class={move || highlight_csr_filter(ListingType::Subscribed)}
+                          on:click={on_csr_filter_click(ListingType::Subscribed)}
+                        >
+                          "Subscribed"
+                        </a>
                       </li>
                     </ul>
                   </details>
                 </li>
                 <li class="hidden sm:flex">
-                  <details node_ref=lg_sort_menu>
+                  <details node_ref={lg_sort_menu}>
                     <summary on:click={move |_| reset_others(MenuType::LgSort)}>
                       <Icon icon={Sort} />
                     </summary>
                     <ul class="z-[1] bg-base-200">
-                      <li
-                      >
-                        <a class={move || { (if SortType::Active == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::Active)} on:click={on_sort_click(SortType::Active)}>"Active"</a>
+                      <li>
+                        <a
+                          class={move || { (if SortType::Active == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                          href={on_sort_ssr(SortType::Active)}
+                          on:click={on_sort_click(SortType::Active)}
+                        >
+                          "Active"
+                        </a>
                       </li>
-                      <li
-                      >
-                        <a class={move || { (if SortType::TopAll == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::TopAll)} on:click={on_sort_click(SortType::TopAll)}>"Top"</a>
+                      <li>
+                        <a
+                          class={move || { (if SortType::TopAll == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                          href={on_sort_ssr(SortType::TopAll)}
+                          on:click={on_sort_click(SortType::TopAll)}
+                        >
+                          "Top"
+                        </a>
                       </li>
-                      <li
-                      >
-                        <a class={move || { (if SortType::Hot == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::Hot)} on:click={on_sort_click(SortType::Hot)}>"Hot"</a>
+                      <li>
+                        <a
+                          class={move || { (if SortType::Hot == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                          href={on_sort_ssr(SortType::Hot)}
+                          on:click={on_sort_click(SortType::Hot)}
+                        >
+                          "Hot"
+                        </a>
                       </li>
-                      <li
-                      >
-                        <a class={move || { (if SortType::New == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::New)} on:click={on_sort_click(SortType::New)}>"New"</a>
+                      <li>
+                        <a
+                          class={move || { (if SortType::New == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                          href={on_sort_ssr(SortType::New)}
+                          on:click={on_sort_click(SortType::New)}
+                        >
+                          "New"
+                        </a>
                       </li>
-                      <li
-                      >
-                        <a class={move || { (if SortType::Old == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::Old)} on:click={on_sort_click(SortType::Old)}>"Old"</a>
+                      <li>
+                        <a
+                          class={move || { (if SortType::Old == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                          href={on_sort_ssr(SortType::Old)}
+                          on:click={on_sort_click(SortType::Old)}
+                        >
+                          "Old"
+                        </a>
                       </li>
-                      <li
-                      >
-                        <a class={move || { (if SortType::Controversial == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::Controversial)} on:click={on_sort_click(SortType::Controversial)}>"Controversial"</a>
+                      <li>
+                        <a
+                          class={move || { (if SortType::Controversial == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                          href={on_sort_ssr(SortType::Controversial)}
+                          on:click={on_sort_click(SortType::Controversial)}
+                        >
+                          "Controversial"
+                        </a>
                       </li>
-                      <li
-                      >
-                        <a class={move || { (if SortType::Scaled == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::Scaled)} on:click={on_sort_click(SortType::Scaled)}>"Scaled"</a>
+                      <li>
+                        <a
+                          class={move || { (if SortType::Scaled == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                          href={on_sort_ssr(SortType::Scaled)}
+                          on:click={on_sort_click(SortType::Scaled)}
+                        >
+                          "Scaled"
+                        </a>
                       </li>
-                      <li
-                      >
-                        <a class={move || { (if SortType::NewComments == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::NewComments)} on:click={on_sort_click(SortType::NewComments)}>"Comment"</a>
+                      <li>
+                        <a
+                          class={move || { (if SortType::NewComments == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                          href={on_sort_ssr(SortType::NewComments)}
+                          on:click={on_sort_click(SortType::NewComments)}
+                        >
+                          "Comment"
+                        </a>
                       </li>
                     </ul>
                   </details>
                 </li>
                 <li class="hidden sm:flex">
-                  <details node_ref=lg_filter_menu>
+                  <details node_ref={lg_filter_menu}>
                     <summary on:click={move |_| reset_others(MenuType::LgFilter)}>
                       <Icon icon={Cube} />
                     </summary>
                     <ul class="z-[1] bg-base-200">
                       <li>
-                        <a href={on_filter_ssr(ListingType::All)} class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}>"Posts"</a>
+                        <a
+                          href={on_filter_ssr(ListingType::All)}
+                          class={move || highlight_csr_filter(ListingType::All)}
+                          on:click={on_csr_filter_click(ListingType::All)}
+                        >
+                          "Posts"
+                        </a>
                       </li>
                       <li>
-                        <a href={on_filter_ssr(ListingType::Local)} class={move || highlight_csr_filter(ListingType::Local)} on:click={on_csr_filter_click(ListingType::Local)}>"Comments"</a>
+                        <a
+                          href={on_filter_ssr(ListingType::Local)}
+                          class={move || highlight_csr_filter(ListingType::Local)}
+                          on:click={on_csr_filter_click(ListingType::Local)}
+                        >
+                          "Comments"
+                        </a>
                       </li>
                       <li>
-                        <a href={on_filter_ssr(ListingType::Subscribed)} class={move || highlight_csr_filter(ListingType::Local)} on:click={on_csr_filter_click(ListingType::Local)}>"Communities"</a>
+                        <a
+                          href={on_filter_ssr(ListingType::Subscribed)}
+                          class={move || highlight_csr_filter(ListingType::Local)}
+                          on:click={on_csr_filter_click(ListingType::Local)}
+                        >
+                          "Communities"
+                        </a>
                       </li>
                       <li>
-                        <a href={on_filter_ssr(ListingType::Subscribed)} class={move || highlight_csr_filter(ListingType::Subscribed)} on:click={on_csr_filter_click(ListingType::Subscribed)}>"Users"</a>
+                        <a
+                          href={on_filter_ssr(ListingType::Subscribed)}
+                          class={move || highlight_csr_filter(ListingType::Subscribed)}
+                          on:click={on_csr_filter_click(ListingType::Subscribed)}
+                        >
+                          "Users"
+                        </a>
                       </li>
                     </ul>
                   </details>
                 </li>
                 <li class="flex sm:hidden">
-                  <details node_ref=sm_content_menu>
+                  <details node_ref={sm_content_menu}>
                     <summary on:click={move |_| reset_others(MenuType::SmContent)}>
                       <Icon icon={Filter} />
                     </summary>
@@ -881,17 +961,32 @@ pub fn TopNav(
                             <Icon icon={Community} />
                           </summary>
                           <ul>
-                            <li
-                            >
-                              <a href={on_filter_ssr(ListingType::All)} class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}>"All"</a>
+                            <li>
+                              <a
+                                href={on_filter_ssr(ListingType::All)}
+                                class={move || highlight_csr_filter(ListingType::All)}
+                                on:click={on_csr_filter_click(ListingType::All)}
+                              >
+                                "All"
+                              </a>
                             </li>
-                            <li
-                            >
-                              <a href={on_filter_ssr(ListingType::Local)} class={move || highlight_csr_filter(ListingType::Local)} on:click={on_csr_filter_click(ListingType::Local)}>"Local"</a>
+                            <li>
+                              <a
+                                href={on_filter_ssr(ListingType::Local)}
+                                class={move || highlight_csr_filter(ListingType::Local)}
+                                on:click={on_csr_filter_click(ListingType::Local)}
+                              >
+                                "Local"
+                              </a>
                             </li>
-                            <li
-                            >
-                              <a href={on_filter_ssr(ListingType::Subscribed)} class={move || highlight_csr_filter(ListingType::Subscribed)} on:click={on_csr_filter_click(ListingType::Subscribed)}>"Subscribed"</a>
+                            <li>
+                              <a
+                                href={on_filter_ssr(ListingType::Subscribed)}
+                                class={move || highlight_csr_filter(ListingType::Subscribed)}
+                                on:click={on_csr_filter_click(ListingType::Subscribed)}
+                              >
+                                "Subscribed"
+                              </a>
                             </li>
                           </ul>
                         </details>
@@ -902,37 +997,77 @@ pub fn TopNav(
                             <Icon icon={Sort} />
                           </summary>
                           <ul>
-                            <li
-                            >
-                              <a class={move || { (if SortType::Active == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::Active)} on:click={on_sort_click(SortType::Active)}>"Active"</a>
+                            <li>
+                              <a
+                                class={move || { (if SortType::Active == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                                href={on_sort_ssr(SortType::Active)}
+                                on:click={on_sort_click(SortType::Active)}
+                              >
+                                "Active"
+                              </a>
                             </li>
-                            <li
-                            >
-                              <a class={move || { (if SortType::TopAll == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::TopAll)} on:click={on_sort_click(SortType::TopAll)}>"Top"</a>
+                            <li>
+                              <a
+                                class={move || { (if SortType::TopAll == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                                href={on_sort_ssr(SortType::TopAll)}
+                                on:click={on_sort_click(SortType::TopAll)}
+                              >
+                                "Top"
+                              </a>
                             </li>
-                            <li
-                            >
-                              <a class={move || { (if SortType::Hot == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::Hot)} on:click={on_sort_click(SortType::Hot)}>"Hot"</a>
+                            <li>
+                              <a
+                                class={move || { (if SortType::Hot == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                                href={on_sort_ssr(SortType::Hot)}
+                                on:click={on_sort_click(SortType::Hot)}
+                              >
+                                "Hot"
+                              </a>
                             </li>
-                            <li
-                            >
-                              <a class={move || { (if SortType::New == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::New)} on:click={on_sort_click(SortType::New)}>"New"</a>
+                            <li>
+                              <a
+                                class={move || { (if SortType::New == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                                href={on_sort_ssr(SortType::New)}
+                                on:click={on_sort_click(SortType::New)}
+                              >
+                                "New"
+                              </a>
                             </li>
-                            <li
-                            >
-                              <a class={move || { (if SortType::Old == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::Old)} on:click={on_sort_click(SortType::Old)}>"Old"</a>
+                            <li>
+                              <a
+                                class={move || { (if SortType::Old == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                                href={on_sort_ssr(SortType::Old)}
+                                on:click={on_sort_click(SortType::Old)}
+                              >
+                                "Old"
+                              </a>
                             </li>
-                            <li
-                            >
-                              <a class={move || { (if SortType::Controversial == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::Controversial)} on:click={on_sort_click(SortType::Controversial)}>"Controversial"</a>
+                            <li>
+                              <a
+                                class={move || { (if SortType::Controversial == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                                href={on_sort_ssr(SortType::Controversial)}
+                                on:click={on_sort_click(SortType::Controversial)}
+                              >
+                                "Controversial"
+                              </a>
                             </li>
-                            <li
-                            >
-                              <a class={move || { (if SortType::Scaled == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::Scaled)} on:click={on_sort_click(SortType::Scaled)}>"Scaled"</a>
+                            <li>
+                              <a
+                                class={move || { (if SortType::Scaled == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                                href={on_sort_ssr(SortType::Scaled)}
+                                on:click={on_sort_click(SortType::Scaled)}
+                              >
+                                "Scaled"
+                              </a>
                             </li>
-                            <li
-                            >
-                              <a class={move || { (if SortType::NewComments == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::NewComments)} on:click={on_sort_click(SortType::NewComments)}>"Comment"</a>
+                            <li>
+                              <a
+                                class={move || { (if SortType::NewComments == ssr_sort() { "menu-active" } else { "" }).to_string() }}
+                                href={on_sort_ssr(SortType::NewComments)}
+                                on:click={on_sort_click(SortType::NewComments)}
+                              >
+                                "Comment"
+                              </a>
                             </li>
                           </ul>
                         </details>
@@ -944,20 +1079,17 @@ pub fn TopNav(
             </div>
             <div class="flex flex-grow">
               <ActionForm attr:class="flex flex-grow" action={search_action}>
-                <div class=
-                {move || {
-                  (if input_focus.get() == InputFocusState::Search { "form-control flex flex-grow" } else {
-                "form-control hidden sm:flex flex-grow"
-                }).to_string()
-                }}
-                >
+                <div class={move || {
+                  (if input_focus.get() == InputFocusState::Search { "form-control flex flex-grow" } else { "form-control hidden sm:flex flex-grow" })
+                    .to_string()
+                }}>
                   <input
                     title={move || display_title.get()}
                     class="w-full input"
                     type="text"
                     name="term"
                     prop:value={move || display_title.get()}
-                    node_ref=search_input
+                    node_ref={search_input}
                     on:keypress={move |e: KeyboardEvent| {
                       if e.key_code() == 13 {
                         e.prevent_default();
@@ -969,23 +1101,19 @@ pub fn TopNav(
                     }}
                     on:blur={move |_| {
                       let _ = set_timeout_with_handle(
-                        move || {
-                          input_focus.set(InputFocusState::Unfocused);
-                        },
-                        std::time::Duration::new(0, 750_000_000),
-                      ).ok();
+                          move || {
+                            input_focus.set(InputFocusState::Unfocused);
+                          },
+                          std::time::Duration::new(0, 750_000_000),
+                        )
+                        .ok();
                     }}
                   />
                 </div>
                 <div class="flex-none">
                   <button
                     type="submit"
-                    class=
-                    {move || {
-                      (if input_focus.get() == InputFocusState::Search { "hidden" } else {
-                        "py-2 px-4 sm:hidden"
-                      }).to_string()
-                    }}
+                    class={move || { (if input_focus.get() == InputFocusState::Search { "hidden" } else { "py-2 px-4 sm:hidden" }).to_string() }}
                     on:click={move |e| {
                       e.prevent_default();
                       if input_focus.get() == InputFocusState::Search {
@@ -994,22 +1122,19 @@ pub fn TopNav(
                         input_focus.set(InputFocusState::Search);
                       }
                       let _ = set_timeout_with_handle(
-                        move || {
-                          search_input.get().map(|i| i.focus());
-                        },
-                        std::time::Duration::from_millis(0),
-                      )
-                      .ok();
+                          move || {
+                            search_input.get().map(|i| i.focus());
+                          },
+                          std::time::Duration::from_millis(0),
+                        )
+                        .ok();
                     }}
                   >
                     <Icon icon={Search} />
                   </button>
                   <button
-                    class=
-                    {move || {
-                      (if input_focus.get() == InputFocusState::Search {
-                        "py-2 px-4"
-                      } else { "hidden sm:inline-block sm:py-2 sm:px-4" }).to_string()
+                    class={move || {
+                      (if input_focus.get() == InputFocusState::Search { "py-2 px-4" } else { "hidden sm:inline-block sm:py-2 sm:px-4" }).to_string()
                     }}
                     on:click={move |_| {
                       use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
@@ -1020,29 +1145,37 @@ pub fn TopNav(
                 </div>
               </ActionForm>
             </div>
-            <div class=
-            {move || { format!("{}", if input_focus.get() == InputFocusState::Search { "hidden" } else {
-              "flex-none"
-            }) }}
-            >
+            <div class={move || { format!("{}", if input_focus.get() == InputFocusState::Search { "hidden" } else { "flex-none" }) }}>
               <ul class="flex-nowrap items-center menu menu-horizontal">
                 <li class="hidden sm:flex">
-                  <details node_ref=lg_filter_menu>
+                  <details node_ref={lg_filter_menu}>
                     <summary on:click={move |_| reset_others(MenuType::LgFilter)}>
                       <Icon icon={Ban} />
                     </summary>
                     <ul class="z-[1] [inset-inline-end:0] bg-base-200">
                       <li>
-                        <a href={on_bans_ssr(BanType::Nsfw)} class={move || highlight_csr_bans(BanType::Nsfw)} on:click={on_csr_bans_click(BanType::Nsfw)}>"NSFW"</a>
+                        <a
+                          href={on_bans_ssr(BanType::Nsfw)}
+                          class={move || highlight_csr_bans(BanType::Nsfw)}
+                          on:click={on_csr_bans_click(BanType::Nsfw)}
+                        >
+                          "NSFW"
+                        </a>
                       </li>
                       <li>
-                        <a href={on_bans_ssr(BanType::Ban)} class={move || highlight_csr_bans(BanType::Ban)} on:click={on_csr_bans_click(BanType::Ban)}>"Banned"</a>
+                        <a
+                          href={on_bans_ssr(BanType::Ban)}
+                          class={move || highlight_csr_bans(BanType::Ban)}
+                          on:click={on_csr_bans_click(BanType::Ban)}
+                        >
+                          "Banned"
+                        </a>
                       </li>
                     </ul>
                   </details>
                 </li>
                 <li class="hidden sm:flex">
-                  <details node_ref=lg_language_menu>
+                  <details node_ref={lg_language_menu}>
                     <summary on:click={move |_| reset_others(MenuType::LgLanguage)}>
                       <Icon icon={Translate} />
                     </summary>
@@ -1067,7 +1200,7 @@ pub fn TopNav(
                   </details>
                 </li>
                 <li class="hidden sm:flex">
-                  <details node_ref=lg_theme_menu>
+                  <details node_ref={lg_theme_menu}>
                     <summary on:click={move |_| reset_others(MenuType::LgTheme)}>
                       <Icon icon={Palette} />
                     </summary>
@@ -1105,8 +1238,13 @@ pub fn TopNav(
                     view! {
                       <li>
                         <form method="post" action="/l" class="p-0">
-                          <input type="hidden" name="source_url" value={move || format!("{}{}", use_location().pathname.get(), query.get().to_query_string())} />
-                          <button type="submit"
+                          <input
+                            type="hidden"
+                            name="source_url"
+                            value={move || format!("{}{}", use_location().pathname.get(), query.get().to_query_string())}
+                          />
+                          <button
+                            type="submit"
                             class="py-2 px-4"
                             on:click={move |e: MouseEvent| {
                               e.prevent_default();
@@ -1123,7 +1261,7 @@ pub fn TopNav(
                   }}
                 >
                   <li>
-                    <details node_ref=sm_ui_menu>
+                    <details node_ref={sm_ui_menu}>
                       <summary on:click={move |_| reset_others(MenuType::SmUi)}>
                         <Icon icon={User} />
                       </summary>
@@ -1175,7 +1313,8 @@ pub fn TopNav(
               </ul>
             </div>
           </nav>
-        }.into_any()
+        }
+          .into_any()
       }}
     </Transition>
   }

@@ -146,10 +146,7 @@ pub fn LoginForm() -> impl IntoView {
   view! {
     <div>
       <ActionForm attr:class="space-y-3" action={login}>
-        <input type="hidden" name="uri" value={move || if let PassedUrl(Some(url)) = passed.get() {
-          url
-        } else {
-          "/".to_string() }} />
+        <input type="hidden" name="uri" value={move || if let PassedUrl(Some(url)) = passed.get() { url } else { "/".to_string() }} />
         <TextInput id="username" autocomplete="username" name="username_or_email" input_value={name} label="Username" />
         <TextInput
           id="password"
@@ -225,7 +222,7 @@ pub fn Login() -> impl IntoView {
   view! {
     <div class="flex flex-col min-h-screen" data-theme={move || get_theme_cookie.get()}>
       <main class="flex flex-col">
-        <nav::TopNav scroll_element={on_scroll_element.into()} /*lost_path={RwSignal::new(url)}*/ />
+        <nav::TopNav scroll_element={on_scroll_element.into()} />
         <div class="flex flex-grow">
           <div
             node_ref={on_scroll_element}

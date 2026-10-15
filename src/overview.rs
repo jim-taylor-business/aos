@@ -322,7 +322,10 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
           <Transition fallback={|| {}}>
             {move || {
               match ssr_site.get() {
-                Some(Err(e)) => view! { <Error description="Error loading site information".to_owned() error={e} on_retry_click={on_retry_site_click} /> }.into_any(),
+                Some(Err(e)) => {
+                  view! { <Error description={"Error loading site information".to_owned()} error={e} on_retry_click={on_retry_site_click} /> }
+                    .into_any()
+                }
                 Some(Ok(_s)) => view! {}.into_any(),
                 _ => view! {}.into_any(),
               }
@@ -417,7 +420,10 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                                 spawn_local_scoped(async move {
                                   loading.set(true);
                                   error.set(None);
-                                  let form = FollowCommunity { community_id: s.community_view.community.id, follow: !follow.get().eq(&SubscribedType::Subscribed) };
+                                  let form = FollowCommunity {
+                                    community_id: s.community_view.community.id,
+                                    follow: !follow.get().eq(&SubscribedType::Subscribed),
+                                  };
                                   let result = LemmyClient.follow_community(form).await;
                                   match result {
                                     Ok(o) => {
@@ -437,14 +443,24 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                           </ActionForm>
                         </div>
                         <Show when={move || loading.get()} fallback={|| {}}>
-                        {move || {
-                          view! { <Loading loading={loading.get()} /> }
-                        }}
+                          {move || {
+                            view! { <Loading loading={loading.get()} /> }
+                          }}
                         </Show>
                         <Show when={move || error.get().is_some()} fallback={|| {}}>
-                        {move || {
-                          view! { <Error description={"Subscribe"} error={error.get().unwrap_or_else(|| LemmyAppError { error_type: LemmyAppErrorType::Unknown, content: "Unknown".to_owned() })} /> }
-                        }}
+                          {move || {
+                            view! {
+                              <Error
+                                description="Subscribe"
+                                error={error
+                                  .get()
+                                  .unwrap_or_else(|| LemmyAppError {
+                                    error_type: LemmyAppErrorType::Unknown,
+                                    content: "Unknown".to_owned(),
+                                  })}
+                              />
+                            }
+                          }}
                         </Show>
                       </div>
                       <div class="py-2 px-4" style={move || { if show_rules.get() { "display: block;" } else { "display: none;" } }}>
@@ -483,60 +499,63 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                       if let Some(c) = cancel_handle.get_untracked() {
                         c.clear();
                       }
-                      cancel_handle.set(
-                        set_timeout_with_handle(
-                          move || {
-                            if let Some(s) = on_scroll_element.get() {
-                              spawn_local_scoped(async move {
-                                if let Ok(d) = IndexedDb::new().await {
-                                  let l: Result<Option<i32>, Error> = d
-                                    .get(
-                                      &ScrollPositionKey {
-                                        path: use_location().pathname.get(),
-                                        query: use_query_map().get().to_query_string(),
-                                      },
-                                    )
-                                    .await;
-                                  if let Ok(Some(l)) = l {
-                                    s.set_scroll_left(l);
-                                  }
+                      cancel_handle
+                        .set(
+                          set_timeout_with_handle(
+                              move || {
+                                if let Some(s) = on_scroll_element.get() {
+                                  spawn_local_scoped(async move {
+                                    if let Ok(d) = IndexedDb::new().await {
+                                      let l: Result<Option<i32>, Error> = d
+                                        .get(
+                                          &ScrollPositionKey {
+                                            path: use_location().pathname.get(),
+                                            query: use_query_map().get().to_query_string(),
+                                          },
+                                        )
+                                        .await;
+                                      if let Ok(Some(l)) = l {
+                                        s.set_scroll_left(l);
+                                      }
+                                    }
+                                  });
                                 }
-                              });
-                            }
-                          },
-                          std::time::Duration::new(0, 750_000_000),
-                        ).ok(),
-                      );
+                              },
+                              std::time::Duration::new(0, 750_000_000),
+                            )
+                            .ok(),
+                        );
                     }
                     if p.6 {
                       if let Some(c) = cancel_refresh_handle.get_untracked() {
                         c.clear();
                       }
-                      cancel_refresh_handle.set(
-                        set_timeout_with_handle(
-                          move || {
-                            post_list_resource.refetch();
-                          },
-                          std::time::Duration::new(0, 750_000_000),
-                        ).ok(),
-                      );
+                      cancel_refresh_handle
+                        .set(
+                          set_timeout_with_handle(
+                              move || {
+                                post_list_resource.refetch();
+                              },
+                              std::time::Duration::new(0, 750_000_000),
+                            )
+                            .ok(),
+                        );
                     }
                   }
                   next_page_cursor.set((p.0 + o.posts.len(), o.next_page.clone()));
                   #[cfg(not(feature = "ssr"))] loading.set(false);
                   view! {
-                    <Listings hide={p.6} posts={o.posts.clone().into()} page_number={RwSignal::new(p.0)} heroes={1} />
+                    <Listings hide={p.6} posts={o.posts.clone().into()} page_number={RwSignal::new(p.0)} heroes=1 />
                     {
                       let (key, _) = next_page_cursor.get();
                       if key > 0 {
                         let mut st: Vec<(usize, String)> = vec![];
                         if let (_, Some(PaginationCursor(next_page))) = next_page_cursor.get() {
-                            st.push((key, next_page));
+                          st.push((key, next_page));
                         }
                         let mut query_params = use_query_map().get();
                         query_params.remove("page");
                         query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-
                         #[cfg(not(feature = "ssr"))]
                         set_timeout_with_handle(
                           move || {
@@ -546,19 +565,21 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                         );
 
                         view! {
-                          <Show when=move || { show_next.get() } fallback=||{}>
-                            <div class="py-4 px-8 flex justify-end{}">
-                              <A href=format!("{}{}", use_location().pathname.get(), query_params.to_query_string()) attr:class="btn btn-soft">
+                          <Show when={move || { show_next.get() }} fallback={|| {}}>
+                            <div class="flex py-4 px-8 justify-end{}">
+                              <A href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())} attr:class="btn btn-soft">
                                 "Next"
                               </A>
                             </div>
                           </Show>
-                        }.into_any()
+                        }
+                          .into_any()
                       } else {
                         view! {}.into_any()
                       }
                     }
-                  }.into_any()
+                  }
+                    .into_any()
                 }
                 Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
                   #[cfg(not(feature = "ssr"))] loading.set(false);
@@ -567,9 +588,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                 Err(e) => {
                   #[cfg(not(feature = "ssr"))] loading.set(false);
                   error!("{:#?}", e);
-                  view! {
-                    <Error description="Error loading post list"  error={e} on_retry_click={on_retry_click} />
-                  }.into_any()
+                  view! { <Error description="Error loading post list" error={e} on_retry_click={on_retry_click} /> }.into_any()
                 }
               }}
             </For>

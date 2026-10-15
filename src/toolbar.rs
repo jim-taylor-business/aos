@@ -372,14 +372,14 @@ pub fn PostToolbar(
           Some(Ok(s)) => {
             {
               let logged_in = Memo::new(move |_| { s.my_user.is_some() });
-
               #[cfg(not(feature = "ssr"))]
               let _ = set_timeout_with_handle(
-                move || {
-                  enable_reply.set(true);
-                },
-                std::time::Duration::new(0, 0),
-              ).ok();
+                  move || {
+                    enable_reply.set(true);
+                  },
+                  std::time::Duration::new(0, 0),
+                )
+                .ok();
 
               view! {
                 <div class="px-4 break-inside-avoid">
@@ -472,7 +472,9 @@ pub fn PostToolbar(
                       class={move || {
                         format!(
                           "cursor-pointer{}",
-                          { if !enable_reply.get() || !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
+                          {
+                            if !enable_reply.get() || !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" }
+                          },
                         )
                       }}
                       on:click={move |_| {
@@ -572,21 +574,32 @@ pub fn PostToolbar(
                   </div>
                 </div>
               }
-            }.into_any()
+            }
+              .into_any()
           }
           _ => view! {}.into_any(),
         }
       }}
     </Transition>
     <Show when={move || loading.get()} fallback={|| {}}>
-    {move || {
-      view! { <Loading loading={loading.get()} /> }
-    }}
+      {move || {
+        view! { <Loading loading={loading.get()} /> }
+      }}
     </Show>
     <Show when={move || error.get().is_some()} fallback={|| {}}>
-    {move || {
-      view! { <Error description={description.get()} error={error.get().unwrap_or_else(|| LemmyAppError { error_type: LemmyAppErrorType::Unknown, content: "Unknown".to_owned() })} /> }
-    }}
+      {move || {
+        view! {
+          <Error
+            description={description.get()}
+            error={error
+              .get()
+              .unwrap_or_else(|| LemmyAppError {
+                error_type: LemmyAppErrorType::Unknown,
+                content: "Unknown".to_owned(),
+              })}
+          />
+        }
+      }}
     </Show>
   }
 }

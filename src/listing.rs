@@ -22,9 +22,9 @@ pub fn Listings(posts: Signal<Vec<PostView>>, page_number: RwSignal<usize>, hide
       {
         post_number.update(|n| *n = *n + 1usize);
         if post_number.get() <= heroes {
-          view! { <Hero hide post_id={Signal::derive(move || pv.post.id)} /*_post_number={post_number.get()}*/ /> }.into_any()
+          view! { <Hero hide post_id={Signal::derive(move || pv.post.id)} /> }.into_any()
         } else {
-          view! { <Listing hide post_view={pv} post_number={post_number.get()} /*reply_show={RwSignal::new(false)}*/ /> }.into_any()
+          view! { <Listing hide post_view={pv} post_number={post_number.get()} /> }.into_any()
         }
       }
     </For>
@@ -372,8 +372,7 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
               let logged_in = Memo::new(move |_| { s.my_user.is_some() });
 
               view! {
-                <div
-                class={move || {
+                <div class={move || {
                   format!(
                     "grid gap-x-4 px-4 grid-cols-[6rem_1fr] break-inside-avoid {}{}",
                     if post_number != 0 { "grid-rows-[1fr_2rem] pb-6" } else { "grid-rows-[1fr] pb-2" },

@@ -54,8 +54,8 @@ pub fn Comments(comments: Signal<Vec<CommentView>>, post_id: Signal<Option<i32>>
         highlight_user_id
         post_id
         selected_drag_offset={RwSignal::new((1, 0f64, 0))}
-        // on_scroll_element
       />
+    // on_scroll_element
     </For>
   }
 }
@@ -448,36 +448,35 @@ pub fn Comment(
         if level == 1 { " odd:bg-base-300 pr-4 pt-2 pb-1" } else { "" },
         if !hidden_comments.get().contains(&parent_comment_id) { "" } else { " hidden" },
       )
-      }}
+    }}>
       // style:padding-left=move || {
-      //   if selected_drag_offset.get().0 > 1 {
-      //     if level > 1 && level <= selected_drag_offset.get().0 {
-      //       if level > 8 {
-      //         format!("")
-      //       } else if !is_there.get() {
-      //         format!("calc(var(--spacing) * 4)")
-      //       } else {
-      //         format!("calc(var(--spacing) * 4 + {}px)", selected_drag_offset.get().1 / 16f64)
-      //       }
-      //     } else if level > 1 && level > selected_drag_offset.get().0 {
-      //       if level > 8 {
-      //         format!("calc({}px * -1)", selected_drag_offset.get().1 / 16f64)
-      //       } else {
-      //         format!("calc(var(--spacing) * 4)")
-      //       }
-      //     } else {
-      //       format!("calc(var(--spacing) * 4)")
-      //     }
-      //   } else {
-      //     if level > 8 {
-      //       format!("")
-      //     } else {
-      //       format!("calc(var(--spacing) * 4)")
-      //     }
-      //   }
+      // if selected_drag_offset.get().0 > 1 {
+      // if level > 1 && level <= selected_drag_offset.get().0 {
+      // if level > 8 {
+      // format!("")
+      // } else if !is_there.get() {
+      // format!("calc(var(--spacing) * 4)")
+      // } else {
+      // format!("calc(var(--spacing) * 4 + {}px)", selected_drag_offset.get().1 / 16f64)
       // }
-    >
-    // <span>{{move || is_there.get() }}</span>
+      // } else if level > 1 && level > selected_drag_offset.get().0 {
+      // if level > 8 {
+      // format!("calc({}px * -1)", selected_drag_offset.get().1 / 16f64)
+      // } else {
+      // format!("calc(var(--spacing) * 4)")
+      // }
+      // } else {
+      // format!("calc(var(--spacing) * 4)")
+      // }
+      // } else {
+      // if level > 8 {
+      // format!("")
+      // } else {
+      // format!("calc(var(--spacing) * 4)")
+      // }
+      // }
+      // }
+      // <span>{{move || is_there.get() }}</span>
       <div
         class={move || {
           format!(
@@ -522,21 +521,17 @@ pub fn Comment(
         }}
         on:contextmenu={move |ev| ev.prevent_default()}
         on:touchstart={move |e: TouchEvent| {
-            // if let Some(touch) = e.touches().get(0) {
-            //     start_x.set_value(Some(touch.client_x() as f64));
-            // }
-
-            touch_still_handle
-              .set_value(
-                set_timeout_with_handle(
-                    move || {
-                      vote_show.set(!vote_show.get());
-                      still_down.set(true);
-                    },
-                    std::time::Duration::from_millis(500),
-                  )
-                  .ok(),
-              );
+          touch_still_handle
+            .set_value(
+              set_timeout_with_handle(
+                  move || {
+                    vote_show.set(!vote_show.get());
+                    still_down.set(true);
+                  },
+                  std::time::Duration::from_millis(500),
+                )
+                .ok(),
+            );
         }}
         on:touchcancel={move |_e: TouchEvent| {
           if let Some(h) = touch_still_handle.get_value() {
@@ -552,23 +547,9 @@ pub fn Comment(
           if let Some(h) = touch_still_handle.get_value() {
             h.clear();
           }
-          // let Some(touch) = e.touches().get(0) else {
-          //     return;
-          // };
-          // let Some(sx) = start_x.get_value() else {
-          //     return;
-          // };
-          // let delta = touch.client_x() as f64 - sx;
-          // if delta.abs() > MOVE_CANCEL_THRESHOLD {
-          //   if let Some(h) = touch_still_handle.get_value() {
-          //     h.clear();
-          //   }
-          // }
-          // selected_drag_offset.set((level, (BASE_MARGIN_PX + delta).clamp(-MAX_DRAG_PX, 0f64), comment.get().comment.id.0));
         }}
         on:mousedown={move |e: MouseEvent| {
           if e.buttons() == 1 {
-            // start_x.set_value(Some(e.client_x() as f64));
             pointer_still_handle
               .set_value(
                 set_timeout_with_handle(
@@ -587,7 +568,6 @@ pub fn Comment(
           }
         }}
         on:mouseup={move |_e: MouseEvent| {
-          // start_x.set_value(None);
           if let Some(h) = pointer_still_handle.get_value() {
             h.clear();
           }
@@ -597,18 +577,7 @@ pub fn Comment(
             h.clear();
           }
         }}
-        on:mousemove={move |e: MouseEvent| {
-          // let Some(sx) = start_x.get_value() else {
-          //     return;
-          // };
-          // let delta = e.client_x() as f64 - sx;
-          // if delta.abs() > MOVE_CANCEL_THRESHOLD {
-          //   if let Some(h) = pointer_still_handle.get_value() {
-          //     h.clear();
-          //   }
-          // }
-          // selected_drag_offset.set((level, (BASE_MARGIN_PX + delta).clamp(-MAX_DRAG_PX, 0f64), comment.get().comment.id.0));
-        }}
+        on:mousemove={move |e: MouseEvent| {}}
       >
         <Show
           when={move || !(comment_view.get().creator_banned_from_community || comment_view.get().creator.banned)}
@@ -616,10 +585,7 @@ pub fn Comment(
         >
           <Show when={move || !comment_view.get().comment.removed} fallback={move || view! { <Icon on:click={on_mod_log_click} icon={Block} /> }}>
             <Show when={move || !comment_view.get().comment.deleted} fallback={move || view! { <Icon icon={Eraser} /> }}>
-              <Show
-                when={move || !comment_view.get().creator_blocked}
-                fallback={move || view! { <Icon on:click={on_get_click} icon={EyeSlash} /> }}
-              >
+              <Show when={move || !comment_view.get().creator_blocked} fallback={move || view! { <Icon on:click={on_get_click} icon={EyeSlash} /> }}>
                 {()}
               </Show>
             </Show>
@@ -806,13 +772,15 @@ pub fn Comment(
           when={move || (hidden_comments.get().contains(&comment_view.get().comment.id.0)) && (children.get().len() + descendants.get().len()) > 0}
           fallback={|| {}}
         >
-          <span class="mb-1 inline-block whitespace-nowrap badge badge-neutral">{children.get().len() + descendants.get().len()} " replies"</span>
+          <span class="inline-block mb-1 whitespace-nowrap badge badge-neutral">{children.get().len() + descendants.get().len()} " replies"</span>
         </Show>
         <Show
-          when={move || TryInto::<usize>::try_into(comment_view.get().counts.child_count).unwrap_or_default() != (children.get().len() + descendants.get().len())}
+          when={move || {
+            TryInto::<usize>::try_into(comment_view.get().counts.child_count).unwrap_or_default() != (children.get().len() + descendants.get().len())
+          }}
           fallback={|| {}}
         >
-          <span class="mb-1 inline-block whitespace-nowrap badge badge-neutral">{comment_view.get().counts.child_count} " replies"</span>
+          <span class="inline-block mb-1 whitespace-nowrap badge badge-neutral">{comment_view.get().counts.child_count} " replies"</span>
         </Show>
       </div>
       <Show when={move || reply_show.get() || edit_show.get()} fallback={|| {}}>
@@ -820,7 +788,7 @@ pub fn Comment(
           <Show when={move || reply_show.get()} fallback={|| {}}>
             <div class="form-control">
               <textarea
-                class="h-24 w-full text-base textarea textarea-bordered"
+                class="w-full h-24 text-base textarea textarea-bordered"
                 placeholder="Comment text"
                 prop:value={move || reply_content.get()}
                 node_ref={_visibility_element}
@@ -865,7 +833,7 @@ pub fn Comment(
           <Show when={move || edit_show.get()} fallback={|| {}}>
             <div class="form-control">
               <textarea
-                class="h-24 w-full text-base textarea textarea-bordered"
+                class="w-full h-24 text-base textarea textarea-bordered"
                 placeholder="Comment text"
                 prop:value={move || edit_content.get()}
                 on:wheel={move |e: WheelEvent| {
@@ -910,14 +878,24 @@ pub fn Comment(
         </div>
       </Show>
       <Show when={move || loading.get()} fallback={|| {}}>
-      {move || {
-        view! { <Loading loading={loading.get()} /> }
-      }}
+        {move || {
+          view! { <Loading loading={loading.get()} /> }
+        }}
       </Show>
       <Show when={move || error.get().is_some()} fallback={|| {}}>
-      {move || {
-        view! { <Error description={description.get()} error={error.get().unwrap_or_else(|| LemmyAppError { error_type: LemmyAppErrorType::Unknown, content: "Unknown".to_owned() })} /> }
-      }}
+        {move || {
+          view! {
+            <Error
+              description={description.get()}
+              error={error
+                .get()
+                .unwrap_or_else(|| LemmyAppError {
+                  error_type: LemmyAppErrorType::Unknown,
+                  content: "Unknown".to_owned(),
+                })}
+            />
+          }
+        }}
       </Show>
       <For each={move || children.get()} key={|cv| cv.comment.id} let:cv>
         <Comment

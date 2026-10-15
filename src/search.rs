@@ -175,93 +175,95 @@ pub fn Search() -> impl IntoView {
           <Transition fallback={|| {}}>
             <Title text="Search" />
             <For each={move || search_cache_resource.get().unwrap_or(vec![])} key={|r| (r.1.clone(), r.2, r.4.clone())} let:r>
-              {
-                match r.3 {
-                  Ok(ref o) => {
-                    #[cfg(not(feature = "ssr"))]
-                    {
-                      let result_clone = r.3.clone();
-                      use crate::db::csr_indexed_db::*;
-                      spawn_local_scoped(async move {
-                          if let Ok(d) = IndexedDb::new().await {
-                            if let Ok(_c) = d.set::<Search, Result<SearchResponse, LemmyAppError>>(&r.1, &result_clone).await {}
-                          }
-                          search_cache.update(move |sc| {
-                            sc.insert((r.0, r.1, r.4), (r.2, result_clone));
-                          });
-                      });
-                      let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-                      if iw < 768f64 /* || p.5 || p.6 */ {} else {
-                        if let Some(c) = cancel_handle.get_untracked() {
-                          c.clear();
-                        }
-                        cancel_handle.set(
+              {match r.3 {
+                Ok(ref o) => {
+                  #[cfg(not(feature = "ssr"))]
+                  {
+                    let result_clone = r.3.clone();
+                    use crate::db::csr_indexed_db::*;
+                    spawn_local_scoped(async move {
+                      if let Ok(d) = IndexedDb::new().await {
+                        if let Ok(_c) = d.set::<Search, Result<SearchResponse, LemmyAppError>>(&r.1, &result_clone).await {}
+                      }
+                      search_cache
+                        .update(move |sc| {
+                          sc.insert((r.0, r.1, r.4), (r.2, result_clone));
+                        });
+                    });
+                    let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
+                    if iw < 768f64 {} else {
+                      if let Some(c) = cancel_handle.get_untracked() {
+                        c.clear();
+                      }
+                      cancel_handle
+                        .set(
                           set_timeout_with_handle(
-                            move || {
-                              if let Some(s) = on_scroll_element.get() {
-                                spawn_local_scoped(async move {
-                                  if let Ok(d) = IndexedDb::new().await {
-                                    let l: Result<Option<i32>, Error> = d
-                                      .get(
-                                        &ScrollPositionKey {
-                                          path: use_location().pathname.get(),
-                                          query: use_query_map().get().to_query_string(),
-                                        },
-                                      )
-                                      .await;
-                                    if let Ok(Some(l)) = l {
-                                      s.set_scroll_left(l);
+                              move || {
+                                if let Some(s) = on_scroll_element.get() {
+                                  spawn_local_scoped(async move {
+                                    if let Ok(d) = IndexedDb::new().await {
+                                      let l: Result<Option<i32>, Error> = d
+                                        .get(
+                                          &ScrollPositionKey {
+                                            path: use_location().pathname.get(),
+                                            query: use_query_map().get().to_query_string(),
+                                          },
+                                        )
+                                        .await;
+                                      if let Ok(Some(l)) = l {
+                                        s.set_scroll_left(l);
+                                      }
                                     }
-                                  }
-                                });
-                              }
-                            },
-                            std::time::Duration::new(0, 750_000_000),
-                          ).ok(),
+                                  });
+                                }
+                              },
+                              std::time::Duration::new(0, 750_000_000),
+                            )
+                            .ok(),
                         );
-                      }
                     }
-                    #[cfg(not(feature = "ssr"))] loading.set(false);
-                    next_page_cursor.set(r.0 + 1);
-                    view! {
-                      <Listings hide=false posts={o.posts.clone().into()} page_number={RwSignal::new((r.0 - 1) * 50)} />
-                      {
-                          let mut st: Vec<(usize)> = vec![next_page_cursor.get()];
-                          let mut query_params = use_query_map().get();
-                          query_params.remove("page");
-                          query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+                  }
+                  #[cfg(not(feature = "ssr"))] loading.set(false);
+                  next_page_cursor.set(r.0 + 1);
+                  view! {
+                    <Listings hide=false posts={o.posts.clone().into()} page_number={RwSignal::new((r.0 - 1) * 50)} />
+                    {
+                      let mut st: Vec<(usize)> = vec![next_page_cursor.get()];
+                      let mut query_params = use_query_map().get();
+                      query_params.remove("page");
+                      query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+                      #[cfg(not(feature = "ssr"))]
+                      set_timeout_with_handle(
+                        move || {
+                          show_next.set(false);
+                        },
+                        std::time::Duration::new(0, 50_000_000),
+                      );
 
-                          #[cfg(not(feature = "ssr"))]
-                          set_timeout_with_handle(
-                            move || {
-                              show_next.set(false);
-                            },
-                            std::time::Duration::new(0, 50_000_000),
-                          );
-
-                          view! {
-                            <Show when=move || { show_next.get() } fallback=||{}>
-                              <div class="py-4 px-8 flex justify-end{}">
-                                <A href=format!("{}{}", use_location().pathname.get(), query_params.to_query_string()) attr:class="btn btn-soft">
-                                  "Next"
-                                </A>
-                              </div>
-                            </Show>
-                          }.into_any()
+                      view! {
+                        <Show when={move || { show_next.get() }} fallback={|| {}}>
+                          <div class="flex py-4 px-8 justify-end{}">
+                            <A href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())} attr:class="btn btn-soft">
+                              "Next"
+                            </A>
+                          </div>
+                        </Show>
                       }
-                    }.into_any()
+                        .into_any()
+                    }
                   }
-                  Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
-                    #[cfg(not(feature = "ssr"))] loading.set(false);
-                    view! { <Warning on_retry_click={on_retry_click} /> }.into_any()
-                  }
-                  Err(e) => {
-                    #[cfg(not(feature = "ssr"))] loading.set(false);
-                    error!("{:#?}", e);
-                    view! { <Error description="Error loading post list"  error={e} on_retry_click={on_retry_click} /> }.into_any()
-                  }
+                    .into_any()
                 }
-              }
+                Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
+                  #[cfg(not(feature = "ssr"))] loading.set(false);
+                  view! { <Warning on_retry_click={on_retry_click} /> }.into_any()
+                }
+                Err(e) => {
+                  #[cfg(not(feature = "ssr"))] loading.set(false);
+                  error!("{:#?}", e);
+                  view! { <Error description="Error loading post list" error={e} on_retry_click={on_retry_click} /> }.into_any()
+                }
+              }}
             </For>
           </Transition>
           <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
