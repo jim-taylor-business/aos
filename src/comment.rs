@@ -96,9 +96,7 @@ pub fn Comment(
   let pointer_still_handle: StoredValue<Option<TimeoutHandle>> = StoredValue::new(None);
 
   let reply_content = RwSignal::new(String::default());
-  // let initial_reply_content = RwSignal::new(String::default());
   let edit_content = RwSignal::new(String::default());
-  // let initial_edit_content = RwSignal::new(String::default());
 
   let on_toggle = move |i: i32| {
     if hidden_comments.get().contains(&i) {
@@ -178,9 +176,7 @@ pub fn Comment(
             }
           });
           children.set(comments_children);
-          // log!("{}", children.get().len());
           descendants.set(comments_descendants);
-          // log!("{}", descendants.get().len());
           comment_view.update(|v| {
             v.counts.child_count = TryInto::<i32>::try_into(children.get().len() + descendants.get().len()).unwrap_or_default();
           });
@@ -367,7 +363,6 @@ pub fn Comment(
           comment_view.update(|v| {
             v.counts.child_count = v.counts.child_count + 1;
           });
-          // #[cfg(not(feature = "ssr"))]
           if let Ok(d) = IndexedDb::new().await {
             if let Ok(_c) = d.del(&CommentDraftKey { comment_id: comment_view.get().comment.id.0, draft: Draft::Reply }).await {}
           }
@@ -391,17 +386,8 @@ pub fn Comment(
       match result {
         Ok(_o) => {
           edit_show.set(false);
-          // log!("Editing comment {}", comment_view.get().comment.id.0);
-          // #[cfg(not(feature = "ssr"))]
-          // {
-          // log!("1 Deleting edit draft for comment {} ", comment_view.get().comment.id.0);
           if let Ok(d) = IndexedDb::new().await {
-            // log!("2 Deleting edit draft for comment {}", comment_view.get().comment.id.0);
             if let Ok(_c) = d.del(&CommentDraftKey { comment_id: comment_view.get().comment.id.0, draft: Draft::Edit }).await {}
-            // log!("3 Deleted edit draft for comment {}", comment_view.get().comment.id.0);
-            // } else if let Err(e) = IndexedDb::new().await {
-            //   log!("Error deleting edit draft for comment {}: {:?}", comment_view.get().comment.id.0, e);
-            // }
           }
         }
         Err(e) => {
@@ -409,7 +395,6 @@ pub fn Comment(
         }
       }
       loading.set(false);
-      // log!("Finished editing comment {}", comment_view.get().comment.id.0);
     });
   };
 
@@ -438,17 +423,6 @@ pub fn Comment(
     if let Some(h) = touch_still_handle.get_value() {
       h.clear();
     }
-
-    // #[cfg(not(feature = "ssr"))]
-    // if let Some(se) = on_scroll_element.get() {
-    //   spawn_local_scoped(async move {
-    //     if let Ok(d) = IndexedDb::new().await {
-    //       let _ = d
-    //         .set(&ScrollPositionKey { path: use_location().pathname.get(), query: use_query_map().get().to_query_string() }, &se.scroll_left())
-    //         .await;
-    //     }
-    //   });
-    // }
   };
 
   // #[cfg(not(feature = "ssr"))]
@@ -635,64 +609,6 @@ pub fn Comment(
           // }
           // selected_drag_offset.set((level, (BASE_MARGIN_PX + delta).clamp(-MAX_DRAG_PX, 0f64), comment.get().comment.id.0));
         }}
-        // on:pointerdown={move |e: PointerEvent| {
-        //   if e.buttons() == 1 {
-        //     // e.prevent_default();
-
-        //     // start_x.set_value(Some(e.client_x() as f64));
-
-        //     pointer_still_handle
-        //       .set_value(
-        //         set_timeout_with_handle(
-        //             move || {
-        //               vote_show.set(!vote_show.get());
-        //               still_down.set(true);
-        //             },
-        //             std::time::Duration::from_millis(500),
-        //           )
-        //           .ok(),
-        //       );
-        //   } else {
-        //     if let Some(h) = pointer_still_handle.get_value() {
-        //       h.clear();
-        //     }
-        //   }
-        // }}
-        // on:pointerup={move |_e: PointerEvent| {
-        //   // start_x.set_value(None);
-        //   if let Some(h) = pointer_still_handle.get_value() {
-        //     h.clear();
-        //   }
-        // }}
-        // on:pointerleave={move |_e: PointerEvent| {
-        //   // start_x.set_value(None);
-        //   if let Some(h) = pointer_still_handle.get_value() {
-        //     h.clear();
-        //   }
-        // }}
-        // on:pointermove={move |e: PointerEvent| {
-        //   //   log!("1");
-        //   // let Some(sx) = start_x.get_value() else {
-        //   //     return;
-        //   // };
-        //   // log!("2");
-
-        //   // let delta = e.client_x() as f64 - sx;
-
-        //   // if delta.abs() > MOVE_CANCEL_THRESHOLD {
-        //   //   if let Some(h) = pointer_still_handle.get_value() {
-        //   //     h.clear();
-        //   //   }
-        //   // }
-
-        //   // log!("3");
-
-        //   // selected_drag_offset.set((level, (BASE_MARGIN_PX + delta).clamp(-MAX_DRAG_PX, 0f64)));
-
-        //   if let Some(h) = pointer_still_handle.get_value() {
-        //     h.clear();
-        //   }
-        // }}
       >
         <Show
           when={move || !(comment_view.get().creator_banned_from_community || comment_view.get().creator.banned)}
@@ -790,7 +706,6 @@ pub fn Comment(
                             edit_show.set(false);
                             reply_show.update(|b| *b = !*b);
                             spawn_local_scoped(async move {
-                              // #[cfg(not(feature = "ssr"))]
                               if let Ok(d) = IndexedDb::new().await {
                                 if let Ok(Some(c)) = d
                                   .get(
@@ -819,7 +734,6 @@ pub fn Comment(
                             reply_show.set(false);
                             edit_show.update(|b| *b = !*b);
                             spawn_local_scoped(async move {
-                              // #[cfg(not(feature = "ssr"))]
                               if let Ok(d) = IndexedDb::new().await {
                                 if let Ok(Some(c)) = d
                                   .get(
@@ -916,7 +830,6 @@ pub fn Comment(
                 on:input={move |ev| {
                   reply_content.set(event_target_value(&ev));
                   spawn_local_scoped(async move {
-                    // #[cfg(not(feature = "ssr"))]
                     if let Ok(d) = IndexedDb::new().await {
                       if let Ok(_comment_ids) = d
                         .set(
@@ -962,7 +875,6 @@ pub fn Comment(
                   edit_content.set(event_target_value(&ev));
                   comment_view.update(|cv| cv.comment.content = event_target_value(&ev));
                   spawn_local_scoped(async move {
-                    // #[cfg(not(feature = "ssr"))]
                     if let Ok(d) = IndexedDb::new().await {
                       if let Ok(_comment_ids) = d
                         .set(

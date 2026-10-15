@@ -3,7 +3,6 @@
 
 pub mod client;
 pub mod comment;
-// pub mod comments;
 pub mod db;
 pub mod errors;
 pub mod hero;
@@ -133,9 +132,6 @@ fn NotFound() -> impl IntoView {
             class="min-w-full sm:overflow-x-auto sm:overflow-y-hidden sm:absolute sm:px-4 gap-4{} sm:h-[calc(100%-4rem)] sm:columns-[23rem]"
           >
             <errors::Warning description="Link not found, try searching instead" />
-            // <div class="flex justify-between alert alert-warning alert-soft">
-            //   <span class="text-lg"> "Link not found, try searching instead" </span>
-            // </div>
           </div>
         </div>
       </main>

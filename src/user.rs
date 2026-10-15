@@ -171,17 +171,14 @@ pub fn User() -> impl IntoView {
                     #[cfg(not(feature = "ssr"))]
                     {
                       let result_clone = r.3.clone();
-                      // let fm = p.1.clone();
                       use crate::db::csr_indexed_db::*;
                       spawn_local_scoped(async move {
-                        // if p.6 {} else {
                           if let Ok(d) = IndexedDb::new().await {
                             if let Ok(_c) = d.set::<GetPersonDetails, Result<GetPersonDetailsResponse, LemmyAppError>>(&r.1, &result_clone).await {}
                           }
                           user_post_cache.update(move |sc| {
                             sc.insert((r.0, r.1, r.4), (r.2, result_clone));
                           });
-                        // }
                       });
                       let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
                       if iw < 768f64 /* || p.5 || p.6 */ {} else {

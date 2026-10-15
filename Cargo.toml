@@ -40,14 +40,12 @@ leptos-use = { version = "0", optional = true }
 # leptos-use = { git = "https://github.com/jim-taylor-business/leptos-use.git", branch = "deploy_demo", optional = true }
 
 send_wrapper = { version = "0", features = ["futures"] }
-strum = "0"
 strum_macros = "0"
 thiserror = "2"
 
 serde = { version = "1", features = ["derive"] }
 serde_urlencoded = "0"
 serde_json = "1"
-uuid = { version = "1", default-features = false, features = ["js"] }
 cookie = "0"
 web-sys = { version = "0", features = ["AbortController", "AbortSignal"] }
 http = "1"

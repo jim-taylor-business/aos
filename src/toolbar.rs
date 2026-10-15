@@ -185,8 +185,6 @@ pub fn PostToolbar(
                 for p in w.posts.iter_mut() {
                   if p.post.id.0 == id {
                     *p = post_view.get();
-                    // log!("PostToolbar: updated post in response_cache {:#?}", post_view.get().my_vote);
-                    // v.0 = jiff::Zoned::now().timestamp().as_millisecond();
                     let result_clone = r.1.clone();
                     let form_clone = f.1.clone();
                     spawn_local_scoped(async move {
@@ -365,10 +363,7 @@ pub fn PostToolbar(
   let _thumbnail_element = NodeRef::<Img>::new();
   let _thumbnail = RwSignal::new(String::from(""));
 
-  // #[cfg(feature = "ssr")]
   let enable_reply = RwSignal::new(false);
-  // #[cfg(not(feature = "ssr"))]
-  // let enable_reply = RwSignal::new(true);
 
   view! {
     <Transition fallback={|| {}}>
@@ -378,13 +373,6 @@ pub fn PostToolbar(
             {
               let logged_in = Memo::new(move |_| { s.my_user.is_some() });
 
-              // let enable_reply = RwSignal::new(false);
-              // #[cfg(not(feature = "ssr"))]
-              // spawn_local_scoped(async move {
-              //   enable_reply.set(true);
-              //   log!("PostToolbar: enable_reply set to true");
-              // });
-              //
               #[cfg(not(feature = "ssr"))]
               let _ = set_timeout_with_handle(
                 move || {
@@ -392,11 +380,6 @@ pub fn PostToolbar(
                 },
                 std::time::Duration::new(0, 0),
               ).ok();
-
-              // #[cfg(not(feature = "ssr"))]
-              // enable_reply.set(true);
-              // #[cfg(not(feature = "ssr"))]
-              // log!("PostToolbar: enable_reply set to true");
 
               view! {
                 <div class="px-4 break-inside-avoid">
@@ -490,11 +473,9 @@ pub fn PostToolbar(
                         format!(
                           "cursor-pointer{}",
                           { if !enable_reply.get() || !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
-                          // { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
                         )
                       }}
                       on:click={move |_| {
-                        // log!("Reply button clicked");
                         if let Some(id) = post_id.get_untracked() {
                           #[cfg(not(feature = "ssr"))]
                           spawn_local_scoped(async move {
@@ -517,11 +498,7 @@ pub fn PostToolbar(
                       }}
                       title="Reply"
                       disabled={move || !enable_reply.get() || !logged_in.get() || !online.get().0}
-                      // disabled={move || !logged_in.get() || !online.get().0}
                     >
-                    // {
-                    //   move || { log!("{}", !enable_reply.get() || !logged_in.get() || !online.get().0); }
-                    // }
                       <Icon icon={Reply} />
                     </button>
                     <span class={format!("text-base-content{}", if post_view.get_untracked().post.local { " hidden" } else { "" })} title="Original">

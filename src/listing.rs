@@ -185,8 +185,6 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                   for p in w.posts.iter_mut() {
                     if p.post.id.0 == id {
                       *p = post_view.get();
-                      // log!("PostToolbar: updated post in response_cache {:#?}", post_view.get().my_vote);
-                      // v.0 = jiff::Zoned::now().timestamp().as_millisecond();
                       let result_clone = r.1.clone();
                       let form_clone = f.1.clone();
                       spawn_local_scoped(async move {
@@ -412,7 +410,6 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                             <div class="flex shrink grow basis-0 min-h-16">
                               <div class="shrink grow basis-0 truncate">
                                 <img
-                                  // loading="lazy"
                                   class={move || format!("w-24{}", if thumbnail.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" })}
                                   src={move || thumbnail.get()}
                                   node_ref={thumbnail_element}

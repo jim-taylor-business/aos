@@ -1,5 +1,4 @@
 use crate::{
-  // client::*,
   errors::{LemmyAppError, LemmyAppErrorType},
   icon::{Icon, IconType::*},
   *,
@@ -61,18 +60,12 @@ pub async fn login_fn(username_or_email: String, password: String, uri: String) 
   let result = try_login(req).await;
   match result {
     Ok(LoginResponse { jwt, .. }) => {
-      // log!("Login successful, JWT: {:?}", jwt.clone().unwrap().to_string());
-      // let WriteAuthCookie(set_auth_cookie) = expect_context::<WriteAuthCookie>();
-      // let (get_auth_cookie, set_auth_cookie) =
-      //   use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
-      // set_auth_cookie.set(Some(jwt.unwrap_or_default().into_inner()));
       let response = expect_context::<leptos_axum::ResponseOptions>();
       if let Ok(header_value) =
         format!("jwt={}; SameSite=Lax; Path=/; Max-Age=691200", jwt.unwrap_or_default().into_inner()).parse::<http::HeaderValue>()
       {
         response.insert_header(axum::http::header::SET_COOKIE, header_value);
       }
-      // set_auth_cookie.set(Some(jwt.clone().unwrap().to_string()));
       if uri.len() > 0 {
         redirect(&uri);
       } else {
@@ -102,8 +95,6 @@ pub fn LoginForm() -> impl IntoView {
   let passed = RwSignal::new(use_context::<PassedUrl>().unwrap_or_default());
   #[cfg(not(feature = "ssr"))]
   let passed = RwSignal::new(expect_context::<RwSignal<PassedUrl>>().get());
-
-  // log!("Passed URL: {:?}", passed.get());
 
   if let Some(e) = ssr_error() {
     let le = serde_json::from_str::<LemmyAppError>(&e[..]);
@@ -230,9 +221,6 @@ pub fn TextInput(
 pub fn Login() -> impl IntoView {
   let ReadThemeCookie(get_theme_cookie) = expect_context::<ReadThemeCookie>();
   let on_scroll_element = NodeRef::<leptos::html::Div>::new();
-  // let location = hooks::use_location();
-  // let search = location.search.get();
-  // let url = format!("{}{}", location.pathname.get(), if search.len() > 0 { format!("?{}", search) } else { "".into() });
 
   view! {
     <div class="flex flex-col min-h-screen" data-theme={move || get_theme_cookie.get()}>
@@ -253,11 +241,4 @@ pub fn Login() -> impl IntoView {
       </main>
     </div>
   }
-
-  // view! {
-  //   <Title text="Login" />
-  //   <main class="p-3 mx-auto max-w-screen-md">
-  //     <LoginForm />
-  //   </main>
-  // }
 }

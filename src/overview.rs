@@ -154,30 +154,16 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
     })
   }
 
-  // let user_id_and_site_id_as_string = move || {
-  //   if let Some(Ok(s)) = ssr_site.get() {
-  //     if let Some(my_user) = s.my_user {
-  //       return Some(format!("{}-{}", my_user.local_user_view.local_user.id.0, s.site_view.local_site.id.0));
-  //     }
-  //   }
-  //   None
-  // };
-
   let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
 
   let post_list_resource = Resource::new(
-    // move || (ssr_list(), ssr_sort(), ssr_name.get(), ssr_page(), get_auth_cookie.get()),
     move || (ssr_list(), ssr_sort(), ssr_name.get(), ssr_page(), ssr_bans(), get_auth_cookie.get(), get_instance_cookie.get()),
-    // move || (ssr_list(), ssr_sort(), ssr_name.get(), ssr_page(), user_id_and_site_id_as_string()),
-    // move |(list, sort, name, mut pages, auth)| async move {
     move |(list, sort, name, mut pages, bans, auth, instance)| async move {
-      // move |(list, sort, name, mut pages, auth)| async move {
       let nsfw = bans.contains(&BanType::Nsfw);
       let ban = bans.contains(&BanType::Ban);
       let many_pages = pages.len() > 0;
       let auth = Some(format!("{}{}", auth.unwrap_or("".to_owned()), instance.unwrap_or("".to_owned())));
-      // let auth = Some(user_id_and_site_id_as_string(site));
 
       #[cfg(feature = "ssr")]
       let do_not_render_scroll = true && pages.len() == 0;
@@ -192,7 +178,6 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
       #[cfg(not(feature = "ssr"))]
       loading.set(true);
 
-      // let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
       let rc = response_cache.get_untracked();
       let mut new_pages: Vec<(usize, GetPosts, i64, LemmyAppResult<GetPostsResponse>, Option<String>, bool, bool, bool)> = vec![];
       if pages.len() == 0 {
@@ -218,7 +203,6 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
         #[cfg(not(feature = "ssr"))]
         if let Some((t, Ok(r))) = rc.get(&(p.0, form.clone(), auth.clone(), ban)) {
           new_pages.push((p.0, form.clone(), t.clone(), Ok(r.clone()), auth.clone(), do_not_render_scroll, csr_cache_render, ban));
-          // log!("Cache hit for page {} with cursor {:?}", p.0, p.1);
           continue;
         } else {
           if many_pages {
@@ -283,20 +267,6 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
   );
 
   let follow_action = ServerAction::<ToggleSubscription>::new();
-
-  // let on_toggle_subscription = move |e: MouseEvent| {
-  //   e.prevent_default();
-  //   spawn_local_scoped(async move {
-  //     let form = FollowCommunity { community_id: CommunityId(community_id), follow: !follow.get().eq(&SubscribedType::Subscribed) };
-  //     let result = LemmyClient.follow_community(form).await;
-  //     match result {
-  //       Ok(o) => {
-  //         details_resource.refetch();
-  //       }
-  //       Err(_e) => {}
-  //     }
-  //   });
-  // };
 
   let on_retry_click = move |e: MouseEvent| {
     e.prevent_default();
@@ -489,24 +459,11 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
             }}
           </Transition>
           <Transition fallback={|| {}}>
-            // {move || {
-            //   match ssr_site.get() {
-            //     _ => {
-            //       view! {
-
-            // <div class="overflow-hidden break-inside-avoid animate-[popdown_1s_step-end_1]">
-            //   <div class="py-4 px-8">
-            //     <div class="alert alert-soft">
-            //       <button>"Prev"</button>
-            //     </div>
-            //   </div>
-            // </div>
             <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| (p.1.clone(), p.2, p.4.clone())} let:p>
               {match p.3 {
                 Ok(ref o) => {
                   #[cfg(not(feature = "ssr"))]
                   {
-                    // log!("page {}", p.0);
                     let result_clone = p.3.clone();
                     let form_clone = p.1.clone();
                     use crate::db::csr_indexed_db::*;
@@ -566,52 +523,15 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                     }
                   }
                   next_page_cursor.set((p.0 + o.posts.len(), o.next_page.clone()));
-                  // log!("Next page cursor: {:?}", next_page_cursor.get());
                   #[cfg(not(feature = "ssr"))] loading.set(false);
                   view! {
-                    // {
-                    //   let (key, _) = next_page_cursor.get();
-                    //   // if key > 0 {
-                    //     // let mut st = ssr_page();
-                    //     let mut st: Vec<(usize, String)> = vec![];
-                    //     if let (_, Some(PaginationCursor(next_page))) = next_page_cursor.get() {
-                    //       // if st.len() == 0 {
-                    //       //   st.push((0usize, "".into()));
-                    //       // }
-                    //       // if st.iter().find(|s| s.0 == key).is_none() {
-                    //         st.push((key, next_page));
-                    //       // }
-                    //     }
-                    //     let mut query_params = use_query_map().get();
-                    //     query_params.remove("page");
-                    //     query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-                    //     view! {
-                    //       // <div class="flex justify-items-end">
-                    //       // <div class="overflow-hidden break-inside-avoid animate-[popdown_1s_step-end_1]">
-                    //         <div class="py-4 px-8">
-                    //           <A href=format!("{}{}", use_location().pathname.get(), query_params.to_query_string()) attr:class="btn btn-soft">
-                    //             "Prev"
-                    //           </A>
-                    //         </div>
-                    //       // </div>
-                    //     }.into_any()
-                    //   // } else {
-                    //   //   view! {}.into_any()
-                    //   // }
-                    // }
                     <Listings hide={p.6} posts={o.posts.clone().into()} page_number={RwSignal::new(p.0)} heroes={1} />
                     {
                       let (key, _) = next_page_cursor.get();
                       if key > 0 {
-                        // let mut st = ssr_page();
                         let mut st: Vec<(usize, String)> = vec![];
                         if let (_, Some(PaginationCursor(next_page))) = next_page_cursor.get() {
-                          // if st.len() == 0 {
-                          //   st.push((0usize, "".into()));
-                          // }
-                          // if st.iter().find(|s| s.0 == key).is_none() {
                             st.push((key, next_page));
-                          // }
                         }
                         let mut query_params = use_query_map().get();
                         query_params.remove("page");
@@ -626,11 +546,8 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                         );
 
                         view! {
-                          // <div class="flex justify-items-end">
-                          // <div class="overflow-hidden break-inside-avoid animate-[popdown_1s_step-end_1]">
                           <Show when=move || { show_next.get() } fallback=||{}>
                             <div class="py-4 px-8 flex justify-end{}">
-                            // <div class=move || format!("py-4 px-8 flex justify-end{}", if show_next.get() { "" } else { " hidden" })>
                               <A href=format!("{}{}", use_location().pathname.get(), query_params.to_query_string()) attr:class="btn btn-soft">
                                 "Next"
                               </A>
@@ -656,24 +573,6 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                 }
               }}
             </For>
-            // <div class="overflow-hidden break-inside-avoid animate-[popdown_1s_step-end_1]">
-            //   <div class="py-4 px-8">
-            //     // <div class="alert alert-info alert-soft">
-            //       <A
-            //         href="/"
-            //         attr:class="btn btn-soft"
-            //       >
-            //         "Next"
-            //       </A>
-            //       // <button>"Next"</button>
-            //     // </div>
-            //   </div>
-            // </div>
-
-            //       }
-            //     }
-            //   }
-            // }}
           </Transition>
           <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
           {move || {

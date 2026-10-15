@@ -289,7 +289,6 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                           let a = post_response.get().post_view.creator.actor_id;
                           if let Some(domain) = a.domain() { format!("{}@{}", a.path(), domain) } else { format!("{}", a) }
                         }}
-                        // target="_blank"
                         attr:class="inline wrap-anywhere hover:text-secondary"
                       >
                         <span class="overflow-y-auto" inner_html={creator_name_encoded} />
@@ -308,7 +307,6 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                         }}
                         on:click={move |e: MouseEvent| {
                           e.prevent_default();
-                          // #[cfg(not(feature = "ssr"))]
                           spawn_local_scoped(async move {
                             if let Ok(d) = IndexedDb::new().await {
                               let _ = d
@@ -389,17 +387,6 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                       <span
                         class="overflow-y-auto"
                         inner_html={move || display_url.get()}
-                        // inner_html={move || {
-                        //   if let Some(d) = url.get() {
-                        //     if let Some(f) = d.inner().host_str() {
-                        //       if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { format!(" from {}", f) } else { "".to_owned() }
-                        //     } else {
-                        //       "".to_owned()
-                        //     }
-                        //   } else {
-                        //     "".to_owned()
-                        //   }
-                        // }}
                       />
                     </span>
                   </div>

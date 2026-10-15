@@ -213,7 +213,6 @@ pub mod csr_indexed_db {
     #[cfg(not(feature = "ssr"))]
     #[error("serde wasm bindgen error: {0}")]
     SerdeWasmBindgen(#[from] serde_wasm_bindgen::Error),
-    // #[cfg(not(feature = "ssr"))]
     #[error("serde json error: {0}")]
     SerdeJson(#[from] serde_json::Error),
     #[error("lemmy error: {0}")]
@@ -229,7 +228,6 @@ pub mod csr_indexed_db {
   #[cfg(not(feature = "ssr"))]
   impl IndexedDb {
     pub async fn new() -> Result<Self, Error> {
-      // log!("Creating IndexedDb");
       let rexie = Rexie::builder("cache_v5")
         .version(1)
         .add_object_store(ObjectStore::new("post_closed_comments"))
@@ -238,7 +236,6 @@ pub mod csr_indexed_db {
         .add_object_store(ObjectStore::new("scroll_positions"))
         .build()
         .await?;
-      // log!("IndexedDb created");
       Ok(Self { rexie })
     }
   }
@@ -246,19 +243,10 @@ pub mod csr_indexed_db {
   #[cfg(feature = "ssr")]
   impl IndexedDb {
     pub async fn new() -> Result<Self, Error> {
-      // let rexie = Rexie::builder("cache_v5")
-      //   .version(1)
-      //   .add_object_store(ObjectStore::new("post_closed_comments"))
-      //   .add_object_store(ObjectStore::new("comment_drafts"))
-      //   .add_object_store(ObjectStore::new("query_gets"))
-      //   .add_object_store(ObjectStore::new("scroll_positions"))
-      //   .build()
-      //   .await?;
       Err(Error::Lemmy(LemmyAppError {
         error_type: crate::errors::LemmyAppErrorType::Unknown,
         content: "IndexedDb is not available on the server".to_string(),
       }))
-      // Ok(Self {})
     }
   }
 

@@ -119,7 +119,6 @@ pub fn Post() -> impl IntoView {
           Ok(_o) => {
             comments_resource.refetch();
             reply_show.update(|b| *b = !*b);
-            // #[cfg(not(feature = "ssr"))]
             if let Ok(d) = IndexedDb::new().await {
               if let Ok(_c) = d.del(&CommentDraftKey { comment_id: id, draft: Draft::Post }).await {}
             }
@@ -219,22 +218,6 @@ pub fn Post() -> impl IntoView {
                         post_resource.refetch();
                         comments_resource.refetch();
                       }} />
-                      // <div class="py-4 px-8">
-                      //   <div class="flex justify-between alert alert-error alert-soft">
-                      //     <span>"Error"</span>
-                      //     <div>
-                      //       <button
-                      //         on:click={move |_| {
-                      //           post_resource.refetch();
-                      //           comments_resource.refetch();
-                      //         }}
-                      //         class="btn btn-sm"
-                      //       >
-                      //         "Retry"
-                      //       </button>
-                      //     </div>
-                      //   </div>
-                      // </div>
                     }
                       .into_any()
                   }
@@ -256,8 +239,6 @@ pub fn Post() -> impl IntoView {
                               for p in w.posts.iter_mut() {
                                 if p.post.id.0 == id {
                                   *p = post_view.get();
-                                  // log!("PostToolbar: updated post in response_cache {:#?}", post_view.get().my_vote);
-                                  // v.0 = jiff::Zoned::now().timestamp().as_millisecond();
                                   let result_clone = r.1.clone();
                                   let form_clone = f.1.clone();
                                   spawn_local_scoped(async move {
@@ -377,7 +358,6 @@ pub fn Post() -> impl IntoView {
                               let a = post_response.get().post_view.creator.actor_id;
                               format!("{}@{}", a.path(), a.domain().unwrap_or_default())
                             }}
-                            // target="_blank"
                             attr:class="inline wrap-anywhere hover:text-secondary"
                           >
                             <span class="overflow-y-auto" inner_html={creator_name_encoded} />
@@ -396,7 +376,6 @@ pub fn Post() -> impl IntoView {
                             }}
                             on:click={move |e: MouseEvent| {
                               e.prevent_default();
-                              // #[cfg(not(feature = "ssr"))]
                               spawn_local_scoped(async move {
                                 if let Ok(d) = IndexedDb::new().await {
                                   let _ = d
@@ -548,7 +527,6 @@ pub fn Post() -> impl IntoView {
                                           on:input={move |ev| {
                                             content.set(event_target_value(&ev));
                                             if let Some(id) = post_id.get() {
-                                              // #[cfg(not(feature = "ssr"))]
                                               spawn_local_scoped(async move {
                                                 if let Ok(d) = IndexedDb::new().await {
                                                   if let Ok(_c) = d

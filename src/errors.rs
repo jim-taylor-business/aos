@@ -214,28 +214,6 @@ impl From<gloo_net::Error> for LemmyAppError {
   }
 }
 
-// #[cfg(feature = "ssr")]
-// impl From<awc::error::JsonPayloadError> for LemmyAppError {
-//   fn from(value: awc::error::JsonPayloadError) -> Self {
-//     Self { error_type: LemmyAppErrorType::InternalServerError, content: format!("{:#?}", value) }
-//   }
-// }
-
-// #[cfg(feature = "ssr")]
-// impl From<awc::error::SendRequestError> for LemmyAppError {
-//   fn from(value: awc::error::SendRequestError) -> Self {
-//     use std::error::Error;
-//     Self { error_type: LemmyAppErrorType::InternalServerError, content: format!("{} - source: {:?}", value, value.source()) }
-//   }
-// }
-
-// #[cfg(feature = "ssr")]
-// impl From<awc::error::PayloadError> for LemmyAppError {
-//   fn from(value: awc::error::PayloadError) -> Self {
-//     Self { error_type: LemmyAppErrorType::InternalServerError, content: format!("{:#?}", value) }
-//   }
-// }
-
 #[cfg(feature = "ssr")]
 impl From<core::str::Utf8Error> for LemmyAppError {
   fn from(value: core::str::Utf8Error) -> Self {

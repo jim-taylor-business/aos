@@ -34,7 +34,6 @@ pub async fn logout_fn() -> Result<(), ServerFnError> {
   let result = LemmyClient.logout().await;
   match result {
     Ok(_o) => {
-      // set_auth_cookie.set(None);
       let response = expect_context::<leptos_axum::ResponseOptions>();
       if let Ok(header_value) = format!("jwt=; SameSite=Lax; Path=/; Max-Age=691200").parse::<http::HeaderValue>() {
         response.insert_header(axum::http::header::SET_COOKIE, header_value);
@@ -57,13 +56,6 @@ pub async fn search_action(term: String) -> Result<(), ServerFnError> {
 
 #[server]
 pub async fn change_instance(instance: String) -> Result<(), ServerFnError> {
-  // let WriteInstanceCookie(set_instance_cookie) = expect_context::<WriteInstanceCookie>();
-  // if instance.len() > 0 {
-  //   set_instance_cookie.set(Some(instance));
-  // } else {
-  //   set_instance_cookie.set(Some("lemmy.world".to_owned()));
-  // }
-
   let response = use_context::<leptos_axum::ResponseOptions>().ok_or(LemmyAppErrorType::InternalServerError)?;
   response.insert_header(
     axum::http::header::SET_COOKIE,
@@ -91,40 +83,6 @@ pub async fn change_lang_fn(lang: String) -> Result<(), ServerFnError> {
 
 #[server]
 pub async fn change_theme(theme: String) -> Result<(), ServerFnError> {
-  // let (_, set_theme_cookie) =
-  //   use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
-  // set_theme_cookie.set(Some(theme));
-  //
-  // let theme_clone = theme.clone();
-  // let theme_str = &theme_clone[..];
-
-  // let (_, set_theme_cookie) =
-  //   use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax)
-  //     .ssr_set_cookie(move |cookie: &cookie::Cookie| {
-  //       #[cfg(feature = "ssr")]
-  //       {
-  //         if let Some(response) = use_context::<leptos_axum::ResponseOptions>() {
-  //           // if let Ok(h) = http::HeaderValue::from_str(&cookie::Cookie::build(cookie.to_string()) //::Cookie::new("theme", theme))
-  //           //     .path("/")
-  //           //     .same_site(cookie::SameSite::Lax)
-  //           //     .max_age(cookie::time::SignedDuration::seconds(691200))
-  //           //     .finish().to_string()) {
-  //           //   response.insert_header(
-  //           //     axum::http::header::SET_COOKIE,
-  //           //     h,
-  //           //   );
-  //           // }
-  //           if let Ok(h) = http::HeaderValue::from_str(&cookie.to_string()) {
-  //             response.insert_header(
-  //               axum::http::header::SET_COOKIE,
-  //               h,
-  //             );
-  //           }
-  //         }
-  //       }
-  //     }));
-  // set_theme_cookie.set(Some(theme));
-
   let response = use_context::<leptos_axum::ResponseOptions>().ok_or(LemmyAppErrorType::InternalServerError)?;
   response.insert_header(
     axum::http::header::SET_COOKIE,
@@ -301,27 +259,6 @@ pub fn TopNav(
     }
   };
 
-  //   let on_filter_ssr = move |l: ListingType| {
-  //     let mut query_params = query.get();
-  //     query_params.remove("page");
-  //     query_params.remove("list");
-  //     if l != ListingType::All {
-  //       query_params.insert("list", serde_json::to_string(&l).ok().unwrap_or("All".into()));
-  //     }
-  //     let params = query_params.clone();
-  //     format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
-  //
-  //     // let o = serde_json::to_string::<SortType>(&s).unwrap_or("Active".into());
-  //     // let mut query_params = query.get();
-  //     // query_params.remove("sort");
-  //     // query_params.remove("page");
-  //     // if default_sort.get().unwrap_or(SortType::Active) != s {
-  //     //   query_params.insert("sort", o);
-  //     // }
-  //     // let params = query_params.clone();
-  //     // format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
-  //   };
-
   let on_csr_filter_click = move |l: ListingType| {
     move |e: MouseEvent| {
       response_cache.update(move |rc| {
@@ -406,38 +343,6 @@ pub fn TopNav(
       }
     });
   };
-
-  // let search_term = RwSignal::new("".to_owned());
-
-  //   let display_title = Signal::derive(move || {
-  //     let s = if ssr_term().len() > 0 {
-  //       ssr_term()
-  //     } else if let Some(l) = lost_path {
-  //       l.get().replace("/", " ").replace("&", " ").replace("%", " ").replace("?", " ").replace("=", " ").replace("+", " ").replace("-", " ")
-  //     } else {
-  //       if let Some(pv) = post_view.get() {
-  //         let community_title = if pv.post_view.community.local {
-  //           format!("{}", pv.post_view.community.name)
-  //         } else {
-  //           format!(
-  //             "{}@{}",
-  //             pv.post_view.community.name,
-  //             if let Some(h) = pv.post_view.community.actor_id.inner().host() { h.to_string() } else { "".to_owned() }
-  //           )
-  //         };
-  //         format!("{} by {} in {}", pv.post_view.post.name, pv.post_view.creator.actor_id.to_string()[8..].to_string(), community_title)
-  //       } else {
-  //         "".to_owned()
-  //       }
-  //     };
-  //     search_term.set(s.clone());
-  //     s
-  //   });
-  //
-  // let _on_search_submit = move |e: SubmitEvent| {
-  //   e.prevent_default();
-  //   use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
-  // };
 
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
   let WriteInstanceCookie(set_instance_cookie) = expect_context::<WriteInstanceCookie>();
@@ -579,7 +484,6 @@ pub fn TopNav(
     }
   };
 
-  // let input_focus = RwSignal::new(false);
   let search_term = RwSignal::new("".to_owned());
 
   let query = use_query_map();
@@ -783,7 +687,6 @@ pub fn TopNav(
                 }).to_string() }}
             >
               <div class={move || { if input_focus.get() == InputFocusState::Instance { "" } else { "hidden" } }}>
-                // <ActionForm action={change_instance}>
                   <input
                     class="pl-2 sm:pl-6 h-full w-46 text-xl input"
                     type="text"
@@ -809,20 +712,16 @@ pub fn TopNav(
                       input_focus.set(InputFocusState::Unfocused);
                     }}
                   />
-                // </ActionForm>
               </div>
               <ul class="flex-nowrap items-center menu menu-horizontal">
                 <li>
                   <a
-                    // exact=true
                     href="/"
                     class={move || { if input_focus.get() == InputFocusState::Instance { "hidden" } else { "select-none text-xl whitespace-nowrap py-1/2" } }}
                     on:mousedown={on_mouse_down}
                     on:mouseup={on_mouse_up}
-                    // on:mouseleave={on_mouse_up}
                     on:touchstart={on_touch_start}
                     on:touchend={on_touch_end}
-                    // on:mouseleave={on_mouse_up}
                     on:click={move |e: MouseEvent| {
                       e.prevent_default();
                       if input_focus.get() == InputFocusState::Instance {
@@ -894,25 +793,16 @@ pub fn TopNav(
                     </summary>
                     <ul class="z-[1] bg-base-200">
                       <li
-                        // class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}
                       >
                         <a href={on_filter_ssr(ListingType::All)} class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}>"All"</a>
-                        // <span>"All"</span>
                       </li>
                       <li
-                        // class={move || highlight_csr_filter(ListingType::Local)} on:click={on_csr_filter_click(ListingType::Local)}
                       >
                         <a href={on_filter_ssr(ListingType::Local)} class={move || highlight_csr_filter(ListingType::Local)} on:click={on_csr_filter_click(ListingType::Local)}>"Local"</a>
-                        // <span>"Local"</span>
                       </li>
                       <li
-                        // class={move || {
-                        //   format!("{}{}", highlight_csr_filter(ListingType::Subscribed), if logged_in.get() { "" } else { " btn-disabled" })
-                        // }}
-                        // on:click={on_csr_filter_click(ListingType::Subscribed)}
                       >
                         <a href={on_filter_ssr(ListingType::Subscribed)} class={move || highlight_csr_filter(ListingType::Subscribed)} on:click={on_csr_filter_click(ListingType::Subscribed)}>"Subscribed"</a>
-                        // <span>"Subscribed"</span>
                       </li>
                     </ul>
                   </details>
@@ -924,59 +814,36 @@ pub fn TopNav(
                     </summary>
                     <ul class="z-[1] bg-base-200">
                       <li
-                        // class={move || { (if SortType::Active == ssr_sort() { "menu-active" } else { "bg-transparent" }).to_string() }}
                       >
-                        // <A exact=true attr:class={move || { (if SortType::Active == ssr_sort() { "menu-active" } else { "bg-transparent" }).to_string() }} href={on_sort_ssr(SortType::Active)} on:click={on_sort_click(SortType::Active)}>"Active"</A>
                         <a class={move || { (if SortType::Active == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::Active)} on:click={on_sort_click(SortType::Active)}>"Active"</a>
                       </li>
                       <li
-                        // class={move || { (if SortType::TopAll == ssr_sort() { "menu-active" } else { "bg-transparent" }).to_string() }}
-                        // on:click={on_sort_click(SortType::TopAll)}
                       >
                         <a class={move || { (if SortType::TopAll == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::TopAll)} on:click={on_sort_click(SortType::TopAll)}>"Top"</a>
-                        // <A exact=true attr:class={move || { (if SortType::TopAll == ssr_sort() { "menu-active" } else { "bg-transparent" }).to_string() }} href={on_sort_ssr(SortType::TopAll)} on:click={on_sort_click(SortType::TopAll)}>"Top"</A>
-                        // <span>"Top"</span>
                       </li>
                       <li
-                        // class={move || { (if SortType::Hot == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                        // on:click={on_sort_click(SortType::Hot)}
                       >
                         <a class={move || { (if SortType::Hot == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::Hot)} on:click={on_sort_click(SortType::Hot)}>"Hot"</a>
                       </li>
                       <li
-                        // class={move || { (if SortType::New == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                        // on:click={on_sort_click(SortType::New)}
                       >
                         <a class={move || { (if SortType::New == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::New)} on:click={on_sort_click(SortType::New)}>"New"</a>
-                        // <span>"New"</span>
                       </li>
                       <li
-                        // class={move || { (if SortType::Old == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                        // on:click={on_sort_click(SortType::Old)}
                       >
                         <a class={move || { (if SortType::Old == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::Old)} on:click={on_sort_click(SortType::Old)}>"Old"</a>
-                        // <span>"Old"</span>
                       </li>
                       <li
-                        // class={move || { (if SortType::Controversial == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                        // on:click={on_sort_click(SortType::Controversial)}
                       >
                         <a class={move || { (if SortType::Controversial == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::Controversial)} on:click={on_sort_click(SortType::Controversial)}>"Controversial"</a>
-                        // <span>"Controversial"</span>
                       </li>
                       <li
-                        // class={move || { (if SortType::Scaled == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                        // on:click={on_sort_click(SortType::Scaled)}
                       >
                         <a class={move || { (if SortType::Scaled == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::Scaled)} on:click={on_sort_click(SortType::Scaled)}>"Scaled"</a>
-                        // <span>{"Scaled"}</span>
                       </li>
                       <li
-                        // class={move || { (if SortType::NewComments == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                        // on:click={on_sort_click(SortType::NewComments)}
                       >
                         <a class={move || { (if SortType::NewComments == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::NewComments)} on:click={on_sort_click(SortType::NewComments)}>"Comment"</a>
-                        // <span>{"Comment"}</span>
                       </li>
                     </ul>
                   </details>
@@ -1010,166 +877,64 @@ pub fn TopNav(
                     <ul class="z-[1] bg-base-200">
                       <li class="flex">
                         <details>
-                          <summary> // on:click={move |_| reset_others(MenuType::LgFilter)}>
+                          <summary>
                             <Icon icon={Community} />
                           </summary>
                           <ul>
                             <li
-                              // class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}
                             >
                               <a href={on_filter_ssr(ListingType::All)} class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}>"All"</a>
-                              // <span>"All"</span>
                             </li>
                             <li
-                              // class={move || highlight_csr_filter(ListingType::Local)} on:click={on_csr_filter_click(ListingType::Local)}
                             >
                               <a href={on_filter_ssr(ListingType::Local)} class={move || highlight_csr_filter(ListingType::Local)} on:click={on_csr_filter_click(ListingType::Local)}>"Local"</a>
-                              // <span>"Local"</span>
                             </li>
                             <li
-                              // class={move || {
-                              //   format!("{}{}", highlight_csr_filter(ListingType::Subscribed), if logged_in.get() { "" } else { " btn-disabled" })
-                              // }}
-                              // on:click={on_csr_filter_click(ListingType::Subscribed)}
                             >
                               <a href={on_filter_ssr(ListingType::Subscribed)} class={move || highlight_csr_filter(ListingType::Subscribed)} on:click={on_csr_filter_click(ListingType::Subscribed)}>"Subscribed"</a>
-                              // <span>"Subscribed"</span>
                             </li>
                           </ul>
-                          // <summary>
-                          //   <Icon icon={Community} />
-                          // </summary>
-                          // <ul class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
-                          //   <li class={move || highlight_csr_filter(ListingType::All)} on:click={on_csr_filter_click(ListingType::All)}>
-                          //     <span>"All"</span>
-                          //   </li>
-                          //   <li class={move || highlight_csr_filter(ListingType::Local)} on:click={on_csr_filter_click(ListingType::Local)}>
-                          //     <span>"Local"</span>
-                          //   </li>
-                          //   <li
-                          //     class={move || {
-                          //       format!(
-                          //         "{}{}",
-                          //         highlight_csr_filter(ListingType::Subscribed),
-                          //         if logged_in.get() { "" } else { " btn-disabled" },
-                          //       )
-                          //     }}
-                          //     on:click={on_csr_filter_click(ListingType::Subscribed)}
-                          //   >
-                          //     <span>"Subscribed"</span>
-                          //   </li>
-                          // </ul>
                         </details>
                       </li>
                       <li class="flex">
                         <details>
-                          <summary> // on:click={move |_| reset_others(MenuType::LgSort)}>
+                          <summary>
                             <Icon icon={Sort} />
                           </summary>
                           <ul>
                             <li
-                              // class={move || { (if SortType::Active == ssr_sort() { "menu-active" } else { "bg-transparent" }).to_string() }}
                             >
-                              // <A exact=true attr:class={move || { (if SortType::Active == ssr_sort() { "menu-active" } else { "bg-transparent" }).to_string() }} href={on_sort_ssr(SortType::Active)} on:click={on_sort_click(SortType::Active)}>"Active"</A>
                               <a class={move || { (if SortType::Active == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::Active)} on:click={on_sort_click(SortType::Active)}>"Active"</a>
                             </li>
                             <li
-                              // class={move || { (if SortType::TopAll == ssr_sort() { "menu-active" } else { "bg-transparent" }).to_string() }}
-                              // on:click={on_sort_click(SortType::TopAll)}
                             >
                               <a class={move || { (if SortType::TopAll == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::TopAll)} on:click={on_sort_click(SortType::TopAll)}>"Top"</a>
-                              // <A exact=true attr:class={move || { (if SortType::TopAll == ssr_sort() { "menu-active" } else { "bg-transparent" }).to_string() }} href={on_sort_ssr(SortType::TopAll)} on:click={on_sort_click(SortType::TopAll)}>"Top"</A>
-                              // <span>"Top"</span>
                             </li>
                             <li
-                              // class={move || { (if SortType::Hot == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                              // on:click={on_sort_click(SortType::Hot)}
                             >
                               <a class={move || { (if SortType::Hot == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::Hot)} on:click={on_sort_click(SortType::Hot)}>"Hot"</a>
                             </li>
                             <li
-                              // class={move || { (if SortType::New == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                              // on:click={on_sort_click(SortType::New)}
                             >
                               <a class={move || { (if SortType::New == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::New)} on:click={on_sort_click(SortType::New)}>"New"</a>
-                              // <span>"New"</span>
                             </li>
                             <li
-                              // class={move || { (if SortType::Old == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                              // on:click={on_sort_click(SortType::Old)}
                             >
                               <a class={move || { (if SortType::Old == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::Old)} on:click={on_sort_click(SortType::Old)}>"Old"</a>
-                              // <span>"Old"</span>
                             </li>
                             <li
-                              // class={move || { (if SortType::Controversial == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                              // on:click={on_sort_click(SortType::Controversial)}
                             >
                               <a class={move || { (if SortType::Controversial == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::Controversial)} on:click={on_sort_click(SortType::Controversial)}>"Controversial"</a>
-                              // <span>"Controversial"</span>
                             </li>
                             <li
-                              // class={move || { (if SortType::Scaled == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                              // on:click={on_sort_click(SortType::Scaled)}
                             >
                               <a class={move || { (if SortType::Scaled == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::Scaled)} on:click={on_sort_click(SortType::Scaled)}>"Scaled"</a>
-                              // <span>{"Scaled"}</span>
                             </li>
                             <li
-                              // class={move || { (if SortType::NewComments == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                              // on:click={on_sort_click(SortType::NewComments)}
                             >
                               <a class={move || { (if SortType::NewComments == ssr_sort() { "menu-active" } else { "" }).to_string() }} href={on_sort_ssr(SortType::NewComments)} on:click={on_sort_click(SortType::NewComments)}>"Comment"</a>
-                              // <span>{"Comment"}</span>
                             </li>
                           </ul>
-                          // <summary>
-                          //   <Icon icon={Sort} />
-                          // </summary>
-                          // <ul class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
-                          //   <li
-                          //     class={move || { (if SortType::Active == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                          //     on:click={on_sort_click(SortType::Active)}
-                          //   >
-                          //     <span>"Active"</span>
-                          //   </li>
-                          //   <li
-                          //     class={move || { (if SortType::TopAll == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                          //     on:click={on_sort_click(SortType::TopAll)}
-                          //   >
-                          //     <span>"Top"</span>
-                          //   </li>
-                          //   <li
-                          //     class={move || { (if SortType::Hot == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                          //     on:click={on_sort_click(SortType::Hot)}
-                          //   >
-                          //     <span>"Hot"</span>
-                          //   </li>
-                          //   <li
-                          //     class={move || { (if SortType::New == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                          //     on:click={on_sort_click(SortType::New)}
-                          //   >
-                          //     <span>"New"</span>
-                          //   </li>
-                          //   <li
-                          //     class={move || { (if SortType::Old == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                          //     on:click={on_sort_click(SortType::Old)}
-                          //   >
-                          //     <span>"Old"</span>
-                          //   </li>
-                          //   <li
-                          //     class={move || { (if SortType::Controversial == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                          //     on:click={on_sort_click(SortType::Controversial)}
-                          //   >
-                          //     <span>"Controversial"</span>
-                          //   </li>
-                          //   <li
-                          //     class={move || { (if SortType::Scaled == ssr_sort() { "menu-active" } else { "" }).to_string() }}
-                          //     on:click={on_sort_click(SortType::Scaled)}
-                          //   >
-                          //     <span>{"Scaled"}</span>
-                          //   </li>
-                          // </ul>
                         </details>
                       </li>
                     </ul>
@@ -1196,14 +961,6 @@ pub fn TopNav(
                     on:keypress={move |e: KeyboardEvent| {
                       if e.key_code() == 13 {
                         e.prevent_default();
-                        // #[cfg(not(feature = "ssr"))]
-                        // let _ = set_timeout_with_handle(
-                        //   move || {
-                        //     use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
-                        //   },
-                        //   std::time::Duration::new(0, 750_000_000),
-                        // ).ok();
-
                         use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
                       }
                     }}
@@ -1213,15 +970,10 @@ pub fn TopNav(
                     on:blur={move |_| {
                       let _ = set_timeout_with_handle(
                         move || {
-                          // log!("  BLUR");
                           input_focus.set(InputFocusState::Unfocused);
                         },
                         std::time::Duration::new(0, 750_000_000),
                       ).ok();
-                      // if input_focus.get() == InputFocusState::Search {
-                      //   input_focus.set(InputFocusState::Unfocused);
-                      // }
-                      // input_focus.set(InputFocusState::Unfocused);
                     }}
                   />
                 </div>

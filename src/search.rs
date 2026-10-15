@@ -87,7 +87,6 @@ pub fn Search() -> impl IntoView {
   #[cfg(not(feature = "ssr"))]
   let cancel_handle: RwSignal<Option<TimeoutHandle>> = RwSignal::new(None);
 
-  // let search_cache: RwSignal<BTreeMap<(usize, Search, Option<String>), (i64, LemmyAppResult<SearchResponse>)>> = RwSignal::new(BTreeMap::new());
   let search_cache = expect_context::<RwSignal<BTreeMap<(usize, Search, Option<String>), (i64, LemmyAppResult<SearchResponse>)>>>();
 
   let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
@@ -121,24 +120,6 @@ pub fn Search() -> impl IntoView {
         if let Some((t, Ok(r))) = sc.get(&(p, form.clone(), get_auth_cookie.get_untracked())) {
           new_pages.push((p, form.clone(), t.clone(), Ok(r.clone()), get_auth_cookie.get_untracked()));
           continue;
-          // } else {
-          //   if many_pages {
-          //     match load_cache(form.clone()).await {
-          //       Ok(o) => {
-          //         new_pages.push((
-          //           p.0,
-          //           form.clone(),
-          //           jiff::Zoned::now().timestamp().as_millisecond(),
-          //           Ok(o),
-          //           get_auth_cookie.get_untracked(),
-          //           do_not_render_scroll,
-          //           csr_cache_render,
-          //         ));
-          //         continue;
-          //       }
-          //       _ => {}
-          //     }
-          //   }
         }
 
         let t = jiff::Zoned::now().timestamp().as_millisecond();
@@ -200,17 +181,14 @@ pub fn Search() -> impl IntoView {
                     #[cfg(not(feature = "ssr"))]
                     {
                       let result_clone = r.3.clone();
-                      // let fm = p.1.clone();
                       use crate::db::csr_indexed_db::*;
                       spawn_local_scoped(async move {
-                        // if p.6 {} else {
                           if let Ok(d) = IndexedDb::new().await {
                             if let Ok(_c) = d.set::<Search, Result<SearchResponse, LemmyAppError>>(&r.1, &result_clone).await {}
                           }
                           search_cache.update(move |sc| {
                             sc.insert((r.0, r.1, r.4), (r.2, result_clone));
                           });
-                        // }
                       });
                       let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
                       if iw < 768f64 /* || p.5 || p.6 */ {} else {
@@ -242,37 +220,13 @@ pub fn Search() -> impl IntoView {
                           ).ok(),
                         );
                       }
-                      // if p.6 {
-                      //   if let Some(c) = cancel_refresh_handle.get_untracked() {
-                      //     c.clear();
-                      //   }
-                      //   cancel_refresh_handle.set(
-                      //     set_timeout_with_handle(
-                      //       move || {
-                      //         post_list_resource.refetch();
-                      //       },
-                      //       std::time::Duration::new(0, 750_000_000),
-                      //     ).ok(),
-                      //   );
-                      // }
                     }
                     #[cfg(not(feature = "ssr"))] loading.set(false);
                     next_page_cursor.set(r.0 + 1);
                     view! {
                       <Listings hide=false posts={o.posts.clone().into()} page_number={RwSignal::new((r.0 - 1) * 50)} />
                       {
-                        // let (key, _) = next_page_cursor.get();
-                        // if key > 0 {
-                          // let mut st = ssr_page();
                           let mut st: Vec<(usize)> = vec![next_page_cursor.get()];
-                          // if let (_, Some(PaginationCursor(next_page))) = next_page_cursor.get() {
-                          //   // if st.len() == 0 {
-                          //   //   st.push((0usize, "".into()));
-                          //   // }
-                          //   // if st.iter().find(|s| s.0 == key).is_none() {
-                              // st.push(next_page_cursor.get()));
-                          //   // }
-                          // }
                           let mut query_params = use_query_map().get();
                           query_params.remove("page");
                           query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
@@ -286,20 +240,14 @@ pub fn Search() -> impl IntoView {
                           );
 
                           view! {
-                            // <div class="flex justify-items-end">
-                            // <div class="overflow-hidden break-inside-avoid animate-[popdown_1s_step-end_1]">
                             <Show when=move || { show_next.get() } fallback=||{}>
                               <div class="py-4 px-8 flex justify-end{}">
-                              // <div class=move || format!("py-4 px-8 flex justify-end{}", if show_next.get() { "" } else { " hidden" })>
                                 <A href=format!("{}{}", use_location().pathname.get(), query_params.to_query_string()) attr:class="btn btn-soft">
                                   "Next"
                                 </A>
                               </div>
                             </Show>
                           }.into_any()
-                        // } else {
-                        //   view! {}.into_any()
-                        // }
                       }
                     }.into_any()
                   }
@@ -312,7 +260,6 @@ pub fn Search() -> impl IntoView {
                     error!("{:#?}", e);
                     view! { <Error description="Error loading post list"  error={e} on_retry_click={on_retry_click} /> }.into_any()
                   }
-                  // _ => view! {}.into_any(),
                 }
               }
             </For>
