@@ -176,6 +176,17 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
         match result {
           Ok(o) => {
             post_view.set(o.post_view);
+            let post_response_cache = expect_context::<RwSignal<BTreeMap<(GetPost, Option<String>), (i64, LemmyAppResult<GetPostResponse>)>>>();
+            post_response_cache.update(|prc| {
+              prc.iter_mut().for_each(|(f, r)| {
+                if let (_, Ok(w)) = r {
+                  let id = post_view.get().post.id.0;
+                  if w.post_view.post.id.0 == id {
+                    w.post_view = post_view.get();
+                  }
+                }
+              });
+            });
             let response_cache =
               expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>, bool), (i64, LemmyAppResult<GetPostsResponse>)>>>();
             response_cache.update(|rc| {

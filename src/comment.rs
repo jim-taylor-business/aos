@@ -5,6 +5,7 @@ use crate::{
   errors::*,
   icon::{Icon, IconType::*},
 };
+use lemmy_api_common::post::{GetPosts, GetPostsResponse};
 use lemmy_api_common::{
   comment::*,
   lemmy_db_schema::newtypes::*,
@@ -18,6 +19,7 @@ use leptos_router::{
   hooks::use_navigate,
 };
 use leptos_use::*;
+use std::collections::BTreeMap;
 use web_sys::{Event, HtmlAnchorElement, HtmlImageElement, MouseEvent, TouchEvent, WheelEvent, wasm_bindgen::JsCast};
 
 #[component]
@@ -362,6 +364,28 @@ pub fn Comment(
           children.update(|cs| cs.push(o.comment_view));
           comment_view.update(|v| {
             v.counts.child_count = v.counts.child_count + 1;
+          });
+          let response_cache =
+            expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>, bool), (i64, LemmyAppResult<GetPostsResponse>)>>>();
+          response_cache.update(|rc| {
+            rc.iter_mut().for_each(move |(f, r)| {
+              if let (_, Ok(w)) = r {
+                let id = comment_view.get().comment.post_id.0;
+                for p in w.posts.iter_mut() {
+                  if p.post.id.0 == id {
+                    p.counts.comments = p.counts.comments + 1;
+                    let result_clone = r.1.clone();
+                    let form_clone = f.1.clone();
+                    spawn_local_scoped(async move {
+                      if let Ok(d) = IndexedDb::new().await {
+                        if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&form_clone, &result_clone).await {}
+                      }
+                    });
+                    break;
+                  }
+                }
+              }
+            });
           });
           if let Ok(d) = IndexedDb::new().await {
             if let Ok(_c) = d.del(&CommentDraftKey { comment_id: comment_view.get().comment.id.0, draft: Draft::Reply }).await {}
