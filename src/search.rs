@@ -11,7 +11,7 @@ use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SearchType, SortType},
   site::{Search, SearchResponse},
 };
-use leptos::{html::Div, logging::error, prelude::*, task::*, *};
+use leptos::{html::Div, logging::*, prelude::*, task::*, *};
 use leptos_meta::Title;
 use leptos_router::{components::*, hooks::*};
 use std::{collections::BTreeMap, vec};
@@ -29,7 +29,7 @@ pub fn Search() -> impl IntoView {
   let ssr_page = move || serde_json::from_str::<Vec<usize>>(&query.get().get("page").unwrap_or("".into())).unwrap_or(vec![1usize]);
   let ssr_term = move || query.get().get("term").unwrap_or("".into());
 
-  let next_page_cursor: RwSignal<usize> = RwSignal::new(0);
+  let next_page_cursor: RwSignal<(usize, usize)> = RwSignal::new((0, 1));
 
   let loading = RwSignal::new(false);
 
@@ -65,8 +65,8 @@ pub fn Search() -> impl IntoView {
       intersection_element,
       move |intersections, _| {
         if intersections[0].is_intersecting() {
-          let key = next_page_cursor.get();
-          if key > 0 {
+          let (key, len) = next_page_cursor.get();
+          if key > 1 && len > 0 {
             let mut st = ssr_page();
             st.push(key);
             let mut query_params = query.get();
@@ -112,21 +112,25 @@ pub fn Search() -> impl IntoView {
           listing_type: None,
           post_title_only: None,
         };
-
         #[cfg(not(feature = "ssr"))]
         loading.set(true);
-
         #[cfg(not(feature = "ssr"))]
         if let Some((t, Ok(r))) = sc.get(&(p, form.clone(), get_auth_cookie.get_untracked())) {
           new_pages.push((p, form.clone(), t.clone(), Ok(r.clone()), get_auth_cookie.get_untracked()));
+          if p == 1 && r.posts.len() == 0 {
+            loading.set(false);
+          }
           continue;
         }
-
         let t = jiff::Zoned::now().timestamp().as_millisecond();
         let result = LemmyClient.search(form.clone()).await;
         match result {
           Ok(o) => {
+            if p == 1 && o.posts.len() == 0 {
+              loading.set(false);
+            }
             new_pages.push((p, form.clone(), t, Ok(o), get_auth_cookie.get_untracked()));
+            // #[cfg(not(feature = "ssr"))]
           }
           Err(e) => {
             #[cfg(not(feature = "ssr"))]
@@ -224,35 +228,43 @@ pub fn Search() -> impl IntoView {
                     }
                   }
                   #[cfg(not(feature = "ssr"))] loading.set(false);
-                  next_page_cursor.set(r.0 + 1);
-                  view! {
-                    <Listings hide=false posts={o.posts.clone().into()} page_number={RwSignal::new((r.0 - 1) * 50)} />
-                    {
-                      let mut st: Vec<(usize)> = vec![next_page_cursor.get()];
-                      let mut query_params = use_query_map().get();
-                      query_params.remove("page");
-                      query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-                      #[cfg(not(feature = "ssr"))]
-                      set_timeout_with_handle(
-                        move || {
-                          show_next.set(false);
-                        },
-                        std::time::Duration::new(0, 50_000_000),
-                      );
-
-                      view! {
-                        <Show when={move || { show_next.get() }} fallback={|| {}}>
-                          <div class="flex py-4 px-8 justify-end{}">
-                            <A href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())} attr:class="btn btn-soft">
-                              "Next"
-                            </A>
-                          </div>
-                        </Show>
+                  next_page_cursor.set((r.0 + 1, o.posts.len()));
+                  if r.0 == 1 && o.posts.len() == 0 {
+                    view! {
+                      <Loading loading={true} description={"No search results"} />
+                    }.into_any()
+                  } else {
+                    view! {
+                      <Listings hide=false posts={o.posts.clone().into()} page_number={RwSignal::new((r.0 - 1) * 50)} />
+                      {
+                        let (key, len) = (r.0 + 1, o.posts.len());
+                        if key > 1 && len > 0 {
+                          let mut st: Vec<(usize)> = vec![key];
+                          let mut query_params = use_query_map().get();
+                          query_params.remove("page");
+                          query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+                          #[cfg(not(feature = "ssr"))]
+                          set_timeout_with_handle(
+                            move || {
+                              show_next.set(false);
+                            },
+                            std::time::Duration::new(0, 50_000_000),
+                          );
+                          view! {
+                            <Show when={move || { show_next.get() }} fallback={|| {}}>
+                              <div class="flex py-4 px-8 justify-end{}">
+                                <A href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())} attr:class="btn btn-soft">
+                                  "Next"
+                                </A>
+                              </div>
+                            </Show>
+                          }.into_any()
+                        } else {
+                          view! {}.into_any()
+                        }
                       }
-                        .into_any()
-                    }
+                    }.into_any()
                   }
-                    .into_any()
                 }
                 Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
                   #[cfg(not(feature = "ssr"))] loading.set(false);

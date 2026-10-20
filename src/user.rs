@@ -24,7 +24,7 @@ pub fn User() -> impl IntoView {
 
   let ssr_name = move || param.get().get("name").unwrap_or("".into());
   let ssr_page = move || serde_json::from_str::<Vec<usize>>(&query.get().get("page").unwrap_or("".into())).unwrap_or(vec![1usize]);
-  let next_page_cursor: RwSignal<usize> = RwSignal::new(0);
+  let next_page_cursor: RwSignal<(usize, usize)> = RwSignal::new((0, 0));
   let intersection_element = NodeRef::<Div>::new();
   let on_scroll_element = NodeRef::<Div>::new();
   let loading = RwSignal::new(false);
@@ -55,8 +55,8 @@ pub fn User() -> impl IntoView {
       intersection_element,
       move |intersections, _| {
         if intersections[0].is_intersecting() {
-          let key = next_page_cursor.get();
-          if key > 0 {
+          let (key, len) = next_page_cursor.get();
+          if key > 0 && len > 0 {
             let mut st = ssr_page();
             st.push(key);
             let mut query_params = query.get();
@@ -101,6 +101,9 @@ pub fn User() -> impl IntoView {
         loading.set(true);
         #[cfg(not(feature = "ssr"))]
         if let Some((t, Ok(r))) = sc.get(&(p, form.clone(), get_auth_cookie.get_untracked())) {
+          if p == 1 && r.posts.len() == 0 {
+            loading.set(false);
+          }
           new_pages.push((p, form.clone(), t.clone(), Ok(r.clone()), get_auth_cookie.get_untracked()));
           continue;
         }
@@ -108,6 +111,9 @@ pub fn User() -> impl IntoView {
         let result = LemmyClient.get_user(form.clone()).await;
         match result {
           Ok(o) => {
+            if p == 1 && o.posts.len() == 0 {
+              loading.set(false);
+            }
             new_pages.push((p, form.clone(), t, Ok(o), get_auth_cookie.get_untracked()));
           }
           Err(e) => {
@@ -213,8 +219,6 @@ pub fn User() -> impl IntoView {
                         );
                     }
                   }
-                  #[cfg(not(feature = "ssr"))] loading.set(false);
-                  next_page_cursor.set(r.0 + 1);
                   let t = o.clone();
                   let name = t.person_view.person.name;
                   let banner = Memo::new(move |_| t.person_view.person.banner.clone());
@@ -387,51 +391,66 @@ pub fn User() -> impl IntoView {
                     } else {
                       view! {}.into_any()
                     }}
-                    <For each={move || all_posts.get()} key={|pc| pc.post.post.id} let:pc>
-                      <div class="pt-4 odd:bg-base-300">
-                        <Listing hide=false post_view={pc.post} post_number=0 />
-                        <For each={move || pc.comments.get()} key={|cv| cv.comment.id} let:cv>
-                          <div class="pt-2 pr-4 pb-2 pl-4">
-                            <Comment
-                              parent_comment_id=0
-                              hidden_comments={RwSignal::new(vec![])}
-                              comment={cv.clone().into()}
-                              comments={vec![].into()}
-                              level=0
-                              now_in_millis
-                              highlight_user_id={RwSignal::new(None)}
-                              post_id={Signal::derive(move || Some(cv.post.id.0))}
-                              selected_drag_offset={RwSignal::new((0, 0f64, 0))}
-                            />
-                          </div>
-                        </For>
-                      </div>
-                    </For>
                     {
-                      let mut st: Vec<(usize)> = vec![next_page_cursor.get()];
-                      let mut query_params = use_query_map().get();
-                      query_params.remove("page");
-                      query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-                      #[cfg(not(feature = "ssr"))]
-                      set_timeout_with_handle(
-                        move || {
-                          show_next.set(false);
-                        },
-                        std::time::Duration::new(0, 50_000_000),
-                      );
-                      view! {
-                        <Show when={move || { show_next.get() }} fallback={|| {}}>
-                          <div class="flex py-4 px-8 justify-end{}">
-                            <A href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())} attr:class="btn btn-soft">
-                              "Next"
-                            </A>
-                          </div>
-                        </Show>
+                      #[cfg(not(feature = "ssr"))] loading.set(false);
+                      next_page_cursor.set((r.0 + 1, o.posts.len() + o.comments.len()));
+                      if r.0 == 1 && o.posts.len() + o.comments.len() == 0 {
+                        view! {
+                          <Loading loading={true} description={"No user activity"} />
+                        }.into_any()
+                      } else {
+                        view! {
+                          <For each={move || all_posts.get()} key={|pc| pc.post.post.id} let:pc>
+                            <div class="pt-4 odd:bg-base-300">
+                              <Listing hide=false post_view={pc.post} post_number=0 />
+                              <For each={move || pc.comments.get()} key={|cv| cv.comment.id} let:cv>
+                                <div class="pt-2 pr-4 pb-2 pl-4">
+                                  <Comment
+                                    parent_comment_id=0
+                                    hidden_comments={RwSignal::new(vec![])}
+                                    comment={cv.clone().into()}
+                                    comments={vec![].into()}
+                                    level=0
+                                    now_in_millis
+                                    highlight_user_id={RwSignal::new(None)}
+                                    post_id={Signal::derive(move || Some(cv.post.id.0))}
+                                    selected_drag_offset={RwSignal::new((0, 0f64, 0))}
+                                  />
+                                </div>
+                              </For>
+                            </div>
+                          </For>
+                        }.into_any()
                       }
-                        .into_any()
                     }
-                  }
-                    .into_any()
+                    {
+                      let (key, len) = (r.0 + 1, o.posts.len());
+                      if key > 1 && len > 0 {
+                        let mut st: Vec<(usize)> = vec![key];
+                        let mut query_params = use_query_map().get();
+                        query_params.remove("page");
+                        query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+                        #[cfg(not(feature = "ssr"))]
+                        set_timeout_with_handle(
+                          move || {
+                            show_next.set(false);
+                          },
+                          std::time::Duration::new(0, 50_000_000),
+                        );
+                        view! {
+                          <Show when={move || { show_next.get() }} fallback={|| {}}>
+                            <div class="flex py-4 px-8 justify-end{}">
+                              <A href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())} attr:class="btn btn-soft">
+                                "Next"
+                              </A>
+                            </div>
+                          </Show>
+                        }.into_any()
+                      } else {
+                        view! {}.into_any()
+                      }
+                    }
+                  }.into_any()
                 }
                 Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
                   #[cfg(not(feature = "ssr"))] loading.set(false);

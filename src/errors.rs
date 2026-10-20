@@ -152,17 +152,19 @@ pub fn Error(
         </details>
       </div>
     </div>
-  }.into_any()
+  }
+  .into_any()
 }
 
 #[component]
-pub fn Loading(loading: bool) -> impl IntoView {
+pub fn Loading(loading: bool, #[prop(optional, into)] description: Option<String>) -> impl IntoView {
+  let description_value = description.unwrap_or("Loading...".to_owned());
   if loading {
     view! {
       <div class="overflow-hidden break-inside-avoid animate-[popdown_1s_step-end_1]">
         <div class="py-4 px-8">
           <div class="alert alert-info alert-soft">
-            <span>"Loading..."</span>
+            <span>{description_value}</span>
           </div>
         </div>
       </div>

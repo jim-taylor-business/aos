@@ -203,11 +203,17 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
         #[cfg(not(feature = "ssr"))]
         if let Some((t, Ok(r))) = rc.get(&(p.0, form.clone(), auth.clone(), ban)) {
           new_pages.push((p.0, form.clone(), t.clone(), Ok(r.clone()), auth.clone(), do_not_render_scroll, csr_cache_render, ban));
+          if p.0 == 1 && r.posts.len() == 0 {
+            loading.set(false);
+          }
           continue;
         } else {
           if many_pages {
             match load_cache(form.clone()).await {
               Ok(o) => {
+                if p.0 == 1 && o.posts.len() == 0 {
+                  loading.set(false);
+                }
                 new_pages.push((
                   p.0,
                   form.clone(),
@@ -544,42 +550,47 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                   }
                   next_page_cursor.set((p.0 + o.posts.len(), o.next_page.clone()));
                   #[cfg(not(feature = "ssr"))] loading.set(false);
-                  view! {
-                    <Listings hide={p.6} posts={o.posts.clone().into()} page_number={RwSignal::new(p.0)} heroes=1 />
-                    {
-                      let (key, _) = next_page_cursor.get();
-                      if key > 0 {
-                        let mut st: Vec<(usize, String)> = vec![];
-                        if let (_, Some(PaginationCursor(next_page))) = next_page_cursor.get() {
-                          st.push((key, next_page));
-                        }
-                        let mut query_params = use_query_map().get();
-                        query_params.remove("page");
-                        query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-                        #[cfg(not(feature = "ssr"))]
-                        set_timeout_with_handle(
-                          move || {
-                            show_next.set(false);
-                          },
-                          std::time::Duration::new(0, 50_000_000),
-                        );
+                  if p.0 == 0 && o.posts.len() == 0 {
+                    view! {
+                      <Loading loading={true} description={"No community posts"} />
+                    }.into_any()
+                  } else {
+                    view! {
+                      <Listings hide={p.6} posts={o.posts.clone().into()} page_number={RwSignal::new(p.0)} heroes=1 />
+                      {
+                        let (key, _) = next_page_cursor.get();
+                        if key > 0 && o.posts.len() > 0 {
+                          let mut st: Vec<(usize, String)> = vec![];
+                          if let (_, Some(PaginationCursor(next_page))) = next_page_cursor.get() {
+                            st.push((key, next_page));
+                          }
+                          let mut query_params = use_query_map().get();
+                          query_params.remove("page");
+                          query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+                          #[cfg(not(feature = "ssr"))]
+                          set_timeout_with_handle(
+                            move || {
+                              show_next.set(false);
+                            },
+                            std::time::Duration::new(0, 50_000_000),
+                          );
 
-                        view! {
-                          <Show when={move || { show_next.get() }} fallback={|| {}}>
-                            <div class="flex py-4 px-8 justify-end{}">
-                              <A href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())} attr:class="btn btn-soft">
-                                "Next"
-                              </A>
-                            </div>
-                          </Show>
+                          view! {
+                            <Show when={move || { show_next.get() }} fallback={|| {}}>
+                              <div class="flex py-4 px-8 justify-end{}">
+                                <A href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())} attr:class="btn btn-soft">
+                                  "Next"
+                                </A>
+                              </div>
+                            </Show>
+                          }
+                            .into_any()
+                        } else {
+                          view! {}.into_any()
                         }
-                          .into_any()
-                      } else {
-                        view! {}.into_any()
                       }
-                    }
+                    }.into_any()
                   }
-                    .into_any()
                 }
                 Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
                   #[cfg(not(feature = "ssr"))] loading.set(false);
