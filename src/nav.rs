@@ -130,6 +130,8 @@ pub fn TopNav(
   let lg_theme_menu = NodeRef::<html::Details>::new();
   let sm_content_menu = NodeRef::<html::Details>::new();
   let sm_ui_menu = NodeRef::<html::Details>::new();
+  let lg_kind_menu = NodeRef::<html::Details>::new();
+  let lg_ban_menu = NodeRef::<html::Details>::new();
 
   let instance_input = NodeRef::<html::Input>::new();
   let search_input = NodeRef::<html::Input>::new();
@@ -142,59 +144,77 @@ pub fn TopNav(
     LgTheme,
     SmContent,
     SmUi,
+    LgKind,
+    LgBan,
   }
 
   let reset_menus = move || {
-    if let Some(f) = lg_filter_menu.get() {
-      let _ = f.remove_attribute("open");
+    if let Some(m) = lg_filter_menu.get() {
+      let _ = m.remove_attribute("open");
     }
-    if let Some(s) = lg_sort_menu.get() {
-      let _ = s.remove_attribute("open");
+    if let Some(m) = lg_sort_menu.get() {
+      let _ = m.remove_attribute("open");
     }
-    if let Some(l) = lg_language_menu.get() {
-      let _ = l.remove_attribute("open");
+    if let Some(m) = lg_language_menu.get() {
+      let _ = m.remove_attribute("open");
     }
-    if let Some(t) = lg_theme_menu.get() {
-      let _ = t.remove_attribute("open");
+    if let Some(m) = lg_theme_menu.get() {
+      let _ = m.remove_attribute("open");
     }
-    if let Some(f) = sm_content_menu.get() {
-      let _ = f.remove_attribute("open");
+    if let Some(m) = sm_content_menu.get() {
+      let _ = m.remove_attribute("open");
     }
-    if let Some(s) = sm_ui_menu.get() {
-      let _ = s.remove_attribute("open");
+    if let Some(m) = sm_ui_menu.get() {
+      let _ = m.remove_attribute("open");
+    }
+    if let Some(m) = lg_kind_menu.get() {
+      let _ = m.remove_attribute("open");
+    }
+    if let Some(m) = lg_ban_menu.get() {
+      let _ = m.remove_attribute("open");
     }
   };
 
   let reset_others = move |this: MenuType| {
     if this != MenuType::LgFilter
-      && let Some(f) = lg_filter_menu.get()
+      && let Some(m) = lg_filter_menu.get()
     {
-      let _ = f.remove_attribute("open");
+      let _ = m.remove_attribute("open");
     }
     if this != MenuType::LgSort
-      && let Some(s) = lg_sort_menu.get()
+      && let Some(m) = lg_sort_menu.get()
     {
-      let _ = s.remove_attribute("open");
+      let _ = m.remove_attribute("open");
     }
     if this != MenuType::LgLanguage
-      && let Some(l) = lg_language_menu.get()
+      && let Some(m) = lg_language_menu.get()
     {
-      let _ = l.remove_attribute("open");
+      let _ = m.remove_attribute("open");
     }
     if this != MenuType::LgTheme
-      && let Some(t) = lg_theme_menu.get()
+      && let Some(m) = lg_theme_menu.get()
     {
-      let _ = t.remove_attribute("open");
+      let _ = m.remove_attribute("open");
     }
     if this != MenuType::SmContent
-      && let Some(f) = sm_content_menu.get()
+      && let Some(m) = sm_content_menu.get()
     {
-      let _ = f.remove_attribute("open");
+      let _ = m.remove_attribute("open");
     }
     if this != MenuType::SmUi
-      && let Some(s) = sm_ui_menu.get()
+      && let Some(m) = sm_ui_menu.get()
     {
-      let _ = s.remove_attribute("open");
+      let _ = m.remove_attribute("open");
+    }
+    if this != MenuType::LgKind
+      && let Some(m) = lg_kind_menu.get()
+    {
+      let _ = m.remove_attribute("open");
+    }
+    if this != MenuType::LgBan
+      && let Some(m) = lg_ban_menu.get()
+    {
+      let _ = m.remove_attribute("open");
     }
   };
 
@@ -503,10 +523,10 @@ pub fn TopNav(
     query_params.remove("page");
     query_params.remove("kind");
     if l != KindType::Post {
-      query_params.insert("kind", serde_json::to_string(&l).ok().unwrap_or("All".into()));
+      query_params.insert("kind", serde_json::to_string(&l).ok().unwrap_or("Post".into()));
     }
     let params = query_params.clone();
-    format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
+    format!("/s{}", /*use_location().pathname.get(), */ query_params.to_query_string())
   };
 
   let highlight_csr_kind = move |l: KindType| {
@@ -540,21 +560,21 @@ pub fn TopNav(
       query_params.remove("page");
       query_params.remove("kind");
       if l != KindType::Post {
-        query_params.insert("kind", serde_json::to_string(&l).ok().unwrap_or("All".into()));
+        query_params.insert("kind", serde_json::to_string(&l).ok().unwrap_or("Post".into()));
       }
       let params = query_params.clone();
       #[cfg(not(feature = "ssr"))]
-      spawn_local_scoped(async move {
-        if let Ok(d) = IndexedDb::new().await {
-          let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &0i32).await;
-        }
-        use_navigate()(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), Default::default());
-      });
-      if let Some(on_scroll_element) = scroll_element.get() {
-        if let Some(se) = on_scroll_element.get() {
-          se.set_scroll_left(0i32);
-        }
-      }
+      // spawn_local_scoped(async move {
+      //   if let Ok(d) = IndexedDb::new().await {
+      //     let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &0i32).await;
+      //   }
+      use_navigate()(&format!("/s{}", /*use_location().pathname.get(), */ query_params.to_query_string()), Default::default());
+      // });
+      // if let Some(on_scroll_element) = scroll_element.get() {
+      //   if let Some(se) = on_scroll_element.get() {
+      //     se.set_scroll_left(0i32);
+      //   }
+      // }
       reset_menus()
     }
   };
@@ -905,43 +925,43 @@ pub fn TopNav(
                   </details>
                 </li>
                 <li class="hidden sm:flex">
-                  <details node_ref={lg_filter_menu}>
-                    <summary on:click={move |_| reset_others(MenuType::LgFilter)}>
+                  <details node_ref={lg_kind_menu}>
+                    <summary on:click={move |_| reset_others(MenuType::LgKind)}>
                       <Icon icon={Cube} />
                     </summary>
                     <ul class="z-[1] bg-base-200">
                       <li>
                         <a
-                          href={on_filter_ssr(ListingType::All)}
-                          class={move || highlight_csr_filter(ListingType::All)}
-                          on:click={on_csr_filter_click(ListingType::All)}
+                          href={on_kind_ssr(KindType::Post)}
+                          class={move || highlight_csr_kind(KindType::Post)}
+                          on:click={on_csr_kind_click(KindType::Post)}
                         >
                           "Posts"
                         </a>
                       </li>
                       <li>
                         <a
-                          href={on_filter_ssr(ListingType::Local)}
-                          class={move || highlight_csr_filter(ListingType::Local)}
-                          on:click={on_csr_filter_click(ListingType::Local)}
+                          href={on_kind_ssr(KindType::Comment)}
+                          class={move || highlight_csr_kind(KindType::Comment)}
+                          on:click={on_csr_kind_click(KindType::Comment)}
                         >
                           "Comments"
                         </a>
                       </li>
                       <li>
                         <a
-                          href={on_filter_ssr(ListingType::Subscribed)}
-                          class={move || highlight_csr_filter(ListingType::Local)}
-                          on:click={on_csr_filter_click(ListingType::Local)}
+                          href={on_kind_ssr(KindType::Community)}
+                          class={move || highlight_csr_kind(KindType::Community)}
+                          on:click={on_csr_kind_click(KindType::Community)}
                         >
                           "Communities"
                         </a>
                       </li>
                       <li>
                         <a
-                          href={on_filter_ssr(ListingType::Subscribed)}
-                          class={move || highlight_csr_filter(ListingType::Subscribed)}
-                          on:click={on_csr_filter_click(ListingType::Subscribed)}
+                          href={on_kind_ssr(KindType::User)}
+                          class={move || highlight_csr_kind(KindType::User)}
+                          on:click={on_csr_kind_click(KindType::User)}
                         >
                           "Users"
                         </a>
@@ -1148,8 +1168,8 @@ pub fn TopNav(
             <div class={move || { format!("{}", if input_focus.get() == InputFocusState::Search { "hidden" } else { "flex-none" }) }}>
               <ul class="flex-nowrap items-center menu menu-horizontal">
                 <li class="hidden sm:flex">
-                  <details node_ref={lg_filter_menu}>
-                    <summary on:click={move |_| reset_others(MenuType::LgFilter)}>
+                  <details node_ref={lg_ban_menu}>
+                    <summary on:click={move |_| reset_others(MenuType::LgBan)}>
                       <Icon icon={Ban} />
                     </summary>
                     <ul class="z-[1] [inset-inline-end:0] bg-base-200">
