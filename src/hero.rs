@@ -292,7 +292,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                       <A
                         href={move || {
                           let a = post_response.get().post_view.creator.actor_id;
-                          if let Some(domain) = a.domain() { format!("{}@{}", a.path(), domain) } else { format!("{}", a) }
+                          if let Some(domain) = a.domain() { format!("{}@{}?person_id={}", a.path(), domain, post_response.get().post_view.creator.id.0) } else { format!("{}?person_id={}", a, post_response.get().post_view.creator.id.0) }
                         }}
                         attr:class="inline wrap-anywhere hover:text-secondary"
                       >
@@ -434,7 +434,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                             }
                           }}
                         >
-                          <div class="max-w-none prose" inner_html={safe_html} />
+                          <div class="max-w-none prose overflow-clip" inner_html={safe_html} />
                         </div>
                       </div>
                     },

@@ -1,12 +1,15 @@
+use crate::listing::{CommunityListings, UserListings};
 use crate::{ReadAuthCookie, ReadInstanceCookie};
 use crate::{
   client::*,
+  comment::*,
+  db::csr_indexed_db::*,
+  // i18n::*,
   errors::*,
   listing::Listings,
   nav::TopNav,
-  // i18n::*,
 };
-use crate::{db::csr_indexed_db::*, errors::Loading};
+use lemmy_api_common::lemmy_db_schema::newtypes::{PersonId, PostId};
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SearchType, SortType},
   site::{Search, SearchResponse},
@@ -18,16 +21,48 @@ use std::{collections::BTreeMap, vec};
 use web_sys::{MouseEvent, WheelEvent};
 
 #[component]
-pub fn Search() -> impl IntoView {
-  // let i18n = use_i18n();
+pub fn PostSearch() -> impl IntoView {
   let param = use_params_map();
-  let ssr_name = move || param.get().get("name").unwrap_or("".into());
+  // let ssr_name = Signal::derive(move || param.get().get("id"));
+  view! { <Search ssr_post_id=param.get().get("id").unwrap_or("".into()) /> }
+}
+
+#[component]
+pub fn CommunitySearch() -> impl IntoView {
+  let param = use_params_map();
+  // let ssr_name = Signal::derive(move || param.get().get("name"));
+  view! { <Search ssr_community_name=param.get().get("name").unwrap_or("".into()) /> }
+}
+
+#[component]
+pub fn UserSearch() -> impl IntoView {
+  let param = use_params_map();
+  // let ssr_name = Signal::derive(move || param.get().get("name"));
+  view! { <Search ssr_user_name=param.get().get("name").unwrap_or("".into()) /> }
+}
+
+#[component]
+pub fn DefaultSearch() -> impl IntoView {
+  view! { <Search /> }
+}
+
+#[component]
+pub fn Search(
+  #[prop(optional, into)] ssr_user_name: Option<String>,
+  #[prop(optional, into)] ssr_community_name: Option<String>,
+  #[prop(optional, into)] ssr_post_id: Option<String>,
+) -> impl IntoView {
+  // let i18n = use_i18n();
+  // let param = use_params_map();
+  let ssr_name = move || ssr_community_name.clone();
 
   let query = use_query_map();
-  let ssr_list = move || serde_json::from_str::<ListingType>(&query.get().get("list").unwrap_or("".into())).unwrap_or(ListingType::All);
+  let ssr_kind = move || serde_json::from_str::<SearchType>(&query.get().get("kind").unwrap_or("".into())).unwrap_or(SearchType::Posts);
+  let ssr_list = move || serde_json::from_str::<ListingType>(&query.get().get("list").unwrap_or("".into())).ok();
   let ssr_sort = move || serde_json::from_str::<SortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(SortType::Active);
   let ssr_page = move || serde_json::from_str::<Vec<usize>>(&query.get().get("page").unwrap_or("".into())).unwrap_or(vec![1usize]);
   let ssr_term = move || query.get().get("term").unwrap_or("".into());
+  let person_id = move || query.get().get("person_id").unwrap_or_default().parse::<i32>().ok();
 
   let next_page_cursor: RwSignal<(usize, usize)> = RwSignal::new((0, 1));
 
@@ -70,8 +105,9 @@ pub fn Search() -> impl IntoView {
             let mut st = ssr_page();
             st.push(key);
             let mut query_params = query.get();
+            query_params.remove("page");
             query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-
+            log!("kedjfs");
             let navigate = use_navigate();
             navigate(
               &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
@@ -93,8 +129,8 @@ pub fn Search() -> impl IntoView {
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
 
   let search_cache_resource = Resource::new(
-    move || (ssr_list(), ssr_sort(), ssr_name(), ssr_page(), ssr_term(), get_auth_cookie.get(), get_instance_cookie.get()),
-    move |(_list, sort, _name, pages, term, _auth, _instance)| async move {
+    move || (ssr_list(), ssr_sort(), ssr_name(), ssr_page(), ssr_term(), get_auth_cookie.get(), get_instance_cookie.get(), ssr_kind(), person_id()),
+    move |(list, sort, name, pages, term, _auth, _instance, kind, person_id)| async move {
       let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
       let sc = search_cache.get_untracked();
       let mut new_pages: Vec<(usize, Search, i64, LemmyAppResult<SearchResponse>, Option<String>)> = Vec::new();
@@ -102,14 +138,14 @@ pub fn Search() -> impl IntoView {
       for p in pages {
         let form = Search {
           q: term.clone(),
-          type_: Some(SearchType::Posts),
+          type_: Some(kind),
           sort: Some(sort),
-          community_name: None,
+          community_name: if person_id.is_some() { None } else { name.clone() },
           community_id: None,
           page: Some(p.try_into().unwrap_or(1i64)),
           limit: Some(50),
-          creator_id: None,
-          listing_type: None,
+          creator_id: person_id.and_then(|i| Some(PersonId(i))),
+          listing_type: list,
           post_title_only: None,
         };
         #[cfg(not(feature = "ssr"))]
@@ -149,6 +185,7 @@ pub fn Search() -> impl IntoView {
   };
 
   let show_next = RwSignal::new(true);
+  let now_in_millis = RwSignal::new(u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0));
 
   view! {
     <main class="flex flex-col">
@@ -228,14 +265,33 @@ pub fn Search() -> impl IntoView {
                     }
                   }
                   #[cfg(not(feature = "ssr"))] loading.set(false);
-                  next_page_cursor.set((r.0 + 1, o.posts.len()));
-                  if r.0 == 1 && o.posts.len() == 0 {
-                    view! {
-                      <Loading loading={true} description={"No search results"} />
-                    }.into_any()
-                  } else {
+                  next_page_cursor.set((r.0 + 1, o.users.len() + o.communities.len() + o.posts.len() + o.comments.len()));
+                  let comments_clone = RwSignal::new(o.comments.clone());
+                  log!("{:#?}", next_page_cursor.get());
+                  // if r.0 == 1 && o.posts.len() == 0 {
+                  //   view! {
+                  //     <Loading loading={true} description={"No search results"} />
+                  //   }.into_any()
+                  // } else {
                     view! {
                       <Listings hide=false posts={o.posts.clone().into()} page_number={RwSignal::new((r.0 - 1) * 50)} />
+                      <For each={move || comments_clone.get()} key={|cv| cv.comment.id} let:cv>
+                        <div class="odd:bg-base-300 pt-2 pr-4 pb-2 pl-4">
+                          <Comment
+                            parent_comment_id=0
+                            hidden_comments={RwSignal::new(vec![])}
+                            comment={cv.clone().into()}
+                            comments={vec![].into()}
+                            level=0
+                            now_in_millis
+                            highlight_user_id={RwSignal::new(None)}
+                            post_id={Signal::derive(move || Some(cv.post.id.0))}
+                            selected_drag_offset={RwSignal::new((0, 0f64, 0))}
+                          />
+                        </div>
+                      </For>
+                      <CommunityListings hide=false communities={o.communities.clone().into()} page_number={RwSignal::new((r.0 - 1) * 50)} />
+                      <UserListings hide=false people={o.users.clone().into()} page_number={RwSignal::new((r.0 - 1) * 50)} />
                       {
                         let (key, len) = (r.0 + 1, o.posts.len());
                         if key > 1 && len > 0 {
@@ -264,7 +320,7 @@ pub fn Search() -> impl IntoView {
                         }
                       }
                     }.into_any()
-                  }
+                  // }
                 }
                 Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
                   #[cfg(not(feature = "ssr"))] loading.set(false);

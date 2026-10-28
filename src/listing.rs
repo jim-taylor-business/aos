@@ -8,11 +8,104 @@ use crate::{
   hero::Hero,
   icon::{IconType::*, *},
 };
+use lemmy_api_common::lemmy_db_schema::newtypes::DbUrl;
+use lemmy_api_common::lemmy_db_views_actor::structs::{CommunityView, PersonView};
 use lemmy_api_common::{lemmy_db_views::structs::*, person::*, post::*, site::GetSiteResponse};
 use leptos::{html::Img, logging::*, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local_scoped};
 use leptos_router::{components::*, hooks::*};
 use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options};
 use web_sys::MouseEvent;
+
+#[component]
+pub fn UserListings(people: Signal<Vec<PersonView>>, page_number: RwSignal<usize>, hide: bool, #[prop(optional)] heroes: usize) -> impl IntoView {
+  let post_number = RwSignal::new(page_number.get());
+  view! {
+    <For each={move || people.get()} key={|pv| pv.person.id} let:pv>
+      {
+        post_number.update(|n| *n = *n + 1usize);
+        // if post_number.get() <= heroes {
+        //   view! { <Hero hide post_id={Signal::derive(move || pv.post.id)} /> }.into_any()
+        // } else {
+          view! { <UserListing hide person_view={pv} post_number={post_number.get()} /> }.into_any()
+        // }
+      }
+    </For>
+  }
+  .into_any()
+}
+
+#[component]
+pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> impl IntoView {
+  view! {
+    <div class="p-2 wrap-anywhere">
+      <span>{person_view.person.name}-</span>
+      <span>{person_view.person.display_name}</span><br/>
+      <span>{format!("{:#?}", person_view.person.published)}-</span><br/>
+      {
+        if let Some(t) = person_view.person.avatar {
+          let h = t.inner().to_string();
+          view! { <span>{h}</span><br/> }.into_any()
+        } else {
+          view! { }.into_any()
+        }
+      }
+      <span>{person_view.counts.post_count}-</span>
+      <span>{person_view.counts.comment_count}-</span>
+      <span>{person_view.counts.comment_score}-</span>
+      <span>{hide}</span>
+      // <span>{post_number}</span>
+      // <span>{format!("{:#?}", person_view)}</span>
+      // <span>{hide}</span>
+    </div>
+  }
+  .into_any()
+}
+
+#[component]
+pub fn CommunityListings(
+  communities: Signal<Vec<CommunityView>>,
+  page_number: RwSignal<usize>,
+  hide: bool,
+  #[prop(optional)] heroes: usize,
+) -> impl IntoView {
+  let post_number = RwSignal::new(page_number.get());
+  view! {
+    <For each={move || communities.get()} key={|pv| pv.community.id} let:pv>
+      {
+        post_number.update(|n| *n = *n + 1usize);
+        // if post_number.get() <= heroes {
+        //   view! { <Hero hide post_id={Signal::derive(move || pv.post.id)} /> }.into_any()
+        // } else {
+          view! { <CommunityListing hide community={pv} post_number={post_number.get()} /> }.into_any()
+        // }
+      }
+    </For>
+  }
+  .into_any()
+}
+
+#[component]
+pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool) -> impl IntoView {
+  view! {
+    <div class="p-2 wrap-anywhere">
+      <span>{community.community.title}</span><br/>
+      {
+        if let Some(t) = community.community.banner {
+          let h = t.inner().to_string();
+          view! { <span>{h}</span><br/> }.into_any()
+        } else {
+          view! { }.into_any()
+        }
+      }
+      <span>{community.counts.subscribers}-</span>
+      <span>{community.counts.users_active_month}-</span>
+      <span>{community.counts.posts}-</span>
+      <span>{community.counts.comments}-</span>
+      <span>{hide}</span>
+    </div>
+  }
+  .into_any()
+}
 
 #[component]
 pub fn Listings(posts: Signal<Vec<PostView>>, page_number: RwSignal<usize>, hide: bool, #[prop(optional)] heroes: usize) -> impl IntoView {

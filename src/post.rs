@@ -364,7 +364,8 @@ pub fn Post() -> impl IntoView {
                           <A
                             href={move || {
                               let a = post_response.get().post_view.creator.actor_id;
-                              format!("{}@{}", a.path(), a.domain().unwrap_or_default())
+                              if let Some(domain) = a.domain() { format!("{}@{}?person_id={}", a.path(), domain, post_response.get().post_view.creator.id.0) } else { format!("{}?person_id={}", a, post_response.get().post_view.creator.id.0) }
+                              // format!("{}@{}", a.path(), a.domain().unwrap_or_default())
                             }}
                             attr:class="inline wrap-anywhere hover:text-secondary"
                           >
@@ -506,7 +507,7 @@ pub fn Post() -> impl IntoView {
                                   }
                                 }}
                               >
-                                <div class="max-w-none prose" inner_html={safe_html} />
+                                <div class="max-w-none prose overflow-clip" inner_html={safe_html} />
                               </div>
                             </div>
                           },

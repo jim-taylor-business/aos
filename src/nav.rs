@@ -1,10 +1,11 @@
 use crate::{
-  BanType, KindType, OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
+  BanType, OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
   client::*,
   db::csr_indexed_db::*,
   errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult},
   icon::{IconType::*, *},
 };
+use lemmy_api_common::lemmy_db_schema::SearchType;
 use lemmy_api_common::{
   lemmy_db_schema::{ListingType, SortType},
   lemmy_db_views::structs::PaginationCursor,
@@ -121,8 +122,13 @@ pub fn TopNav(
   let ssr_sort =
     move || serde_json::from_str::<SortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(default_sort.get().unwrap_or(SortType::Active));
   let ssr_term = move || query.get().get("term").unwrap_or("".into());
-  let ssr_kind = move || serde_json::from_str::<KindType>(&query.get().get("kind").unwrap_or("".into())).unwrap_or(KindType::Post);
+  let ssr_kind = move || serde_json::from_str::<SearchType>(&query.get().get("kind").unwrap_or("".into())).unwrap_or(SearchType::Posts);
   let ssr_bans = move || serde_json::from_str::<Vec<BanType>>(&query.get().get("bans").unwrap_or("".into())).unwrap_or(vec![]);
+  let ssr_person_id = move || query.get().get("person_id").unwrap_or_default().parse::<i32>().ok();
+
+  let param = use_params_map();
+  let ssr_name = move || param.get().get("name").unwrap_or("".into());
+  let ssr_id = move || param.get().get("id").unwrap_or("".into());
 
   let lg_filter_menu = NodeRef::<html::Details>::new();
   let lg_sort_menu = NodeRef::<html::Details>::new();
@@ -518,23 +524,62 @@ pub fn TopNav(
     format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
   };
 
-  let on_kind_ssr = move |l: KindType| {
+  let on_kind_ssr = move |l: SearchType| {
     let mut query_params = query.get();
     query_params.remove("page");
     query_params.remove("kind");
-    if l != KindType::Post {
-      query_params.insert("kind", serde_json::to_string(&l).ok().unwrap_or("Post".into()));
+    if l != SearchType::Posts {
+      query_params.insert("kind", serde_json::to_string(&l).ok().unwrap_or("Posts".into()));
     }
-    let params = query_params.clone();
-    format!("/s{}", /*use_location().pathname.get(), */ query_params.to_query_string())
+    // let params = query_params.clone();
+    // let path = use_location().pathname.get();
+    if ssr_person_id().is_some() {
+      return format!("/u/{}/s{}", ssr_name(), query_params.to_query_string());
+    }
+    if ssr_name().len() > 0 {
+      return format!("/c/{}/s{}", ssr_name(), query_params.to_query_string());
+    }
+    if ssr_id().len() > 0 {
+      return format!("/p/{}/s{}", ssr_id(), query_params.to_query_string());
+    }
+    format!("/s{}", query_params.to_query_string())
   };
 
-  let highlight_csr_kind = move |l: KindType| {
-    if l == ssr_kind() { "menu-active" } else { "" }
+  let highlight_csr_kind = move |l: SearchType| {
+    if l == ssr_kind() && use_location().pathname.get().ends_with("/s") { " menu-active" } else { "" }
   };
 
-  let on_csr_kind_click = move |l: KindType| {
+  let disabled_ssr_kind = move |l: SearchType| {
+    match l {
+      SearchType::Users | SearchType::Communities => {
+        if use_location().pathname.get().len() == 1 || use_location().pathname.get().eq("/s") {
+          ""
+        } else {
+          "menu-disabled"
+        }
+      }
+      SearchType::Posts | SearchType::Comments => {
+        if use_location().pathname.get().len() == 1
+          || use_location().pathname.get().eq("/s")
+          || param.get().get("name").unwrap_or("".into()).len() > 0
+        {
+          ""
+        } else {
+          "menu-disabled"
+        }
+      }
+      _ => "",
+    }
+    // if ssr_id().len() > 0 {
+    //   if matches!(l, SearchType::Posts | SearchType::Users | SearchType::Communities) { "menu-disabled" } else { "" }
+    // } else {
+    //   ""
+    // }
+  };
+
+  let on_csr_kind_click = move |l: SearchType| {
     move |e: MouseEvent| {
+      e.prevent_default();
       // response_cache.update(move |rc| {
       //   rc.remove(&(
       //     0usize,
@@ -559,23 +604,36 @@ pub fn TopNav(
       let mut query_params = query.get();
       query_params.remove("page");
       query_params.remove("kind");
-      if l != KindType::Post {
-        query_params.insert("kind", serde_json::to_string(&l).ok().unwrap_or("Post".into()));
+      if l != SearchType::Posts {
+        query_params.insert("kind", serde_json::to_string(&l).ok().unwrap_or("Posts".into()));
       }
-      let params = query_params.clone();
-      #[cfg(not(feature = "ssr"))]
+      // let params = query_params.clone();
+      // #[cfg(not(feature = "ssr"))]
       // spawn_local_scoped(async move {
       //   if let Ok(d) = IndexedDb::new().await {
       //     let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &0i32).await;
       //   }
-      use_navigate()(&format!("/s{}", /*use_location().pathname.get(), */ query_params.to_query_string()), Default::default());
+
+      // let path = use_location().pathname.get();
+      // use_navigate()(&format!("{}/s{}", if path.len() > 1 { path } else { "".to_owned() }, query_params.to_query_string()), Default::default());
+
+      if ssr_person_id().is_some() {
+        use_navigate()(&format!("/u/{}/s{}", ssr_name(), query_params.to_query_string()), Default::default());
+      } else if ssr_name().len() > 0 {
+        use_navigate()(&format!("/c/{}/s{}", ssr_name(), query_params.to_query_string()), Default::default());
+      } else if ssr_id().len() > 0 {
+        use_navigate()(&format!("/p/{}/s{}", ssr_id(), query_params.to_query_string()), Default::default());
+      } else {
+        use_navigate()(&format!("/s{}", query_params.to_query_string()), Default::default());
+      }
+
       // });
       // if let Some(on_scroll_element) = scroll_element.get() {
       //   if let Some(se) = on_scroll_element.get() {
       //     se.set_scroll_left(0i32);
       //   }
       // }
-      reset_menus()
+      reset_menus();
     }
   };
 
@@ -930,38 +988,38 @@ pub fn TopNav(
                       <Icon icon={Cube} />
                     </summary>
                     <ul class="z-[1] bg-base-200">
-                      <li>
+                      <li class={move || disabled_ssr_kind(SearchType::Posts)}>
                         <a
-                          href={on_kind_ssr(KindType::Post)}
-                          class={move || highlight_csr_kind(KindType::Post)}
-                          on:click={on_csr_kind_click(KindType::Post)}
+                          href={on_kind_ssr(SearchType::Posts)}
+                                    class={move || highlight_csr_kind(SearchType::Posts)}
+                          on:click={on_csr_kind_click(SearchType::Posts)}
                         >
                           "Posts"
                         </a>
                       </li>
-                      <li>
+                      <li class={move || disabled_ssr_kind(SearchType::Comments)}>
                         <a
-                          href={on_kind_ssr(KindType::Comment)}
-                          class={move || highlight_csr_kind(KindType::Comment)}
-                          on:click={on_csr_kind_click(KindType::Comment)}
+                          href={on_kind_ssr(SearchType::Comments)}
+                                    class={move || highlight_csr_kind(SearchType::Comments)}
+                          on:click={on_csr_kind_click(SearchType::Comments)}
                         >
                           "Comments"
                         </a>
                       </li>
-                      <li>
+                      <li class={move || disabled_ssr_kind(SearchType::Communities)}>
                         <a
-                          href={on_kind_ssr(KindType::Community)}
-                          class={move || highlight_csr_kind(KindType::Community)}
-                          on:click={on_csr_kind_click(KindType::Community)}
+                          href={on_kind_ssr(SearchType::Communities)}
+                          class={move || highlight_csr_kind(SearchType::Communities)}
+                          on:click={on_csr_kind_click(SearchType::Communities)}
                         >
                           "Communities"
                         </a>
                       </li>
-                      <li>
+                      <li class={move || disabled_ssr_kind(SearchType::Users)}>
                         <a
-                          href={on_kind_ssr(KindType::User)}
-                          class={move || highlight_csr_kind(KindType::User)}
-                          on:click={on_csr_kind_click(KindType::User)}
+                          href={on_kind_ssr(SearchType::Users)}
+                          class={move || highlight_csr_kind(SearchType::Users)}
+                          on:click={on_csr_kind_click(SearchType::Users)}
                         >
                           "Users"
                         </a>
@@ -1113,7 +1171,24 @@ pub fn TopNav(
                     on:keypress={move |e: KeyboardEvent| {
                       if e.key_code() == 13 {
                         e.prevent_default();
-                        use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
+                        let mut query_params = query.get();
+                        query_params.remove("page");
+                        query_params.remove("term");
+                        query_params.insert("term", search_term.get());
+                        if use_location().pathname.get().ends_with("/s") {
+                          use_navigate()(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), Default::default());
+                        } else {
+                          if ssr_person_id().is_some() {
+                            use_navigate()(&format!("/u/{}/s{}", ssr_name(), query_params.to_query_string()), Default::default());
+                          } else if ssr_name().len() > 0 {
+                            use_navigate()(&format!("/c/{}/s{}", ssr_name(), query_params.to_query_string()), Default::default());
+                          } else if ssr_id().len() > 0 {
+                            use_navigate()(&format!("/p/{}/s{}", ssr_id(), query_params.to_query_string()), Default::default());
+                          } else {
+                            use_navigate()(&format!("/s{}", query_params.to_query_string()), Default::default());
+                          }
+                        }
+                        // use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
                       }
                     }}
                     on:input={move |ev| {
@@ -1157,7 +1232,24 @@ pub fn TopNav(
                       (if input_focus.get() == InputFocusState::Search { "py-2 px-4" } else { "hidden sm:inline-block sm:py-2 sm:px-4" }).to_string()
                     }}
                     on:click={move |_| {
-                      use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
+                      let mut query_params = query.get();
+                      query_params.remove("page");
+                      query_params.remove("term");
+                      query_params.insert("term", search_term.get());
+                      if use_location().pathname.get().ends_with("/s") {
+                        use_navigate()(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), Default::default());
+                      } else {
+                        if ssr_person_id().is_some() {
+                          use_navigate()(&format!("/u/{}/s{}", ssr_name(), query_params.to_query_string()), Default::default());
+                        } else if ssr_name().len() > 0 {
+                          use_navigate()(&format!("/c/{}/s{}", ssr_name(), query_params.to_query_string()), Default::default());
+                        } else if ssr_id().len() > 0 {
+                          use_navigate()(&format!("/p/{}/s{}", ssr_id(), query_params.to_query_string()), Default::default());
+                        } else {
+                          use_navigate()(&format!("/s{}", query_params.to_query_string()), Default::default());
+                        }
+                      }
+                      // use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
                     }}
                   >
                     <Icon icon={Search} />

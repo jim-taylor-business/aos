@@ -783,7 +783,7 @@ pub fn Comment(
               <A
                 href={move || {
                   let a = comment_view.get().creator.actor_id;
-                  if let Some(domain) = a.domain() { format!("{}@{}", a.path(), domain) } else { format!("{}", a) }
+                  if let Some(domain) = a.domain() { format!("{}@{}?person_id={}", a.path(), domain, comment_view.get().creator.id.0) } else { format!("{}?person_id={}", a, comment_view.get().creator.id.0) }
                 }}
                 attr:class="text-sm hover:text-secondary"
               >

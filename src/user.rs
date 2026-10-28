@@ -60,6 +60,7 @@ pub fn User() -> impl IntoView {
             let mut st = ssr_page();
             st.push(key);
             let mut query_params = query.get();
+            query_params.remove("page");
             query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
 
             let navigate = use_navigate();

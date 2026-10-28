@@ -71,14 +71,6 @@ pub enum BanType {
   Ban,
 }
 
-#[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
-pub enum KindType {
-  Post,
-  Comment,
-  Community,
-  User,
-}
-
 pub fn html_template(options: LeptosOptions) -> impl IntoView {
   view! {
     <!DOCTYPE html>
@@ -274,11 +266,14 @@ pub fn App() -> impl IntoView {
       <Routes fallback={NotFound}>
         <ParentRoute path={StaticSegment("")} view={Root} ssr={SsrMode::Async}>
           <Route path={StaticSegment("")} view={overview::Default} />
-          <Route path={StaticSegment("l")} view={login::Login} />
           <Route path={(StaticSegment("p"), ParamSegment("id"))} view={post::Post} />
           <Route path={(StaticSegment("c"), ParamSegment("name"))} view={overview::Community} />
           <Route path={(StaticSegment("u"), ParamSegment("name"))} view={user::User} />
-          <Route path={StaticSegment("s")} view={search::Search} />
+          <Route path={StaticSegment("s")} view={search::DefaultSearch} />
+          <Route path={(StaticSegment("p"), ParamSegment("id"), StaticSegment("s"))} view={search::PostSearch} />
+          <Route path={(StaticSegment("c"), ParamSegment("name"), StaticSegment("s"))} view={search::CommunitySearch} />
+          <Route path={(StaticSegment("u"), ParamSegment("name"), StaticSegment("s"))} view={search::UserSearch} />
+          <Route path={StaticSegment("l")} view={login::Login} />
         </ParentRoute>
       </Routes>
     </Router>
