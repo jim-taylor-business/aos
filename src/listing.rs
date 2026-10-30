@@ -97,6 +97,15 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
           view! { }.into_any()
         }
       }
+      <span>{format!("{:#?}", community.community.published)}</span><br/>
+      {
+        if let Some(t) = community.community.icon {
+          let h = t.inner().to_string();
+          view! { <span>{h}</span><br/> }.into_any()
+        } else {
+          view! { }.into_any()
+        }
+      }
       <span>{community.counts.subscribers}-</span>
       <span>{community.counts.users_active_month}-</span>
       <span>{community.counts.posts}-</span>
@@ -447,7 +456,11 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
     )
   };
   let community_title_encoded = Memo::new(move |_| html_escape::encode_safe(&community_title).to_string());
-  let creator_name_encoded = Memo::new(move |_| html_escape::encode_safe(&post_view.get().creator.actor_id.to_string()[8..]).to_string());
+  let a = post_view.get().creator.actor_id;
+  let u = post_view.get().creator.name;
+  let creator_name = if let Some(domain) = a.domain() { format!("{}@{}", u, domain) } else { u };
+  let creator_name_encoded = Memo::new(move |_| html_escape::encode_safe(&creator_name).to_string());
+  // let creator_name_encoded = Memo::new(move |_| html_escape::encode_safe(&post_view.get().creator.actor_id.to_string()[8..]).to_string());
 
   let now_in_millis = u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0);
   let duration_in_text = pretty_duration::pretty_duration(

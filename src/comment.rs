@@ -531,7 +531,7 @@ pub fn Comment(
                     let _ = window().open_with_url_and_target(&l.href(), "_blank");
                   }
                 } else if let Some(s) = t.dyn_ref::<web_sys::Element>() {
-                  if s.tag_name().eq("SUMMARY") {} else {
+                  if s.tag_name().ne("SUMMARY") {
                     on_toggle(comment_view.get().comment.id.0);
                   }
                 } else {
@@ -823,7 +823,7 @@ pub fn Comment(
                   reply_content.set(event_target_value(&ev));
                   spawn_local_scoped(async move {
                     if let Ok(d) = IndexedDb::new().await {
-                      if let Ok(_comment_ids) = d
+                      let _ = d
                         .set(
                           &CommentDraftKey {
                             comment_id: comment_view.get().comment.id.0,
@@ -831,8 +831,7 @@ pub fn Comment(
                           },
                           &reply_content.get(),
                         )
-                        .await
-                      {} else {}
+                        .await;
                     }
                   });
                 }}

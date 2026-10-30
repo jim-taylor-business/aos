@@ -199,8 +199,11 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                 )
               };
               let community_title_encoded = html_escape::encode_safe(&community_title).to_string();
-              let creator_name = &post_response.get().post_view.creator.actor_id.to_string()[8..];
-              let creator_name_encoded = html_escape::encode_safe(creator_name).to_string();
+              let a = post_response.get().post_view.creator.actor_id;
+              let u = post_response.get().post_view.creator.name;
+              let creator_name = if let Some(domain) = a.domain() { format!("{}@{}", u, domain) } else { u };
+              // let creator_name = &post_response.get().post_view.creator.actor_id.to_string()[8..];
+              let creator_name_encoded = html_escape::encode_safe(&creator_name).to_string();
               let now_in_millis = u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0);
               let duration_in_text = pretty_duration::pretty_duration(
                 &std::time::Duration::from_millis(now_in_millis - post_response.get().post_view.post.published.timestamp_millis() as u64),
@@ -291,8 +294,9 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                       " ago by "
                       <A
                         href={move || {
-                          let a = post_response.get().post_view.creator.actor_id;
-                          if let Some(domain) = a.domain() { format!("{}@{}?person_id={}", a.path(), domain, post_response.get().post_view.creator.id.0) } else { format!("{}?person_id={}", a, post_response.get().post_view.creator.id.0) }
+                          // let a = post_response.get().post_view.creator.actor_id;
+                          // if let Some(domain) = a.domain() { format!("{}@{}?person_id={}", a.path(), domain, post_response.get().post_view.creator.id.0) } else { format!("{}?person_id={}", a, post_response.get().post_view.creator.id.0) }
+                          format!("/u/{}?person_id={}", creator_name, post_response.get().post_view.creator.id.0)
                         }}
                         attr:class="inline wrap-anywhere hover:text-secondary"
                       >

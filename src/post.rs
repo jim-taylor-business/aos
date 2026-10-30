@@ -176,7 +176,7 @@ pub fn Post() -> impl IntoView {
         <div
           on:wheel={move |e: WheelEvent| {
             let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-            if iw < 768f64 {} else {
+            if iw > 768f64 {
               if e.delta_x() != 0.0 {
                 if e.delta_y().abs() / e.delta_x().abs() < 0.3 {} else {
                   e.prevent_default();
@@ -303,8 +303,11 @@ pub fn Post() -> impl IntoView {
                       )
                     };
                     let community_title_encoded = html_escape::encode_safe(&community_title).to_string();
-                    let creator_name = &post_response.get().post_view.creator.actor_id.to_string()[8..];
-                    let creator_name_encoded = html_escape::encode_safe(creator_name).to_string();
+                    // let creator_name = &post_response.get().post_view.creator.actor_id.to_string()[8..];
+                    let a = post_response.get().post_view.creator.actor_id;
+                    let u = post_response.get().post_view.creator.name;
+                    let creator_name = if let Some(domain) = a.domain() { format!("{}@{}", u, domain) } else { u };
+                    let creator_name_encoded = html_escape::encode_safe(&creator_name).to_string();
                     let now_in_millis = u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0);
                     let duration_in_text = pretty_duration::pretty_duration(
                       &std::time::Duration::from_millis(now_in_millis - post_response.get().post_view.post.published.timestamp_millis() as u64),
@@ -363,9 +366,10 @@ pub fn Post() -> impl IntoView {
                           " ago by "
                           <A
                             href={move || {
-                              let a = post_response.get().post_view.creator.actor_id;
-                              if let Some(domain) = a.domain() { format!("{}@{}?person_id={}", a.path(), domain, post_response.get().post_view.creator.id.0) } else { format!("{}?person_id={}", a, post_response.get().post_view.creator.id.0) }
-                              // format!("{}@{}", a.path(), a.domain().unwrap_or_default())
+                              // let a = post_response.get().post_view.creator.actor_id;
+                              // let u = post_response.get().post_view.creator.name;
+                              // if let Some(domain) = a.domain() { format!("/u/{}@{}?person_id={}", u, domain, post_response.get().post_view.creator.id.0) } else { format!("{}?person_id={}", a, post_response.get().post_view.creator.id.0) }
+                              format!("/u/{}?person_id={}", creator_name, post_response.get().post_view.creator.id.0)
                             }}
                             attr:class="inline wrap-anywhere hover:text-secondary"
                           >
@@ -628,7 +632,7 @@ pub fn Post() -> impl IntoView {
                         }
                       });
                       let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-                      if iw < 768f64 {} else {
+                      if iw > 768f64 {
                         if let Some(c) = cancel_handle.get_untracked() {
                           c.clear();
                         }

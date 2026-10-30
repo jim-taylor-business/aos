@@ -99,6 +99,7 @@ pub fn Search(
     let UseIntersectionObserverReturn { .. } = use_intersection_observer_with_options(
       intersection_element,
       move |intersections, _| {
+        log!("inter {:#?}", intersections[0].is_intersecting());
         if intersections[0].is_intersecting() {
           let (key, len) = next_page_cursor.get();
           if key > 1 && len > 0 {
@@ -107,7 +108,6 @@ pub fn Search(
             let mut query_params = query.get();
             query_params.remove("page");
             query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-            log!("kedjfs");
             let navigate = use_navigate();
             navigate(
               &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
@@ -194,7 +194,7 @@ pub fn Search(
         <div
           on:wheel={move |e: WheelEvent| {
             let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-            if iw < 768f64 {} else {
+            if iw > 768f64 {
               if e.delta_x() != 0.0 {
                 if e.delta_y().abs() / e.delta_x().abs() < 0.3 {} else {
                   e.prevent_default();
@@ -232,7 +232,7 @@ pub fn Search(
                         });
                     });
                     let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-                    if iw < 768f64 {} else {
+                    if iw > 768f64 {
                       if let Some(c) = cancel_handle.get_untracked() {
                         c.clear();
                       }
@@ -267,7 +267,7 @@ pub fn Search(
                   #[cfg(not(feature = "ssr"))] loading.set(false);
                   next_page_cursor.set((r.0 + 1, o.users.len() + o.communities.len() + o.posts.len() + o.comments.len()));
                   let comments_clone = RwSignal::new(o.comments.clone());
-                  log!("{:#?}", next_page_cursor.get());
+                  log!("next {:#?}", next_page_cursor.get());
                   // if r.0 == 1 && o.posts.len() == 0 {
                   //   view! {
                   //     <Loading loading={true} description={"No search results"} />

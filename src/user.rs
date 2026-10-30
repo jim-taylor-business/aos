@@ -150,7 +150,7 @@ pub fn User() -> impl IntoView {
         <div
           on:wheel={move |e: WheelEvent| {
             let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-            if iw < 768f64 {} else {
+            if iw > 768f64 {
               if e.delta_x() != 0.0 {
                 if e.delta_y().abs() / e.delta_x().abs() < 0.3 {} else {
                   e.prevent_default();
@@ -188,7 +188,7 @@ pub fn User() -> impl IntoView {
                         });
                     });
                     let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-                    if iw < 768f64 {} else {
+                    if iw > 768f64 {
                       if let Some(c) = cancel_handle.get_untracked() {
                         c.clear();
                       }
@@ -221,7 +221,7 @@ pub fn User() -> impl IntoView {
                     }
                   }
                   let t = o.clone();
-                  let name = t.person_view.person.name;
+                  let name = html_escape::encode_safe(&t.person_view.person.display_name.unwrap_or(t.person_view.person.name)).to_string();
                   let banner = Memo::new(move |_| t.person_view.person.banner.clone());
                   let avatar = Memo::new(move |_| t.person_view.person.avatar.clone());
                   let all_posts = RwSignal::new(
@@ -360,7 +360,7 @@ pub fn User() -> impl IntoView {
                                       <img
                                         loading="lazy"
                                         class={move || {
-                                          format!("w-auto{}", if thumbnail.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" })
+                                          format!("max-w-24{}", if thumbnail.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" })
                                         }}
                                         src={move || thumbnail.get()}
                                         on:error={move |_e| {

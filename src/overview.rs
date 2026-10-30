@@ -103,6 +103,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
     let UseIntersectionObserverReturn { .. } = use_intersection_observer_with_options(
       intersection_element,
       move |intersections, _| {
+        log!("overview inter {:#?}", intersections[0].is_intersecting());
         if intersections[0].is_intersecting() {
           let (key, _) = next_page_cursor.get();
           if key > 0 {
@@ -306,7 +307,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
         <div
           on:wheel={move |e: WheelEvent| {
             let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-            if iw < 768f64 {} else {
+            if iw > 768f64 {
               if e.delta_x() != 0.0 {
                 if e.delta_y().abs() / e.delta_x().abs() < 0.3 {} else {
                   e.prevent_default();
@@ -371,12 +372,39 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                   };
                   let thumbnail_url = Memo::new(move |_| s.community_view.community.banner.clone());
                   let thumbnail = RwSignal::new(String::from(""));
+                  let icon_url = Memo::new(move |_| s.community_view.community.icon.clone());
+                  let icon = RwSignal::new(String::from(""));
                   let follow = Memo::new(move |_| s.community_view.subscribed.clone());
 
                   view! {
                     <div class="mb-4 break-inside-avoid">
                       <div class="py-2 px-4">
                         <span class="overflow-y-auto text-3xl font-extrabold wrap-anywhere" inner_html={community_title_encoded} />
+                      </div>
+                      <div>
+                        {move || {
+                          if let Some(t) = icon_url.get() {
+                            let h = t.inner().to_string();
+                            icon.set(h);
+                            view! {
+                              <div class="py-2 px-4">
+                                <div class="block">
+                                  <img
+                                    loading="lazy"
+                                    class={move || { format!("max-w-24{}", if icon.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" }) }}
+                                    src={move || icon.get()}
+                                    on:error={move |_e| {
+                                      icon.set("/lemmy.svg".into());
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            }
+                              .into_any()
+                          } else {
+                            view! {}.into_any()
+                          }
+                        }}
                       </div>
                       <div>
                         {move || {
@@ -490,7 +518,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                     let form_clone = p.1.clone();
                     use crate::db::csr_indexed_db::*;
                     spawn_local_scoped(async move {
-                      if p.6 {} else {
+                      if !p.6 {
                         if let Ok(d) = IndexedDb::new().await {
                           if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&form_clone, &result_clone).await {}
                         }
@@ -501,7 +529,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                       }
                     });
                     let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-                    if iw < 768f64 || p.5 || p.6 {} else {
+                    if !(iw < 768f64 || p.5 || p.6) {
                       if let Some(c) = cancel_handle.get_untracked() {
                         c.clear();
                       }
