@@ -17,6 +17,7 @@ use lemmy_api_common::{
 use leptos::{html::Div, logging::*, prelude::*, task::*, *};
 use leptos_meta::Title;
 use leptos_router::{components::*, hooks::*};
+use leptos_use::use_element_visibility;
 use std::{collections::BTreeMap, vec};
 use web_sys::{MouseEvent, WheelEvent};
 
@@ -119,6 +120,9 @@ pub fn Search(
       UseIntersectionObserverOptions::default(),
     );
   }
+
+  #[cfg(not(feature = "ssr"))]
+  let is_visible = use_element_visibility(intersection_element);
 
   #[cfg(not(feature = "ssr"))]
   let cancel_handle: RwSignal<Option<TimeoutHandle>> = RwSignal::new(None);
@@ -267,6 +271,7 @@ pub fn Search(
                   #[cfg(not(feature = "ssr"))] loading.set(false);
                   next_page_cursor.set((r.0 + 1, o.users.len() + o.communities.len() + o.posts.len() + o.comments.len()));
                   let comments_clone = RwSignal::new(o.comments.clone());
+                  #[cfg(not(feature = "ssr"))] log!("visible {}", is_visible.get());
                   log!("next {:#?}", next_page_cursor.get());
                   // if r.0 == 1 && o.posts.len() == 0 {
                   //   view! {
