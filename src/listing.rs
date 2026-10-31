@@ -92,7 +92,7 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
       <div class="flex items-start pt-2">
         <a
           class="flex flex-col h-full"
-          target="_blank"
+          // target="_blank"
           href={move || format!("/u/{}?person_id={}", creator_name.get(), person_view.person.id.0)}
         >
           {move || {
@@ -124,7 +124,7 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
         </a>
       </div>
       <div>
-        <A href={move || format!("//{}", creator_name.get())} attr:class="block hover:text-accent">
+        <A href={move || format!("/u/{}?person_id={}", creator_name.get(), person_view.person.id.0)} attr:class="block hover:text-accent">
           <span class="overflow-y-auto text-lg wrap-anywhere" inner_html={creator_name_encoded.get()} />
         </A>
         <span class="block mt-1 mb-1 text-sm wrap-anywhere">
@@ -286,7 +286,7 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
       <div class="flex items-start pt-2">
         <a
           class="flex flex-col h-full"
-          target="_blank"
+          // target="_blank"
           href={move || format!("/c/{}", community_name.get())}
         >
           {move || {
