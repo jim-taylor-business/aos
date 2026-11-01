@@ -152,6 +152,8 @@ pub fn TopNav(
     SmUi,
     LgKind,
     LgBan,
+    SmKind,
+    SmBan,
   }
 
   let reset_menus = move || {
@@ -1150,6 +1152,78 @@ pub fn TopNav(
                           </ul>
                         </details>
                       </li>
+                      <li class="flex">
+                        <details>
+                          <summary>
+                            <Icon icon={Cube} />
+                          </summary>
+                          <ul class="z-[1] bg-base-200">
+                            <li class={move || disabled_ssr_kind(SearchType::Posts)}>
+                              <a
+                                href={on_kind_ssr(SearchType::Posts)}
+                                          class={move || highlight_csr_kind(SearchType::Posts)}
+                                on:click={on_csr_kind_click(SearchType::Posts)}
+                              >
+                                "Posts"
+                              </a>
+                            </li>
+                            <li class={move || disabled_ssr_kind(SearchType::Comments)}>
+                              <a
+                                href={on_kind_ssr(SearchType::Comments)}
+                                          class={move || highlight_csr_kind(SearchType::Comments)}
+                                on:click={on_csr_kind_click(SearchType::Comments)}
+                              >
+                                "Comments"
+                              </a>
+                            </li>
+                            <li class={move || disabled_ssr_kind(SearchType::Communities)}>
+                              <a
+                                href={on_kind_ssr(SearchType::Communities)}
+                                class={move || highlight_csr_kind(SearchType::Communities)}
+                                on:click={on_csr_kind_click(SearchType::Communities)}
+                              >
+                                "Communities"
+                              </a>
+                            </li>
+                            <li class={move || disabled_ssr_kind(SearchType::Users)}>
+                              <a
+                                href={on_kind_ssr(SearchType::Users)}
+                                class={move || highlight_csr_kind(SearchType::Users)}
+                                on:click={on_csr_kind_click(SearchType::Users)}
+                              >
+                                "Users"
+                              </a>
+                            </li>
+                          </ul>
+                        </details>
+                      </li>
+                      <li class="flex">
+                        <details>
+                          <summary>
+                            <Icon icon={Ban} />
+                          </summary>
+                          <ul class="z-[1] [inset-inline-end:0] bg-base-200">
+                            <li>
+                              <a
+                                href={on_bans_ssr(BanType::Nsfw)}
+                                class={move || highlight_csr_bans(BanType::Nsfw)}
+                                on:click={on_csr_bans_click(BanType::Nsfw)}
+                              >
+                                "NSFW"
+                              </a>
+                            </li>
+                            <li>
+                              <a
+                                href={on_bans_ssr(BanType::Ban)}
+                                class={move || highlight_csr_bans(BanType::Ban)}
+                                on:click={on_csr_bans_click(BanType::Ban)}
+                              >
+                                "Banned"
+                              </a>
+                            </li>
+                          </ul>
+                        </details>
+                      </li>
                     </ul>
                   </details>
                 </li>
@@ -1229,7 +1303,7 @@ pub fn TopNav(
                   </button>
                   <button
                     class={move || {
-                      (if input_focus.get() == InputFocusState::Search { "py-2 px-4" } else { "hidden sm:inline-block sm:py-2 sm:px-4" }).to_string()
+                      (if input_focus.get() == InputFocusState::Search { "py-2 px-4 pr-2" } else { "hidden sm:inline-block sm:py-2 sm:px-4" }).to_string()
                     }}
                     on:click={move |_| {
                       let mut query_params = query.get();
@@ -1311,7 +1385,7 @@ pub fn TopNav(
                     </ul>
                   </details>
                 </li>
-                <li class="hidden sm:flex">
+                <li class="flex">
                   <details node_ref={lg_theme_menu}>
                     <summary on:click={move |_| reset_others(MenuType::LgTheme)}>
                       <Icon icon={Palette} />

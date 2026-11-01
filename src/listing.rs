@@ -36,10 +36,16 @@ pub fn UserListings(people: Signal<Vec<PersonView>>, page_number: RwSignal<usize
 
 #[component]
 pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> impl IntoView {
+  let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
+
   let thumbnail = RwSignal::new(String::from(""));
 
+  let from = if let Some(f) = person_view.person.actor_id.clone().inner().host_str() {
+    if f.to_string().ne(&get_instance_cookie.get_untracked().unwrap_or("".into())) { format!(" from {}", f) } else { "".into() }
+  } else {
+    "".into()
+  };
   let name = html_escape::encode_safe(&person_view.person.display_name.unwrap_or(person_view.person.name.clone())).to_string();
-
   let a = person_view.person.actor_id;
   let u = person_view.person.name.clone();
   let creator_name = Memo::new(move |_| if let Some(domain) = a.domain() { format!("{}@{}", u.clone(), domain) } else { u.clone() });
@@ -90,8 +96,8 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
       //   }
       // }
       <div class="flex items-start pt-2">
-        <a
-          class="flex flex-col h-full"
+        <A
+          attr:class="flex flex-col h-full"
           // target="_blank"
           href={move || format!("/u/{}?person_id={}", creator_name.get(), person_view.person.id.0)}
         >
@@ -121,7 +127,7 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
               }.into_any()
             }
           }}
-        </a>
+        </A>
       </div>
       <div>
         <A href={move || format!("/u/{}?person_id={}", creator_name.get(), person_view.person.id.0)} attr:class="block hover:text-accent">
@@ -136,9 +142,10 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
           // </Show>
           // " in "
           // <span class="overflow-y-auto" inner_html={community_title_encoded} />
-          // <span class="overflow-y-auto">
-          //   {if let Some(d) = post_view.get_untracked().post.url {
-          //     if let Some(f) = d.inner().host_str() {
+          <span>{from}</span>
+          // <span>
+          //   {
+          //     if let Some(f) = person_view.person.actor_id.inner().host_str() {
           //       if f.to_string().ne(&get_instance_cookie.get_untracked().unwrap_or("".into())) {
           //         format!(" from {}", f)
           //       } else {
@@ -147,9 +154,8 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
           //     } else {
           //       "".into()
           //     }
-          //   } else {
-          //     "".into()
-          //   }}
+          //   }
+          // </span>
         </span>        // <span>{person_view.person.name}-</span>
         // <span>{person_view.person.display_name}</span><br/>
         // <span>{format!("{:#?}", person_view.person.published)}-</span><br/>
@@ -186,18 +192,18 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
             <Icon icon={Comments} class={"inline".into()} />
             {person_view.counts.comment_count}
           </span>
-          <span
-            class="flex items-center pl-2"
-            title={move || {
-              format!(
-                "{} comment_score",
-                person_view.counts.comment_score,
-              )
-            }}
-          >
-            <Icon icon={Upvote} class={"inline".into()} />
-            {person_view.counts.comment_score}
-          </span>
+          // <span
+          //   class="flex items-center pl-2"
+          //   title={move || {
+          //     format!(
+          //       "{} comment_score",
+          //       person_view.counts.comment_score,
+          //     )
+          //   }}
+          // >
+          //   <Icon icon={Upvote} class={"inline".into()} />
+          //   {person_view.counts.comment_score}
+          // </span>
         </div>
         // <span>{person_view.counts.post_count}-</span>
         // <span>{person_view.counts.comment_count}-</span>
@@ -237,15 +243,21 @@ pub fn CommunityListings(
 
 #[component]
 pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool) -> impl IntoView {
+  let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
   let thumbnail = RwSignal::new(String::from(""));
 
-  let title = if community.community.title.len() > 0 { community.community.title } else { community.community.name.clone() };
-  let community_title = if community.community.local {
-    format!("{}", title)
+  let from = if let Some(f) = community.community.actor_id.inner().host_str() {
+    if f.to_string().ne(&get_instance_cookie.get_untracked().unwrap_or("".into())) { format!(" from {}", f) } else { "".into() }
   } else {
-    format!("{}@{}", title, if let Some(h) = community.community.actor_id.inner().host() { h.to_string() } else { "".to_owned() })
+    "".into()
   };
-  let community_title_encoded = Memo::new(move |_| html_escape::encode_safe(&community_title).to_string());
+  let title = if community.community.title.len() > 0 { community.community.title } else { community.community.name.clone() };
+  // let community_title = if community.community.local {
+  //   format!("{}", title)
+  // } else {
+  //   format!("{}@{}", title, if let Some(h) = community.community.actor_id.inner().host() { h.to_string() } else { "".to_owned() })
+  // };
+  let community_title_encoded = Memo::new(move |_| html_escape::encode_safe(&title).to_string());
   let community_name = Memo::new(move |_| {
     if community.community.local {
       format!("{}", community.community.name)
@@ -284,8 +296,8 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
       //   }
       // }
       <div class="flex items-start pt-2">
-        <a
-          class="flex flex-col h-full"
+        <A
+          attr:class="flex flex-col h-full"
           // target="_blank"
           href={move || format!("/c/{}", community_name.get())}
         >
@@ -315,7 +327,7 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
               }.into_any()
             }
           }}
-        </a>
+        </A>
       </div>
       <div>
         <A href={move || format!("/c/{}", community_name.get())} attr:class="block hover:text-accent">
@@ -324,6 +336,7 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
         <span class="block mt-1 mb-1 text-sm wrap-anywhere">
           <span>{abbr_duration}</span>
           " ago "
+          <span>{from}</span>
           // <Show when={move || { post_number != 0 }} fallback={|| {}}>
           //   "by "
           //   <span class="overflow-y-auto" inner_html={creator_name_encoded} />
