@@ -16,6 +16,7 @@ use lemmy_api_common::{
 };
 use leptos::{html::Div, logging::*, prelude::*, task::*, *};
 use leptos_meta::Title;
+use leptos_router::{NavigateOptions, location::State};
 use leptos_router::{components::*, hooks::*};
 use leptos_use::use_element_visibility;
 use std::{collections::BTreeMap, vec};
@@ -74,7 +75,6 @@ pub fn Search(
 
   #[cfg(not(feature = "ssr"))]
   {
-    use leptos_router::{NavigateOptions, location::State};
     use leptos_use::{
       UseIntersectionObserverOptions, UseIntersectionObserverReturn, UseScrollOptions, UseScrollReturn, use_intersection_observer_with_options,
       use_scroll_with_options,
@@ -100,7 +100,7 @@ pub fn Search(
     let UseIntersectionObserverReturn { .. } = use_intersection_observer_with_options(
       intersection_element,
       move |intersections, _| {
-        log!("inter {:#?}", intersections[0].is_intersecting());
+        // log!("inter {:#?}", intersections[0].is_intersecting());
         if intersections[0].is_intersecting() {
           let (key, len) = next_page_cursor.get();
           if key > 1 && len > 0 {
@@ -109,11 +109,19 @@ pub fn Search(
             let mut query_params = query.get();
             query_params.remove("page");
             query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-            let navigate = use_navigate();
-            navigate(
-              &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-              NavigateOptions { resolve: true, replace: false, scroll: false, state: State::default() },
-            );
+            let params = query_params.clone();
+            spawn_local_scoped(async move {
+              if let Some(se) = on_scroll_element.get() {
+                if let Ok(d) = IndexedDb::new().await {
+                  let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &se.scroll_left()).await;
+                }
+              }
+              let navigate = use_navigate();
+              navigate(
+                &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+                NavigateOptions { resolve: true, replace: false, scroll: false, state: State::default() },
+              );
+            });
           }
         }
       },
@@ -256,6 +264,7 @@ pub fn Search(
                                         )
                                         .await;
                                       if let Ok(Some(l)) = l {
+                                        // log!("scroll {} next {:#?}", is_visible.get(), next_page_cursor.get());
                                         s.set_scroll_left(l);
                                       }
                                     }
@@ -271,60 +280,141 @@ pub fn Search(
                   #[cfg(not(feature = "ssr"))] loading.set(false);
                   next_page_cursor.set((r.0 + 1, o.users.len() + o.communities.len() + o.posts.len() + o.comments.len()));
                   let comments_clone = RwSignal::new(o.comments.clone());
-                  #[cfg(not(feature = "ssr"))] log!("visible {}", is_visible.get());
-                  log!("next {:#?}", next_page_cursor.get());
-                  // if r.0 == 1 && o.posts.len() == 0 {
-                  //   view! {
-                  //     <Loading loading={true} description={"No search results"} />
-                  //   }.into_any()
-                  // } else {
-                    view! {
-                      <Listings hide=false posts={o.posts.clone().into()} page_number={RwSignal::new((r.0 - 1) * 50)} />
-                      <For each={move || comments_clone.get()} key={|cv| cv.comment.id} let:cv>
-                        <div class="odd:bg-base-300 pt-2 pr-4 pb-2 pl-4">
-                          <Comment
-                            parent_comment_id=0
-                            hidden_comments={RwSignal::new(vec![])}
-                            comment={cv.clone().into()}
-                            comments={vec![].into()}
-                            level=0
-                            now_in_millis
-                            highlight_user_id={RwSignal::new(None)}
-                            post_id={Signal::derive(move || Some(cv.post.id.0))}
-                            selected_drag_offset={RwSignal::new((0, 0f64, 0))}
-                          />
-                        </div>
-                      </For>
-                      <CommunityListings hide=false communities={o.communities.clone().into()} page_number={RwSignal::new((r.0 - 1) * 50)} />
-                      <UserListings hide=false people={o.users.clone().into()} page_number={RwSignal::new((r.0 - 1) * 50)} />
-                      {
-                        let (key, len) = (r.0 + 1, o.posts.len());
-                        if key > 1 && len > 0 {
-                          let mut st: Vec<(usize)> = vec![key];
-                          let mut query_params = use_query_map().get();
-                          query_params.remove("page");
-                          query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-                          #[cfg(not(feature = "ssr"))]
-                          set_timeout_with_handle(
-                            move || {
-                              show_next.set(false);
-                            },
-                            std::time::Duration::new(0, 50_000_000),
-                          );
-                          view! {
-                            <Show when={move || { show_next.get() }} fallback={|| {}}>
-                              <div class="flex py-4 px-8 justify-end{}">
-                                <A href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())} attr:class="btn btn-soft">
-                                  "Next"
-                                </A>
-                              </div>
-                            </Show>
-                          }.into_any()
-                        } else {
-                          view! {}.into_any()
-                        }
+                  // #[cfg(not(feature = "ssr"))]
+                  // {
+                  //   if is_visible.get() {
+                  //     log!("next {:#?}", next_page_cursor.get());
+                  //     let (key, len) = next_page_cursor.get();
+                  //     if key > 1 && len > 0 {
+                  //       let mut st = ssr_page();
+                  //       st.push(key);
+                  //       let mut query_params = query.get();
+                  //       query_params.remove("page");
+                  //       query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+                  //       let navigate = use_navigate();
+                  //       navigate(
+                  //         &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+                  //         NavigateOptions { resolve: true, replace: false, scroll: false, state: State::default() },
+                  //       );
+                  //     }
+                  //   }
+                  // }
+                    // #[cfg(not(feature = "ssr"))] log!("visible {}", );
+                    // log!("next {:#?}", next_page_cursor.get());
+                    // if r.0 == 1 && o.posts.len() == 0 {
+                    //   view! {
+                    //     <Loading loading={true} description={"No search results"} />
+                    //   }.into_any()
+                    // } else {
+                  view! {
+                    <Listings hide=false posts={o.posts.clone().into()} page_number={RwSignal::new((r.0 - 1) * 50)} />
+                    <For each={move || comments_clone.get()} key={|cv| cv.comment.id} let:cv>
+                      <div class="odd:bg-base-300 pt-2 pr-4 pb-2 pl-4">
+                        <Comment
+                          parent_comment_id=0
+                          hidden_comments={RwSignal::new(vec![])}
+                          comment={cv.clone().into()}
+                          comments={vec![].into()}
+                          level=0
+                          now_in_millis
+                          highlight_user_id={RwSignal::new(None)}
+                          post_id={Signal::derive(move || Some(cv.post.id.0))}
+                          selected_drag_offset={RwSignal::new((0, 0f64, 0))}
+                        />
+                      </div>
+                    </For>
+                    <CommunityListings hide=false communities={o.communities.clone().into()} page_number={RwSignal::new((r.0 - 1) * 50)} />
+                    <UserListings hide=false people={o.users.clone().into()} page_number={RwSignal::new((r.0 - 1) * 50)} />
+                    {
+                      let (key, len) = next_page_cursor.get_untracked(); // (r.0 + 1, o.posts.len());
+                      if key > 1 && len > 0 {
+                        let mut query_params = use_query_map().get();
+                        let mut st = vec![];
+                        // #[cfg(not(feature = "ssr"))]
+                        // if is_visible.get() {
+                        //   st = ssr_page();
+                        // };
+                        st.push(key);
+                        query_params.remove("page");
+                        query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+                        #[cfg(not(feature = "ssr"))]
+                        set_timeout_with_handle(
+                          move || {
+                            show_next.set(false);
+                            // if is_visible.get() {
+                            //   show_next.set(true);
+                            // }
+                            //   log!("is {} next {:#?}", is_visible.get(), next_page_cursor.get());
+                            //   // let (key, len) = next_page_cursor.get();
+                            //   // if key > 1 && len > 0 {
+                            //     let mut st = ssr_page();
+                            //     st.push(key);
+                            //     let mut query_params = query.get();
+                            //     query_params.remove("page");
+                            //     query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+                            //     let navigate = use_navigate();
+                            //     navigate(
+                            //       &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+                            //       NavigateOptions { resolve: true, replace: false, scroll: false, state: State::default() },
+                            //     );
+                            //   // }
+                            // }
+                          },
+                          std::time::Duration::new(0, 0),
+                        );
+                        #[cfg(not(feature = "ssr"))]
+                        set_timeout_with_handle(
+                          move || {
+                            if is_visible.get() {
+                              if let Some(c) = cancel_handle.get_untracked() {
+                                c.clear();
+                              }
+                              // let mut st = vec![];
+                              // st = ssr_page();
+                              // st.push(key);
+                              // query_params.remove("page");
+                              // query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+                              // show_next.set(true);
+                              let (key, len) = next_page_cursor.get();
+                              if key > 1 && len > 0 {
+                                let mut st = ssr_page();
+                                st.push(key);
+                                let mut query_params = query.get();
+                                query_params.remove("page");
+                                query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+                                let params = query_params.clone();
+                                spawn_local_scoped(async move {
+                                  if let Some(se) = on_scroll_element.get() {
+                                    if let Ok(d) = IndexedDb::new().await {
+                                      let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &se.scroll_left()).await;
+                                    }
+                                  }
+                                  let navigate = use_navigate();
+                                  navigate(
+                                    &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
+                                    NavigateOptions { resolve: true, replace: false, scroll: false, state: State::default() },
+                                  );
+                                });
+                              }
+
+                            };
+                          },
+                          std::time::Duration::new(0, 500_000_000),
+                        );
+                        view! {
+                          <Show when={move || { show_next.get() }} fallback={|| {}}>
+                            <div class="flex py-4 px-8 justify-end{}">
+                              <A href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())} attr:class="btn btn-soft">
+                                "Next"
+                              </A>
+                            </div>
+                          </Show>
+                        }.into_any()
+                      } else {
+                        view! {}.into_any()
                       }
-                    }.into_any()
+                    }
+                  }.into_any()
                   // }
                 }
                 Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {

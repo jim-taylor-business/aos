@@ -609,32 +609,29 @@ pub fn TopNav(
       if l != SearchType::Posts {
         query_params.insert("kind", serde_json::to_string(&l).ok().unwrap_or("Posts".into()));
       }
-      // let params = query_params.clone();
-      // #[cfg(not(feature = "ssr"))]
-      // spawn_local_scoped(async move {
-      //   if let Ok(d) = IndexedDb::new().await {
-      //     let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &0i32).await;
-      //   }
 
-      // let path = use_location().pathname.get();
-      // use_navigate()(&format!("{}/s{}", if path.len() > 1 { path } else { "".to_owned() }, query_params.to_query_string()), Default::default());
+      let params = query_params.clone();
+      #[cfg(not(feature = "ssr"))]
+      spawn_local_scoped(async move {
+        if let Ok(d) = IndexedDb::new().await {
+          let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &0i32).await;
+        }
 
-      if ssr_person_id().is_some() {
-        use_navigate()(&format!("/u/{}/s{}", ssr_name(), query_params.to_query_string()), Default::default());
-      } else if ssr_name().len() > 0 {
-        use_navigate()(&format!("/c/{}/s{}", ssr_name(), query_params.to_query_string()), Default::default());
-      } else if ssr_id().len() > 0 {
-        use_navigate()(&format!("/p/{}/s{}", ssr_id(), query_params.to_query_string()), Default::default());
-      } else {
-        use_navigate()(&format!("/s{}", query_params.to_query_string()), Default::default());
+        if ssr_person_id().is_some() {
+          use_navigate()(&format!("/u/{}/s{}", ssr_name(), query_params.to_query_string()), Default::default());
+        } else if ssr_name().len() > 0 {
+          use_navigate()(&format!("/c/{}/s{}", ssr_name(), query_params.to_query_string()), Default::default());
+        } else if ssr_id().len() > 0 {
+          use_navigate()(&format!("/p/{}/s{}", ssr_id(), query_params.to_query_string()), Default::default());
+        } else {
+          use_navigate()(&format!("/s{}", query_params.to_query_string()), Default::default());
+        }
+      });
+      if let Some(on_scroll_element) = scroll_element.get() {
+        if let Some(se) = on_scroll_element.get() {
+          se.set_scroll_left(0i32);
+        }
       }
-
-      // });
-      // if let Some(on_scroll_element) = scroll_element.get() {
-      //   if let Some(se) = on_scroll_element.get() {
-      //     se.set_scroll_left(0i32);
-      //   }
-      // }
       reset_menus();
     }
   };

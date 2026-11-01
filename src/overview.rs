@@ -103,7 +103,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
     let UseIntersectionObserverReturn { .. } = use_intersection_observer_with_options(
       intersection_element,
       move |intersections, _| {
-        log!("overview inter {:#?}", intersections[0].is_intersecting());
+        // log!("overview inter {:#?}", intersections[0].is_intersecting());
         if intersections[0].is_intersecting() {
           let (key, _) = next_page_cursor.get();
           if key > 0 {
