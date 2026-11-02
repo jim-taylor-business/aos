@@ -131,7 +131,7 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
       </div>
       <div>
         <A href={move || format!("/u/{}?person_id={}", creator_name.get(), person_view.person.id.0)} attr:class="block hover:text-accent">
-          <span class="overflow-y-auto text-lg wrap-anywhere" inner_html={creator_name_encoded.get()} />
+          <span class="overflow-y-auto text-xl wrap-anywhere" inner_html={creator_name_encoded.get()} />
         </A>
         <span class="block mt-1 mb-1 text-sm wrap-anywhere">
           <span>{abbr_duration}</span>
@@ -331,7 +331,7 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
       </div>
       <div>
         <A href={move || format!("/c/{}", community_name.get())} attr:class="block hover:text-accent">
-          <span class="overflow-y-auto text-lg wrap-anywhere" inner_html={community_title_encoded.get()} />
+          <span class="overflow-y-auto text-xl wrap-anywhere" inner_html={community_title_encoded.get()} />
         </A>
         <span class="block mt-1 mb-1 text-sm wrap-anywhere">
           <span>{abbr_duration}</span>
@@ -876,7 +876,7 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                     )
                   }}>
                     <A href={move || format!("/p/{}", post_view.get_untracked().post.id)} attr:class="block hover:text-accent">
-                      <span lang={move || languages.get().get(post_view.get_untracked().post.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )} class="overflow-y-auto text-lg wrap-anywhere" inner_html={title_encoded.get_untracked()} />
+                      <span lang={move || languages.get().get(post_view.get_untracked().post.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )} class="overflow-y-auto text-xl wrap-anywhere" inner_html={title_encoded.get_untracked()} />
                     </A>
                     <span class="block mt-1 mb-1 text-sm wrap-anywhere">
                       <span>{abbr_duration}</span>

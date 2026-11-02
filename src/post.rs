@@ -360,7 +360,7 @@ pub fn Post() -> impl IntoView {
                             }
                           }}
                           lang={move || languages.get().get(post_response.get().post_view.post.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )}
-                          class="overflow-y-auto text-xl wrap-anywhere"
+                          class="overflow-y-auto text-2xl font-extrabold wrap-anywhere"
                           inner_html={title_encoded}
                         />
                         <span class="block mb-1 wrap-anywhere text-md">
