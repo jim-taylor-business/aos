@@ -615,7 +615,50 @@ pub fn Comment(
             </Show>
           </Show>
         </Show>
-        <div class={move || format!("prose select-none{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html} />
+        <Transition fallback={|| {}}>
+          {move || {
+            let languages = Memo::new(move |_| if let Some(Ok(GetSiteResponse { all_languages: l, .. })) = ssr_site.get() { l } else { vec![] });
+            view! {
+              <div lang={move || languages.get().get(comment_view.get().comment.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )} class={move || format!("prose select-none{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html} />
+            }.into_any()
+            // if let GetSiteResponse { all_languages: ref l, .. } = ssr_site.get() {
+            //   let l_clone = l.clone();
+            //   let languages = Memo::new(move |_| l_clone);
+            //   view! {
+            //     <div lang={move || languages.get().get(comment_view.get().comment.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )} class={move || format!("prose select-none{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html} />
+            //   }.into_any()
+            // } else {
+            //   view! {
+            //   }.into_any()
+            //
+            // }
+
+
+            // match ssr_site.get() {
+            //   Some(Ok(s)) => {
+            //     if let GetSiteResponse { all_languages: ref l, .. } = s {
+            //       let l_clone = l.clone();
+            //       let languages = Memo::new(move |_| l_clone);
+            //       view! {
+            //         <div lang={move || languages.get().get(comment_view.get().comment.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )} class={move || format!("prose select-none{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html} />
+            //       }.into_any()
+            //     } else {
+            //       view! {
+            //       }.into_any()
+            //
+            //     }
+            //     // let languages = Memo::new(move |_| if let GetSiteResponse { all_languages: l, .. } = s { l } else { vec![] });
+            //     // view! {
+            //     //   <div lang={move || languages.get().get(comment_view.get().comment.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )} class={move || format!("prose select-none{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html} />
+            //     // }.into_any()
+            //   }
+            //   _ => {
+            //     view! {
+            //     }.into_any()
+            //   }
+            // }
+          }}
+        </Transition>
         <Show when={move || vote_show.get()} fallback={|| view! {}}>
           <div on:click={cancel} class="flex flex-wrap gap-x-2 items-center break-inside-avoid">
             <Transition fallback={|| {}}>
@@ -625,6 +668,7 @@ pub fn Comment(
                     {
                       let is_user = s.my_user.is_some();
                       let logged_in = Memo::new(move |_| { is_user });
+                      // let languages = Memo::new(move |_| if let GetSiteResponse { all_languages: l, .. } = s { l } else { vec![] });
                       let current_person = Memo::new(move |_| {
                         if let GetSiteResponse { my_user: Some(MyUserInfo { local_user_view: LocalUserView { ref person, .. }, .. }), .. } = s {
                           Some(person.clone())

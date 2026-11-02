@@ -8,6 +8,7 @@ use crate::{
   toolbar::PostToolbar,
 };
 use ev::MouseEvent;
+use lemmy_api_common::site::GetSiteResponse;
 use lemmy_api_common::{
   comment::{GetComments, GetCommentsResponse},
   lemmy_db_schema::{CommentSortType, ListingType, SortType, newtypes::PostId},
@@ -37,6 +38,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
 
   let post_view = RwSignal::new(None::<GetPostResponse>);
 
+  let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   let listing_response_cache =
     expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>, bool), (i64, LemmyAppResult<GetPostsResponse>)>>>();
   let post_response_cache = expect_context::<RwSignal<BTreeMap<(GetPost, Option<String>), (i64, LemmyAppResult<GetPostResponse>)>>>();
@@ -233,12 +235,13 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                   None
                 }
               });
+              let languages = Memo::new(move |_| if let Some(Ok(GetSiteResponse { all_languages: l, .. })) = ssr_site.get() { l } else { vec![] });
 
               view! {
                 <div class="break-inside-avoid">
                   <div class="py-2 px-4">
                     <A href={move || format!("/p/{}", post_response.get().post_view.post.id)} attr:class="block hover:text-accent">
-                      <span class="overflow-y-auto text-2xl font-extrabold wrap-anywhere" inner_html={title_encoded} />
+                      <span lang={move || languages.get().get(post_response.get().post_view.post.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )} class="overflow-y-auto text-2xl font-extrabold wrap-anywhere" inner_html={title_encoded} />
                     </A>
                   </div>
                   <a
@@ -438,7 +441,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                             }
                           }}
                         >
-                          <div class="max-w-none prose overflow-clip" inner_html={safe_html} />
+                          <div lang={move || languages.get().get(post_response.get().post_view.post.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )} class="max-w-none prose overflow-clip" inner_html={safe_html} />
                         </div>
                       </div>
                     },

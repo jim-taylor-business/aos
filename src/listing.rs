@@ -799,8 +799,13 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
         match ssr_site.get() {
           Some(Ok(s)) => {
             {
+              // let s_clone = s.clone();
+              // let site = Memo::new(move |_| { s });
               let logged_in = Memo::new(move |_| { s.my_user.is_some() });
-
+              // let languages = Memo::new(move |_| if let GetSiteResponse { all_languages: l, .. } = s_clone { l } else { vec![] });
+              let languages = Memo::new(move |_| if let Some(Ok(GetSiteResponse { all_languages: l, .. })) = ssr_site.get() { l } else { vec![] });
+              //   let languages = if let GetSiteResponse { all_languages: l, .. } = s { Memo::new(move |_| l) }; // else { Memo::new(move |_| Vec<Language>::new()) };
+              //
               view! {
                 <div class={move || {
                   format!(
@@ -871,7 +876,7 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                     )
                   }}>
                     <A href={move || format!("/p/{}", post_view.get_untracked().post.id)} attr:class="block hover:text-accent">
-                      <span class="overflow-y-auto text-lg wrap-anywhere" inner_html={title_encoded.get_untracked()} />
+                      <span lang={move || languages.get().get(post_view.get_untracked().post.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )} class="overflow-y-auto text-lg wrap-anywhere" inner_html={title_encoded.get_untracked()} />
                     </A>
                     <span class="block mt-1 mb-1 text-sm wrap-anywhere">
                       <span>{abbr_duration}</span>

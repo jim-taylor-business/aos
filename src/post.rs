@@ -338,6 +338,7 @@ pub fn Post() -> impl IntoView {
                       }
                     });
                     #[cfg(not(feature = "ssr"))] loading.set(false);
+                    let languages = Memo::new(move |_| if let Some(Ok(GetSiteResponse { all_languages: l, .. })) = ssr_site.get() { l } else { vec![] });
 
                     view! {
                       <Title text={post_response.get().post_view.post.name} />
@@ -358,6 +359,7 @@ pub fn Post() -> impl IntoView {
                               }
                             }
                           }}
+                          lang={move || languages.get().get(post_response.get().post_view.post.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )}
                           class="overflow-y-auto text-xl wrap-anywhere"
                           inner_html={title_encoded}
                         />
@@ -428,7 +430,12 @@ pub fn Post() -> impl IntoView {
                               });
                             }}
                           >
-                            <span class="overflow-y-auto" inner_html={community_title_encoded} />
+                            // {
+                            //   let languages = Memo::new(move |_| if let Some(Ok(GetSiteResponse { all_languages: l, .. })) = ssr_site.get() { l } else { vec![] });
+                            //   view! {
+                            <span lang={move || languages.get().get(post_response.get().post_view.post.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )} class="overflow-y-auto" inner_html={community_title_encoded} />
+                            //   }
+                            // }
                           </A>
                           <span class="overflow-y-auto">{domain.get()}</span>
                         </span>
@@ -511,7 +518,7 @@ pub fn Post() -> impl IntoView {
                                   }
                                 }}
                               >
-                                <div class="max-w-none prose overflow-clip" inner_html={safe_html} />
+                                <div lang={move || languages.get().get(post_response.get().post_view.post.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )} class="max-w-none prose overflow-clip" inner_html={safe_html} />
                               </div>
                             </div>
                           },
