@@ -178,7 +178,7 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
             }}
           >
             <Icon icon={Archive} class={"inline".into()} />
-            {person_view.counts.post_count}
+            <span class="text-sm">{person_view.counts.post_count}</span>
           </span>
           <span
             class="flex items-center pl-2"
@@ -190,7 +190,7 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
             }}
           >
             <Icon icon={Comments} class={"inline".into()} />
-            {person_view.counts.comment_count}
+            <span class="text-sm">{person_view.counts.comment_count}</span>
           </span>
           // <span
           //   class="flex items-center pl-2"
@@ -379,7 +379,7 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
             }}
           >
             <Icon icon={Subscribe} class={"inline".into()} />
-            {community.counts.subscribers}
+            <span class="text-sm">{community.counts.subscribers}</span>
           </span>
           <span
             class="flex items-center pl-2"
@@ -391,7 +391,7 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
             }}
           >
             <Icon icon={Community} class={"inline".into()} />
-            {community.counts.users_active_month}
+            <span class="text-sm">{community.counts.users_active_month}</span>
           </span>
           <span
             class="flex items-center pl-2"
@@ -403,7 +403,7 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
             }}
           >
             <Icon icon={Archive} class={"inline".into()} />
-            {community.counts.posts}
+            <span class="text-sm">{community.counts.posts}</span>
           </span>
           <span
             class="flex items-center pl-2"
@@ -415,7 +415,7 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
             }}
           >
             <Icon icon={Comments} class={"inline".into()} />
-            {community.counts.comments}
+            <span class="text-sm">{community.counts.comments}</span>
           </span>
         </div>
       </div>
