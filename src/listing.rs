@@ -167,7 +167,7 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
         //     view! { }.into_any()
         //   }
         // }
-        <div class="flex">
+        <div class="flex flex-wrap">
           <span
             class="flex items-center"
             title={move || {
@@ -368,7 +368,7 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
         //   }
         // }
         // <span>{format!("{:#?}", community.community.published)}</span><br/>
-        <div class="flex">
+        <div class="flex flex-wrap">
           <span
             class="flex items-center"
             title={move || {

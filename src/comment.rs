@@ -221,6 +221,11 @@ pub fn Comment(
     safe_html
   });
 
+  let a = comment_view.get().creator.actor_id;
+  let u = Memo::new(move |_| comment_view.get().creator.name);
+  let creator_name = Memo::new(move |_| if let Some(domain) = a.domain() { format!("{}@{}", u.get(), domain) } else { u.get() });
+  let creator_name_encoded = Memo::new(move |_| html_escape::encode_safe(&creator_name.get()).to_string());
+
   let duration_in_text = pretty_duration::pretty_duration(
     &std::time::Duration::from_millis(now_in_millis.get() - comment_view.get().comment.published.timestamp_millis() as u64),
     Some(pretty_duration::PrettyDurationOptions {
@@ -826,12 +831,14 @@ pub fn Comment(
               " ago by "
               <A
                 href={move || {
-                  let a = comment_view.get().creator.actor_id;
-                  if let Some(domain) = a.domain() { format!("{}@{}?person_id={}", a.path(), domain, comment_view.get().creator.id.0) } else { format!("{}?person_id={}", a, comment_view.get().creator.id.0) }
+                  // let a = comment_view.get().creator.actor_id;
+                  // if let Some(domain) = a.domain() { format!("{}@{}?person_id={}", a.path(), domain, comment_view.get().creator.id.0) } else { format!("{}?person_id={}", a, comment_view.get().creator.id.0) }
+                  format!("/u/{}?person_id={}", creator_name.get(), comment_view.get().creator.id.0)
                 }}
                 attr:class="text-sm hover:text-secondary"
               >
-                <span inner_html={html_escape::encode_safe(&comment_view.get().creator.actor_id.to_string()[8..]).to_string()} />
+                <span inner_html={creator_name_encoded.get()} />
+                // <span inner_html={html_escape::encode_safe(&comment_view.get().creator.actor_id.to_string()[8..]).to_string()} />
               </A>
             </span>
           </div>

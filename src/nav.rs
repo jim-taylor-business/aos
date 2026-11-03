@@ -789,7 +789,7 @@ pub fn TopNav(
                   <a
                     href="/"
                     class={move || {
-                      if input_focus.get() == InputFocusState::Instance { "hidden" } else { "select-none text-xl whitespace-nowrap py-1/2" }
+                      if input_focus.get() == InputFocusState::Instance { "hidden" } else { "select-none text-xl font-bold whitespace-nowrap py-1/2" }
                     }}
                     on:mousedown={on_mouse_down}
                     on:mouseup={on_mouse_up}
