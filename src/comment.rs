@@ -1,5 +1,5 @@
 use crate::{
-  OnlineSetter,
+  OnlineSetter, ReadInstanceCookie,
   client::*,
   db::csr_indexed_db::*,
   errors::*,
@@ -76,6 +76,7 @@ pub fn Comment(
 ) -> impl IntoView {
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   let online = expect_context::<RwSignal<OnlineSetter>>();
+  let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
 
   // let is_there = Memo::new(move |_| {
   //   children.get().iter().find(|ct| ct.comment.id.0 == selected_drag_offset.get().2).is_some()
@@ -223,7 +224,13 @@ pub fn Comment(
 
   let a = comment_view.get().creator.actor_id;
   let u = Memo::new(move |_| comment_view.get().creator.name);
-  let creator_name = Memo::new(move |_| if let Some(domain) = a.domain() { format!("{}@{}", u.get(), domain) } else { u.get() });
+  let creator_name = Memo::new(move |_| {
+    if let Some(domain) = a.domain() {
+      format!("{}{}", u.get(), if domain.ne(&get_instance_cookie.get_untracked().unwrap_or("".into())) { format!("@{}", domain) } else { "".into() })
+    } else {
+      u.get()
+    }
+  });
   let creator_name_encoded = Memo::new(move |_| html_escape::encode_safe(&creator_name.get()).to_string());
 
   let duration_in_text = pretty_duration::pretty_duration(
@@ -522,28 +529,28 @@ pub fn Comment(
         }}
         on:click={move |e: MouseEvent| {
           if comment_view.get().counts.child_count as usize == (children.get().len() + descendants.get().len()) {
-            if still_down.get() {
-              still_down.set(false);
-            } else {
-              if let Some(t) = e.target() {
-                if let Some(i) = t.dyn_ref::<HtmlImageElement>() {
-                  let _ = window().open_with_url_and_target(&i.src(), "_blank");
-                } else if let Some(l) = t.dyn_ref::<HtmlAnchorElement>() {
-                  e.prevent_default();
-                  if l.host().eq(&window().location().host().unwrap_or("".to_owned())) {
-                    use_navigate()(&l.href(), Default::default());
+              if still_down.get() {
+                still_down.set(false);
+              } else {
+                if let Some(t) = e.target() {
+                  if let Some(i) = t.dyn_ref::<HtmlImageElement>() {
+                    let _ = window().open_with_url_and_target(&i.src(), "_blank");
+                  } else if let Some(l) = t.dyn_ref::<HtmlAnchorElement>() {
+                    e.prevent_default();
+                    if l.host().eq(&window().location().host().unwrap_or("".to_owned())) {
+                      use_navigate()(&l.href(), Default::default());
+                    } else {
+                      let _ = window().open_with_url_and_target(&l.href(), "_blank");
+                    }
+                  } else if let Some(s) = t.dyn_ref::<web_sys::Element>() {
+                    if s.tag_name().ne("SUMMARY") {
+                      on_toggle(comment_view.get().comment.id.0);
+                    }
                   } else {
-                    let _ = window().open_with_url_and_target(&l.href(), "_blank");
-                  }
-                } else if let Some(s) = t.dyn_ref::<web_sys::Element>() {
-                  if s.tag_name().ne("SUMMARY") {
                     on_toggle(comment_view.get().comment.id.0);
                   }
-                } else {
-                  on_toggle(comment_view.get().comment.id.0);
                 }
               }
-            }
           } else {
             load_comments();
           }
@@ -624,7 +631,39 @@ pub fn Comment(
           {move || {
             let languages = Memo::new(move |_| if let Some(Ok(GetSiteResponse { all_languages: l, .. })) = ssr_site.get() { l } else { vec![] });
             view! {
-              <div lang={move || languages.get().get(comment_view.get().comment.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )} class={move || format!("prose select-none{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html} />
+              <div
+                lang={move || languages.get().get(comment_view.get().comment.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )}
+                class={move || format!("prose select-none{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html}
+                // on:click={move |e: MouseEvent| {
+                //   log!("ME ME M");
+                //   if comment_view.get().counts.child_count as usize == (children.get().len() + descendants.get().len()) {
+                //     if still_down.get() {
+                //       still_down.set(false);
+                //     } else {
+                //       if let Some(t) = e.target() {
+                //         if let Some(i) = t.dyn_ref::<HtmlImageElement>() {
+                //           let _ = window().open_with_url_and_target(&i.src(), "_blank");
+                //         } else if let Some(l) = t.dyn_ref::<HtmlAnchorElement>() {
+                //           e.prevent_default();
+                //           if l.host().eq(&window().location().host().unwrap_or("".to_owned())) {
+                //             use_navigate()(&l.href(), Default::default());
+                //           } else {
+                //             let _ = window().open_with_url_and_target(&l.href(), "_blank");
+                //           }
+                //         } else if let Some(s) = t.dyn_ref::<web_sys::Element>() {
+                //           if s.tag_name().ne("SUMMARY") {
+                //             on_toggle(comment_view.get().comment.id.0);
+                //           }
+                //         } else {
+                //           on_toggle(comment_view.get().comment.id.0);
+                //         }
+                //       }
+                //     }
+                //   } else {
+                //     load_comments();
+                //   }
+                // }}
+              />
             }.into_any()
             // if let GetSiteResponse { all_languages: ref l, .. } = ssr_site.get() {
             //   let l_clone = l.clone();
@@ -836,6 +875,10 @@ pub fn Comment(
                   format!("/u/{}?person_id={}", creator_name.get(), comment_view.get().creator.id.0)
                 }}
                 attr:class="text-sm hover:text-secondary"
+                on:click={move |e| {
+                  e.prevent_default();
+                  use_navigate()(&format!("/u/{}?person_id={}", creator_name.get(), comment_view.get().creator.id.0), Default::default());
+                }}
               >
                 <span inner_html={creator_name_encoded.get()} />
                 // <span inner_html={html_escape::encode_safe(&comment_view.get().creator.actor_id.to_string()[8..]).to_string()} />

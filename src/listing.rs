@@ -771,7 +771,11 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
   let community_title_encoded = Memo::new(move |_| html_escape::encode_safe(&community_title).to_string());
   let a = post_view.get().creator.actor_id;
   let u = post_view.get().creator.name;
-  let creator_name = if let Some(domain) = a.domain() { format!("{}@{}", u, domain) } else { u };
+  let creator_name = if let Some(domain) = a.domain() {
+    format!("{}{}", u, if domain.ne(&get_instance_cookie.get_untracked().unwrap_or("".into())) { format!("@{}", domain) } else { "".into() })
+  } else {
+    u
+  };
   let creator_name_encoded = Memo::new(move |_| html_escape::encode_safe(&creator_name).to_string());
   // let creator_name_encoded = Memo::new(move |_| html_escape::encode_safe(&post_view.get().creator.actor_id.to_string()[8..]).to_string());
 

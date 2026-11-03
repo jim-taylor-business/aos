@@ -203,7 +203,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
               let community_title_encoded = html_escape::encode_safe(&community_title).to_string();
               let a = post_response.get().post_view.creator.actor_id;
               let u = post_response.get().post_view.creator.name;
-              let creator_name = if let Some(domain) = a.domain() { format!("{}@{}", u, domain) } else { u };
+              let creator_name = if let Some(domain) = a.domain() { format!("{}{}", u, if domain.ne(&get_instance_cookie.get_untracked().unwrap_or("".into())) { format!("@{}", domain) } else { "".into() }) } else { u };
               // let creator_name = &post_response.get().post_view.creator.actor_id.to_string()[8..];
               let creator_name_encoded = html_escape::encode_safe(&creator_name).to_string();
               let now_in_millis = u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0);
