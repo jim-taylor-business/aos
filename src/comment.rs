@@ -101,11 +101,25 @@ pub fn Comment(
   let reply_content = RwSignal::new(String::default());
   let edit_content = RwSignal::new(String::default());
 
-  let on_toggle = move |i: i32| {
+  let toggle_hidden = move |i: i32| {
     if hidden_comments.get().contains(&i) {
       hidden_comments.update(|hc| hc.retain(|c| i != *c));
     } else {
       hidden_comments.update(|hc| hc.push(i));
+    }
+    #[cfg(not(feature = "ssr"))]
+    spawn_local_scoped(async move {
+      if let Some(p) = post_id.get() {
+        if let Ok(d) = IndexedDb::new().await {
+          if let Ok(_) = d.set(&p, &hidden_comments.get()).await {}
+        }
+      }
+    });
+  };
+
+  let remove_hidden = move |i: i32| {
+    if hidden_comments.get().contains(&i) {
+      hidden_comments.update(|hc| hc.retain(|c| i != *c));
     }
     #[cfg(not(feature = "ssr"))]
     spawn_local_scoped(async move {
@@ -178,6 +192,7 @@ pub fn Comment(
               false
             }
           });
+          // log!("{}{}", comments_children.len(), comments_descendants.len());
           children.set(comments_children);
           descendants.set(comments_descendants);
           comment_view.update(|v| {
@@ -528,29 +543,37 @@ pub fn Comment(
           )
         }}
         on:click={move |e: MouseEvent| {
-          if comment_view.get().counts.child_count as usize == (children.get().len() + descendants.get().len()) {
-              if still_down.get() {
-                still_down.set(false);
-              } else {
-                if let Some(t) = e.target() {
-                  if let Some(i) = t.dyn_ref::<HtmlImageElement>() {
-                    let _ = window().open_with_url_and_target(&i.src(), "_blank");
-                  } else if let Some(l) = t.dyn_ref::<HtmlAnchorElement>() {
-                    e.prevent_default();
-                    if l.host().eq(&window().location().host().unwrap_or("".to_owned())) {
-                      use_navigate()(&l.href(), Default::default());
-                    } else {
-                      let _ = window().open_with_url_and_target(&l.href(), "_blank");
-                    }
-                  } else if let Some(s) = t.dyn_ref::<web_sys::Element>() {
-                    if s.tag_name().ne("SUMMARY") {
-                      on_toggle(comment_view.get().comment.id.0);
-                    }
+          if still_down.get() {
+            still_down.set(false);
+          } else {
+            if let Some(t) = e.target() {
+              if let Some(i) = t.dyn_ref::<HtmlImageElement>() {
+                let _ = window().open_with_url_and_target(&i.src(), "_blank");
+              } else if let Some(l) = t.dyn_ref::<HtmlAnchorElement>() {
+                e.prevent_default();
+                if l.host().eq(&window().location().host().unwrap_or("".to_owned())) {
+                  use_navigate()(&l.href(), Default::default());
+                } else {
+                  let _ = window().open_with_url_and_target(&l.href(), "_blank");
+                }
+              } else if let Some(s) = t.dyn_ref::<web_sys::Element>() {
+                if s.tag_name().ne("SUMMARY") {
+                  if level == 0 || comment_view.get().counts.child_count as usize == (children.get().len() + descendants.get().len()) {
+                    toggle_hidden(comment_view.get().comment.id.0);
                   } else {
-                    on_toggle(comment_view.get().comment.id.0);
+                    remove_hidden(comment_view.get().comment.id.0);
                   }
                 }
+              } else {
+                if level == 0 || comment_view.get().counts.child_count as usize == (children.get().len() + descendants.get().len()) {
+                  toggle_hidden(comment_view.get().comment.id.0);
+                } else {
+                  remove_hidden(comment_view.get().comment.id.0);
+                }
               }
+            }
+          }
+          if level == 0 || comment_view.get().counts.child_count as usize == (children.get().len() + descendants.get().len()) {
           } else {
             load_comments();
           }
@@ -894,7 +917,7 @@ pub fn Comment(
         </Show>
         <Show
           when={move || {
-            TryInto::<usize>::try_into(comment_view.get().counts.child_count).unwrap_or_default() != (children.get().len() + descendants.get().len())
+            level > 0 && TryInto::<usize>::try_into(comment_view.get().counts.child_count).unwrap_or_default() != (children.get().len() + descendants.get().len())
           }}
           fallback={|| {}}
         >
