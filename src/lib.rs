@@ -35,9 +35,9 @@ use leptos_router::{
   components::{Outlet, ParentRoute, Route, Router, Routes},
   *,
 };
-#[cfg(not(feature = "ssr"))]
-use leptos_use::use_document_visibility;
-use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options};
+use leptos_use_cookie::{SameSite, UseCookieOptions, use_cookie_with_options};
+// #[cfg(not(feature = "ssr"))]
+// use leptos_use_document_visibility::use_document_visibility;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 // leptos_i18n::load_locales!();
@@ -143,10 +143,10 @@ pub fn App() -> impl IntoView {
   // let UseServiceWorkerReturn { .. } =
   //   use_service_worker_with_options(UseServiceWorkerOptions::default().script_url("/service-worker.js").skip_waiting_message("skipWaiting"));
 
-  #[cfg(not(feature = "ssr"))]
-  let visibility = use_document_visibility();
-  #[cfg(not(feature = "ssr"))]
-  provide_context(visibility);
+  // #[cfg(not(feature = "ssr"))]
+  // let visibility = use_document_visibility();
+  // #[cfg(not(feature = "ssr"))]
+  // provide_context(visibility);
 
   let on_online = move |b: bool| {
     move |_| {

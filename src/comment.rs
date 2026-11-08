@@ -18,7 +18,9 @@ use leptos_router::{
   components::{A, Form},
   hooks::use_navigate,
 };
-use leptos_use::*;
+use leptos_use_intersection_observer::{UseIntersectionObserverOptions, UseIntersectionObserverReturn, use_intersection_observer_with_options};
+use leptos_use_scroll::{UseScrollOptions, UseScrollReturn, use_scroll_with_options};
+// use leptos_use::*;
 use std::collections::BTreeMap;
 use web_sys::{Event, HtmlAnchorElement, HtmlImageElement, MouseEvent, TouchEvent, WheelEvent, wasm_bindgen::JsCast};
 

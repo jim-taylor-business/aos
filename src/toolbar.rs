@@ -13,7 +13,7 @@ use leptos_router::{
   components::{A, Form},
   hooks::*,
 };
-use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options};
+use leptos_use_cookie::{SameSite, UseCookieOptions, use_cookie_with_options};
 use web_sys::MouseEvent;
 
 #[server]

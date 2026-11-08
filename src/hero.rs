@@ -23,7 +23,7 @@ use leptos::{
 };
 use leptos_meta::*;
 use leptos_router::{components::A, hooks::*};
-use leptos_use::{UseIntersectionObserverOptions, use_intersection_observer_with_options};
+use leptos_use_intersection_observer::{UseIntersectionObserverOptions, UseIntersectionObserverReturn, use_intersection_observer_with_options};
 use std::collections::BTreeMap;
 use web_sys::{HtmlAnchorElement, HtmlImageElement, wasm_bindgen::JsCast};
 

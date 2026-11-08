@@ -17,7 +17,9 @@ use leptos::{
 };
 use leptos_meta::*;
 use leptos_router::{components::A, hooks::*};
-use leptos_use::*;
+use leptos_use_intersection_observer::{UseIntersectionObserverOptions, UseIntersectionObserverReturn, use_intersection_observer_with_options};
+use leptos_use_scroll::{UseScrollOptions, UseScrollReturn, use_scroll_with_options};
+// use leptos_use::*;
 use std::collections::BTreeMap;
 use web_sys::{Event, HtmlAnchorElement, HtmlImageElement, WheelEvent, wasm_bindgen::JsCast};
 
@@ -150,6 +152,9 @@ pub fn Post() -> impl IntoView {
 
   #[cfg(not(feature = "ssr"))]
   {
+    // use leptos_use_intersection_observer::{UseIntersectionObserverOptions, UseIntersectionObserverReturn, use_intersection_observer_with_options};
+    // use leptos_use_scroll::{UseScrollOptions, UseScrollReturn, use_scroll_with_options};
+
     let UseScrollReturn { .. } = use_scroll_with_options(on_scroll_element, UseScrollOptions::default().on_scroll(on_scroll));
 
     use_intersection_observer_with_options(

@@ -14,7 +14,7 @@ use lemmy_api_common::{
 };
 use leptos::{html::Div, logging::log, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local_scoped, *};
 use leptos_router::{components::*, hooks::*, *};
-use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options};
+use leptos_use_cookie::{SameSite, UseCookieOptions, use_cookie_with_options};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use web_sys::{KeyboardEvent, MouseEvent, SubmitEvent, VisibilityState};
@@ -348,14 +348,14 @@ pub fn TopNav(
   }
   let input_focus = RwSignal::new(InputFocusState::Unfocused);
 
-  #[cfg(not(feature = "ssr"))]
-  let visibility = expect_context::<Signal<VisibilityState>>();
-
-  #[cfg(not(feature = "ssr"))]
-  let _visibility_effect = Effect::new(move |_| match visibility.get() {
-    VisibilityState::Visible => {}
-    _ => {}
-  });
+  //   #[cfg(not(feature = "ssr"))]
+  //   let visibility = expect_context::<Signal<VisibilityState>>();
+  //
+  //   #[cfg(not(feature = "ssr"))]
+  //   let _visibility_effect = Effect::new(move |_| match visibility.get() {
+  //     VisibilityState::Visible => {}
+  //     _ => {}
+  //   });
 
   let on_logout_submit = move |e: MouseEvent| {
     e.prevent_default();
@@ -1253,8 +1253,8 @@ pub fn TopNav(
                             use_navigate()(&format!("/u/{}/s{}", ssr_name(), query_params.to_query_string()), Default::default());
                           } else if ssr_name().len() > 0 {
                             use_navigate()(&format!("/c/{}/s{}", ssr_name(), query_params.to_query_string()), Default::default());
-                          } else if ssr_id().len() > 0 {
-                            use_navigate()(&format!("/p/{}/s{}", ssr_id(), query_params.to_query_string()), Default::default());
+                          // } else if ssr_id().len() > 0 {
+                          //   use_navigate()(&format!("/p/{}/s{}", ssr_id(), query_params.to_query_string()), Default::default());
                           } else {
                             use_navigate()(&format!("/s{}", query_params.to_query_string()), Default::default());
                           }

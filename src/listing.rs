@@ -13,7 +13,7 @@ use lemmy_api_common::lemmy_db_views_actor::structs::{CommunityView, PersonView}
 use lemmy_api_common::{lemmy_db_views::structs::*, person::*, post::*, site::GetSiteResponse};
 use leptos::{html::Img, logging::*, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local_scoped};
 use leptos_router::{components::*, hooks::*};
-use leptos_use::{SameSite, UseCookieOptions, use_cookie_with_options};
+use leptos_use_cookie::{SameSite, UseCookieOptions, use_cookie_with_options};
 use web_sys::MouseEvent;
 
 #[component]
