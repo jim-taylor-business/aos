@@ -15,6 +15,7 @@ pub mod post;
 pub mod search;
 pub mod toolbar;
 pub mod user;
+mod tools;
 
 use crate::{
   client::{LemmyApi, LemmyClient},

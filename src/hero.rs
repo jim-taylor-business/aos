@@ -23,7 +23,8 @@ use leptos::{
 };
 use leptos_meta::*;
 use leptos_router::{components::A, hooks::*};
-use leptos_use_intersection_observer::{UseIntersectionObserverOptions, UseIntersectionObserverReturn, use_intersection_observer_with_options};
+#[cfg(not(feature = "ssr"))]
+use leptos_use_intersection_observer::{UseIntersectionObserverOptions, use_intersection_observer_with_options};
 use std::collections::BTreeMap;
 use web_sys::{HtmlAnchorElement, HtmlImageElement, wasm_bindgen::JsCast};
 
@@ -103,7 +104,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
 
   #[cfg(not(feature = "ssr"))]
   {
-    use_intersection_observer_with_options(
+    let _ = use_intersection_observer_with_options(
       _visibility_element,
       move |_entries, _io| {
         if let Some(v) = _visibility_element.get() {

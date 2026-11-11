@@ -9,10 +9,10 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 lemmy_api_common = { branch = "deploy_demo", git = "https://github.com/jim-taylor-business/lemmy.git", default-features = false }
 
-leptos = { version = "0" }
-leptos_meta = { version = "0" }
-leptos_axum = { version = "0", optional = true }
-leptos_router = { version = "0" }
+leptos = { version = "~0.8" }
+leptos_meta = { version = "~0.8" }
+leptos_axum = { version = "~0.8", optional = true }
+leptos_router = { version = "~0.8" }
 
 # leptos_router = { version = "=0.8.13" }
 
@@ -34,11 +34,11 @@ leptos_router = { version = "0" }
 # leptos_i18n = { version = "0", features = ["track_locale_files"] , optional = true }
 
 # leptos-use = { version = "0", optional = true }
-leptos-use-cookie = "0"
-leptos-use-document-visibility = "0"
-leptos-use-intersection-observer = "0"
-leptos-use-scroll = "0"
-leptos-use-element-visibility = "0"
+leptos-use-cookie = { version = "0", optional = true }
+leptos-use-document-visibility = { version = "0", optional = true }
+leptos-use-intersection-observer = { version = "0", optional = true }
+leptos-use-scroll = { version = "0", optional = true }
+leptos-use-element-visibility = { version = "0", optional = true }
 
 # leptos-use = { path = "../leptos-use", optional = true }
 # leptos-use = { git = "https://github.com/Synphonyte/leptos-use.git", commit = "355b2af2", optional = true }
@@ -58,7 +58,8 @@ pulldown-cmark = { branch = "deploy_demo", git = "https://github.com/jim-taylor-
 html-escape = "0"
 pretty-duration = { branch = "main", git = "https://github.com/jim-taylor-business/pretty-duration.git" }
 jiff = { version = "0", features = ["js"] }
-chrono = { version = "0", features = ["std"] }
+#chrono = { version = "0", features = ["std"] }
+chrono = { version = "0", default-features = false, features = ["std"] }
 
 gloo-net = { version = "0", optional = true, features = ["http"] }
 console_error_panic_hook = { version = "0", optional = true }
@@ -86,41 +87,49 @@ reqwest = { version = "0", features = [
 ], optional = true }
 
 [features]
-default = ["csr"]
+default = ["ssr"]
 csr = [
   "leptos/csr",
+  "dep:leptos-use-document-visibility",
+  "dep:leptos-use-intersection-observer",
+  "dep:leptos-use-scroll",
+  "dep:leptos-use-element-visibility",
   # "leptos_i18n/csr",
-  # "leptos-use",
+  "dep:leptos-use-cookie",
   "dep:wasm-bindgen",
   "dep:console_error_panic_hook",
   "dep:gloo-net",
-  "rexie",
-  "serde-wasm-bindgen",
+  "dep:rexie",
+  "dep:serde-wasm-bindgen",
 ]
 hydrate = [
   "leptos/hydrate",
+  "dep:leptos-use-document-visibility",
+  "dep:leptos-use-intersection-observer",
+  "dep:leptos-use-scroll",
+  "dep:leptos-use-element-visibility",
   # "leptos_i18n/hydrate",
-  # "leptos-use",
+  "dep:leptos-use-cookie",
   "dep:wasm-bindgen",
   "dep:console_error_panic_hook",
   "dep:gloo-net",
-  "rexie",
-  "serde-wasm-bindgen",
+  "dep:rexie",
+  "dep:serde-wasm-bindgen",
 ]
 ssr = [
+  "leptos/ssr",
+  "leptos_meta/ssr",
+  "leptos_router/ssr",
+  "leptos-use-cookie/ssr",
+  "leptos-use-cookie/axum",
   "dep:axum",
   "dep:tokio",
   "dep:tower",
   "dep:tower-http",
   "dep:leptos_axum",
-  "leptos/ssr",
-  "leptos_meta/ssr",
-  "leptos_router/ssr",
   "dep:tracing",
   "dep:reqwest",
   # "leptos_i18n/axum",
-  "leptos-use-cookie/ssr",
-  "leptos-use-cookie/axum",
 ]
 
 [profile.release]

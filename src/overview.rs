@@ -23,7 +23,9 @@ use leptos::logging::*;
 use leptos::{html::Div, leptos_dom::helpers::TimeoutHandle, logging::error, prelude::*, server::codee::string::FromToStringCodec, task::*, *};
 use leptos_router::{components::*, location::State, *};
 use leptos_use_cookie::{SameSite, UseCookieOptions, use_cookie_with_options};
+#[cfg(not(feature = "ssr"))]
 use leptos_use_intersection_observer::{UseIntersectionObserverOptions, UseIntersectionObserverReturn, use_intersection_observer_with_options};
+#[cfg(not(feature = "ssr"))]
 use leptos_use_scroll::{UseScrollOptions, UseScrollReturn, use_scroll_with_options};
 use send_wrapper::SendWrapper;
 use std::collections::BTreeMap;

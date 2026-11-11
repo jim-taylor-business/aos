@@ -12,11 +12,14 @@ use lemmy_api_common::{
 };
 use leptos::{html::Div, logging::*, prelude::*, task::*, *};
 use leptos_meta::Title;
+use leptos_router::{NavigateOptions, location::State};
 use leptos_router::{components::*, hooks::*};
+#[cfg(not(feature = "ssr"))]
 use leptos_use_intersection_observer::{UseIntersectionObserverOptions, UseIntersectionObserverReturn, use_intersection_observer_with_options};
+#[cfg(not(feature = "ssr"))]
 use leptos_use_scroll::{UseScrollOptions, UseScrollReturn, use_scroll_with_options};
 use std::{collections::BTreeMap, vec};
-use web_sys::{MouseEvent, WheelEvent};
+use web_sys::{Event, MouseEvent, WheelEvent};
 
 #[component]
 pub fn User() -> impl IntoView {
@@ -33,15 +36,6 @@ pub fn User() -> impl IntoView {
 
   #[cfg(not(feature = "ssr"))]
   {
-    use leptos_router::{NavigateOptions, location::State};
-    // use leptos_use_intersection_observer::{UseIntersectionObserverOptions, UseIntersectionObserverReturn, use_intersection_observer_with_options};
-    // use leptos_use_scroll::{UseScrollOptions, UseScrollReturn, use_scroll_with_options};
-    // use leptos_use::{
-    //   UseIntersectionObserverOptions, UseIntersectionObserverReturn, UseScrollOptions, UseScrollReturn, use_intersection_observer_with_options,
-    //   use_scroll_with_options,
-    // };
-    use web_sys::Event;
-
     let on_scroll = move |_e: Event| {
       if let Some(se) = on_scroll_element.get() {
         #[cfg(not(feature = "ssr"))]

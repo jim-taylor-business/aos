@@ -18,9 +18,8 @@ use leptos_router::{
   components::{A, Form},
   hooks::use_navigate,
 };
-use leptos_use_intersection_observer::{UseIntersectionObserverOptions, UseIntersectionObserverReturn, use_intersection_observer_with_options};
-use leptos_use_scroll::{UseScrollOptions, UseScrollReturn, use_scroll_with_options};
-// use leptos_use::*;
+#[cfg(not(feature = "ssr"))]
+use leptos_use_intersection_observer::{UseIntersectionObserverOptions, use_intersection_observer_with_options};
 use std::collections::BTreeMap;
 use web_sys::{Event, HtmlAnchorElement, HtmlImageElement, MouseEvent, TouchEvent, WheelEvent, wasm_bindgen::JsCast};
 
@@ -461,7 +460,7 @@ pub fn Comment(
 
   #[cfg(not(feature = "ssr"))]
   {
-    use_intersection_observer_with_options(
+    let _ = use_intersection_observer_with_options(
       _visibility_element,
       move |_entries, _io| {
         if let Some(v) = _visibility_element.get() {

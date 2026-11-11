@@ -17,7 +17,9 @@ use leptos::{
 };
 use leptos_meta::*;
 use leptos_router::{components::A, hooks::*};
-use leptos_use_intersection_observer::{UseIntersectionObserverOptions, UseIntersectionObserverReturn, use_intersection_observer_with_options};
+#[cfg(not(feature = "ssr"))]
+use leptos_use_intersection_observer::{UseIntersectionObserverOptions, use_intersection_observer_with_options};
+#[cfg(not(feature = "ssr"))]
 use leptos_use_scroll::{UseScrollOptions, UseScrollReturn, use_scroll_with_options};
 // use leptos_use::*;
 use std::collections::BTreeMap;
@@ -157,7 +159,7 @@ pub fn Post() -> impl IntoView {
 
     let UseScrollReturn { .. } = use_scroll_with_options(on_scroll_element, UseScrollOptions::default().on_scroll(on_scroll));
 
-    use_intersection_observer_with_options(
+    let _ = use_intersection_observer_with_options(
       _visibility_element,
       move |_entries, _io| {
         if let Some(v) = _visibility_element.get() {

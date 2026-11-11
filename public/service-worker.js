@@ -1,5 +1,5 @@
-var cacheName = "aos";
-var filesToCache = [
+const cacheName = "aos";
+const filesToCache = [
   "./",
   "./manifest.json",
   "./pkg/aos.wasm",
@@ -20,7 +20,7 @@ self.addEventListener("install", function (event) {
           cache.delete(request);
         }
       });
-      cache.addAll(filesToCache.map(url => new Request(url, { credentials: "same-origin" })));
+      cache.addAll(filesToCache.map(url => new Request(url, {credentials: "same-origin"})));
     })
   };
   event.waitUntil(preCache);
@@ -34,44 +34,44 @@ self.addEventListener("message", function (messageEvent) {
   }
 });
 
-self.addEventListener("fetch", function (e) {
-  // console.log("Fetch");
-  // e.respondWith(cache_then_network(e.request));
-});
+// self.addEventListener("fetch", function (e) {
+//   // console.log("Fetch");
+//   // e.respondWith(cache_then_network(e.request));
+// });
 
 async function get_cache() {
   return caches.open(cacheName);
 }
 
-async function cache_then_network(request) {
-  const cache = await get_cache();
-  return cache.match(request).then(
-    (cache_response) => {
-      if (!cache_response) {
-        return fetch_from_network(request, cache);
-      } else {
-        console.log("cache");
-        return cache_response;
-      }
-    },
-    (reason) => {
-      return fetch_from_network(request, cache);
-    }
-  );
-}
+// async function cache_then_network(request) {
+//   const cache = await get_cache();
+//   return cache.match(request).then(
+//     (cache_response) => {
+//       if (!cache_response) {
+//         return fetch_from_network(request, cache);
+//       } else {
+//         console.log("cache");
+//         return cache_response;
+//       }
+//     },
+//     (reason) => {
+//       return fetch_from_network(request, cache);
+//     }
+//   );
+// }
 
-function fetch_from_network(request, cache) {
-  // return fetch(request, { cache: "force-cache" }).then(
-  return fetch(request).then(
-    (net_response) => {
-      // console.log("Network");
-      return net_response;
-    },
-    (reason) => {
-      // console.error("Network fetch rejected. Falling back to ./. Reason: ", reason);
-      return cache.match("./").then(function (cache_root_response) {
-        return cache_root_response;
-      });
-    }
-  )
-}
+// function fetch_from_network(request, cache) {
+//   // return fetch(request, { cache: "force-cache" }).then(
+//   return fetch(request).then(
+//     (net_response) => {
+//       // console.log("Network");
+//       return net_response;
+//     },
+//     (reason) => {
+//       // console.error("Network fetch rejected. Falling back to ./. Reason: ", reason);
+//       return cache.match("./").then(function (cache_root_response) {
+//         return cache_root_response;
+//       });
+//     }
+//   )
+// }

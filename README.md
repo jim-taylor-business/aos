@@ -1,6 +1,8 @@
 # A.O.S (Ace)
 
-Ace is a Lemmy client written in [Rust](//www.rust-lang.org/), [Leptos](//github.com/leptos-rs/leptos), [Daisy](//daisyui.com) and [Tailwind](//tailwindcss.com)..
+Ace is a Lemmy client written
+in [Rust](//www.rust-lang.org/), [Leptos](//github.com/leptos-rs/leptos), [Daisy](//daisyui.com)
+and [Tailwind](//tailwindcss.com)
 
 # features
 
@@ -13,9 +15,10 @@ Ace is a Lemmy client written in [Rust](//www.rust-lang.org/), [Leptos](//github
 
 # lemmy support
 
-- browse, filter and sort posts and communities
-- threaded comment reader
 - up and down votes
+- threaded comment reader
+- contextual filter and sort
+- contextual search
 - save posts and comments
 - edit and reply comments
 - report posts
