@@ -1,6 +1,6 @@
 use crate::ReadAuthCookie;
 use crate::{client::*, errors::*, nav::TopNav};
-use crate::{comment::Comment, db::csr_indexed_db::*, listing::Listing};
+use crate::{comment::Comment, db::csr_indexed_db::*, listing::Listing, tools::markdown_to_html};
 use lemmy_api_common::{
   lemmy_db_schema::{
     SortType, SubscribedType,
@@ -283,30 +283,7 @@ pub fn User() -> impl IntoView {
                       ap.sort_by(|a, b| a.post.post.published.cmp(&b.post.post.published).reverse());
                     });
                   let bio = if let Some(bio) = t.person_view.person.bio {
-                    let mut options = pulldown_cmark::Options::empty();
-                    options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
-                    options.insert(pulldown_cmark::Options::ENABLE_TABLES);
-                    options.insert(pulldown_cmark::Options::ENABLE_SUPERSCRIPT);
-                    options.insert(pulldown_cmark::Options::ENABLE_SUBSCRIPT);
-                    options.insert(pulldown_cmark::Options::ENABLE_CONTAINER_EXTENSIONS);
-                    options.insert(pulldown_cmark::Options::ENABLE_LINKIFY_LEMMY);
-                    options.insert(pulldown_cmark::Options::ENABLE_LINKIFY_HTTP);
-                    let parser = pulldown_cmark::Parser::new_ext(&bio, options);
-                    let custom = parser
-                      .map(|event| match event {
-                        pulldown_cmark::Event::Html(text) => {
-                          let er = format!("<p>{}</p>", html_escape::encode_safe(&text).to_string());
-                          pulldown_cmark::Event::Html(er.into())
-                        }
-                        pulldown_cmark::Event::InlineHtml(text) => {
-                          let er = html_escape::encode_safe(&text).to_string();
-                          pulldown_cmark::Event::InlineHtml(er.into())
-                        }
-                        _ => event,
-                      });
-                    let mut description_encoded = String::new();
-                    pulldown_cmark::html::push_html(&mut description_encoded, custom);
-                    description_encoded
+                    markdown_to_html(&bio, true)
                   } else {
                     String::new()
                   };

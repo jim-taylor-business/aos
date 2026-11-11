@@ -6,6 +6,7 @@ use crate::{
   errors::{Error, LemmyAppError, LemmyAppErrorType, LemmyAppResult, Loading, Warning},
   icon::{Icon, IconType},
   toolbar::PostToolbar,
+  tools::markdown_to_html,
 };
 use ev::MouseEvent;
 use lemmy_api_common::site::GetSiteResponse;
@@ -171,27 +172,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                 None
               };
               let title = post_response.get().post_view.post.name.clone();
-              let mut options = pulldown_cmark::Options::empty();
-              options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
-              options.insert(pulldown_cmark::Options::ENABLE_TABLES);
-              options.insert(pulldown_cmark::Options::ENABLE_SUPERSCRIPT);
-              options.insert(pulldown_cmark::Options::ENABLE_SUBSCRIPT);
-              options.insert(pulldown_cmark::Options::ENABLE_CONTAINER_EXTENSIONS);
-              let parser = pulldown_cmark::Parser::new_ext(&title, options);
-              let custom = parser
-                .map(|event| match event {
-                  pulldown_cmark::Event::Html(text) => {
-                    let er = format!("<p>{}</p>", html_escape::encode_safe(&text).to_string());
-                    pulldown_cmark::Event::Html(er.into())
-                  }
-                  pulldown_cmark::Event::InlineHtml(text) => {
-                    let er = html_escape::encode_safe(&text).to_string();
-                    pulldown_cmark::Event::InlineHtml(er.into())
-                  }
-                  _ => event,
-                });
-              let mut title_encoded = String::new();
-              pulldown_cmark::html::push_html(&mut title_encoded, custom);
+              let title_encoded = markdown_to_html(&title, false);
               let community_title = if post_response.get().post_view.community.local {
                 format!("{}", post_response.get().post_view.community.name)
               } else {
@@ -403,29 +384,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                 </div>
 
                 {if let Some(ref content) = text {
-                  let mut options = pulldown_cmark::Options::empty();
-                  options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
-                  options.insert(pulldown_cmark::Options::ENABLE_TABLES);
-                  options.insert(pulldown_cmark::Options::ENABLE_SUPERSCRIPT);
-                  options.insert(pulldown_cmark::Options::ENABLE_SUBSCRIPT);
-                  options.insert(pulldown_cmark::Options::ENABLE_CONTAINER_EXTENSIONS);
-                  options.insert(pulldown_cmark::Options::ENABLE_LINKIFY_LEMMY);
-                  options.insert(pulldown_cmark::Options::ENABLE_LINKIFY_HTTP);
-                  let parser = pulldown_cmark::Parser::new_ext(content, options);
-                  let custom = parser
-                    .map(|event| match event {
-                      pulldown_cmark::Event::Html(text) => {
-                        let er = format!("<p>{}</p>", html_escape::encode_safe(&text).to_string());
-                        pulldown_cmark::Event::Html(er.into())
-                      }
-                      pulldown_cmark::Event::InlineHtml(text) => {
-                        let er = html_escape::encode_safe(&text).to_string();
-                        pulldown_cmark::Event::InlineHtml(er.into())
-                      }
-                      _ => event,
-                    });
-                  let mut safe_html = String::new();
-                  pulldown_cmark::html::push_html(&mut safe_html, custom);
+                  let safe_html = markdown_to_html(content, true);
                   Some(
                     view! {
                       <div class="pr-4 pl-4">

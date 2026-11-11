@@ -9,6 +9,7 @@ use crate::{
   icon::{IconType::*, *},
   listing::Listings,
   nav::TopNav,
+  tools::markdown_to_html,
 };
 use hooks::*;
 use lemmy_api_common::community::CommunityResponse;
@@ -349,28 +350,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                 Some(Ok(Some(s))) => {
                   let community_title_encoded = html_escape::encode_safe(&s.community_view.community.title).to_string();
                   let description = if let Some(description) = s.community_view.community.description {
-                    let mut options = pulldown_cmark::Options::empty();
-                    options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
-                    options.insert(pulldown_cmark::Options::ENABLE_TABLES);
-                    options.insert(pulldown_cmark::Options::ENABLE_SUPERSCRIPT);
-                    options.insert(pulldown_cmark::Options::ENABLE_SUBSCRIPT);
-                    options.insert(pulldown_cmark::Options::ENABLE_CONTAINER_EXTENSIONS);
-                    let parser = pulldown_cmark::Parser::new_ext(&description, options);
-                    let custom = parser
-                      .map(|event| match event {
-                        pulldown_cmark::Event::Html(text) => {
-                          let er = format!("<p>{}</p>", html_escape::encode_safe(&text).to_string());
-                          pulldown_cmark::Event::Html(er.into())
-                        }
-                        pulldown_cmark::Event::InlineHtml(text) => {
-                          let er = html_escape::encode_safe(&text).to_string();
-                          pulldown_cmark::Event::InlineHtml(er.into())
-                        }
-                        _ => event,
-                      });
-                    let mut description_encoded = String::new();
-                    pulldown_cmark::html::push_html(&mut description_encoded, custom);
-                    description_encoded
+                    markdown_to_html(&description, false)
                   } else {
                     String::new()
                   };

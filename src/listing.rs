@@ -7,6 +7,7 @@ use crate::{
   errors::*,
   hero::Hero,
   icon::{IconType::*, *},
+  tools::markdown_to_html,
 };
 use lemmy_api_common::lemmy_db_schema::newtypes::DbUrl;
 use lemmy_api_common::lemmy_db_views_actor::structs::{CommunityView, PersonView};
@@ -736,27 +737,7 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
   };
 
   let title = post_view.get().post.name.clone();
-  let mut options = pulldown_cmark::Options::empty();
-  options.insert(pulldown_cmark::Options::ENABLE_STRIKETHROUGH);
-  options.insert(pulldown_cmark::Options::ENABLE_TABLES);
-  options.insert(pulldown_cmark::Options::ENABLE_SUPERSCRIPT);
-  options.insert(pulldown_cmark::Options::ENABLE_SUBSCRIPT);
-  options.insert(pulldown_cmark::Options::ENABLE_CONTAINER_EXTENSIONS);
-  let parser = pulldown_cmark::Parser::new_ext(&title, options);
-
-  let custom = parser.map(|event| match event {
-    pulldown_cmark::Event::Html(text) => {
-      let er = format!("<p>{}</p>", html_escape::encode_safe(&text).to_string());
-      pulldown_cmark::Event::Html(er.into())
-    }
-    pulldown_cmark::Event::InlineHtml(text) => {
-      let er = html_escape::encode_safe(&text).to_string();
-      pulldown_cmark::Event::InlineHtml(er.into())
-    }
-    _ => event,
-  });
-  let mut title_encoded_mut = String::new();
-  pulldown_cmark::html::push_html(&mut title_encoded_mut, custom);
+  let title_encoded_mut = markdown_to_html(&title, false);
   let title_encoded = Memo::new(move |_| title_encoded_mut.clone());
 
   let community_title = if post_view.get().community.local {
