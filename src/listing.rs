@@ -25,14 +25,14 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
   let thumbnail = RwSignal::new(String::from(""));
 
   let from = if let Some(f) = person_view.person.actor_id.clone().inner().host_str() {
-    if f.to_string().ne(&get_instance_cookie.get_untracked().unwrap_or("".into())) { format!(" from {}", f) } else { "".into() }
+    external_host_attribution(Some(f.to_string()), get_instance_cookie.get_untracked())
   } else {
-    "".into()
+    String::new()
   };
   let name = html_escape::encode_safe(&person_view.person.display_name.unwrap_or(person_view.person.name.clone())).to_string();
   let a = person_view.person.actor_id;
   let u = person_view.person.name.clone();
-  let creator_name = Memo::new(move |_| if let Some(domain) = a.domain() { format!("{}@{}", u.clone(), domain) } else { u.clone() });
+  let creator_name = Memo::new(move |_| federated_creator_handle(&u, a.domain().as_deref(), None));
   let creator_name_encoded = Memo::new(move |_| html_escape::encode_safe(&name).to_string());
 
   // let title = if person_view.person.display_name.is_some() > 0 { person_view.person.display_name } else { person_view.person.name.clone() };
@@ -219,17 +219,14 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
   let thumbnail = RwSignal::new(String::from(""));
 
   let from = if let Some(f) = community.community.actor_id.inner().host_str() {
-    if f.to_string().ne(&get_instance_cookie.get_untracked().unwrap_or("".into())) { format!(" from {}", f) } else { "".into() }
+    external_host_attribution(Some(f.to_string()), get_instance_cookie.get_untracked())
   } else {
-    "".into()
+    String::new()
   };
   let title = if community.community.title.len() > 0 { community.community.title } else { community.community.name.clone() };
-  // let community_title = if community.community.local {
-  //   format!("{}", title)
-  // } else {
-  //   format!("{}@{}", title, if let Some(h) = community.community.actor_id.inner().host() { h.to_string() } else { "".to_owned() })
-  // };
-  let community_title_encoded = Memo::new(move |_| html_escape::encode_safe(&title).to_string());
+  let community_title =
+    community_title_with_federation(&title, community.community.local, community.community.actor_id.inner().host().map(|host| host.to_string()));
+  let community_title_encoded = Memo::new(move |_| html_escape::encode_safe(&community_title).to_string());
   let community_name = Memo::new(move |_| {
     if community.community.local {
       format!("{}", community.community.name)
@@ -659,23 +656,16 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
   let title_encoded_mut = markdown_to_html(&title, false);
   let title_encoded = Memo::new(move |_| title_encoded_mut.clone());
 
-  let community_title = if post_view.get().community.local {
-    format!("{}", post_view.get().community.name)
-  } else {
-    format!(
-      "{}@{}",
-      post_view.get().community.name,
-      if let Some(h) = post_view.get().community.actor_id.inner().host() { h.to_string() } else { "".to_owned() }
-    )
-  };
+  let community_title = community_title_with_federation(
+    &post_view.get().community.name,
+    post_view.get().community.local,
+    post_view.get().community.actor_id.inner().host().map(|host| host.to_string()),
+  );
   let community_title_encoded = Memo::new(move |_| html_escape::encode_safe(&community_title).to_string());
   let a = post_view.get().creator.actor_id;
   let u = post_view.get().creator.name;
-  let creator_name = if let Some(domain) = a.domain() {
-    format!("{}{}", u, if domain.ne(&get_instance_cookie.get_untracked().unwrap_or("".into())) { format!("@{}", domain) } else { "".into() })
-  } else {
-    u
-  };
+  let instance = get_instance_cookie.get_untracked();
+  let creator_name = federated_creator_handle(&u, a.domain().as_deref(), instance.as_deref());
   let creator_name_encoded = Memo::new(move |_| html_escape::encode_safe(&creator_name).to_string());
   // let creator_name_encoded = Memo::new(move |_| html_escape::encode_safe(&post_view.get().creator.actor_id.to_string()[8..]).to_string());
 
@@ -780,19 +770,10 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                       " in "
                       <span class="overflow-y-auto" inner_html={community_title_encoded} />
                       <span class="overflow-y-auto">
-                        {if let Some(d) = post_view.get_untracked().post.url {
-                          if let Some(f) = d.inner().host_str() {
-                            if f.to_string().ne(&get_instance_cookie.get_untracked().unwrap_or("".into())) {
-                              format!(" from {}", f)
-                            } else {
-                              "".into()
-                            }
-                          } else {
-                            "".into()
-                          }
-                        } else {
-                          "".into()
-                        }}
+                        {external_host_attribution(
+                          post_view.get_untracked().post.url.and_then(|url| url.inner().host_str().map(str::to_owned)),
+                          get_instance_cookie.get_untracked(),
+                        )}
                       </span>
                     </span>
                   </div>

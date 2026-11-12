@@ -254,34 +254,26 @@ pub fn Post() -> impl IntoView {
                     };
                     let title = post_response.get().post_view.post.name.clone();
                     let title_encoded = markdown_to_html(&title, true);
-                    let community_title = if post_response.get().post_view.community.local {
-                      format!("{}", post_response.get().post_view.community.name)
-                    } else {
-                      format!(
-                        "{}@{}",
-                        post_response.get().post_view.community.name,
-                        post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
-                      )
-                    };
+                    let community_title = community_title_with_federation(
+                      &post_response.get().post_view.community.name,
+                      post_response.get().post_view.community.local,
+                      post_response.get().post_view.community.actor_id.inner().host().map(|host| host.to_string()),
+                    );
                     let community_title_encoded = html_escape::encode_safe(&community_title).to_string();
                     // let creator_name = &post_response.get().post_view.creator.actor_id.to_string()[8..];
                     let a = post_response.get().post_view.creator.actor_id;
                     let u = post_response.get().post_view.creator.name;
-                    let creator_name = if let Some(domain) = a.domain() { format!("{}{}", u, if domain.ne(&get_instance_cookie.get_untracked().unwrap_or("".into())) { format!("@{}", domain) } else { "".into() }) } else { u };
+                    let instance = get_instance_cookie.get_untracked();
+                    let creator_name = federated_creator_handle(&u, a.domain().as_deref(), instance.as_deref());
                     let creator_name_encoded = html_escape::encode_safe(&creator_name).to_string();
                     let abbr_duration = relative_time(post_response.get().post_view.post.published.timestamp_millis());
                     let url = Memo::new(move |_| post_response.get().post_view.post.url);
                     let thumbnail_url = Memo::new(move |_| post_response.get().post_view.post.thumbnail_url);
                     let domain = Memo::new(move |_| {
-                      if let Some(d) = url.get() {
-                        if let Some(f) = d.inner().host_str() {
-                          if f.to_string().ne(&get_instance_cookie.get().unwrap_or("".into())) { format!(" from {}", f) } else { "".to_owned() }
-                        } else {
-                          "".to_owned()
-                        }
-                      } else {
-                        "".to_owned()
-                      }
+                      external_host_attribution(
+                        url.get().and_then(|url| url.inner().host_str().map(str::to_owned)),
+                        get_instance_cookie.get(),
+                      )
                     });
                     #[cfg(not(feature = "ssr"))] loading.set(false);
                     let languages = Memo::new(move |_| if let Some(Ok(GetSiteResponse { all_languages: l, .. })) = ssr_site.get() { l } else { vec![] });

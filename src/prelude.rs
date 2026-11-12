@@ -83,6 +83,24 @@ pub fn relative_time(published_at_millis: i64) -> String {
   if is_future { format!("in {}", abbreviated) } else { format!("{} ago", abbreviated) }
 }
 
+pub fn community_title_with_federation(name: &str, local: bool, host: Option<String>) -> String {
+  if local { name.to_owned() } else { format!("{}@{}", name, host.unwrap_or_default()) }
+}
+
+pub fn federated_creator_handle(name: &str, domain: Option<&str>, instance: Option<&str>) -> String {
+  match domain {
+    Some(domain) if instance != Some(domain) => format!("{}@{}", name, domain),
+    _ => name.to_owned(),
+  }
+}
+
+pub fn external_host_attribution(host: Option<String>, instance: Option<String>) -> String {
+  match host {
+    Some(host) if Some(host.as_str()) != instance.as_deref() => format!(" from {}", host),
+    _ => String::new(),
+  }
+}
+
 #[component]
 pub fn Warning(
   #[prop(optional, into)] description: Option<String>,

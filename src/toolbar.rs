@@ -258,15 +258,11 @@ pub fn PostToolbar(
   let title = post_view.get().post.name.clone();
   let title_encoded = markdown_to_html(&title, false);
 
-  let community_title = if post_view.get().community.local {
-    format!("{}", post_view.get().community.name)
-  } else {
-    format!(
-      "{}@{}",
-      post_view.get().community.name,
-      if let Some(h) = post_view.get().community.actor_id.inner().host() { h.to_string() } else { "".to_owned() }
-    )
-  };
+  let community_title = community_title_with_federation(
+    &post_view.get().community.name,
+    post_view.get().community.local,
+    post_view.get().community.actor_id.inner().host().map(|host| host.to_string()),
+  );
   let creator_name = &post_view.get().creator.actor_id.to_string()[8..];
 
   let _abbr_duration = relative_time(post_view.get().post.published.timestamp_millis());
