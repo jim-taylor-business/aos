@@ -18,16 +18,7 @@ pub fn Community() -> impl IntoView {
 
 #[server]
 pub async fn toggle_subscription(community_id: i32, follow: bool) -> Result<Option<CommunityResponse>, ServerFnError> {
-  let (get_auth_cookie, set_auth_cookie) =
-    use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
-  provide_context(ReadAuthCookie(get_auth_cookie));
-  provide_context(WriteAuthCookie(set_auth_cookie));
-  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
-    "instance",
-    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
-  );
-  provide_context(ReadInstanceCookie(get_instance_cookie));
-  provide_context(WriteInstanceCookie(set_instance_cookie));
+  provide_cookies();
   let form = FollowCommunity { community_id: CommunityId(community_id), follow };
   let result = LemmyClient.follow_community(form).await;
   use leptos_axum::redirect;

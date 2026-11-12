@@ -32,16 +32,7 @@ async fn try_login(form: Login) -> Result<LoginResponse, LemmyAppError> {
 
 #[server]
 pub async fn login_fn(username_or_email: String, password: String, uri: String) -> Result<(), ServerFnError> {
-  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
-    "instance",
-    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
-  );
-  provide_context(ReadInstanceCookie(get_instance_cookie));
-  provide_context(WriteInstanceCookie(set_instance_cookie));
-  let (get_auth_cookie, set_auth_cookie) =
-    use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
-  provide_context(ReadAuthCookie(get_auth_cookie));
-  provide_context(WriteAuthCookie(set_auth_cookie));
+  provide_cookies();
   use leptos_axum::redirect;
   let req = Login { username_or_email: username_or_email.into(), password: password.into(), totp_2fa_token: None };
   let result = try_login(req).await;

@@ -2,16 +2,7 @@ use crate::prelude::*;
 
 #[server]
 pub async fn logout_fn() -> Result<(), ServerFnError> {
-  let (get_auth_cookie, set_auth_cookie) =
-    use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
-  provide_context(ReadAuthCookie(get_auth_cookie));
-  provide_context(WriteAuthCookie(set_auth_cookie));
-  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
-    "instance",
-    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
-  );
-  provide_context(ReadInstanceCookie(get_instance_cookie));
-  provide_context(WriteInstanceCookie(set_instance_cookie));
+  provide_cookies();
   use leptos_axum::redirect;
   let result = LemmyClient.logout().await;
   match result {
@@ -55,10 +46,7 @@ pub async fn change_instance(instance: String) -> Result<(), ServerFnError> {
 
 #[server]
 pub async fn change_lang_fn(lang: String) -> Result<(), ServerFnError> {
-  let (_, set_locale_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
-    "i18n_pref_locale",
-    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
-  );
+  let (_, set_locale_cookie) = use_cookie_with_options::<String, FromToStringCodec>("i18n_pref_locale", default_cookie_options());
   set_locale_cookie.set(Some(lang.to_lowercase()));
   Ok(())
 }

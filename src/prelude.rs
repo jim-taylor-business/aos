@@ -193,13 +193,39 @@ pub fn Info(loading: bool, #[prop(optional, into)] description: Option<String>) 
   }
 }
 
-fn InfoComponent(title: &str, content: &str) -> impl IntoView {
-  view! {
-    <div class="alert alert-info alert-soft">
-      <div class="flex flex-col gap-2">
-        <span class="font-bold">{title}</span>
-        <span>{content}</span>
-      </div>
-    </div>
-  }
+pub fn default_cookie_options<T, E, D>() -> UseCookieOptions<T, E, D> {
+  UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax)
+}
+
+pub fn provide_auth_cookie() -> (Signal<Option<String>>, WriteSignal<Option<String>>) {
+  let (get_auth_cookie, set_auth_cookie) =
+    use_cookie_with_options::<String, FromToStringCodec>("jwt", default_cookie_options());
+  provide_context(ReadAuthCookie(get_auth_cookie));
+  provide_context(WriteAuthCookie(set_auth_cookie));
+  (get_auth_cookie, set_auth_cookie)
+}
+
+pub fn provide_instance_cookie() -> (Signal<Option<String>>, WriteSignal<Option<String>>) {
+  let (get_instance_cookie, set_instance_cookie) =
+    use_cookie_with_options::<String, FromToStringCodec>("instance", default_cookie_options());
+  provide_context(ReadInstanceCookie(get_instance_cookie));
+  provide_context(WriteInstanceCookie(set_instance_cookie));
+  (get_instance_cookie, set_instance_cookie)
+}
+
+pub fn provide_theme_cookie() -> (Signal<Option<String>>, WriteSignal<Option<String>>) {
+  let (get_theme_cookie, set_theme_cookie) =
+    use_cookie_with_options::<String, FromToStringCodec>("theme", default_cookie_options());
+  provide_context(ReadThemeCookie(get_theme_cookie));
+  provide_context(WriteThemeCookie(set_theme_cookie));
+  (get_theme_cookie, set_theme_cookie)
+}
+
+pub fn provide_cookies() {
+  provide_auth_cookie();
+  provide_instance_cookie();
+}
+
+pub fn provide_auth_and_instance_cookies() {
+  provide_cookies();
 }

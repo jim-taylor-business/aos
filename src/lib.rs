@@ -148,21 +148,13 @@ pub fn App() -> impl IntoView {
     RwSignal::new(BTreeMap::new());
   provide_context(user_browser_cache);
 
-  let (get_auth_cookie, set_auth_cookie) =
-    use_cookie_with_options::<String, FromToStringCodec>("jwt", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
-  provide_context(ReadAuthCookie(get_auth_cookie));
-  provide_context(WriteAuthCookie(set_auth_cookie));
+  let (get_auth_cookie, set_auth_cookie) = provide_auth_cookie();
   #[cfg(feature = "ssr")]
   if let Some(t) = get_auth_cookie.get() {
     set_auth_cookie.set(Some(t));
   }
 
-  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>(
-    "instance",
-    UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax),
-  );
-  provide_context(ReadInstanceCookie(get_instance_cookie));
-  provide_context(WriteInstanceCookie(set_instance_cookie));
+  let (get_instance_cookie, set_instance_cookie) = provide_instance_cookie();
   #[cfg(feature = "ssr")]
   if let Some(t) = get_instance_cookie.get() {
     set_instance_cookie.set(Some(t));
@@ -170,10 +162,7 @@ pub fn App() -> impl IntoView {
     set_instance_cookie.set(Some("lemmy.world".to_owned()));
   }
 
-  let (get_theme_cookie, set_theme_cookie) =
-    use_cookie_with_options::<String, FromToStringCodec>("theme", UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax));
-  provide_context(ReadThemeCookie(get_theme_cookie));
-  provide_context(WriteThemeCookie(set_theme_cookie));
+  let (get_theme_cookie, set_theme_cookie) = provide_theme_cookie();
   #[cfg(feature = "ssr")]
   if let Some(t) = get_theme_cookie.get() {
     set_theme_cookie.set(Some(t));
