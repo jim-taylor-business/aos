@@ -286,7 +286,7 @@ pub fn Search(
                     // log!("next {:#?}", next_page_cursor.get());
                     // if r.0 == 1 && o.posts.len() == 0 {
                     //   view! {
-                    //     <Loading loading={true} description={"No search results"} />
+                    //     <Info loading={true} description={"No search results"} />
                     //   }.into_any()
                     // } else {
                   view! {
@@ -414,7 +414,7 @@ pub fn Search(
           </Transition>
           <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
           {move || {
-            view! { <Loading loading={loading.get()} /> }
+            view! { <Info loading={loading.get()} /> }
           }}
         </div>
       </div>

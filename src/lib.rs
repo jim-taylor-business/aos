@@ -100,7 +100,7 @@ fn NotFound() -> impl IntoView {
             node_ref={on_scroll_element}
             class="min-w-full sm:overflow-x-auto sm:overflow-y-hidden sm:absolute sm:px-4 gap-4{} sm:h-[calc(100%-4rem)] sm:columns-[23rem]"
           >
-            <errors::Warning description="Link not found, try searching instead" />
+            <Warning description="Link not found, try searching instead" />
           </div>
         </div>
       </main>

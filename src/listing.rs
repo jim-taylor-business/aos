@@ -989,7 +989,7 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                   </Show>
                 </div>
                 {move || {
-                  view! { <Loading loading={loading.get()} /> }
+                  view! { <Info loading={loading.get()} /> }
                 }}
                 <Show when={move || error.get()} fallback={|| {}}>
                   <Error description="Error upvoting post" error={latest_error.get()} />

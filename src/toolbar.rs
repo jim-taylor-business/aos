@@ -543,7 +543,7 @@ pub fn PostToolbar(
     </Transition>
     <Show when={move || loading.get()} fallback={|| {}}>
       {move || {
-        view! { <Loading loading={loading.get()} /> }
+        view! { <Info loading={loading.get()} /> }
       }}
     </Show>
     <Show when={move || error.get().is_some()} fallback={|| {}}>

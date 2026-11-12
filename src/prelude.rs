@@ -66,6 +66,133 @@ pub fn markdown_to_html_with_options(content: &str, options: pulldown_cmark::Opt
   safe_html
 }
 
+#[component]
+pub fn Warning(
+  #[prop(optional, into)] description: Option<String>,
+  #[prop(optional, into)] on_retry_click: Option<Callback<MouseEvent>>,
+) -> impl IntoView {
+  let description_value = description.unwrap_or("Offline".to_owned());
+  view! {
+    <div class="py-4 px-8 break-inside-avoid">
+      <div class="flex justify-between items-center alert alert-warning alert-soft">
+        <span>{description_value}</span>
+        {if let Some(o) = on_retry_click {
+          view! {
+            <span
+              on:click={move |e: MouseEvent| {
+                o.run(e);
+              }}
+              class="btn btn-sm"
+            >
+              "Retry"
+            </span>
+          }
+            .into_any()
+        } else {
+          view! {}.into_any()
+        }}
+      </div>
+    </div>
+  }
+  .into_any()
+}
+
+#[component]
+pub fn Error(
+  #[prop(optional, into)] get_url: Option<bool>,
+  #[prop(optional, into)] description: Option<String>,
+  error: LemmyAppError,
+  #[prop(optional, into)] on_retry_click: Option<Callback<MouseEvent>>,
+) -> impl IntoView {
+  error!("{:#?}", error);
+  let description_value = description.unwrap_or("Error".to_owned());
+  let location = use_location();
+  let search = location.search.get();
+  view! {
+    <div class="py-4 px-8 break-inside-avoid">
+      <div class="flex alert alert-error alert-soft">
+        <details class="w-full min-w-0">
+          <summary class="flex justify-between items-center list-none">
+            <span>{description_value}</span>
+            {if let Some(o) = on_retry_click {
+              {
+                if let Some(true) = get_url {
+                  view! {
+                    <a
+                      href={format!("{}{}", location.pathname.get(), if search.len() > 0 { format!("?{}", search) } else { "".into() })}
+                      on:click={move |e: MouseEvent| {
+                        e.prevent_default();
+                        o.run(e);
+                      }}
+                      class="btn btn-sm"
+                    >
+                      "Retry"
+                    </a>
+                  }
+                    .into_any()
+                } else {
+                  view! {
+                    <span
+                      on:click={move |e: MouseEvent| {
+                        e.prevent_default();
+                        o.run(e);
+                      }}
+                      class="btn btn-sm"
+                    >
+                      "Retry"
+                    </span>
+                  }
+                    .into_any()
+                }
+              }
+            } else {
+              {
+                if let Some(true) = get_url {
+                  view! {
+                    <a
+                      href={format!("{}{}", location.pathname.get(), if search.len() > 0 { format!("?{}", search) } else { "".into() })}
+                      class="btn btn-sm"
+                    >
+                      "Retry"
+                    </a>
+                  }
+                    .into_any()
+                } else {
+                  view! {}.into_any()
+                }
+              }
+            }}
+          </summary>
+          <div class="overflow-auto">
+            <pre>{format!("{:#?}", error.error_type)}</pre>
+            <pre>{error.content}</pre>
+          </div>
+        </details>
+      </div>
+    </div>
+  }
+  .into_any()
+}
+
+#[component]
+pub fn Info(loading: bool, #[prop(optional, into)] description: Option<String>) -> impl IntoView {
+  let description_value = description.unwrap_or("Loading...".to_owned());
+  if loading {
+    view! {
+      <div class="overflow-hidden break-inside-avoid animate-[popdown_1s_step-end_1]">
+        <div class="py-4 px-8">
+          <div class="alert alert-info alert-soft">
+            <span>{description_value}</span>
+          </div>
+        </div>
+      </div>
+    }
+    .into_any()
+  } else {
+    view! {}.into_any()
+  }
+}
+
 fn InfoComponent(title: &str, content: &str) -> impl IntoView {
   view! {
     <div class="alert alert-info alert-soft">

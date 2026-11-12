@@ -385,7 +385,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
               }
                 .into_any()
             }
-            Some(None) | None => view! { <Loading loading={loading.get()} /> }.into_any(),
+            Some(None) | None => view! { <Info loading={loading.get()} /> }.into_any(),
           }
         }}
       </Transition>

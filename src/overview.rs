@@ -433,7 +433,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                         </div>
                         <Show when={move || loading.get()} fallback={|| {}}>
                           {move || {
-                            view! { <Loading loading={loading.get()} /> }
+                            view! { <Info loading={loading.get()} /> }
                           }}
                         </Show>
                         <Show when={move || error.get().is_some()} fallback={|| {}}>
@@ -534,7 +534,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                   #[cfg(not(feature = "ssr"))] loading.set(false);
                   if p.0 == 0 && o.posts.len() == 0 {
                     view! {
-                      <Loading loading={true} description={"No community posts"} />
+                      <Info loading={true} description={"No community posts"} />
                     }.into_any()
                   } else {
                     view! {
@@ -588,7 +588,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
           </Transition>
           <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
           {move || {
-            view! { <Loading loading={loading.get()} /> }
+            view! { <Info loading={loading.get()} /> }
           }}
         </div>
       </div>

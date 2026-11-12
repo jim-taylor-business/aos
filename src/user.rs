@@ -354,7 +354,7 @@ pub fn User() -> impl IntoView {
                       next_page_cursor.set((r.0 + 1, o.posts.len() + o.comments.len()));
                       if r.0 == 1 && o.posts.len() + o.comments.len() == 0 {
                         view! {
-                          <Loading loading={true} description={"No user activity"} />
+                          <Info loading={true} description={"No user activity"} />
                         }.into_any()
                       } else {
                         view! {
@@ -424,7 +424,7 @@ pub fn User() -> impl IntoView {
           </Transition>
           <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
           {move || {
-            view! { <Loading loading={loading.get()} /> }
+            view! { <Info loading={loading.get()} /> }
           }}
         </div>
       </div>
