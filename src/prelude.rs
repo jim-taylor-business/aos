@@ -101,6 +101,16 @@ pub fn external_host_attribution(host: Option<String>, instance: Option<String>)
   }
 }
 
+pub fn handle_horizontal_scroll_wheel(event: WheelEvent, scroll_element: NodeRef<Div>) {
+  let inner_width = window().inner_width().ok().and_then(|width| width.as_f64()).unwrap_or(0.0);
+  if inner_width > 768.0 && (event.delta_x() == 0.0 || event.delta_y().abs() / event.delta_x().abs() >= 0.3) {
+    event.prevent_default();
+    if let Some(element) = scroll_element.get() {
+      element.set_scroll_left(element.scroll_left() + event.delta_y() as i32);
+    }
+  }
+}
+
 #[component]
 pub fn Warning(
   #[prop(optional, into)] description: Option<String>,

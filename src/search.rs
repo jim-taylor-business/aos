@@ -183,24 +183,7 @@ pub fn Search(
       <TopNav scroll_element={on_scroll_element.into()} />
       <div class="flex flex-grow">
         <div
-          on:wheel={move |e: WheelEvent| {
-            let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-            if iw > 768f64 {
-              if e.delta_x() != 0.0 {
-                if e.delta_y().abs() / e.delta_x().abs() < 0.3 {} else {
-                  e.prevent_default();
-                  if let Some(se) = on_scroll_element.get() {
-                    se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
-                  }
-                }
-              } else {
-                e.prevent_default();
-                if let Some(se) = on_scroll_element.get() {
-                  se.set_scroll_left(se.scroll_left() + e.delta_y() as i32);
-                }
-              }
-            }
-          }}
+          on:wheel={move |e: WheelEvent| handle_horizontal_scroll_wheel(e, on_scroll_element)}
           node_ref={on_scroll_element}
           class="min-w-full sm:overflow-x-auto sm:overflow-y-hidden sm:absolute sm:px-4 gap-4{} sm:h-[calc(100%-4rem)] sm:columns-[23rem]"
         >
