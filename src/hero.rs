@@ -234,7 +234,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                   <div class="py-2 px-4">
                     <span class="block mb-1 wrap-anywhere text-md">
                       <span>{abbr_duration}</span>
-                      " ago by "
+                      " by "
                       <A
                         href={move || {
                           // let a = post_response.get().post_view.creator.actor_id;

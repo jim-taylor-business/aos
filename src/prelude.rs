@@ -67,8 +67,10 @@ pub fn markdown_to_html_with_options(content: &str, options: pulldown_cmark::Opt
 }
 
 pub fn relative_time(published_at_millis: i64) -> String {
-  let now_in_millis = u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0);
-  let elapsed_millis = u64::try_from(i128::from(now_in_millis) - i128::from(published_at_millis)).unwrap_or(0);
+  let now_in_millis = jiff::Zoned::now().timestamp().as_millisecond();
+  let difference = now_in_millis.saturating_sub(published_at_millis);
+  let is_future = difference < 0;
+  let elapsed_millis = difference.unsigned_abs();
   let duration = pretty_duration::pretty_duration(
     &std::time::Duration::from_millis(elapsed_millis),
     Some(pretty_duration::PrettyDurationOptions {
@@ -77,8 +79,8 @@ pub fn relative_time(published_at_millis: i64) -> String {
       plural_labels: None,
     }),
   );
-
-  if let Some((index, _)) = duration.match_indices(' ').nth(1) { duration[..index].to_owned() } else { duration }
+  let abbreviated = if let Some((index, _)) = duration.match_indices(' ').nth(1) { duration[..index].to_owned() } else { duration };
+  if is_future { format!("in {}", abbreviated) } else { format!("{} ago", abbreviated) }
 }
 
 #[component]
@@ -213,24 +215,21 @@ pub fn default_cookie_options<T, E, D>() -> UseCookieOptions<T, E, D> {
 }
 
 pub fn provide_auth_cookie() -> (Signal<Option<String>>, WriteSignal<Option<String>>) {
-  let (get_auth_cookie, set_auth_cookie) =
-    use_cookie_with_options::<String, FromToStringCodec>("jwt", default_cookie_options());
+  let (get_auth_cookie, set_auth_cookie) = use_cookie_with_options::<String, FromToStringCodec>("jwt", default_cookie_options());
   provide_context(ReadAuthCookie(get_auth_cookie));
   provide_context(WriteAuthCookie(set_auth_cookie));
   (get_auth_cookie, set_auth_cookie)
 }
 
 pub fn provide_instance_cookie() -> (Signal<Option<String>>, WriteSignal<Option<String>>) {
-  let (get_instance_cookie, set_instance_cookie) =
-    use_cookie_with_options::<String, FromToStringCodec>("instance", default_cookie_options());
+  let (get_instance_cookie, set_instance_cookie) = use_cookie_with_options::<String, FromToStringCodec>("instance", default_cookie_options());
   provide_context(ReadInstanceCookie(get_instance_cookie));
   provide_context(WriteInstanceCookie(set_instance_cookie));
   (get_instance_cookie, set_instance_cookie)
 }
 
 pub fn provide_theme_cookie() -> (Signal<Option<String>>, WriteSignal<Option<String>>) {
-  let (get_theme_cookie, set_theme_cookie) =
-    use_cookie_with_options::<String, FromToStringCodec>("theme", default_cookie_options());
+  let (get_theme_cookie, set_theme_cookie) = use_cookie_with_options::<String, FromToStringCodec>("theme", default_cookie_options());
   provide_context(ReadThemeCookie(get_theme_cookie));
   provide_context(WriteThemeCookie(set_theme_cookie));
   (get_theme_cookie, set_theme_cookie)

@@ -315,7 +315,7 @@ pub fn Post() -> impl IntoView {
                         />
                         <span class="block mb-1 wrap-anywhere text-md">
                           <span>{abbr_duration}</span>
-                          " ago by "
+                          " by "
                           <A
                             href={move || {
                               // let a = post_response.get().post_view.creator.actor_id;

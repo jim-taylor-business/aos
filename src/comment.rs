@@ -837,7 +837,7 @@ pub fn Comment(
             </Transition>
             <span class="overflow-hidden wrap-anywhere">
               <span>{abbr_duration.clone()}</span>
-              " ago by "
+              " by "
               <A
                 href={move || {
                   // let a = comment_view.get().creator.actor_id;

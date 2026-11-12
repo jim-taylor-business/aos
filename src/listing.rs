@@ -107,7 +107,7 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
         </A>
         <span class="block mt-1 mb-1 text-sm wrap-anywhere">
           <span>{abbr_duration}</span>
-          " ago "
+          " "
           // <Show when={move || { post_number != 0 }} fallback={|| {}}>
           //   "by "
           //   <span class="overflow-y-auto" inner_html={creator_name_encoded} />
@@ -295,7 +295,7 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
         </A>
         <span class="block mt-1 mb-1 text-sm wrap-anywhere">
           <span>{abbr_duration}</span>
-          " ago "
+          " "
           <span>{from}</span>
           // <Show when={move || { post_number != 0 }} fallback={|| {}}>
           //   "by "
@@ -772,7 +772,7 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                     </A>
                     <span class="block mt-1 mb-1 text-sm wrap-anywhere">
                       <span>{abbr_duration}</span>
-                      " ago "
+                      " "
                       <Show when={move || { post_number != 0 }} fallback={|| {}}>
                         "by "
                         <span class="overflow-y-auto" inner_html={creator_name_encoded} />
