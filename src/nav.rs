@@ -242,9 +242,7 @@ pub fn TopNav(
       let params = query_params.clone();
       #[cfg(not(feature = "ssr"))]
       spawn_local_scoped(async move {
-        if let Ok(d) = IndexedDb::new().await {
-          let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &0i32).await;
-        }
+        let _ = IndexedDb::save_scroll_position(use_location().pathname.get(), params.to_query_string(), 0).await;
         use_navigate()(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), Default::default());
       });
       if let Some(on_scroll_element) = scroll_element.get() {
@@ -289,9 +287,7 @@ pub fn TopNav(
       let params = query_params.clone();
       #[cfg(not(feature = "ssr"))]
       spawn_local_scoped(async move {
-        if let Ok(d) = IndexedDb::new().await {
-          let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &0i32).await;
-        }
+        let _ = IndexedDb::save_scroll_position(use_location().pathname.get(), params.to_query_string(), 0).await;
         use_navigate()(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), Default::default());
       });
       if let Some(on_scroll_element) = scroll_element.get() {
@@ -381,10 +377,8 @@ pub fn TopNav(
     });
     #[cfg(not(feature = "ssr"))]
     spawn_local_scoped(async move {
-      if let Ok(d) = IndexedDb::new().await {
-        let _ = d.set(&ScrollPositionKey { path: "/".into(), query: "".into() }, &0i32).await;
-        use_navigate()("/", Default::default());
-      }
+      let _ = IndexedDb::save_scroll_position("/".into(), "".into(), 0).await;
+      use_navigate()("/", Default::default());
     });
     ssr_site.refetch();
   };
@@ -582,9 +576,7 @@ pub fn TopNav(
       let params = query_params.clone();
       #[cfg(not(feature = "ssr"))]
       spawn_local_scoped(async move {
-        if let Ok(d) = IndexedDb::new().await {
-          let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &0i32).await;
-        }
+        let _ = IndexedDb::save_scroll_position(use_location().pathname.get(), params.to_query_string(), 0).await;
 
         if ssr_person_id().is_some() {
           use_navigate()(&format!("/u/{}/s{}", ssr_name(), query_params.to_query_string()), Default::default());
@@ -667,9 +659,7 @@ pub fn TopNav(
       let params = query_params.clone();
       #[cfg(not(feature = "ssr"))]
       spawn_local_scoped(async move {
-        if let Ok(d) = IndexedDb::new().await {
-          let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &0i32).await;
-        }
+        let _ = IndexedDb::save_scroll_position(use_location().pathname.get(), params.to_query_string(), 0).await;
         use_navigate()(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), Default::default());
       });
       if let Some(on_scroll_element) = scroll_element.get() {
@@ -772,17 +762,7 @@ pub fn TopNav(
                         next_page_cursor.set((0, None));
                         #[cfg(not(feature = "ssr"))]
                         spawn_local_scoped(async move {
-                          if let Ok(d) = IndexedDb::new().await {
-                            let _ = d
-                              .set(
-                                &ScrollPositionKey {
-                                  path: "/".into(),
-                                  query: "".into(),
-                                },
-                                &0i32,
-                              )
-                              .await;
-                          }
+                          let _ = IndexedDb::save_scroll_position("/".into(), "".into(), 0).await;
                           response_cache
                             .update(move |rc| {
                               rc.remove(

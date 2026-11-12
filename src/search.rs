@@ -71,10 +71,7 @@ pub fn Search(
           #[cfg(not(feature = "ssr"))]
           spawn_local_scoped(async move {
             let query_params = query.get();
-            if let Ok(d) = IndexedDb::new().await {
-              let _ =
-                d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: query_params.to_query_string() }, &se.scroll_left()).await;
-            }
+            let _ = IndexedDb::save_scroll_position(use_location().pathname.get(), query_params.to_query_string(), se.scroll_left()).await;
           });
         }
       }
@@ -96,9 +93,7 @@ pub fn Search(
             let params = query_params.clone();
             spawn_local_scoped(async move {
               if let Some(se) = on_scroll_element.get() {
-                if let Ok(d) = IndexedDb::new().await {
-                  let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &se.scroll_left()).await;
-                }
+                let _ = IndexedDb::save_scroll_position(use_location().pathname.get(), params.to_query_string(), se.scroll_left()).await;
               }
               let navigate = use_navigate();
               navigate(
@@ -237,19 +232,11 @@ pub fn Search(
                               move || {
                                 if let Some(s) = on_scroll_element.get() {
                                   spawn_local_scoped(async move {
-                                    if let Ok(d) = IndexedDb::new().await {
-                                      let l: Result<Option<i32>, IndexedDbError> = d
-                                        .get(
-                                          &ScrollPositionKey {
-                                            path: use_location().pathname.get(),
-                                            query: use_query_map().get().to_query_string(),
-                                          },
-                                        )
-                                        .await;
-                                      if let Ok(Some(l)) = l {
-                                        // log!("scroll {} next {:#?}", is_visible.get(), next_page_cursor.get());
-                                        s.set_scroll_left(l);
-                                      }
+                                    if let Ok(Some(l)) =
+                                      IndexedDb::get_scroll_position(use_location().pathname.get(), use_query_map().get().to_query_string()).await
+                                    {
+                                      // log!("scroll {} next {:#?}", is_visible.get(), next_page_cursor.get());
+                                      s.set_scroll_left(l);
                                     }
                                   });
                                 }
@@ -368,9 +355,7 @@ pub fn Search(
                                 let params = query_params.clone();
                                 spawn_local_scoped(async move {
                                   if let Some(se) = on_scroll_element.get() {
-                                    if let Ok(d) = IndexedDb::new().await {
-                                      let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &se.scroll_left()).await;
-                                    }
+                                    let _ = IndexedDb::save_scroll_position(use_location().pathname.get(), params.to_query_string(), se.scroll_left()).await;
                                   }
                                   let navigate = use_navigate();
                                   navigate(

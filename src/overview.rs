@@ -54,11 +54,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
     #[cfg(not(feature = "ssr"))]
     if let Some(se) = on_scroll_element.get() {
       spawn_local_scoped(async move {
-        if let Ok(d) = IndexedDb::new().await {
-          let _ = d
-            .set(&ScrollPositionKey { path: use_location().pathname.get(), query: use_query_map().get().to_query_string() }, &se.scroll_left())
-            .await;
-        }
+        let _ = IndexedDb::save_scroll_position(use_location().pathname.get(), use_query_map().get().to_query_string(), se.scroll_left()).await;
       });
     }
   };
@@ -91,9 +87,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
             if let Some(se) = on_scroll_element.get() {
               let params = query_params.clone();
               spawn_local_scoped(async move {
-                if let Ok(d) = IndexedDb::new().await {
-                  let _ = d.set(&ScrollPositionKey { path: use_location().pathname.get(), query: params.to_query_string() }, &se.scroll_left()).await;
-                }
+                let _ = IndexedDb::save_scroll_position(use_location().pathname.get(), params.to_query_string(), se.scroll_left()).await;
                 use_navigate()(
                   &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
                   NavigateOptions { resolve: false, replace: true, scroll: false, state: State::default() },
@@ -484,18 +478,10 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                               move || {
                                 if let Some(s) = on_scroll_element.get() {
                                   spawn_local_scoped(async move {
-                                    if let Ok(d) = IndexedDb::new().await {
-                                      let l: Result<Option<i32>, IndexedDbError> = d
-                                        .get(
-                                          &ScrollPositionKey {
-                                            path: use_location().pathname.get(),
-                                            query: use_query_map().get().to_query_string(),
-                                          },
-                                        )
-                                        .await;
-                                      if let Ok(Some(l)) = l {
-                                        s.set_scroll_left(l);
-                                      }
+                                    if let Ok(Some(l)) =
+                                      IndexedDb::get_scroll_position(use_location().pathname.get(), use_query_map().get().to_query_string()).await
+                                    {
+                                      s.set_scroll_left(l);
                                     }
                                   });
                                 }

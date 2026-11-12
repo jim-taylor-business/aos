@@ -124,11 +124,7 @@ pub fn Post() -> impl IntoView {
     #[cfg(not(feature = "ssr"))]
     if let Some(se) = on_scroll_element.get() {
       spawn_local_scoped(async move {
-        if let Ok(d) = IndexedDb::new().await {
-          let _ = d
-            .set(&ScrollPositionKey { path: use_location().pathname.get(), query: use_query_map().get().to_query_string() }, &se.scroll_left())
-            .await;
-        }
+        let _ = IndexedDb::save_scroll_position(use_location().pathname.get(), use_query_map().get().to_query_string(), se.scroll_left()).await;
       });
     }
   };
@@ -342,27 +338,16 @@ pub fn Post() -> impl IntoView {
                             on:click={move |e: MouseEvent| {
                               e.prevent_default();
                               spawn_local_scoped(async move {
-                                if let Ok(d) = IndexedDb::new().await {
-                                  let _ = d
-                                    .set(
-                                      &ScrollPositionKey {
-                                        path: {
-                                          if post_response.get().post_view.community.local {
-                                            format!("/c/{}", post_response.get().post_view.community.name)
-                                          } else {
-                                            format!(
-                                              "/c/{}@{}",
-                                              post_response.get().post_view.community.name,
-                                              post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
-                                            )
-                                          }
-                                        },
-                                        query: "".into(),
-                                      },
-                                      &0i32,
-                                    )
-                                    .await;
-                                }
+                                let path = if post_response.get().post_view.community.local {
+                                  format!("/c/{}", post_response.get().post_view.community.name)
+                                } else {
+                                  format!(
+                                    "/c/{}@{}",
+                                    post_response.get().post_view.community.name,
+                                    post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
+                                  )
+                                };
+                                let _ = IndexedDb::save_scroll_position(path, "".into(), 0).await;
                                 use_navigate()(
                                   &{
                                     if post_response.get().post_view.community.local {
@@ -576,18 +561,10 @@ pub fn Post() -> impl IntoView {
                                 move || {
                                   if let Some(s) = on_scroll_element.get() {
                                     spawn_local_scoped(async move {
-                                      if let Ok(d) = IndexedDb::new().await {
-                                        let l: Result<Option<i32>, IndexedDbError> = d
-                                          .get(
-                                            &ScrollPositionKey {
-                                              path: use_location().pathname.get(),
-                                              query: use_query_map().get().to_query_string(),
-                                            },
-                                          )
-                                          .await;
-                                        if let Ok(Some(l)) = l {
-                                          s.set_scroll_left(l);
-                                        }
+                                      if let Ok(Some(l)) =
+                                        IndexedDb::get_scroll_position(use_location().pathname.get(), use_query_map().get().to_query_string()).await
+                                      {
+                                        s.set_scroll_left(l);
                                       }
                                     });
                                   }

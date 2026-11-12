@@ -246,6 +246,22 @@ pub mod csr_indexed_db {
     }
   }
 
+  impl IndexedDb {
+    pub async fn save_scroll_position(path: String, query: String, position: i32) -> Result<(), IndexedDbError> {
+      let Ok(db) = Self::new().await else {
+        return Ok(());
+      };
+      db.set(&ScrollPositionKey { path, query }, &position).await
+    }
+
+    pub async fn get_scroll_position(path: String, query: String) -> Result<Option<i32>, IndexedDbError> {
+      let Ok(db) = Self::new().await else {
+        return Ok(None);
+      };
+      db.get(&ScrollPositionKey { path, query }).await
+    }
+  }
+
   #[cfg(not(feature = "ssr"))]
   impl IndexedDb {
     pub async fn get<Form, Response>(&self, key: &Form) -> Result<Option<Response>, IndexedDbError>
