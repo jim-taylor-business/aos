@@ -203,18 +203,10 @@ pub fn Comment(
   });
   let creator_name_encoded = Memo::new(move |_| html_escape::encode_safe(&creator_name.get()).to_string());
 
-  let duration_in_text = pretty_duration::pretty_duration(
-    &std::time::Duration::from_millis(now_in_millis.get() - comment_view.get().comment.published.timestamp_millis() as u64),
-    Some(pretty_duration::PrettyDurationOptions {
-      output_format: Some(pretty_duration::PrettyDurationOutputFormat::Compact),
-      singular_labels: None,
-      plural_labels: None,
-    }),
-  );
-  let abbr_duration =
-    if let Some((index, _)) = duration_in_text.match_indices(' ').nth(1) { duration_in_text.split_at(index) } else { (&duration_in_text[..], "") }
-      .0
-      .to_string();
+  let abbr_duration = Memo::new(move |_| {
+    now_in_millis.get();
+    relative_time(comment_view.get().comment.published.timestamp_millis())
+  });
 
   let cancel = move |e: MouseEvent| {
     e.stop_propagation();

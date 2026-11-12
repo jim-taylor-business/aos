@@ -66,6 +66,21 @@ pub fn markdown_to_html_with_options(content: &str, options: pulldown_cmark::Opt
   safe_html
 }
 
+pub fn relative_time(published_at_millis: i64) -> String {
+  let now_in_millis = u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0);
+  let elapsed_millis = u64::try_from(i128::from(now_in_millis) - i128::from(published_at_millis)).unwrap_or(0);
+  let duration = pretty_duration::pretty_duration(
+    &std::time::Duration::from_millis(elapsed_millis),
+    Some(pretty_duration::PrettyDurationOptions {
+      output_format: Some(pretty_duration::PrettyDurationOutputFormat::Compact),
+      singular_labels: None,
+      plural_labels: None,
+    }),
+  );
+
+  if let Some((index, _)) = duration.match_indices(' ').nth(1) { duration[..index].to_owned() } else { duration }
+}
+
 #[component]
 pub fn Warning(
   #[prop(optional, into)] description: Option<String>,
