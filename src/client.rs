@@ -1,21 +1,4 @@
-use crate::{
-  ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie,
-  db::csr_indexed_db::*,
-  errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult},
-};
-use lemmy_api_common::{
-  LemmyErrorType, SuccessResponse,
-  comment::*,
-  community::*,
-  person::*,
-  post::*,
-  private_message::{GetPrivateMessages, PrivateMessagesResponse},
-  site::*,
-};
-use leptos::{logging::log, prelude::*};
-use send_wrapper::SendWrapper;
-use serde::{Serialize, de::DeserializeOwned};
-use std::str;
+use crate::prelude::*;
 
 #[derive(Clone, PartialEq)]
 pub enum HttpType {
@@ -275,7 +258,6 @@ mod client {
 mod client {
 
   use super::*;
-  use crate::OnlineSetter;
   use gloo_net::{http, http::RequestBuilder};
   use leptos::wasm_bindgen::UnwrapThrowExt;
 

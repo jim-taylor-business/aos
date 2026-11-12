@@ -1,33 +1,7 @@
-use crate::{
-  ReadAuthCookie, ReadInstanceCookie,
-  client::*,
-  comment::Comment,
-  db::csr_indexed_db::*,
-  errors::{Error, LemmyAppError, LemmyAppErrorType, LemmyAppResult, Loading, Warning},
-  icon::{Icon, IconType},
-  toolbar::PostToolbar,
-  tools::markdown_to_html,
-};
+use crate::prelude::*;
 use ev::MouseEvent;
-use lemmy_api_common::site::GetSiteResponse;
-use lemmy_api_common::{
-  comment::{GetComments, GetCommentsResponse},
-  lemmy_db_schema::{CommentSortType, ListingType, SortType, newtypes::PostId},
-  lemmy_db_views::structs::PaginationCursor,
-  post::{GetPost, GetPostResponse, GetPosts, GetPostsResponse},
-};
-use leptos::{
-  html::{Div, Textarea},
-  prelude::*,
-  task::*,
-  *,
-};
-use leptos_meta::*;
-use leptos_router::{components::A, hooks::*};
 #[cfg(not(feature = "ssr"))]
 use leptos_use_intersection_observer::{UseIntersectionObserverOptions, use_intersection_observer_with_options};
-use std::collections::BTreeMap;
-use web_sys::{HtmlAnchorElement, HtmlImageElement, wasm_bindgen::JsCast};
 
 #[component]
 pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)>) -> impl IntoView {
@@ -151,7 +125,6 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
               {
                 let rw = res.1.clone();
                 let fm = res.0.clone();
-                use crate::db::csr_indexed_db::*;
                 spawn_local_scoped(async move {
                   if let Ok(d) = IndexedDb::new().await {
                     if let Ok(_c) = d.set(&fm, &rw).await {}
@@ -256,7 +229,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                         view! {
                           <div class="py-2 px-4">
                             <div class="block">
-                              <Icon class={"h-24".into()} icon={IconType::Link} />
+                              <Icon class={"h-24".into()} icon={Icon::Link} />
                             // <img class="h-16" src="/lemmy.svg" />
                             </div>
                           </div>
@@ -426,7 +399,6 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
               {
                 let rw = res.1.clone();
                 let fm = res.0.clone();
-                use crate::db::csr_indexed_db::*;
                 spawn_local_scoped(async move {
                   if let Ok(d) = IndexedDb::new().await {
                     if let Ok(_c) = d.set(&fm, &rw).await {}

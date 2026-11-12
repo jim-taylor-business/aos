@@ -1,30 +1,10 @@
-use crate::{
-  OnlineSetter, ReadAuthCookie, ReadInstanceCookie, client::*, comment::Comments, db::csr_indexed_db::*, errors::*, nav::TopNav, toolbar::PostToolbar,
-  tools::markdown_to_html,
-};
+use crate::prelude::*;
 use ev::MouseEvent;
-use lemmy_api_common::post::{GetPosts, GetPostsResponse};
-use lemmy_api_common::{
-  comment::{CreateComment, GetComments},
-  lemmy_db_schema::{CommentSortType, SortType, newtypes::PostId},
-  post::{GetPost, GetPostResponse},
-  site::GetSiteResponse,
-};
-use leptos::{
-  html::{Div, Textarea},
-  prelude::*,
-  task::*,
-  *,
-};
-use leptos_meta::*;
-use leptos_router::{components::A, hooks::*};
 #[cfg(not(feature = "ssr"))]
 use leptos_use_intersection_observer::{UseIntersectionObserverOptions, use_intersection_observer_with_options};
 #[cfg(not(feature = "ssr"))]
 use leptos_use_scroll::{UseScrollOptions, UseScrollReturn, use_scroll_with_options};
 // use leptos_use::*;
-use std::collections::BTreeMap;
-use web_sys::{Event, HtmlAnchorElement, HtmlImageElement, WheelEvent, wasm_bindgen::JsCast};
 
 #[component]
 pub fn Post() -> impl IntoView {
@@ -240,7 +220,6 @@ pub fn Post() -> impl IntoView {
                       let rw = res.1.clone();
                       let fm = res.0.clone();
                       let post_view = RwSignal::new(rw.post_view.clone());
-                      use crate::db::csr_indexed_db::*;
                       spawn_local_scoped(async move {
                         if let Ok(d) = IndexedDb::new().await {
                           if let Ok(_c) = d.set(&fm, &rw).await {}
@@ -596,7 +575,6 @@ pub fn Post() -> impl IntoView {
                     {
                       let rw = res.1.clone();
                       let fm = res.0.clone();
-                      use crate::db::csr_indexed_db::*;
                       spawn_local_scoped(async move {
                         if let Ok(d) = IndexedDb::new().await {
                           if let Ok(_c) = d.set(&fm, &rw).await {}
@@ -614,7 +592,7 @@ pub fn Post() -> impl IntoView {
                                   if let Some(s) = on_scroll_element.get() {
                                     spawn_local_scoped(async move {
                                       if let Ok(d) = IndexedDb::new().await {
-                                        let l: Result<Option<i32>, Error> = d
+                                        let l: Result<Option<i32>, IndexedDbError> = d
                                           .get(
                                             &ScrollPositionKey {
                                               path: use_location().pathname.get(),

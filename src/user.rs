@@ -1,25 +1,8 @@
-use crate::ReadAuthCookie;
-use crate::{client::*, errors::*, nav::TopNav};
-use crate::{comment::Comment, db::csr_indexed_db::*, listing::Listing, tools::markdown_to_html};
-use lemmy_api_common::{
-  lemmy_db_schema::{
-    SortType, SubscribedType,
-    aggregates::structs::PostAggregates,
-    newtypes::{InstanceId, PostId},
-  },
-  lemmy_db_views::structs::{CommentView, PostView},
-  person::{GetPersonDetails, GetPersonDetailsResponse},
-};
-use leptos::{html::Div, logging::*, prelude::*, task::*, *};
-use leptos_meta::Title;
-use leptos_router::{NavigateOptions, location::State};
-use leptos_router::{components::*, hooks::*};
+use crate::prelude::*;
 #[cfg(not(feature = "ssr"))]
 use leptos_use_intersection_observer::{UseIntersectionObserverOptions, UseIntersectionObserverReturn, use_intersection_observer_with_options};
 #[cfg(not(feature = "ssr"))]
 use leptos_use_scroll::{UseScrollOptions, UseScrollReturn, use_scroll_with_options};
-use std::{collections::BTreeMap, vec};
-use web_sys::{Event, MouseEvent, WheelEvent};
 
 #[component]
 pub fn User() -> impl IntoView {
@@ -175,7 +158,6 @@ pub fn User() -> impl IntoView {
                   #[cfg(not(feature = "ssr"))]
                   {
                     let result_clone = r.3.clone();
-                    use crate::db::csr_indexed_db::*;
                     spawn_local_scoped(async move {
                       if let Ok(d) = IndexedDb::new().await {
                         if let Ok(_c) = d.set::<GetPersonDetails, Result<GetPersonDetailsResponse, LemmyAppError>>(&r.1, &result_clone).await {}
@@ -197,7 +179,7 @@ pub fn User() -> impl IntoView {
                                 if let Some(s) = on_scroll_element.get() {
                                   spawn_local_scoped(async move {
                                     if let Ok(d) = IndexedDb::new().await {
-                                      let l: Result<Option<i32>, Error> = d
+                                      let l: Result<Option<i32>, IndexedDbError> = d
                                         .get(
                                           &ScrollPositionKey {
                                             path: use_location().pathname.get(),

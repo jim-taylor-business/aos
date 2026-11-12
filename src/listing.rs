@@ -1,21 +1,4 @@
-use std::collections::BTreeMap;
-
-use crate::{
-  OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
-  client::*,
-  db::csr_indexed_db::IndexedDb,
-  errors::*,
-  hero::Hero,
-  icon::{IconType::*, *},
-  tools::markdown_to_html,
-};
-use lemmy_api_common::lemmy_db_schema::newtypes::DbUrl;
-use lemmy_api_common::lemmy_db_views_actor::structs::{CommunityView, PersonView};
-use lemmy_api_common::{lemmy_db_views::structs::*, person::*, post::*, site::GetSiteResponse};
-use leptos::{html::Img, logging::*, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local_scoped};
-use leptos_router::{components::*, hooks::*};
-use leptos_use_cookie::{SameSite, UseCookieOptions, use_cookie_with_options};
-use web_sys::MouseEvent;
+use crate::prelude::*;
 
 #[component]
 pub fn UserListings(people: Signal<Vec<PersonView>>, page_number: RwSignal<usize>, hide: bool, #[prop(optional)] heroes: usize) -> impl IntoView {
@@ -178,7 +161,7 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
               )
             }}
           >
-            <Icon icon={Archive} class={"inline".into()} />
+            <Icon icon={Icon::Archive} class={"inline".into()} />
             <span class="text-sm">{person_view.counts.post_count}</span>
           </span>
           <span
@@ -190,7 +173,7 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
               )
             }}
           >
-            <Icon icon={Comments} class={"inline".into()} />
+            <Icon icon={Icon::Comments} class={"inline".into()} />
             <span class="text-sm">{person_view.counts.comment_count}</span>
           </span>
           // <span
@@ -202,7 +185,7 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
           //     )
           //   }}
           // >
-          //   <Icon icon={Upvote} class={"inline".into()} />
+          //   <Icon icon={Icon::Upvote} class={"inline".into()} />
           //   {person_view.counts.comment_score}
           // </span>
         </div>
@@ -379,7 +362,7 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
               )
             }}
           >
-            <Icon icon={Subscribe} class={"inline".into()} />
+            <Icon icon={Icon::Subscribe} class={"inline".into()} />
             <span class="text-sm">{community.counts.subscribers}</span>
           </span>
           <span
@@ -391,7 +374,7 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
               )
             }}
           >
-            <Icon icon={Community} class={"inline".into()} />
+            <Icon icon={Icon::Community} class={"inline".into()} />
             <span class="text-sm">{community.counts.users_active_month}</span>
           </span>
           <span
@@ -403,7 +386,7 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
               )
             }}
           >
-            <Icon icon={Archive} class={"inline".into()} />
+            <Icon icon={Icon::Archive} class={"inline".into()} />
             <span class="text-sm">{community.counts.posts}</span>
           </span>
           <span
@@ -415,7 +398,7 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
               )
             }}
           >
-            <Icon icon={Comments} class={"inline".into()} />
+            <Icon icon={Icon::Comments} class={"inline".into()} />
             <span class="text-sm">{community.counts.comments}</span>
           </span>
         </div>
@@ -460,7 +443,6 @@ pub async fn vote_post_fn(post_id: i32, score: i16) -> Result<Option<PostRespons
   );
   provide_context(ReadInstanceCookie(get_instance_cookie));
   provide_context(WriteInstanceCookie(set_instance_cookie));
-  use lemmy_api_common::lemmy_db_schema::newtypes::PostId;
   let form = CreatePostLike { post_id: PostId(post_id), score };
   let result = LemmyClient.like_post(form).await;
   use leptos_axum::redirect;
@@ -485,7 +467,6 @@ pub async fn save_post_fn(post_id: i32, save: bool) -> Result<Option<PostRespons
   );
   provide_context(ReadInstanceCookie(get_instance_cookie));
   provide_context(WriteInstanceCookie(set_instance_cookie));
-  use lemmy_api_common::lemmy_db_schema::newtypes::PostId;
   let form = SavePost { post_id: PostId(post_id), save };
   let result = LemmyClient.save_post(form).await;
   use leptos_axum::redirect;
@@ -510,7 +491,6 @@ pub async fn block_user_fn(person_id: i32, block: bool) -> Result<Option<BlockPe
   );
   provide_context(ReadInstanceCookie(get_instance_cookie));
   provide_context(WriteInstanceCookie(set_instance_cookie));
-  use lemmy_api_common::lemmy_db_schema::newtypes::PersonId;
   let form = BlockPerson { person_id: PersonId(person_id), block };
   let result = LemmyClient.block_user(form).await;
   use leptos_axum::redirect;
@@ -556,7 +536,6 @@ pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostR
   );
   provide_context(ReadInstanceCookie(get_instance_cookie));
   provide_context(WriteInstanceCookie(set_instance_cookie));
-  use lemmy_api_common::lemmy_db_schema::newtypes::PostId;
   let form = CreatePostReport { post_id: PostId(post_id), reason };
   let result = try_report(form).await;
   use leptos_axum::redirect;
@@ -916,7 +895,7 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                           disabled={move || !logged_in.get() || !online.get().0}
                           title="Up vote"
                         >
-                          <Icon icon={Upvote} />
+                          <Icon icon={Icon::Upvote} />
                         </button>
                       </ActionForm>
                       <span class="block text-sm">{move || post_view.get().counts.score}</span>
@@ -937,7 +916,7 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                         }}
                       >
                         <A href={move || format!("/p/{}", post_view.get_untracked().post.id)} attr:class="inline hover:text-accent">
-                          <Icon icon={Comments} class={"inline".into()} />
+                          <Icon icon={Icon::Comments} class={"inline".into()} />
                         </A>
                         {post_view.get_untracked().counts.comments}
                       </span>
@@ -958,7 +937,7 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                       // }}
                       // disabled={move || !logged_in.get() || !online.get().0}
                       // >
-                      // <Icon icon={Save} />
+                      // <Icon icon={Icon::Save} />
                       // </button>
                       // </ActionForm>
                       // <span
@@ -968,11 +947,11 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                       // }}
                       // title="Reply"
                       // >
-                      // <Icon icon={Reply} />
+                      // <Icon icon={Icon::Reply} />
                       // </span>
                       // <span class={format!("text-base-content{}", if post_view.get_untracked().post.local { " hidden" } else { "" })} title="Original">
                       // <A href={post_view.get_untracked().post.ap_id.inner().to_string()}>
-                      // <Icon icon={External} />
+                      // <Icon icon={Icon::External} />
                       // </A>
                       // </span>
 
@@ -1000,7 +979,7 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                             { if let Some(d) = post_view.get_untracked().post.url { d.inner().to_string() } else { "".to_owned() } },
                           )}
                         >
-                          <Icon icon={History} />
+                          <Icon icon={Icon::History} />
                         </a>
                       </span>
                       <span class="flex items-center text-base-content/25">

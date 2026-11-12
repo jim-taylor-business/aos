@@ -1,16 +1,4 @@
-use crate::{
-  errors::{LemmyAppError, LemmyAppErrorType},
-  icon::{Icon, IconType::*},
-  *,
-};
-use lemmy_api_common::{
-  person::{Login, LoginResponse},
-  site::GetSiteResponse,
-};
-use leptos::{logging::log, prelude::*, task::spawn_local_scoped};
-use leptos_meta::Title;
-use leptos_router::hooks::*;
-use web_sys::MouseEvent;
+use crate::prelude::*;
 
 fn validate_login(form: &Login) -> Option<LemmyAppErrorType> {
   if form.username_or_email.len() == 0 {
@@ -26,7 +14,6 @@ async fn try_login(form: Login) -> Result<LoginResponse, LemmyAppError> {
   let val = validate_login(&form);
   match val {
     None => {
-      use crate::client::*;
       let result = LemmyClient.login(form).await;
       match result {
         Ok(LoginResponse { ref jwt, .. }) => {
@@ -184,7 +171,7 @@ pub fn TextInput(
   #[prop(optional)] validation_class: Signal<String>,
 ) -> impl IntoView {
   let show_password = RwSignal::new(false);
-  let eye_icon = Signal::derive(move || if show_password.get() { EyeSlash } else { Eye });
+  let eye_icon = Signal::derive(move || if show_password.get() { Icon::EyeSlash } else { Icon::Eye });
 
   view! {
     <label class="flex relative gap-2 items-center">

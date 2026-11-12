@@ -5,18 +5,14 @@
 // #[tokio::main]
 // async
 fn main() {
-  use aos::{App, PassedUrl, html_template};
+  use aos::prelude::*;
   use axum::{
     body::{Body, to_bytes},
     extract::State,
     response::IntoResponse,
   };
   use http::Request;
-  use leptos::config::LeptosOptions;
-  use leptos::context::provide_context;
-  use leptos::prelude::*;
   use leptos_axum::render_app_to_stream_with_context;
-  use serde::Deserialize;
 
   let stack_size_bytes = 8 * 1024 * 1024;
   let runtime = tokio::runtime::Builder::new_multi_thread()
@@ -43,11 +39,10 @@ fn main() {
   }
 
   runtime.block_on(async {
-    use aos::{App, html_template};
     use axum::Router;
     use axum::routing::get;
     use axum::routing::post;
-    use leptos::{config::get_configuration, logging::log};
+    use leptos::config::get_configuration;
     use leptos_axum::{LeptosRoutes, generate_route_list};
 
     if let Ok(conf) = get_configuration(None) {

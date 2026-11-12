@@ -1,21 +1,4 @@
-use std::collections::BTreeMap;
-
-use crate::{
-  OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
-  client::*,
-  db::csr_indexed_db::*,
-  errors::*,
-  icon::{IconType::*, *},
-  tools::markdown_to_html,
-};
-use lemmy_api_common::{lemmy_db_views::structs::*, person::*, post::*, site::GetSiteResponse};
-use leptos::{html::Img, logging::*, prelude::*, server::codee::string::FromToStringCodec, task::*};
-use leptos_router::{
-  components::{A, Form},
-  hooks::*,
-};
-use leptos_use_cookie::{SameSite, UseCookieOptions, use_cookie_with_options};
-use web_sys::MouseEvent;
+use crate::prelude::*;
 
 #[server]
 pub async fn vote_post_fn(post_id: i32, score: i16) -> Result<Option<PostResponse>, ServerFnError> {
@@ -29,7 +12,6 @@ pub async fn vote_post_fn(post_id: i32, score: i16) -> Result<Option<PostRespons
   );
   provide_context(ReadInstanceCookie(get_instance_cookie));
   provide_context(WriteInstanceCookie(set_instance_cookie));
-  use lemmy_api_common::lemmy_db_schema::newtypes::PostId;
   let form = CreatePostLike { post_id: PostId(post_id), score };
   let result = LemmyClient.like_post(form).await;
   use leptos_axum::redirect;
@@ -54,7 +36,6 @@ pub async fn save_post_fn(post_id: i32, save: bool) -> Result<Option<PostRespons
   );
   provide_context(ReadInstanceCookie(get_instance_cookie));
   provide_context(WriteInstanceCookie(set_instance_cookie));
-  use lemmy_api_common::lemmy_db_schema::newtypes::PostId;
   let form = SavePost { post_id: PostId(post_id), save };
   let result = LemmyClient.save_post(form).await;
   use leptos_axum::redirect;
@@ -79,7 +60,6 @@ pub async fn block_user_fn(person_id: i32, block: bool) -> Result<Option<BlockPe
   );
   provide_context(ReadInstanceCookie(get_instance_cookie));
   provide_context(WriteInstanceCookie(set_instance_cookie));
-  use lemmy_api_common::lemmy_db_schema::newtypes::PersonId;
   let form = BlockPerson { person_id: PersonId(person_id), block };
   let result = LemmyClient.block_user(form).await;
   use leptos_axum::redirect;
@@ -125,7 +105,6 @@ pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostR
   );
   provide_context(ReadInstanceCookie(get_instance_cookie));
   provide_context(WriteInstanceCookie(set_instance_cookie));
-  use lemmy_api_common::lemmy_db_schema::newtypes::PostId;
 
   let form = CreatePostReport { post_id: PostId(post_id), reason };
   let result = try_report(form).await;
@@ -381,7 +360,7 @@ pub fn PostToolbar(
                         disabled={move || !logged_in.get() || !online.get().0}
                         title="Up vote"
                       >
-                        <Icon icon={Upvote} />
+                        <Icon icon={Icon::Upvote} />
                       </button>
                     </ActionForm>
                     <span class="block text-sm">{move || post_view.get().counts.score}</span>
@@ -401,7 +380,7 @@ pub fn PostToolbar(
                         disabled={move || !logged_in.get() || !online.get().0}
                         title="Down vote"
                       >
-                        <Icon icon={Downvote} />
+                        <Icon icon={Icon::Downvote} />
                       </button>
                     </ActionForm>
                     <span
@@ -420,7 +399,7 @@ pub fn PostToolbar(
                         )
                       }}
                     >
-                      <Icon icon={Comments} class={"inline".into()} />
+                      <Icon icon={Icon::Comments} class={"inline".into()} />
                       {post_view.get_untracked().counts.comments}
                       {if post_view.get_untracked().unread_comments != post_view.get_untracked().counts.comments
                         && post_view.get_untracked().unread_comments > 0
@@ -446,7 +425,7 @@ pub fn PostToolbar(
                         }}
                         disabled={move || !logged_in.get() || !online.get().0}
                       >
-                        <Icon icon={Save} />
+                        <Icon icon={Icon::Save} />
                       </button>
                     </ActionForm>
                     <button
@@ -482,11 +461,11 @@ pub fn PostToolbar(
                       title="Reply"
                       disabled={move || !enable_reply.get() || !logged_in.get() || !online.get().0}
                     >
-                      <Icon icon={Reply} />
+                      <Icon icon={Icon::Reply} />
                     </button>
                     <span class={format!("text-base-content{}", if post_view.get_untracked().post.local { " hidden" } else { "" })} title="Original">
                       <A href={post_view.get_untracked().post.ap_id.inner().to_string()}>
-                        <Icon icon={External} />
+                        <Icon icon={Icon::External} />
                       </A>
                     </span>
                     <span
@@ -513,13 +492,13 @@ pub fn PostToolbar(
                           { if let Some(d) = post_view.get_untracked().post.url { d.inner().to_string() } else { "".to_owned() } },
                         )}
                       >
-                        <Icon icon={History} />
+                        <Icon icon={Icon::History} />
                       </a>
                     </span>
                     <span class="flex ml-auto item-center">
                       <div class="dropdown max-sm:dropdown-end">
                         <label tabindex="0">
-                          <Icon icon={VerticalDots} />
+                          <Icon icon={Icon::VerticalDots} />
                         </label>
                         <ul tabindex="0" class="shadow menu dropdown-content z-[1] bg-base-100 rounded-box">
                           <li>
@@ -534,7 +513,7 @@ pub fn PostToolbar(
                                 placeholder="Reason for reporting post"
                               />
                               <button class="text-xs whitespace-nowrap" title="Report" type="submit">
-                                <Icon icon={Report} class={"inline-block".into()} />
+                                <Icon icon={Icon::Report} class={"inline-block".into()} />
                                 "Report post"
                               </button>
                             </ActionForm>
@@ -544,7 +523,7 @@ pub fn PostToolbar(
                               <input type="hidden" name="person_id" value={format!("{}", post_view.get_untracked().creator.id.0)} />
                               <input type="hidden" name="block" value="true" />
                               <button on:click={on_block_submit} class="text-xs whitespace-nowrap" title="Block" type="submit">
-                                <Icon icon={Block} class={"inline-block".into()} />
+                                <Icon icon={Icon::Block} class={"inline-block".into()} />
                                 "Block user"
                               </button>
                             </ActionForm>

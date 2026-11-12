@@ -1,36 +1,8 @@
-use crate::{
-  BanType, OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
-  db::csr_indexed_db::*, errors::Warning,
-};
-use crate::{
-  // i18n::*,
-  client::*,
-  errors::{Error, LemmyAppError, LemmyAppErrorType, LemmyAppResult, Loading},
-  icon::{IconType::*, *},
-  listing::Listings,
-  nav::TopNav,
-  tools::markdown_to_html,
-};
-use hooks::*;
-use lemmy_api_common::community::CommunityResponse;
-use lemmy_api_common::{
-  community::{FollowCommunity, GetCommunity},
-  lemmy_db_schema::{ListingType, SortType, SubscribedType},
-  lemmy_db_views::structs::PaginationCursor,
-  post::{GetPosts, GetPostsResponse},
-  site::GetSiteResponse,
-};
-use leptos::logging::*;
-use leptos::{html::Div, leptos_dom::helpers::TimeoutHandle, logging::error, prelude::*, server::codee::string::FromToStringCodec, task::*, *};
-use leptos_router::{components::*, location::State, *};
-use leptos_use_cookie::{SameSite, UseCookieOptions, use_cookie_with_options};
+use crate::prelude::*;
 #[cfg(not(feature = "ssr"))]
 use leptos_use_intersection_observer::{UseIntersectionObserverOptions, UseIntersectionObserverReturn, use_intersection_observer_with_options};
 #[cfg(not(feature = "ssr"))]
 use leptos_use_scroll::{UseScrollOptions, UseScrollReturn, use_scroll_with_options};
-use send_wrapper::SendWrapper;
-use std::collections::BTreeMap;
-use web_sys::{Event, MouseEvent, WheelEvent};
 
 #[component]
 pub fn Default() -> impl IntoView {
@@ -56,7 +28,6 @@ pub async fn toggle_subscription(community_id: i32, follow: bool) -> Result<Opti
   );
   provide_context(ReadInstanceCookie(get_instance_cookie));
   provide_context(WriteInstanceCookie(set_instance_cookie));
-  use lemmy_api_common::lemmy_db_schema::newtypes::CommunityId;
   let form = FollowCommunity { community_id: CommunityId(community_id), follow };
   let result = LemmyClient.follow_community(form).await;
   use leptos_axum::redirect;
@@ -424,7 +395,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                               title="Rules"
                               class={move || { format!("{}", { if show_rules.get() { "text-accent" } else { "" } }) }}
                             >
-                              <Icon icon={Rules} />
+                              <Icon icon={Icon::Rules} />
                             </button>
                           </Form>
                           <ActionForm action={follow_action} attr:class="flex items-center">
@@ -456,7 +427,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                               }}
                               class={move || { format!("{}", { if follow.get() == SubscribedType::Subscribed { "text-accent" } else { "" } }) }}
                             >
-                              <Icon icon={Subscribe} />
+                              <Icon icon={Icon::Subscribe} />
                             </button>
                           </ActionForm>
                         </div>
@@ -500,7 +471,6 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                   {
                     let result_clone = p.3.clone();
                     let form_clone = p.1.clone();
-                    use crate::db::csr_indexed_db::*;
                     spawn_local_scoped(async move {
                       if !p.6 {
                         if let Ok(d) = IndexedDb::new().await {
@@ -524,7 +494,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                                 if let Some(s) = on_scroll_element.get() {
                                   spawn_local_scoped(async move {
                                     if let Ok(d) = IndexedDb::new().await {
-                                      let l: Result<Option<i32>, Error> = d
+                                      let l: Result<Option<i32>, IndexedDbError> = d
                                         .get(
                                           &ScrollPositionKey {
                                             path: use_location().pathname.get(),

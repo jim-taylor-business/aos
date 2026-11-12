@@ -1,7 +1,7 @@
-use leptos::prelude::*;
+use crate::prelude::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum IconType {
+pub enum Icon {
   Eye,
   EyeSlash,
   Notifications,
@@ -38,49 +38,49 @@ pub enum IconType {
   Cube,
 }
 
-impl IconType {
+impl Icon {
   pub fn as_str(&self) -> &'static str {
     match self {
-      IconType::Block => "block",
-      IconType::Comments => "comments",
-      IconType::Crosspost => "crosspost",
-      IconType::Donate => "donate",
-      IconType::Downvote => "downvote",
-      IconType::Eye => "eye",
-      IconType::EyeSlash => "eye-slash",
-      IconType::Notifications => "notifications",
-      IconType::Report => "report",
-      IconType::Save => "save",
-      IconType::Search => "search",
-      IconType::Upvote => "upvote",
-      IconType::VerticalDots => "vertical-dots",
-      IconType::Reply => "reply",
-      IconType::External => "external",
-      IconType::Link => "link",
-      IconType::Translate => "translate",
-      IconType::Palette => "palette",
-      IconType::Pencil => "pencil",
-      IconType::Highlighter => "highlighter",
-      IconType::Filter => "filter",
-      IconType::Sort => "sort",
-      IconType::Community => "community",
-      IconType::User => "user",
-      IconType::SignIn => "signin",
-      IconType::SignOut => "signout",
-      IconType::Eraser => "eraser",
-      IconType::Hammer => "hammer",
-      IconType::Archive => "archive",
-      IconType::History => "history",
-      IconType::Subscribe => "subscribe",
-      IconType::Rules => "rules",
-      IconType::Ban => "ban",
-      IconType::Cube => "cube",
+      Icon::Block => "block",
+      Icon::Comments => "comments",
+      Icon::Crosspost => "crosspost",
+      Icon::Donate => "donate",
+      Icon::Downvote => "downvote",
+      Icon::Eye => "eye",
+      Icon::EyeSlash => "eye-slash",
+      Icon::Notifications => "notifications",
+      Icon::Report => "report",
+      Icon::Save => "save",
+      Icon::Search => "search",
+      Icon::Upvote => "upvote",
+      Icon::VerticalDots => "vertical-dots",
+      Icon::Reply => "reply",
+      Icon::External => "external",
+      Icon::Link => "link",
+      Icon::Translate => "translate",
+      Icon::Palette => "palette",
+      Icon::Pencil => "pencil",
+      Icon::Highlighter => "highlighter",
+      Icon::Filter => "filter",
+      Icon::Sort => "sort",
+      Icon::Community => "community",
+      Icon::User => "user",
+      Icon::SignIn => "signin",
+      Icon::SignOut => "signout",
+      Icon::Eraser => "eraser",
+      Icon::Hammer => "hammer",
+      Icon::Archive => "archive",
+      Icon::History => "history",
+      Icon::Subscribe => "subscribe",
+      Icon::Rules => "rules",
+      Icon::Ban => "ban",
+      Icon::Cube => "cube",
     }
   }
 }
 
 #[component]
-pub fn Icon(#[prop(into)] icon: Signal<IconType>, #[prop(optional)] class: Option<TextProp>) -> impl IntoView {
+pub fn Icon(#[prop(into)] icon: Signal<Icon>, #[prop(optional)] class: Option<TextProp>) -> impl IntoView {
   let href = Signal::derive(move || format!("/icons.svg#{}", icon.get().as_str()));
   view! {
     <svg attr:class={class.unwrap_or("".into())} width="1.5em" height="1.5em">

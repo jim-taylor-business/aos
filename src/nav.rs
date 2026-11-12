@@ -1,23 +1,4 @@
-use crate::{
-  BanType, OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, WriteAuthCookie, WriteInstanceCookie, WriteThemeCookie,
-  client::*,
-  db::csr_indexed_db::*,
-  errors::{LemmyAppError, LemmyAppErrorType, LemmyAppResult},
-  icon::{IconType::*, *},
-};
-use lemmy_api_common::lemmy_db_schema::SearchType;
-use lemmy_api_common::{
-  lemmy_db_schema::{ListingType, SortType},
-  lemmy_db_views::structs::PaginationCursor,
-  post::{GetPostResponse, GetPosts, GetPostsResponse},
-  site::GetSiteResponse,
-};
-use leptos::{html::Div, logging::log, prelude::*, server::codee::string::FromToStringCodec, task::spawn_local_scoped, *};
-use leptos_router::{components::*, hooks::*, *};
-use leptos_use_cookie::{SameSite, UseCookieOptions, use_cookie_with_options};
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-use web_sys::{KeyboardEvent, MouseEvent, SubmitEvent, VisibilityState};
+use crate::prelude::*;
 
 #[server]
 pub async fn logout_fn() -> Result<(), ServerFnError> {
@@ -867,7 +848,7 @@ pub fn TopNav(
                 <li class="hidden sm:flex">
                   <details node_ref={lg_filter_menu}>
                     <summary on:click={move |_| reset_others(MenuType::LgFilter)}>
-                      <Icon icon={Community} />
+                      <Icon icon={Icon::Community} />
                     </summary>
                     <ul class="z-[1] bg-base-200">
                       <li>
@@ -903,7 +884,7 @@ pub fn TopNav(
                 <li class="hidden sm:flex">
                   <details node_ref={lg_sort_menu}>
                     <summary on:click={move |_| reset_others(MenuType::LgSort)}>
-                      <Icon icon={Sort} />
+                      <Icon icon={Icon::Sort} />
                     </summary>
                     <ul class="z-[1] bg-base-200">
                       <li>
@@ -984,7 +965,7 @@ pub fn TopNav(
                 <li class="hidden sm:flex">
                   <details node_ref={lg_kind_menu}>
                     <summary on:click={move |_| reset_others(MenuType::LgKind)}>
-                      <Icon icon={Cube} />
+                      <Icon icon={Icon::Cube} />
                     </summary>
                     <ul class="z-[1] bg-base-200">
                       <li class={move || disabled_ssr_kind(SearchType::Posts)}>
@@ -1029,13 +1010,13 @@ pub fn TopNav(
                 <li class="flex sm:hidden">
                   <details node_ref={sm_content_menu}>
                     <summary on:click={move |_| reset_others(MenuType::SmContent)}>
-                      <Icon icon={Filter} />
+                      <Icon icon={Icon::Filter} />
                     </summary>
                     <ul class="z-[1] bg-base-200">
                       <li class="flex">
                         <details>
                           <summary>
-                            <Icon icon={Community} />
+                            <Icon icon={Icon::Community} />
                           </summary>
                           <ul>
                             <li>
@@ -1071,7 +1052,7 @@ pub fn TopNav(
                       <li class="flex">
                         <details>
                           <summary>
-                            <Icon icon={Sort} />
+                            <Icon icon={Icon::Sort} />
                           </summary>
                           <ul>
                             <li>
@@ -1152,7 +1133,7 @@ pub fn TopNav(
                       <li class="flex">
                         <details>
                           <summary>
-                            <Icon icon={Cube} />
+                            <Icon icon={Icon::Cube} />
                           </summary>
                           <ul class="z-[1] bg-base-200">
                             <li class={move || disabled_ssr_kind(SearchType::Posts)}>
@@ -1197,7 +1178,7 @@ pub fn TopNav(
                       <li class="flex">
                         <details>
                           <summary>
-                            <Icon icon={Ban} />
+                            <Icon icon={Icon::Ban} />
                           </summary>
                           <ul class="z-[1] [inset-inline-end:0] bg-base-200">
                             <li>
@@ -1296,7 +1277,7 @@ pub fn TopNav(
                         .ok();
                     }}
                   >
-                    <Icon icon={Search} />
+                    <Icon icon={Icon::Search} />
                   </button>
                   <button
                     class={move || {
@@ -1323,7 +1304,7 @@ pub fn TopNav(
                       // use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
                     }}
                   >
-                    <Icon icon={Search} />
+                    <Icon icon={Icon::Search} />
                   </button>
                 </div>
               </ActionForm>
@@ -1333,7 +1314,7 @@ pub fn TopNav(
                 <li class="hidden sm:flex">
                   <details node_ref={lg_ban_menu}>
                     <summary on:click={move |_| reset_others(MenuType::LgBan)}>
-                      <Icon icon={Ban} />
+                      <Icon icon={Icon::Ban} />
                     </summary>
                     <ul class="z-[1] [inset-inline-end:0] bg-base-200">
                       <li>
@@ -1360,7 +1341,7 @@ pub fn TopNav(
                 <li class="hidden sm:flex">
                   <details node_ref={lg_language_menu}>
                     <summary on:click={move |_| reset_others(MenuType::LgLanguage)}>
-                      <Icon icon={Translate} />
+                      <Icon icon={Icon::Translate} />
                     </summary>
                     <ul class="z-[1] [inset-inline-end:0] bg-base-200">
                       <li>
@@ -1385,7 +1366,7 @@ pub fn TopNav(
                 <li class="flex">
                   <details node_ref={lg_theme_menu}>
                     <summary on:click={move |_| reset_others(MenuType::LgTheme)}>
-                      <Icon icon={Palette} />
+                      <Icon icon={Icon::Palette} />
                     </summary>
                     <ul class="z-[1] [inset-inline-end:0] bg-base-200">
                       <li data-theme="dark">
@@ -1436,7 +1417,7 @@ pub fn TopNav(
                               use_navigate()("/l", NavigateOptions::default());
                             }}
                           >
-                            <Icon icon={SignIn} />
+                            <Icon icon={Icon::SignIn} />
                           </button>
                         </form>
                       </li>
@@ -1446,13 +1427,13 @@ pub fn TopNav(
                   <li>
                     <details node_ref={sm_ui_menu}>
                       <summary on:click={move |_| reset_others(MenuType::SmUi)}>
-                        <Icon icon={User} />
+                        <Icon icon={Icon::User} />
                       </summary>
                       <ul class="z-[1] [inset-inline-end:0] bg-base-200">
                         <li class="flex sm:hidden">
                           <details>
                             <summary>
-                              <Icon icon={Palette} />
+                              <Icon icon={Icon::Palette} />
                             </summary>
                             <ul class="[inset-inline-end:0]">
                               <li data-theme="dark">
@@ -1485,7 +1466,7 @@ pub fn TopNav(
                         <li>
                           <ActionForm attr:class="p-0" action={logout_action}>
                             <button type="submit" class="py-2 px-4" on:click={on_logout_submit}>
-                              <Icon icon={SignOut} />
+                              <Icon icon={Icon::SignOut} />
                             </button>
                           </ActionForm>
                         </li>

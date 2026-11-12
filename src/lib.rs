@@ -12,36 +12,12 @@ pub mod login;
 pub mod nav;
 pub mod overview;
 pub mod post;
+pub mod prelude;
 pub mod search;
 pub mod toolbar;
 pub mod user;
-pub mod tools;
 
-use crate::{
-  client::{LemmyApi, LemmyClient},
-  errors::{LemmyAppError, LemmyAppResult},
-};
-use codee::string::FromToStringCodec;
-use lemmy_api_common::{
-  comment::{GetComments, GetCommentsResponse},
-  person::*,
-  post::{GetPost, GetPostResponse, GetPosts, GetPostsResponse},
-  site::{GetSiteResponse, Search, SearchResponse},
-};
-use leptos::logging::log;
-use leptos::prelude::*;
-use leptos_meta::{Link, MetaTags, Stylesheet, provide_meta_context, *};
-use leptos_router::{
-  StaticSegment,
-  components::{Outlet, ParentRoute, Route, Router, Routes},
-  *,
-};
-use leptos_use_cookie::{SameSite, UseCookieOptions, use_cookie_with_options};
-// #[cfg(not(feature = "ssr"))]
-// use leptos_use_document_visibility::use_document_visibility;
-use serde::{Deserialize, Serialize};
-use std::collections::BTreeMap;
-// leptos_i18n::load_locales!();
+use crate::prelude::*;
 
 #[derive(Clone)]
 pub struct OnlineSetter(bool);

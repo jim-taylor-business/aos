@@ -1,28 +1,6 @@
-use crate::{
-  OnlineSetter, ReadInstanceCookie,
-  client::*,
-  db::csr_indexed_db::*,
-  errors::*,
-  icon::{Icon, IconType::*},
-  tools::markdown_to_html,
-};
-use lemmy_api_common::post::{GetPosts, GetPostsResponse};
-use lemmy_api_common::{
-  comment::*,
-  lemmy_db_schema::newtypes::*,
-  lemmy_db_views::structs::{CommentView, LocalUserView},
-  site::{GetModlog, GetSiteResponse, MyUserInfo},
-};
-use leptos::{html::Textarea, logging::*, prelude::*, task::*, *};
-use leptos_dom::helpers::TimeoutHandle;
-use leptos_router::{
-  components::{A, Form},
-  hooks::use_navigate,
-};
+use crate::prelude::*;
 #[cfg(not(feature = "ssr"))]
 use leptos_use_intersection_observer::{UseIntersectionObserverOptions, use_intersection_observer_with_options};
-use std::collections::BTreeMap;
-use web_sys::{Event, HtmlAnchorElement, HtmlImageElement, MouseEvent, TouchEvent, WheelEvent, wasm_bindgen::JsCast};
 
 #[component]
 pub fn Comments(comments: Signal<Vec<CommentView>>, post_id: Signal<Option<i32>>) -> impl IntoView {
@@ -617,11 +595,11 @@ pub fn Comment(
       >
         <Show
           when={move || !(comment_view.get().creator_banned_from_community || comment_view.get().creator.banned)}
-          fallback={move || view! { <Icon on:click={on_mod_log_click} icon={Hammer} /> }}
+          fallback={move || view! { <Icon on:click={on_mod_log_click} icon={Icon::Hammer} /> }}
         >
-          <Show when={move || !comment_view.get().comment.removed} fallback={move || view! { <Icon on:click={on_mod_log_click} icon={Block} /> }}>
-            <Show when={move || !comment_view.get().comment.deleted} fallback={move || view! { <Icon icon={Eraser} /> }}>
-              <Show when={move || !comment_view.get().creator_blocked} fallback={move || view! { <Icon on:click={on_get_click} icon={EyeSlash} /> }}>
+          <Show when={move || !comment_view.get().comment.removed} fallback={move || view! { <Icon on:click={on_mod_log_click} icon={Icon::Block} /> }}>
+            <Show when={move || !comment_view.get().comment.deleted} fallback={move || view! { <Icon icon={Icon::Eraser} /> }}>
+              <Show when={move || !comment_view.get().creator_blocked} fallback={move || view! { <Icon on:click={on_get_click} icon={Icon::EyeSlash} /> }}>
                 {()}
               </Show>
             </Show>
@@ -737,7 +715,7 @@ pub fn Comment(
                             disabled={move || !logged_in.get() || !online.get().0}
                             on:click={on_up_vote_submit}
                           >
-                            <Icon icon={Upvote} />
+                            <Icon icon={Icon::Upvote} />
                           </button>
                         </Form>
                         <span class="text-sm">{move || comment_view.get().counts.score}</span>
@@ -757,7 +735,7 @@ pub fn Comment(
                             disabled={move || !logged_in.get() || !online.get().0}
                             on:click={on_down_vote_submit}
                           >
-                            <Icon icon={Downvote} />
+                            <Icon icon={Icon::Downvote} />
                           </button>
                         </Form>
                         <Form action="POST" attr:class="flex items-center">
@@ -776,7 +754,7 @@ pub fn Comment(
                             disabled={move || !logged_in.get() || !online.get().0}
                             on:click={on_save_submit}
                           >
-                            <Icon icon={Save} />
+                            <Icon icon={Icon::Save} />
                           </button>
                         </Form>
                         <button
@@ -805,7 +783,7 @@ pub fn Comment(
                           }}
                           disabled={move || !logged_in.get() || !online.get().0}
                         >
-                          <Icon icon={Reply} />
+                          <Icon icon={Icon::Reply} />
                         </button>
                         <button
                           on:click={move |_| {
@@ -843,7 +821,7 @@ pub fn Comment(
                           disabled={move || !logged_in.get() || !online.get().0}
                           title="Edit"
                         >
-                          <Icon icon={Pencil} />
+                          <Icon icon={Icon::Pencil} />
                         </button>
                         <span
                           on:click={move |_| {
@@ -855,7 +833,7 @@ pub fn Comment(
                           }}
                           title="Highlight"
                         >
-                          <Icon icon={Highlighter} />
+                          <Icon icon={Icon::Highlighter} />
                         </span>
                       }
                     }

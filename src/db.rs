@@ -1,7 +1,5 @@
 pub mod csr_indexed_db {
-  use lemmy_api_common::{comment::*, community::*, person::*, post::*, private_message::GetPrivateMessages, site::*};
-  use leptos::logging::*;
-  use serde::{Deserialize, Serialize, de::DeserializeOwned};
+  use crate::prelude::*;
   use thiserror::Error;
 
   #[derive(Debug, Serialize, Deserialize)]
@@ -203,10 +201,8 @@ pub mod csr_indexed_db {
   #[cfg(not(feature = "ssr"))]
   use rexie::{ObjectStore, Rexie, TransactionMode};
 
-  use crate::errors::LemmyAppError;
-
   #[derive(Debug, Error)]
-  pub enum Error {
+  pub enum IndexedDbError {
     #[cfg(not(feature = "ssr"))]
     #[error("rexie error: {0}")]
     Rexie(#[from] rexie::Error),
@@ -227,7 +223,7 @@ pub mod csr_indexed_db {
 
   #[cfg(not(feature = "ssr"))]
   impl IndexedDb {
-    pub async fn new() -> Result<Self, Error> {
+    pub async fn new() -> Result<Self, IndexedDbError> {
       let rexie = Rexie::builder("cache_v5")
         .version(1)
         .add_object_store(ObjectStore::new("post_closed_comments"))
@@ -242,8 +238,8 @@ pub mod csr_indexed_db {
 
   #[cfg(feature = "ssr")]
   impl IndexedDb {
-    pub async fn new() -> Result<Self, Error> {
-      Err(Error::Lemmy(LemmyAppError {
+    pub async fn new() -> Result<Self, IndexedDbError> {
+      Err(IndexedDbError::Lemmy(LemmyAppError {
         error_type: crate::errors::LemmyAppErrorType::Unknown,
         content: "IndexedDb is not available on the server".to_string(),
       }))
@@ -252,7 +248,7 @@ pub mod csr_indexed_db {
 
   #[cfg(not(feature = "ssr"))]
   impl IndexedDb {
-    pub async fn get<Form, Response>(&self, key: &Form) -> Result<Option<Response>, Error>
+    pub async fn get<Form, Response>(&self, key: &Form) -> Result<Option<Response>, IndexedDbError>
     where
       Form: Serialize + Store,
       Response: DeserializeOwned,
@@ -266,7 +262,7 @@ pub mod csr_indexed_db {
       }
     }
 
-    pub async fn load<Form, Response>(&self, key: &Form) -> Result<Option<Response>, Error>
+    pub async fn load<Form, Response>(&self, key: &Form) -> Result<Option<Response>, IndexedDbError>
     where
       Form: Serialize + Store,
       Response: DeserializeOwned,
@@ -280,7 +276,7 @@ pub mod csr_indexed_db {
       }
     }
 
-    pub async fn set<Form, Response>(&self, key: &Form, t: &Response) -> Result<(), Error>
+    pub async fn set<Form, Response>(&self, key: &Form, t: &Response) -> Result<(), IndexedDbError>
     where
       Form: Serialize + Store,
       Response: Serialize,
@@ -294,7 +290,7 @@ pub mod csr_indexed_db {
       Ok(())
     }
 
-    pub async fn del<Form>(&self, key: &Form) -> Result<(), Error>
+    pub async fn del<Form>(&self, key: &Form) -> Result<(), IndexedDbError>
     where
       Form: Serialize + Store,
     {
@@ -309,7 +305,7 @@ pub mod csr_indexed_db {
 
   #[cfg(feature = "ssr")]
   impl IndexedDb {
-    pub async fn get<Form, Response>(&self, key: &Form) -> Result<Option<Response>, Error>
+    pub async fn get<Form, Response>(&self, key: &Form) -> Result<Option<Response>, IndexedDbError>
     where
       Form: Serialize + Store,
       Response: DeserializeOwned,
@@ -317,7 +313,7 @@ pub mod csr_indexed_db {
       Ok(None)
     }
 
-    pub async fn load<Form, Response>(&self, key: &Form) -> Result<Option<Response>, Error>
+    pub async fn load<Form, Response>(&self, key: &Form) -> Result<Option<Response>, IndexedDbError>
     where
       Form: Serialize + Store,
       Response: DeserializeOwned,
@@ -325,7 +321,7 @@ pub mod csr_indexed_db {
       Ok(None)
     }
 
-    pub async fn set<Form, Response>(&self, key: &Form, t: &Response) -> Result<(), Error>
+    pub async fn set<Form, Response>(&self, key: &Form, t: &Response) -> Result<(), IndexedDbError>
     where
       Form: Serialize + Store,
       Response: Serialize,
@@ -333,7 +329,7 @@ pub mod csr_indexed_db {
       Ok(())
     }
 
-    pub async fn del<Form>(&self, key: &Form) -> Result<(), Error>
+    pub async fn del<Form>(&self, key: &Form) -> Result<(), IndexedDbError>
     where
       Form: Serialize + Store,
     {
