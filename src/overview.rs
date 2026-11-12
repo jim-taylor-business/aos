@@ -105,7 +105,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
   fn load_cache(fc: GetPosts) -> impl std::future::Future<Output = Result<GetPostsResponse, LemmyAppError>> {
     SendWrapper::new(async move {
       if let Ok(d) = IndexedDb::new().await {
-        if let Ok(c) = d.load::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&fc).await {
+        if let Ok(c) = d.get::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&fc).await {
           if let Some(r) = c { r } else { Err(LemmyAppError { error_type: LemmyAppErrorType::Unknown, content: "".to_owned() }) }
         } else {
           Err(LemmyAppError { error_type: LemmyAppErrorType::Unknown, content: "".to_owned() })
