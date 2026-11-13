@@ -2,7 +2,7 @@ use crate::prelude::*;
 #[cfg(not(feature = "ssr"))]
 use leptos_use_intersection_observer::{UseIntersectionObserverOptions, UseIntersectionObserverReturn, use_intersection_observer_with_options};
 #[cfg(not(feature = "ssr"))]
-use leptos_use_scroll::{UseScrollOptions, UseScrollReturn, use_scroll_with_options};
+use leptos_use_scroll::{UseScrollOptions, use_scroll_with_options};
 
 #[component]
 pub fn Default() -> impl IntoView {
@@ -61,9 +61,6 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
 
   #[cfg(not(feature = "ssr"))]
   {
-    // let UseScrollReturn { x, set_x, arrived_state, .. } =
-    //   use_scroll_with_options(on_scroll_element, UseScrollOptions::default().on_scroll(on_scroll));
-
     let UseIntersectionObserverReturn { .. } = use_intersection_observer_with_options(
       intersection_element,
       move |intersections, _| {
@@ -104,66 +101,8 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
     // let el = NodeRef::<Div>::new();
   }
 
-  #[cfg(feature = "ssr")]
-  let on_wheel = move |ev: web_sys::WheelEvent| {};
-
-  const GESTURE_IDLE_MS: f64 = 150.0;
-  const H_MIN_TRAVEL: f64 = 256.0;
-  const H_DOMINANCE: f64 = 2.0;
-
-  #[derive(Default, Debug)]
-  struct Gesture {
-    horizontal: bool,
-    acc_x: f64,
-    acc_y: f64,
-    last_ts: f64,
-  }
-
   #[cfg(not(feature = "ssr"))]
-  let mut gesture = Gesture::default();
-
-  #[cfg(not(feature = "ssr"))]
-  let UseScrollReturn { x, set_x, arrived_state, .. } = use_scroll_with_options(on_scroll_element, UseScrollOptions::default().on_scroll(on_scroll));
-
-  #[cfg(not(feature = "ssr"))]
-  let on_wheel = move |ev: WheelEvent| {
-    let unit = match ev.delta_mode() {
-      1 => 16.0,
-      2 => on_scroll_element.get_untracked().map(|e| e.client_width() as f64).unwrap_or(800.0),
-      _ => 1.0,
-    };
-    let dx = ev.delta_x() * unit;
-    let dy = ev.delta_y() * unit;
-    let now = ev.time_stamp();
-    if now - gesture.last_ts > GESTURE_IDLE_MS {
-      // log!("               RESET");
-      gesture = Gesture::default();
-    }
-    gesture.last_ts = now;
-
-    if !gesture.horizontal {
-      gesture.acc_x += dx.abs();
-      gesture.acc_y += dy.abs();
-      if gesture.acc_x > H_MIN_TRAVEL && gesture.acc_x > gesture.acc_y * H_DOMINANCE {
-        gesture.horizontal = true;
-      }
-    }
-
-    if gesture.horizontal || (dy == 0.0 && gesture.acc_y == 0.0) {
-      // log!("NOT H0 {:?} {} {}", gesture, dx, dy);
-      return;
-    }
-
-    let arrived = arrived_state.get_untracked();
-    if (dy > 0.0 && arrived.right) || (dy < 0.0 && arrived.left) {
-      // log!("NOT slam");
-      return;
-    }
-
-    // log!("stopping swipe");
-    ev.prevent_default();
-    set_x(x.get_untracked() + dy);
-  };
+  let _scroll = use_scroll_with_options(on_scroll_element, UseScrollOptions::default().on_scroll(on_scroll));
 
   #[cfg(not(feature = "ssr"))]
   fn load_cache(fc: GetPosts) -> impl std::future::Future<Output = Result<GetPostsResponse, LemmyAppError>> {
@@ -330,8 +269,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
       <TopNav scroll_element={on_scroll_element.into()} />
       <div class="flex flex-grow">
         <div
-          on:wheel=on_wheel
-          // on:wheel={move |e: WheelEvent| handle_horizontal_scroll_wheel(e, on_scroll_element)}
+          on:wheel={handle_horizontal_scroll_wheel(on_scroll_element)}
           node_ref={on_scroll_element}
           class={move || { "sm:h-[calc(100%-4rem)] min-w-full sm:absolute sm:overflow-x-auto sm:overflow-y-hidden sm:columns-[23rem] sm:px-4 gap-4" }}
         >

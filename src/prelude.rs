@@ -101,13 +101,53 @@ pub fn external_host_attribution(host: Option<String>, instance: Option<String>)
   }
 }
 
-pub fn handle_horizontal_scroll_wheel(event: WheelEvent, scroll_element: NodeRef<Div>) {
-  let inner_width = window().inner_width().ok().and_then(|width| width.as_f64()).unwrap_or(0.0);
-  if inner_width > 768.0 && (event.delta_x() == 0.0 || event.delta_y().abs() / event.delta_x().abs() >= 0.3) {
-    event.prevent_default();
-    if let Some(element) = scroll_element.get() {
-      element.set_scroll_left(element.scroll_left() + event.delta_y() as i32);
+#[derive(Default)]
+struct WheelGesture {
+  horizontal: bool,
+  acc_x: f64,
+  acc_y: f64,
+  last_ts: f64,
+}
+
+pub fn handle_horizontal_scroll_wheel(scroll_element: NodeRef<Div>) -> impl FnMut(WheelEvent) + 'static {
+  let mut gesture = WheelGesture::default();
+  move |event| {
+    let unit = match event.delta_mode() {
+      1 => 16.0,
+      2 => scroll_element.get_untracked().map(|element| element.client_width() as f64).unwrap_or(800.0),
+      _ => 1.0,
+    };
+    let dx = event.delta_x() * unit;
+    let dy = event.delta_y() * unit;
+    let now = event.time_stamp();
+    if now - gesture.last_ts > 150.0 {
+      gesture = WheelGesture::default();
     }
+    gesture.last_ts = now;
+
+    if !gesture.horizontal {
+      gesture.acc_x += dx.abs();
+      gesture.acc_y += dy.abs();
+      if gesture.acc_x > 256.0 && gesture.acc_x > gesture.acc_y * 2.0 {
+        gesture.horizontal = true;
+      }
+    }
+
+    if gesture.horizontal || (dy == 0.0 && gesture.acc_y == 0.0) {
+      return;
+    }
+
+    let Some(element) = scroll_element.get_untracked() else {
+      return;
+    };
+    let scroll_left = element.scroll_left() as f64;
+    // let max_scroll_left = (element.scroll_width() - element.client_width()).max(0) as f64;
+    // if (dy > 0.0 && scroll_left >= max_scroll_left) || (dy < 0.0 && scroll_left <= 0.0) {
+    //   return;
+    // }
+
+    event.prevent_default();
+    element.set_scroll_left((scroll_left + dy) as i32);
   }
 }
 

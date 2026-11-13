@@ -183,7 +183,7 @@ pub fn Search(
       <TopNav scroll_element={on_scroll_element.into()} />
       <div class="flex flex-grow">
         <div
-          on:wheel={move |e: WheelEvent| handle_horizontal_scroll_wheel(e, on_scroll_element)}
+          on:wheel={handle_horizontal_scroll_wheel(on_scroll_element)}
           node_ref={on_scroll_element}
           class="min-w-full sm:overflow-x-auto sm:overflow-y-hidden sm:absolute sm:px-4 gap-4{} sm:h-[calc(100%-4rem)] sm:columns-[23rem]"
         >
