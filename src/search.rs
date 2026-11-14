@@ -86,7 +86,10 @@ pub fn Search(
           let (key, len) = next_page_cursor.get();
           if key > 1 && len > 0 {
             let mut st = ssr_page();
-            st.push(key);
+            if st.iter().find(|s| **s == key).is_none() {
+              st.push(key);
+            }
+            // st.push(key);
             let mut query_params = query.get();
             query_params.remove("page");
             query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
@@ -98,7 +101,7 @@ pub fn Search(
               let navigate = use_navigate();
               navigate(
                 &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-                NavigateOptions { resolve: true, replace: false, scroll: false, state: State::default() },
+                NavigateOptions { resolve: true, replace: true, scroll: false, state: State::default() },
               );
             });
           }
@@ -218,7 +221,6 @@ pub fn Search(
                                     if let Ok(Some(l)) =
                                       IndexedDb::get_scroll_position(use_location().pathname.get(), use_query_map().get().to_query_string()).await
                                     {
-                                      // log!("scroll {} next {:#?}", is_visible.get(), next_page_cursor.get());
                                       s.set_scroll_left(l);
                                     }
                                   });
@@ -233,25 +235,6 @@ pub fn Search(
                   #[cfg(not(feature = "ssr"))] loading.set(false);
                   next_page_cursor.set((r.0 + 1, o.users.len() + o.communities.len() + o.posts.len() + o.comments.len()));
                   let comments_clone = RwSignal::new(o.comments.clone());
-                  // #[cfg(not(feature = "ssr"))]
-                  // {
-                  //   if is_visible.get() {
-                  //     log!("next {:#?}", next_page_cursor.get());
-                  //     let (key, len) = next_page_cursor.get();
-                  //     if key > 1 && len > 0 {
-                  //       let mut st = ssr_page();
-                  //       st.push(key);
-                  //       let mut query_params = query.get();
-                  //       query_params.remove("page");
-                  //       query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-                  //       let navigate = use_navigate();
-                  //       navigate(
-                  //         &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-                  //         NavigateOptions { resolve: true, replace: false, scroll: false, state: State::default() },
-                  //       );
-                  //     }
-                  //   }
-                  // }
                     // #[cfg(not(feature = "ssr"))] log!("visible {}", );
                     // log!("next {:#?}", next_page_cursor.get());
                     // if r.0 == 1 && o.posts.len() == 0 {
@@ -279,14 +262,10 @@ pub fn Search(
                     <CommunityListings hide=false communities={o.communities.clone().into()} page_number={RwSignal::new((r.0 - 1) * 50)} />
                     <UserListings hide=false people={o.users.clone().into()} page_number={RwSignal::new((r.0 - 1) * 50)} />
                     {
-                      let (key, len) = next_page_cursor.get_untracked(); // (r.0 + 1, o.posts.len());
+                      let (key, len) = next_page_cursor.get_untracked();
                       if key > 1 && len > 0 {
                         let mut query_params = use_query_map().get();
                         let mut st = vec![];
-                        // #[cfg(not(feature = "ssr"))]
-                        // if is_visible.get() {
-                        //   st = ssr_page();
-                        // };
                         st.push(key);
                         query_params.remove("page");
                         query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
@@ -294,24 +273,6 @@ pub fn Search(
                         set_timeout_with_handle(
                           move || {
                             show_next.set(false);
-                            // if is_visible.get() {
-                            //   show_next.set(true);
-                            // }
-                            //   log!("is {} next {:#?}", is_visible.get(), next_page_cursor.get());
-                            //   // let (key, len) = next_page_cursor.get();
-                            //   // if key > 1 && len > 0 {
-                            //     let mut st = ssr_page();
-                            //     st.push(key);
-                            //     let mut query_params = query.get();
-                            //     query_params.remove("page");
-                            //     query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-                            //     let navigate = use_navigate();
-                            //     navigate(
-                            //       &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-                            //       NavigateOptions { resolve: true, replace: false, scroll: false, state: State::default() },
-                            //     );
-                            //   // }
-                            // }
                           },
                           std::time::Duration::new(0, 0),
                         );
@@ -322,28 +283,25 @@ pub fn Search(
                               if let Some(c) = cancel_handle.get_untracked() {
                                 c.clear();
                               }
-                              // let mut st = vec![];
-                              // st = ssr_page();
-                              // st.push(key);
-                              // query_params.remove("page");
-                              // query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-                              // show_next.set(true);
-                              let (key, len) = next_page_cursor.get();
+                              let (key, len) = next_page_cursor.get_untracked();
                               if key > 1 && len > 0 {
                                 let mut st = ssr_page();
-                                st.push(key);
-                                let mut query_params = query.get();
+                                if st.iter().find(|s| **s == key).is_none() {
+                                  st.push(key);
+                                }
+                                // st.push(key);
+                                let mut query_params = query.get_untracked();
                                 query_params.remove("page");
                                 query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
                                 let params = query_params.clone();
                                 spawn_local_scoped(async move {
-                                  if let Some(se) = on_scroll_element.get() {
-                                    let _ = IndexedDb::save_scroll_position(use_location().pathname.get(), params.to_query_string(), se.scroll_left()).await;
+                                  if let Some(se) = on_scroll_element.get_untracked() {
+                                    let _ = IndexedDb::save_scroll_position(use_location().pathname.get_untracked(), params.to_query_string(), se.scroll_left()).await;
                                   }
                                   let navigate = use_navigate();
                                   navigate(
-                                    &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-                                    NavigateOptions { resolve: true, replace: false, scroll: false, state: State::default() },
+                                    &format!("{}{}", use_location().pathname.get_untracked(), query_params.to_query_string()),
+                                    NavigateOptions { resolve: true, replace: true, scroll: false, state: State::default() },
                                   );
                                 });
                               }

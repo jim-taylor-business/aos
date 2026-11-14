@@ -1,5 +1,7 @@
 use crate::prelude::*;
 #[cfg(not(feature = "ssr"))]
+use leptos_use_element_visibility::use_element_visibility;
+#[cfg(not(feature = "ssr"))]
 use leptos_use_intersection_observer::{UseIntersectionObserverOptions, UseIntersectionObserverReturn, use_intersection_observer_with_options};
 #[cfg(not(feature = "ssr"))]
 use leptos_use_scroll::{UseScrollOptions, UseScrollReturn, use_scroll_with_options};
@@ -37,7 +39,10 @@ pub fn User() -> impl IntoView {
           let (key, len) = next_page_cursor.get();
           if key > 0 && len > 0 {
             let mut st = ssr_page();
-            st.push(key);
+            if st.iter().find(|s| **s == key).is_none() {
+              st.push(key);
+            }
+            // st.push(key);
             let mut query_params = query.get();
             query_params.remove("page");
             query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
@@ -45,7 +50,7 @@ pub fn User() -> impl IntoView {
             let navigate = use_navigate();
             navigate(
               &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-              NavigateOptions { resolve: true, replace: false, scroll: false, state: State::default() },
+              NavigateOptions { resolve: true, replace: true, scroll: false, state: State::default() },
             );
           }
         }
@@ -53,6 +58,9 @@ pub fn User() -> impl IntoView {
       UseIntersectionObserverOptions::default(),
     );
   }
+
+  #[cfg(not(feature = "ssr"))]
+  let is_visible = use_element_visibility(intersection_element);
 
   #[cfg(not(feature = "ssr"))]
   let cancel_handle: RwSignal<Option<TimeoutHandle>> = RwSignal::new(None);
@@ -367,6 +375,40 @@ pub fn User() -> impl IntoView {
                             show_next.set(false);
                           },
                           std::time::Duration::new(0, 50_000_000),
+                        );
+                        #[cfg(not(feature = "ssr"))]
+                        set_timeout_with_handle(
+                          move || {
+                            if is_visible.get() {
+                              if let Some(c) = cancel_handle.get_untracked() {
+                                c.clear();
+                              }
+                              let (key, len) = next_page_cursor.get_untracked();
+                              if key > 1 && len > 0 {
+                                let mut st = ssr_page();
+                                if st.iter().find(|s| **s == key).is_none() {
+                                  st.push(key);
+                                }
+                                // st.push(key);
+                                let mut query_params = query.get_untracked();
+                                query_params.remove("page");
+                                query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+                                let params = query_params.clone();
+                                spawn_local_scoped(async move {
+                                  if let Some(se) = on_scroll_element.get_untracked() {
+                                    let _ = IndexedDb::save_scroll_position(use_location().pathname.get_untracked(), params.to_query_string(), se.scroll_left()).await;
+                                  }
+                                  let navigate = use_navigate();
+                                  navigate(
+                                    &format!("{}{}", use_location().pathname.get_untracked(), query_params.to_query_string()),
+                                    NavigateOptions { resolve: true, replace: true, scroll: false, state: State::default() },
+                                  );
+                                });
+                              }
+
+                            };
+                          },
+                          std::time::Duration::new(0, 500_000_000),
                         );
                         view! {
                           <Show when={move || { show_next.get() }} fallback={|| {}}>

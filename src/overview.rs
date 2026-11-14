@@ -1,5 +1,7 @@
 use crate::prelude::*;
 #[cfg(not(feature = "ssr"))]
+use leptos_use_element_visibility::use_element_visibility;
+#[cfg(not(feature = "ssr"))]
 use leptos_use_intersection_observer::{UseIntersectionObserverOptions, UseIntersectionObserverReturn, use_intersection_observer_with_options};
 #[cfg(not(feature = "ssr"))]
 use leptos_use_scroll::{UseScrollOptions, use_scroll_with_options};
@@ -35,10 +37,11 @@ pub async fn toggle_subscription(community_id: i32, follow: bool) -> Result<Opti
 pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl IntoView {
   // let i18n = use_i18n();
 
-  let ssr_list = move || serde_json::from_str::<ListingType>(&use_query_map().get().get("list").unwrap_or("".into())).unwrap_or(ListingType::All);
-  let ssr_sort = move || serde_json::from_str::<SortType>(&use_query_map().get().get("sort").unwrap_or("".into())).unwrap_or(SortType::Active);
-  let ssr_page = move || serde_json::from_str::<Vec<(usize, String)>>(&use_query_map().get().get("page").unwrap_or("".into())).unwrap_or(vec![]);
-  let ssr_bans = move || serde_json::from_str::<Vec<BanType>>(&use_query_map().get().get("bans").unwrap_or("".into())).unwrap_or(vec![]);
+  let query = use_query_map();
+  let ssr_list = move || serde_json::from_str::<ListingType>(&query.get().get("list").unwrap_or("".into())).unwrap_or(ListingType::All);
+  let ssr_sort = move || serde_json::from_str::<SortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(SortType::Active);
+  let ssr_page = move || serde_json::from_str::<Vec<(usize, String)>>(&query.get().get("page").unwrap_or("".into())).unwrap_or(vec![]);
+  let ssr_bans = move || serde_json::from_str::<Vec<BanType>>(&query.get().get("bans").unwrap_or("".into())).unwrap_or(vec![]);
 
   let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>, bool), (i64, LemmyAppResult<GetPostsResponse>)>>>();
   let next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
@@ -73,7 +76,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
               if st.len() == 0 {
                 st.push((0usize, "".into()));
               }
-              if st.iter().find(|s| s.0 == key).is_none() {
+              if st.iter().find(|s| s.0 == key && s.1 == next_page).is_none() {
                 st.push((key, next_page));
               }
             }
@@ -201,6 +204,19 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
             if !ban {
               o.posts.retain(|p| !p.banned_from_community);
             }
+            o.posts.retain(|pt| {
+              let post_id = pt.post.id.0;
+              let post_ids_from_previous_pages_response_cache: Vec<i32> = rc
+                .iter()
+                .filter(|(k, _v)| k.0 < p.0 && k.1 == form && k.2 == auth.clone() && k.3 == ban)
+                .flat_map(|(_k, v)| match v {
+                  (t, Ok(r)) => r.posts.iter().map(|p| p.post.id.0).collect::<Vec<i32>>(),
+                  _ => vec![],
+                })
+                .collect();
+              !post_ids_from_previous_pages_response_cache.contains(&post_id)
+            });
+            log!("   POSTS LEN: {}  PAGE: {}  CURSOR: {:?}", o.posts.len(), p.0, o.next_page);
             Ok(o)
           }
           Err(e) => Err(e),
@@ -251,6 +267,8 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
     });
   };
 
+  #[cfg(not(feature = "ssr"))]
+  let is_visible = use_element_visibility(intersection_element);
   #[cfg(not(feature = "ssr"))]
   let cancel_handle: RwSignal<Option<TimeoutHandle>> = RwSignal::new(None);
   #[cfg(not(feature = "ssr"))]
@@ -503,12 +521,15 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                     view! {
                       <Listings hide={p.6} posts={o.posts.clone().into()} page_number={RwSignal::new(p.0)} heroes=1 />
                       {
-                        let (key, _) = next_page_cursor.get();
-                        if key > 0 && o.posts.len() > 0 {
+                        let (key, page_cursor) = next_page_cursor.get_untracked();
+                        if let Some(PaginationCursor(page_id)) = page_cursor {
+                        // let (key, _) = next_page_cursor.get();
+                        // if key > 0 && o.posts.len() > 0 {
                           let mut st: Vec<(usize, String)> = vec![];
-                          if let (_, Some(PaginationCursor(next_page))) = next_page_cursor.get() {
-                            st.push((key, next_page));
-                          }
+                          st.push((key, page_id));
+                          // if let (_, Some(PaginationCursor(next_page))) = next_page_cursor.get() {
+                          //   st.push((key, next_page));
+                          // }
                           let mut query_params = use_query_map().get();
                           query_params.remove("page");
                           query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
@@ -519,7 +540,42 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                             },
                             std::time::Duration::new(0, 50_000_000),
                           );
+                          #[cfg(not(feature = "ssr"))]
+                          set_timeout_with_handle(
+                            move || {
+                              if is_visible.get() {
+                                if let Some(c) = cancel_handle.get_untracked() {
+                                  c.clear();
+                                }
+                                let (key, page_cursor) = next_page_cursor.get_untracked();
+                                if let Some(PaginationCursor(page_id)) = page_cursor {
+                                  let mut st = ssr_page();
+                                  if st.len() == 0 {
+                                    st.push((0usize, "".into()));
+                                  }
+                                  if st.iter().find(|s| s.0 == key && s.1 == page_id).is_none() {
+                                    st.push((key, page_id));
+                                  }
+                                  let mut query_params = query.get_untracked();;
+                                  query_params.remove("page");
+                                  query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+                                  let params = query_params.clone();
+                                  spawn_local_scoped(async move {
+                                    if let Some(se) = on_scroll_element.get_untracked() {
+                                      let _ = IndexedDb::save_scroll_position(use_location().pathname.get_untracked(), params.to_query_string(), se.scroll_left()).await;
+                                    }
+                                    let navigate = use_navigate();
+                                    navigate(
+                                      &format!("{}{}", use_location().pathname.get_untracked(), query_params.to_query_string()),
+                                      NavigateOptions { resolve: true, replace: true, scroll: false, state: State::default() },
+                                    );
+                                  });
+                                }
 
+                              };
+                            },
+                            std::time::Duration::new(0, 500_000_000),
+                          );
                           view! {
                             <Show when={move || { show_next.get() }} fallback={|| {}}>
                               <div class="flex py-4 px-8 justify-end{}">
