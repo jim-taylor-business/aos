@@ -39,11 +39,7 @@ pub async fn login_fn(username_or_email: String, password: String, uri: String) 
   match result {
     Ok(LoginResponse { jwt, .. }) => {
       let response = expect_context::<leptos_axum::ResponseOptions>();
-      if let Ok(header_value) =
-        format!("jwt={}; SameSite=Lax; Path=/; Max-Age=691200", jwt.unwrap_or_default().into_inner()).parse::<http::HeaderValue>()
-      {
-        response.insert_header(axum::http::header::SET_COOKIE, header_value);
-      }
+      let _ = set_response_cookie(&response, "jwt", jwt.unwrap_or_default().into_inner());
       if uri.len() > 0 {
         redirect(&uri);
       } else {

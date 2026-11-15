@@ -8,9 +8,7 @@ pub async fn logout_fn() -> Result<(), ServerFnError> {
   match result {
     Ok(_o) => {
       let response = expect_context::<leptos_axum::ResponseOptions>();
-      if let Ok(header_value) = format!("jwt=; SameSite=Lax; Path=/; Max-Age=691200").parse::<http::HeaderValue>() {
-        response.insert_header(axum::http::header::SET_COOKIE, header_value);
-      }
+      let _ = set_response_cookie(&response, "jwt", String::new());
       Ok(())
     }
     Err(e) => {
@@ -30,48 +28,21 @@ pub async fn search_action(term: String) -> Result<(), ServerFnError> {
 #[server]
 pub async fn change_instance(instance: String) -> Result<(), ServerFnError> {
   let response = use_context::<leptos_axum::ResponseOptions>().ok_or(LemmyAppErrorType::InternalServerError)?;
-  response.insert_header(
-    axum::http::header::SET_COOKIE,
-    http::HeaderValue::from_str(
-      &cookie::Cookie::build(cookie::Cookie::new("instance", instance))
-        .path("/")
-        .same_site(cookie::SameSite::Lax)
-        .max_age(cookie::time::SignedDuration::seconds(691200))
-        .to_string(),
-    )?,
-  );
+  set_response_cookie(&response, "instance", instance)?;
   Ok(())
 }
 
 #[server]
 pub async fn change_lang(lang: String) -> Result<(), ServerFnError> {
   let response = use_context::<leptos_axum::ResponseOptions>().ok_or(LemmyAppErrorType::InternalServerError)?;
-  response.insert_header(
-    axum::http::header::SET_COOKIE,
-    http::HeaderValue::from_str(
-      &cookie::Cookie::build(cookie::Cookie::new("i18n_pref_locale", lang.to_lowercase()))
-        .path("/")
-        .same_site(cookie::SameSite::Lax)
-        .max_age(cookie::time::SignedDuration::seconds(691200))
-        .to_string(),
-    )?,
-  );
+  set_response_cookie(&response, "i18n_pref_locale", lang.to_lowercase())?;
   Ok(())
 }
 
 #[server]
 pub async fn change_theme(theme: String) -> Result<(), ServerFnError> {
   let response = use_context::<leptos_axum::ResponseOptions>().ok_or(LemmyAppErrorType::InternalServerError)?;
-  response.insert_header(
-    axum::http::header::SET_COOKIE,
-    http::HeaderValue::from_str(
-      &cookie::Cookie::build(cookie::Cookie::new("theme", theme))
-        .path("/")
-        .same_site(cookie::SameSite::Lax)
-        .max_age(cookie::time::SignedDuration::seconds(691200))
-        .to_string(),
-    )?,
-  );
+  set_response_cookie(&response, "theme", theme)?;
   Ok(())
 }
 

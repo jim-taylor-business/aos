@@ -308,3 +308,18 @@ pub fn provide_cookies() {
 pub fn provide_auth_and_instance_cookies() {
   provide_cookies();
 }
+
+#[cfg(feature = "ssr")]
+pub fn set_response_cookie(
+  response: &leptos_axum::ResponseOptions,
+  name: &str,
+  value: impl Into<String>,
+) -> Result<(), http::header::InvalidHeaderValue> {
+  let cookie = cookie::Cookie::build(cookie::Cookie::new(name, value.into()))
+    .path("/")
+    .same_site(cookie::SameSite::Lax)
+    .max_age(cookie::time::SignedDuration::seconds(691200))
+    .to_string();
+  response.insert_header(http::header::SET_COOKIE, http::HeaderValue::from_str(&cookie)?);
+  Ok(())
+}
