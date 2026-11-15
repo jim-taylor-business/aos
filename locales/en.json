@@ -88,6 +88,8 @@
   "highlight": "Highlight",
   "time_future": "in {{ duration }}",
   "time_past": "{{ duration }} ago",
+  "post_by": " by ",
+  "post_in": " in ",
   "post_count": "{{ count }} posts",
   "comment_count": "{{ count }} comments",
   "site_title": "AOS for {{ site }}",

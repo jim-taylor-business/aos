@@ -293,6 +293,15 @@ pub fn provide_instance_cookie() -> (Signal<Option<String>>, WriteSignal<Option<
   (get_instance_cookie, set_instance_cookie)
 }
 
+// #[cfg(not(feature = "ssr"))]
+// pub fn provide_theme_cookie() -> (Signal<Option<String>>, WriteSignal<Option<String>>) {
+//   let (get_theme_cookie, set_theme_cookie) = use_cookie_with_options::<String, FromToStringCodec>("theme", default_cookie_options());
+//   provide_context(ReadThemeCookie(get_theme_cookie));
+//   provide_context(WriteThemeCookie(set_theme_cookie));
+//   (get_theme_cookie, set_theme_cookie)
+// }
+//
+// #[cfg(feature = "ssr")]
 pub fn provide_theme_cookie() -> (Signal<Option<String>>, WriteSignal<Option<String>>) {
   let (get_theme_cookie, set_theme_cookie) = use_cookie_with_options::<String, FromToStringCodec>("theme", default_cookie_options());
   provide_context(ReadThemeCookie(get_theme_cookie));

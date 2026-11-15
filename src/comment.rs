@@ -687,18 +687,8 @@ pub fn Comment(
                             edit_show.set(false);
                             reply_show.update(|b| *b = !*b);
                             spawn_local_scoped(async move {
-                              if let Ok(d) = IndexedDb::new().await {
-                                if let Ok(Some(c)) = d
-                                  .get(
-                                    &CommentDraftKey {
-                                      comment_id: comment_view.get().comment.id.0,
-                                      draft: Draft::Reply,
-                                    },
-                                  )
-                                  .await
-                                {
-                                  reply_content.set(c);
-                                }
+                              if let Ok(Some(c)) = IndexedDb::get_comment_draft(comment_view.get().comment.id.0, Draft::Reply).await {
+                                reply_content.set(c);
                               }
                             });
                           }}
@@ -715,20 +705,10 @@ pub fn Comment(
                             reply_show.set(false);
                             edit_show.update(|b| *b = !*b);
                             spawn_local_scoped(async move {
-                              if let Ok(d) = IndexedDb::new().await {
-                                if let Ok(Some(c)) = d
-                                  .get(
-                                    &CommentDraftKey {
-                                      comment_id: comment_view.get().comment.id.0,
-                                      draft: Draft::Edit,
-                                    },
-                                  )
-                                  .await
-                                {
-                                  edit_content.set(c);
-                                } else {
-                                  edit_content.set(comment_view.get().comment.content);
-                                }
+                              if let Ok(Some(c)) = IndexedDb::get_comment_draft(comment_view.get().comment.id.0, Draft::Edit).await {
+                                edit_content.set(c);
+                              } else {
+                                edit_content.set(comment_view.get().comment.content);
                               }
                             });
                           }}
@@ -816,17 +796,7 @@ pub fn Comment(
                 on:input={move |ev| {
                   reply_content.set(event_target_value(&ev));
                   spawn_local_scoped(async move {
-                    if let Ok(d) = IndexedDb::new().await {
-                      let _ = d
-                        .set(
-                          &CommentDraftKey {
-                            comment_id: comment_view.get().comment.id.0,
-                            draft: Draft::Reply,
-                          },
-                          &reply_content.get(),
-                        )
-                        .await;
-                    }
+                    let _ = IndexedDb::set_comment_draft(comment_view.get().comment.id.0, Draft::Reply, reply_content.get()).await;
                   });
                 }}
               >
@@ -860,18 +830,9 @@ pub fn Comment(
                   edit_content.set(event_target_value(&ev));
                   comment_view.update(|cv| cv.comment.content = event_target_value(&ev));
                   spawn_local_scoped(async move {
-                    if let Ok(d) = IndexedDb::new().await {
-                      if let Ok(_comment_ids) = d
-                        .set(
-                          &CommentDraftKey {
-                            comment_id: comment_view.get().comment.id.0,
-                            draft: Draft::Edit,
-                          },
-                          &edit_content.get(),
-                        )
-                        .await
-                      {}
-                    }
+                    if let Ok(_comment_ids) =
+                      IndexedDb::set_comment_draft(comment_view.get().comment.id.0, Draft::Edit, edit_content.get()).await
+                    {}
                   });
                 }}
               >

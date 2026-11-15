@@ -226,6 +226,7 @@ pub fn Post() -> impl IntoView {
                     }
                     post_view.set(Some(res.1.clone()));
                     let post_response = Memo::new(move |_| res.1.clone());
+                    // let post_response_view = Memo::new(move |_| res.1.post_view.clone());
                     let text = if let Some(b) = post_response.get().post_view.post.body.clone() {
                       if b.len() > 0 { Some(b) } else { post_response.get().post_view.post.embed_description.clone() }
                     } else {
@@ -259,7 +260,7 @@ pub fn Post() -> impl IntoView {
                     view! {
                       <Title text={post_response.get().post_view.post.name} />
                       <div>
-                        <PostToolbar post_view={post_response.get().post_view.into()} reply_show content post_id />
+                        <PostToolbar post_view={post_response.get().post_view} reply_show content post_id />
                       </div>
                       <div class="py-2 px-4">
                         <span
@@ -281,7 +282,7 @@ pub fn Post() -> impl IntoView {
                         />
                         <span class="block mb-1 wrap-anywhere text-md">
                           <span>{abbr_duration}</span>
-                          " by "
+                          {t!(i18n, post_by)}
                           <A
                             href={move || {
                               format!("/u/{}?person_id={}", creator_name, post_response.get().post_view.creator.id.0)
@@ -290,7 +291,7 @@ pub fn Post() -> impl IntoView {
                           >
                             <span class="overflow-y-auto" inner_html={creator_name_encoded} />
                           </A>
-                          " in "
+                          {t!(i18n, post_in)}
                           <A
                             attr:class="inline wrap-anywhere hover:text-secondary"
                             href={if post_response.get().post_view.community.local {
@@ -423,18 +424,7 @@ pub fn Post() -> impl IntoView {
                                             content.set(event_target_value(&ev));
                                             if let Some(id) = post_id.get() {
                                               spawn_local_scoped(async move {
-                                                if let Ok(d) = IndexedDb::new().await {
-                                                  if let Ok(_c) = d
-                                                    .set(
-                                                      &CommentDraftKey {
-                                                        comment_id: id,
-                                                        draft: Draft::Post,
-                                                      },
-                                                      &content.get(),
-                                                    )
-                                                    .await
-                                                  {}
-                                                }
+                                                if let Ok(_c) = IndexedDb::set_comment_draft(id, Draft::Post, content.get()).await {}
                                               });
                                             }
                                           }}

@@ -275,6 +275,30 @@ impl IndexedDb {
 
 #[cfg(not(feature = "ssr"))]
 impl IndexedDb {
+  pub async fn get_comment_draft(comment_id: i32, draft: Draft) -> Result<Option<String>, IndexedDbError> {
+    let db = Self::new().await?;
+    db.get(&CommentDraftKey { comment_id, draft }).await
+  }
+
+  pub async fn set_comment_draft(comment_id: i32, draft: Draft, content: String) -> Result<(), IndexedDbError> {
+    let db = Self::new().await?;
+    db.set(&CommentDraftKey { comment_id, draft }, &content).await
+  }
+}
+
+#[cfg(feature = "ssr")]
+impl IndexedDb {
+  pub async fn get_comment_draft(comment_id: i32, draft: Draft) -> Result<Option<String>, IndexedDbError> {
+    Ok(None)
+  }
+
+  pub async fn set_comment_draft(comment_id: i32, draft: Draft, content: String) -> Result<(), IndexedDbError> {
+    Ok(())
+  }
+}
+
+#[cfg(not(feature = "ssr"))]
+impl IndexedDb {
   pub async fn get<Form, Response>(&self, key: &Form) -> Result<Option<Response>, IndexedDbError>
   where
     Form: Serialize + Store,

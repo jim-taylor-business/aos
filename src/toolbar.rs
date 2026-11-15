@@ -83,17 +83,13 @@ pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostR
 }
 
 #[component]
-pub fn PostToolbar(
-  post_view: Signal<PostView>,
-  reply_show: RwSignal<bool>,
-  content: RwSignal<String>,
-  post_id: Signal<Option<i32>>,
-) -> impl IntoView {
+pub fn PostToolbar(post_view: PostView, reply_show: RwSignal<bool>, content: RwSignal<String>, post_id: Signal<Option<i32>>) -> impl IntoView {
   let i18n = use_i18n();
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
   let online = expect_context::<RwSignal<OnlineSetter>>();
-  let post_view = RwSignal::new(post_view.get());
+  // let pv_clone = RwSignal::new(post_view.clone());
+  let post_view = RwSignal::new(post_view);
   let vote_action = ServerAction::<VotePostFn>::new();
   let loading = RwSignal::new(false);
   let error = RwSignal::new(None::<LemmyAppError>);
@@ -281,6 +277,8 @@ pub fn PostToolbar(
           Some(Ok(s)) => {
             {
               let logged_in = Memo::new(move |_| { s.my_user.is_some() });
+              // let post_view = Memo::new(move |_| pv_clone.get());
+
               #[cfg(not(feature = "ssr"))]
               let _ = set_timeout_with_handle(
                   move || {
@@ -334,28 +332,28 @@ pub fn PostToolbar(
                     </ActionForm>
                     <span
                       class="flex items-center"
-                      title={move || {
-                        let post = post_view.get_untracked();
-                        let count = t_string!(i18n, comments_count, count = post.counts.comments);
-                        if post.unread_comments != post.counts.comments && post.unread_comments > 0 {
-                          format!(
-                            "{} ({})",
-                            count,
-                            t_string!(i18n, unread_comments_count, count = post.unread_comments),
-                          )
-                        } else {
-                          count
-                        }
-                      }}
+                      // title={
+                      //   // let post = post_view.get_untracked();
+                      //   // let count = t_string!(i18n, comments_count, count = post_view.get_untracked().counts.comments);
+                      //   if post_view.get_untracked().unread_comments != post_view.get_untracked().counts.comments && post_view.get_untracked().unread_comments > 0 {
+                      //     format!(
+                      //       "{} ({})",
+                      //       t_string!(i18n, comments_count, count = post_view.get_untracked().counts.comments),
+                      //       t_string!(i18n, unread_comments_count, count = post_view.get_untracked().unread_comments),
+                      //     )
+                      //   } else {
+                      //     t_string!(i18n, comments_count, count = post_view.get_untracked().counts.comments)
+                      //   }
+                      // }
                     >
-                      <Icon icon={Icon::Comments} class={"inline".into()} />
-                      {post_view.get_untracked().counts.comments}
-                      {if post_view.get_untracked().unread_comments != post_view.get_untracked().counts.comments
-                        && post_view.get_untracked().unread_comments > 0
+                      <Icon icon={Icon::Comments} class="inline" />
+                      {post_view.get().counts.comments}
+                      {if post_view.get().unread_comments != post_view.get().counts.comments
+                        && post_view.get().unread_comments > 0
                       {
                         format!(
                           " ({})",
-                          t_string!(i18n, unread_comments_count, count = post_view.get_untracked().unread_comments),
+                          post_view.get().unread_comments,
                         )
                       } else {
                         "".to_owned()
@@ -393,18 +391,8 @@ pub fn PostToolbar(
                         if let Some(id) = post_id.get_untracked() {
                           #[cfg(not(feature = "ssr"))]
                           spawn_local_scoped(async move {
-                            if let Ok(d) = IndexedDb::new().await {
-                              if let Ok(Some(c)) = d
-                                .get(
-                                  &CommentDraftKey {
-                                    comment_id: id,
-                                    draft: Draft::Post,
-                                  },
-                                )
-                                .await
-                              {
-                                content.set(c);
-                              }
+                            if let Ok(Some(c)) = IndexedDb::get_comment_draft(id, Draft::Post).await {
+                              content.set(c);
                             }
                           });
                         }
@@ -465,7 +453,7 @@ pub fn PostToolbar(
                                 placeholder={move || t_string!(i18n, report_reason)}
                               />
                               <button class="text-xs whitespace-nowrap" title={move || t_string!(i18n, report)} type="submit">
-                                <Icon icon={Icon::Report} class={"inline-block".into()} />
+                                <Icon icon={Icon::Report} class="inline-block" />
                                 {t!(i18n, report_post)}
                               </button>
                             </ActionForm>
@@ -475,7 +463,7 @@ pub fn PostToolbar(
                               <input type="hidden" name="person_id" value={format!("{}", post_view.get_untracked().creator.id.0)} />
                               <input type="hidden" name="block" value="true" />
                               <button on:click={on_block_submit} class="text-xs whitespace-nowrap" title={move || t_string!(i18n, block)} type="submit">
-                                <Icon icon={Icon::Block} class={"inline-block".into()} />
+                                <Icon icon={Icon::Block} class="inline-block" />
                                 {t!(i18n, block_user)}
                               </button>
                             </ActionForm>

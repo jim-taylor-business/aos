@@ -77,14 +77,14 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
             class="flex items-center"
             title={move || t_string!(i18n, post_count, count = person_view.counts.post_count)}
           >
-            <Icon icon={Icon::Archive} class={"inline".into()} />
+            <Icon icon={Icon::Archive} class="inline" />
             <span class="text-sm">{person_view.counts.post_count}</span>
           </span>
           <span
             class="flex items-center pl-2"
             title={move || t_string!(i18n, comment_count, count = person_view.counts.comment_count)}
           >
-            <Icon icon={Icon::Comments} class={"inline".into()} />
+            <Icon icon={Icon::Comments} class="inline" />
             <span class="text-sm">{person_view.counts.comment_count}</span>
           </span>
         </div>
@@ -188,28 +188,28 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
             class="flex items-center"
             title={move || t_string!(i18n, subscribers_count, count = community.counts.subscribers)}
           >
-            <Icon icon={Icon::Subscribe} class={"inline".into()} />
+            <Icon icon={Icon::Subscribe} class="inline" />
             <span class="text-sm">{community.counts.subscribers}</span>
           </span>
           <span
             class="flex items-center pl-2"
             title={move || t_string!(i18n, active_users_count, count = community.counts.users_active_month)}
           >
-            <Icon icon={Icon::Community} class={"inline".into()} />
+            <Icon icon={Icon::Community} class="inline" />
             <span class="text-sm">{community.counts.users_active_month}</span>
           </span>
           <span
             class="flex items-center pl-2"
             title={move || t_string!(i18n, posts_count, count = community.counts.posts)}
           >
-            <Icon icon={Icon::Archive} class={"inline".into()} />
+            <Icon icon={Icon::Archive} class="inline" />
             <span class="text-sm">{community.counts.posts}</span>
           </span>
           <span
             class="flex items-center pl-2"
             title={move || t_string!(i18n, comments_count_short, count = community.counts.comments)}
           >
-            <Icon icon={Icon::Comments} class={"inline".into()} />
+            <Icon icon={Icon::Comments} class="inline" />
             <span class="text-sm">{community.counts.comments}</span>
           </span>
         </div>
@@ -238,7 +238,7 @@ pub fn Listings(posts: Signal<Vec<PostView>>, page_number: RwSignal<usize>, hide
 }
 
 #[server]
-pub async fn vote_post_fn(post_id: i32, score: i16) -> Result<Option<PostResponse>, ServerFnError> {
+pub async fn vote_post(post_id: i32, score: i16) -> Result<Option<PostResponse>, ServerFnError> {
   provide_cookies();
   let form = CreatePostLike { post_id: PostId(post_id), score };
   let result = LemmyClient.like_post(form).await;
@@ -253,7 +253,7 @@ pub async fn vote_post_fn(post_id: i32, score: i16) -> Result<Option<PostRespons
 }
 
 #[server]
-pub async fn save_post_fn(post_id: i32, save: bool) -> Result<Option<PostResponse>, ServerFnError> {
+pub async fn post_save(post_id: i32, save: bool) -> Result<Option<PostResponse>, ServerFnError> {
   provide_cookies();
   let form = SavePost { post_id: PostId(post_id), save };
   let result = LemmyClient.save_post(form).await;
@@ -268,7 +268,7 @@ pub async fn save_post_fn(post_id: i32, save: bool) -> Result<Option<PostRespons
 }
 
 #[server]
-pub async fn block_user_fn(person_id: i32, block: bool) -> Result<Option<BlockPersonResponse>, ServerFnError> {
+pub async fn block_user(person_id: i32, block: bool) -> Result<Option<BlockPersonResponse>, ServerFnError> {
   provide_cookies();
   let form = BlockPerson { person_id: PersonId(person_id), block };
   let result = LemmyClient.block_user(form).await;
@@ -304,7 +304,7 @@ async fn try_report(form: CreatePostReport) -> Result<PostReportResponse, LemmyA
 }
 
 #[server]
-pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostReportResponse>, ServerFnError> {
+pub async fn report_post(post_id: i32, reason: String) -> Result<Option<PostReportResponse>, ServerFnError> {
   provide_cookies();
   let form = CreatePostReport { post_id: PostId(post_id), reason };
   let result = try_report(form).await;
@@ -328,7 +328,7 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
   let loading = RwSignal::new(false);
   let error = RwSignal::new(false);
   let latest_error = RwSignal::new(LemmyAppError { error_type: LemmyAppErrorType::Unknown, content: "".to_owned() });
-  let vote_action = ServerAction::<VotePostFn>::new();
+  let vote_action = ServerAction::<VotePost>::new();
 
   let on_vote_submit = move |e: MouseEvent, score: i16| {
     e.prevent_default();
@@ -397,7 +397,7 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
     on_vote_submit(e, score);
   };
 
-  let _save_post_action = ServerAction::<SavePostFn>::new();
+  let _save_post_action = ServerAction::<PostSave>::new();
 
   let _on_save_submit = move |e: MouseEvent| {
     e.prevent_default();
@@ -416,7 +416,7 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
     );
   };
 
-  let _block_user_action = ServerAction::<BlockUserFn>::new();
+  let _block_user_action = ServerAction::<BlockUser>::new();
 
   let _on_block_submit = move |e: MouseEvent| {
     e.prevent_default();
@@ -433,7 +433,7 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
     );
   };
 
-  let _report_post_action = ServerAction::<ReportPostFn>::new();
+  let _report_post_action = ServerAction::<ReportPost>::new();
   let report_validation = RwSignal::new(String::from(""));
 
   let query = use_query_map();
@@ -648,7 +648,7 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                         }}
                       >
                         <A href={move || format!("/p/{}", post_view.get_untracked().post.id)} attr:class="inline hover:text-accent">
-                          <Icon icon={Icon::Comments} class={"inline".into()} />
+                          <Icon icon={Icon::Comments} class="inline" />
                         </A>
                         {post_view.get_untracked().counts.comments}
                       </span>

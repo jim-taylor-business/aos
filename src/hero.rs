@@ -220,7 +220,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                   </a>
                   <div class="py-2">
                     <PostToolbar
-                      post_view={post_response.get().post_view.into()}
+                      post_view={post_response.get().post_view}
                       reply_show
                       content
                       post_id={Signal::derive(move || Some(post_response.get().post_view.post.id.0))}
@@ -229,7 +229,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                   <div class="py-2 px-4">
                     <span class="block mb-1 wrap-anywhere text-md">
                       <span>{abbr_duration}</span>
-                      " by "
+                      {t!(i18n, post_by)}
                       <A
                         href={move || {
                           format!("/u/{}?person_id={}", creator_name, post_response.get().post_view.creator.id.0)
@@ -238,7 +238,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                       >
                         <span class="overflow-y-auto" inner_html={creator_name_encoded} />
                       </A>
-                      " in "
+                      {t!(i18n, post_in)}
                       <A
                         attr:class="inline wrap-anywhere hover:text-secondary"
                         href={if post_response.get().post_view.community.local {
