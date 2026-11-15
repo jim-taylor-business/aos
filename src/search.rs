@@ -9,21 +9,18 @@ use leptos_use_scroll::{UseScrollOptions, UseScrollReturn, use_scroll_with_optio
 #[component]
 pub fn PostSearch() -> impl IntoView {
   let param = use_params_map();
-  // let ssr_name = Signal::derive(move || param.get().get("id"));
   view! { <Search ssr_post_id=param.get().get("id").unwrap_or("".into()) /> }
 }
 
 #[component]
 pub fn CommunitySearch() -> impl IntoView {
   let param = use_params_map();
-  // let ssr_name = Signal::derive(move || param.get().get("name"));
   view! { <Search ssr_community_name=param.get().get("name").unwrap_or("".into()) /> }
 }
 
 #[component]
 pub fn UserSearch() -> impl IntoView {
   let param = use_params_map();
-  // let ssr_name = Signal::derive(move || param.get().get("name"));
   view! { <Search ssr_user_name=param.get().get("name").unwrap_or("".into()) /> }
 }
 
@@ -39,7 +36,6 @@ pub fn Search(
   #[prop(optional, into)] ssr_post_id: Option<String>,
 ) -> impl IntoView {
   // let i18n = use_i18n();
-  // let param = use_params_map();
   let ssr_name = move || ssr_community_name.clone();
 
   let query = use_query_map();
@@ -59,12 +55,6 @@ pub fn Search(
 
   #[cfg(not(feature = "ssr"))]
   {
-    // use leptos_use::{
-    //   UseIntersectionObserverOptions, UseIntersectionObserverReturn, UseScrollOptions, UseScrollReturn, use_intersection_observer_with_options,
-    //   use_scroll_with_options,
-    // };
-    // use web_sys::Event;
-
     let on_scroll = move |_e: Event| {
       if ssr_page().len() > 1 {
         if let Some(se) = on_scroll_element.get() {
@@ -81,7 +71,6 @@ pub fn Search(
     let UseIntersectionObserverReturn { .. } = use_intersection_observer_with_options(
       intersection_element,
       move |intersections, _| {
-        // log!("inter {:#?}", intersections[0].is_intersecting());
         if intersections[0].is_intersecting() {
           let (key, len) = next_page_cursor.get();
           if key > 1 && len > 0 {
@@ -89,7 +78,6 @@ pub fn Search(
             if st.iter().find(|s| **s == key).is_none() {
               st.push(key);
             }
-            // st.push(key);
             let mut query_params = query.get();
             query_params.remove("page");
             query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
@@ -160,7 +148,6 @@ pub fn Search(
               loading.set(false);
             }
             new_pages.push((p, form.clone(), t, Ok(o), get_auth_cookie.get_untracked()));
-            // #[cfg(not(feature = "ssr"))]
           }
           Err(e) => {
             #[cfg(not(feature = "ssr"))]
@@ -235,13 +222,6 @@ pub fn Search(
                   #[cfg(not(feature = "ssr"))] loading.set(false);
                   next_page_cursor.set((r.0 + 1, o.users.len() + o.communities.len() + o.posts.len() + o.comments.len()));
                   let comments_clone = RwSignal::new(o.comments.clone());
-                    // #[cfg(not(feature = "ssr"))] log!("visible {}", );
-                    // log!("next {:#?}", next_page_cursor.get());
-                    // if r.0 == 1 && o.posts.len() == 0 {
-                    //   view! {
-                    //     <Info loading={true} description={"No search results"} />
-                    //   }.into_any()
-                    // } else {
                   view! {
                     <Listings hide=false posts={o.posts.clone().into()} page_number={RwSignal::new((r.0 - 1) * 50)} />
                     <For each={move || comments_clone.get()} key={|cv| cv.comment.id} let:cv>
@@ -289,7 +269,6 @@ pub fn Search(
                                 if st.iter().find(|s| **s == key).is_none() {
                                   st.push(key);
                                 }
-                                // st.push(key);
                                 let mut query_params = query.get_untracked();
                                 query_params.remove("page");
                                 query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
@@ -324,7 +303,6 @@ pub fn Search(
                       }
                     }
                   }.into_any()
-                  // }
                 }
                 Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
                   #[cfg(not(feature = "ssr"))] loading.set(false);

@@ -42,11 +42,9 @@ pub fn User() -> impl IntoView {
             if st.iter().find(|s| **s == key).is_none() {
               st.push(key);
             }
-            // st.push(key);
             let mut query_params = query.get();
             query_params.remove("page");
             query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-
             let navigate = use_navigate();
             navigate(
               &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
@@ -389,7 +387,6 @@ pub fn User() -> impl IntoView {
                                 if st.iter().find(|s| **s == key).is_none() {
                                   st.push(key);
                                 }
-                                // st.push(key);
                                 let mut query_params = query.get_untracked();
                                 query_params.remove("page");
                                 query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));

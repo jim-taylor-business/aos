@@ -496,8 +496,6 @@ pub fn TopNav(
     if l != SearchType::Posts {
       query_params.insert("kind", serde_json::to_string(&l).ok().unwrap_or("Posts".into()));
     }
-    // let params = query_params.clone();
-    // let path = use_location().pathname.get();
     if ssr_person_id().is_some() {
       return format!("/u/{}/s{}", ssr_name(), query_params.to_query_string());
     }
@@ -514,58 +512,28 @@ pub fn TopNav(
     if l == ssr_kind() && use_location().pathname.get().ends_with("/s") { " menu-active" } else { "" }
   };
 
-  let disabled_ssr_kind = move |l: SearchType| {
-    match l {
-      SearchType::Users | SearchType::Communities => {
-        if use_location().pathname.get().len() == 1 || use_location().pathname.get().eq("/s") {
-          ""
-        } else {
-          "menu-disabled"
-        }
+  let disabled_ssr_kind = move |l: SearchType| match l {
+    SearchType::Users | SearchType::Communities => {
+      if use_location().pathname.get().len() == 1 || use_location().pathname.get().eq("/s") {
+        ""
+      } else {
+        "menu-disabled"
       }
-      SearchType::Posts | SearchType::Comments => {
-        if use_location().pathname.get().len() == 1
-          || use_location().pathname.get().eq("/s")
-          || param.get().get("name").unwrap_or("".into()).len() > 0
-        {
-          ""
-        } else {
-          "menu-disabled"
-        }
-      }
-      _ => "",
     }
-    // if ssr_id().len() > 0 {
-    //   if matches!(l, SearchType::Posts | SearchType::Users | SearchType::Communities) { "menu-disabled" } else { "" }
-    // } else {
-    //   ""
-    // }
+    SearchType::Posts | SearchType::Comments => {
+      if use_location().pathname.get().len() == 1 || use_location().pathname.get().eq("/s") || param.get().get("name").unwrap_or("".into()).len() > 0
+      {
+        ""
+      } else {
+        "menu-disabled"
+      }
+    }
+    _ => "",
   };
 
   let on_csr_kind_click = move |l: SearchType| {
     move |e: MouseEvent| {
       e.prevent_default();
-      // response_cache.update(move |rc| {
-      //   rc.remove(&(
-      //     0usize,
-      //     GetPosts {
-      //       type_: Some(l),
-      //       sort: Some(ssr_sort()),
-      //       page: None,
-      //       limit: Some(50),
-      //       community_id: None,
-      //       community_name: None,
-      //       saved_only: None,
-      //       liked_only: None,
-      //       disliked_only: None,
-      //       show_hidden: Some(true),
-      //       show_read: Some(true),
-      //       show_nsfw: Some(false),
-      //       page_cursor: None,
-      //     },
-      //     get_auth_cookie.get(),
-      //   ));
-      // });
       let mut query_params = query.get();
       query_params.remove("page");
       query_params.remove("kind");
@@ -1202,13 +1170,10 @@ pub fn TopNav(
                             use_navigate()(&format!("/u/{}/s{}", ssr_name(), query_params.to_query_string()), Default::default());
                           } else if ssr_name().len() > 0 {
                             use_navigate()(&format!("/c/{}/s{}", ssr_name(), query_params.to_query_string()), Default::default());
-                          // } else if ssr_id().len() > 0 {
-                          //   use_navigate()(&format!("/p/{}/s{}", ssr_id(), query_params.to_query_string()), Default::default());
                           } else {
                             use_navigate()(&format!("/s{}", query_params.to_query_string()), Default::default());
                           }
                         }
-                        // use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
                       }
                     }}
                     on:input={move |ev| {
@@ -1269,7 +1234,6 @@ pub fn TopNav(
                           use_navigate()(&format!("/s{}", query_params.to_query_string()), Default::default());
                         }
                       }
-                      // use_navigate()(&format!("/s?term={}", search_term.get()), NavigateOptions::default());
                     }}
                   >
                     <Icon icon={Icon::Search} />

@@ -7,11 +7,7 @@ pub fn UserListings(people: Signal<Vec<PersonView>>, page_number: RwSignal<usize
     <For each={move || people.get()} key={|pv| pv.person.id} let:pv>
       {
         post_number.update(|n| *n = *n + 1usize);
-        // if post_number.get() <= heroes {
-        //   view! { <Hero hide post_id={Signal::derive(move || pv.post.id)} /> }.into_any()
-        // } else {
-          view! { <UserListing hide person_view={pv} post_number={post_number.get()} /> }.into_any()
-        // }
+        view! { <UserListing hide person_view={pv} post_number={post_number.get()} /> }.into_any()
       }
     </For>
   }
@@ -21,9 +17,7 @@ pub fn UserListings(people: Signal<Vec<PersonView>>, page_number: RwSignal<usize
 #[component]
 pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> impl IntoView {
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
-
   let thumbnail = RwSignal::new(String::from(""));
-
   let from = if let Some(f) = person_view.person.actor_id.clone().inner().host_str() {
     external_host_attribution(Some(f.to_string()), get_instance_cookie.get_untracked())
   } else {
@@ -34,43 +28,14 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
   let u = person_view.person.name.clone();
   let creator_name = Memo::new(move |_| federated_creator_handle(&u, a.domain().as_deref(), None));
   let creator_name_encoded = Memo::new(move |_| html_escape::encode_safe(&name).to_string());
-
-  // let title = if person_view.person.display_name.is_some() > 0 { person_view.person.display_name } else { person_view.person.name.clone() };
-  // let community_title = if community.community.local {
-  //   format!("{}", title)
-  // } else {
-  //   format!("{}@{}", title, if let Some(h) = community.community.actor_id.inner().host() { h.to_string() } else { "".to_owned() })
-  // };
-  // let community_title_encoded = Memo::new(move |_| html_escape::encode_safe(&community_title).to_string());
-  // let community_name = Memo::new(move |_| {
-  //   if community.community.local {
-  //     format!("{}", community.community.name)
-  //   } else {
-  //     format!(
-  //       "{}@{}",
-  //       community.community.name,
-  //       if let Some(h) = community.community.actor_id.inner().host() { h.to_string() } else { "".to_owned() }
-  //     )
-  //   }
-  // });
-
   let abbr_duration = relative_time(person_view.person.published.timestamp_millis());
   let abbr_duration = Memo::new(move |_| abbr_duration.clone());
 
   view! {
     <div class="px-4 pb-6 flex gap-x-4 break-inside-avoid">
-      // {
-      //   if let Some(t) = community.community.icon {
-      //     let h = t.inner().to_string();
-      //     view! { <span>{h}</span><br/> }.into_any()
-      //   } else {
-      //     view! { }.into_any()
-      //   }
-      // }
       <div class="flex items-start pt-2">
         <A
           attr:class="flex flex-col h-full"
-          // target="_blank"
           href={move || format!("/u/{}?person_id={}", creator_name.get(), person_view.person.id.0)}
         >
           {move || {
@@ -83,7 +48,6 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
                     <img
                       class={move || format!("w-24{}", if thumbnail.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" })}
                       src={move || thumbnail.get()}
-                      // node_ref={thumbnail_element}
                       on:error={move |_e| {
                         thumbnail.set("/lemmy.svg".into());
                       }}
@@ -108,37 +72,8 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
         <span class="block mt-1 mb-1 text-sm wrap-anywhere">
           <span>{abbr_duration}</span>
           " "
-          // <Show when={move || { post_number != 0 }} fallback={|| {}}>
-          //   "by "
-          //   <span class="overflow-y-auto" inner_html={creator_name_encoded} />
-          // </Show>
-          // " in "
-          // <span class="overflow-y-auto" inner_html={community_title_encoded} />
           <span>{from}</span>
-          // <span>
-          //   {
-          //     if let Some(f) = person_view.person.actor_id.inner().host_str() {
-          //       if f.to_string().ne(&get_instance_cookie.get_untracked().unwrap_or("".into())) {
-          //         format!(" from {}", f)
-          //       } else {
-          //         "".into()
-          //       }
-          //     } else {
-          //       "".into()
-          //     }
-          //   }
-          // </span>
-        </span>        // <span>{person_view.person.name}-</span>
-        // <span>{person_view.person.display_name}</span><br/>
-        // <span>{format!("{:#?}", person_view.person.published)}-</span><br/>
-        // {
-        //   if let Some(t) = person_view.person.avatar {
-        //     let h = t.inner().to_string();
-        //     view! { <span>{h}</span><br/> }.into_any()
-        //   } else {
-        //     view! { }.into_any()
-        //   }
-        // }
+        </span>
         <div class="flex flex-wrap">
           <span
             class="flex items-center"
@@ -164,26 +99,7 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
             <Icon icon={Icon::Comments} class={"inline".into()} />
             <span class="text-sm">{person_view.counts.comment_count}</span>
           </span>
-          // <span
-          //   class="flex items-center pl-2"
-          //   title={move || {
-          //     format!(
-          //       "{} comment_score",
-          //       person_view.counts.comment_score,
-          //     )
-          //   }}
-          // >
-          //   <Icon icon={Icon::Upvote} class={"inline".into()} />
-          //   {person_view.counts.comment_score}
-          // </span>
         </div>
-        // <span>{person_view.counts.post_count}-</span>
-        // <span>{person_view.counts.comment_count}-</span>
-        // <span>{person_view.counts.comment_score}-</span>
-        // <span>{hide}</span>
-        // <span>{post_number}</span>
-        // <span>{format!("{:#?}", person_view)}</span>
-        // <span>{hide}</span>
       </div>
     </div>
   }
@@ -202,11 +118,7 @@ pub fn CommunityListings(
     <For each={move || communities.get()} key={|pv| pv.community.id} let:pv>
       {
         post_number.update(|n| *n = *n + 1usize);
-        // if post_number.get() <= heroes {
-        //   view! { <Hero hide post_id={Signal::derive(move || pv.post.id)} /> }.into_any()
-        // } else {
-          view! { <CommunityListing hide community={pv} post_number={post_number.get()} /> }.into_any()
-        // }
+        view! { <CommunityListing hide community={pv} post_number={post_number.get()} /> }.into_any()
       }
     </For>
   }
@@ -244,18 +156,9 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
 
   view! {
     <div class="px-4 pb-6 flex gap-x-4 break-inside-avoid">
-      // {
-      //   if let Some(t) = community.community.icon {
-      //     let h = t.inner().to_string();
-      //     view! { <span>{h}</span><br/> }.into_any()
-      //   } else {
-      //     view! { }.into_any()
-      //   }
-      // }
       <div class="flex items-start pt-2">
         <A
           attr:class="flex flex-col h-full"
-          // target="_blank"
           href={move || format!("/c/{}", community_name.get())}
         >
           {move || {
@@ -268,7 +171,6 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
                     <img
                       class={move || format!("w-24{}", if thumbnail.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" })}
                       src={move || thumbnail.get()}
-                      // node_ref={thumbnail_element}
                       on:error={move |_e| {
                         thumbnail.set("/lemmy.svg".into());
                       }}
@@ -294,37 +196,7 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
           <span>{abbr_duration}</span>
           " "
           <span>{from}</span>
-          // <Show when={move || { post_number != 0 }} fallback={|| {}}>
-          //   "by "
-          //   <span class="overflow-y-auto" inner_html={creator_name_encoded} />
-          // </Show>
-          // " in "
-          // <span class="overflow-y-auto" inner_html={community_title_encoded} />
-          // <span class="overflow-y-auto">
-          //   {if let Some(d) = post_view.get_untracked().post.url {
-          //     if let Some(f) = d.inner().host_str() {
-          //       if f.to_string().ne(&get_instance_cookie.get_untracked().unwrap_or("".into())) {
-          //         format!(" from {}", f)
-          //       } else {
-          //         "".into()
-          //       }
-          //     } else {
-          //       "".into()
-          //     }
-          //   } else {
-          //     "".into()
-          //   }}
         </span>
-        // <span>{community.community.title}</span><br/>
-        // {
-        //   if let Some(t) = community.community.banner {
-        //     let h = t.inner().to_string();
-        //     view! { <span>{h}</span><br/> }.into_any()
-        //   } else {
-        //     view! { }.into_any()
-        //   }
-        // }
-        // <span>{format!("{:#?}", community.community.published)}</span><br/>
         <div class="flex flex-wrap">
           <span
             class="flex items-center"
@@ -376,11 +248,6 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
           </span>
         </div>
       </div>
-      // <span>{community.counts.subscribers}-</span>
-      // <span>{community.counts.users_active_month}-</span>
-      // <span>{community.counts.posts}-</span>
-      // <span>{community.counts.comments}-</span>
-      // <span>{hide}</span>
     </div>
   }
   .into_any()
@@ -655,7 +522,6 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
   let title = post_view.get().post.name.clone();
   let title_encoded_mut = markdown_to_html(&title, false);
   let title_encoded = Memo::new(move |_| title_encoded_mut.clone());
-
   let community_title = community_title_with_federation(
     &post_view.get().community.name,
     post_view.get().community.local,
@@ -667,12 +533,8 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
   let instance = get_instance_cookie.get_untracked();
   let creator_name = federated_creator_handle(&u, a.domain().as_deref(), instance.as_deref());
   let creator_name_encoded = Memo::new(move |_| html_escape::encode_safe(&creator_name).to_string());
-  // let creator_name_encoded = Memo::new(move |_| html_escape::encode_safe(&post_view.get().creator.actor_id.to_string()[8..]).to_string());
-
   let abbr_duration = relative_time(post_view.get().post.published.timestamp_millis());
   let abbr_duration = Memo::new(move |_| abbr_duration.clone());
-
-  // let thumbnail_element = NodeRef::<Img>::new();
   let thumbnail = RwSignal::new(String::from(""));
 
   view! {
@@ -681,13 +543,9 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
         match ssr_site.get() {
           Some(Ok(s)) => {
             {
-              // let s_clone = s.clone();
-              // let site = Memo::new(move |_| { s });
               let logged_in = Memo::new(move |_| { s.my_user.is_some() });
-              // let languages = Memo::new(move |_| if let GetSiteResponse { all_languages: l, .. } = s_clone { l } else { vec![] });
               let languages = Memo::new(move |_| if let Some(Ok(GetSiteResponse { all_languages: l, .. })) = ssr_site.get() { l } else { vec![] });
-              //   let languages = if let GetSiteResponse { all_languages: l, .. } = s { Memo::new(move |_| l) }; // else { Memo::new(move |_| Vec<Language>::new()) };
-              //
+
               view! {
                 <div class={move || {
                   format!(
@@ -727,7 +585,6 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                                 <img
                                   class={move || format!("w-24{}", if thumbnail.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" })}
                                   src={move || thumbnail.get()}
-                                  // node_ref={thumbnail_element}
                                   on:error={move |_e| {
                                     thumbnail.set("/lemmy.svg".into());
                                   }}
@@ -829,42 +686,6 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                         </A>
                         {post_view.get_untracked().counts.comments}
                       </span>
-                      // </Show>
-                      // <ActionForm action={save_post_action} attr:class="flex items-center">
-                      // <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
-                      // <input type="hidden" name="save" value={move || format!("{}", !post_view.get_untracked().saved)} />
-                      // <button
-                      // type="submit"
-                      // on:click={on_save_submit}
-                      // title="Save post"
-                      // class={move || {
-                      // format!(
-                      // "{}{}",
-                      // { if post_view.get_untracked().saved { "text-accent" } else { "" } },
-                      // { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } },
-                      // )
-                      // }}
-                      // disabled={move || !logged_in.get() || !online.get().0}
-                      // >
-                      // <Icon icon={Icon::Save} />
-                      // </button>
-                      // </ActionForm>
-                      // <span
-                      // class="cursor-pointer"
-                      // on:click={move |_| {
-                      // reply_show.update(|b| *b = !*b);
-                      // }}
-                      // title="Reply"
-                      // >
-                      // <Icon icon={Icon::Reply} />
-                      // </span>
-                      // <span class={format!("text-base-content{}", if post_view.get_untracked().post.local { " hidden" } else { "" })} title="Original">
-                      // <A href={post_view.get_untracked().post.ap_id.inner().to_string()}>
-                      // <Icon icon={Icon::External} />
-                      // </A>
-                      // </span>
-
-                      // <Show when={move || { post_view.get_untracked().counts.post_id.0 != 0 }} fallback={|| {}}>
                       <span class="flex items-center ml-auto text-base-content/25">
                         <a
                           class={format!(

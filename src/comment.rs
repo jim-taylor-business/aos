@@ -37,7 +37,6 @@ pub fn Comments(comments: Signal<Vec<CommentView>>, post_id: Signal<Option<i32>>
         post_id
         selected_drag_offset={RwSignal::new((1, 0f64, 0))}
       />
-    // on_scroll_element
     </For>
   }
 }
@@ -172,7 +171,6 @@ pub fn Comment(
               false
             }
           });
-          // log!("{}{}", comments_children.len(), comments_descendants.len());
           children.set(comments_children);
           descendants.set(comments_descendants);
           comment_view.update(|v| {
@@ -604,73 +602,8 @@ pub fn Comment(
               <div
                 lang={move || languages.get().get(comment_view.get().comment.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )}
                 class={move || format!("prose select-none{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html}
-                // on:click={move |e: MouseEvent| {
-                //   log!("ME ME M");
-                //   if comment_view.get().counts.child_count as usize == (children.get().len() + descendants.get().len()) {
-                //     if still_down.get() {
-                //       still_down.set(false);
-                //     } else {
-                //       if let Some(t) = e.target() {
-                //         if let Some(i) = t.dyn_ref::<HtmlImageElement>() {
-                //           let _ = window().open_with_url_and_target(&i.src(), "_blank");
-                //         } else if let Some(l) = t.dyn_ref::<HtmlAnchorElement>() {
-                //           e.prevent_default();
-                //           if l.host().eq(&window().location().host().unwrap_or("".to_owned())) {
-                //             use_navigate()(&l.href(), Default::default());
-                //           } else {
-                //             let _ = window().open_with_url_and_target(&l.href(), "_blank");
-                //           }
-                //         } else if let Some(s) = t.dyn_ref::<web_sys::Element>() {
-                //           if s.tag_name().ne("SUMMARY") {
-                //             on_toggle(comment_view.get().comment.id.0);
-                //           }
-                //         } else {
-                //           on_toggle(comment_view.get().comment.id.0);
-                //         }
-                //       }
-                //     }
-                //   } else {
-                //     load_comments();
-                //   }
-                // }}
               />
             }.into_any()
-            // if let GetSiteResponse { all_languages: ref l, .. } = ssr_site.get() {
-            //   let l_clone = l.clone();
-            //   let languages = Memo::new(move |_| l_clone);
-            //   view! {
-            //     <div lang={move || languages.get().get(comment_view.get().comment.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )} class={move || format!("prose select-none{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html} />
-            //   }.into_any()
-            // } else {
-            //   view! {
-            //   }.into_any()
-            //
-            // }
-
-
-            // match ssr_site.get() {
-            //   Some(Ok(s)) => {
-            //     if let GetSiteResponse { all_languages: ref l, .. } = s {
-            //       let l_clone = l.clone();
-            //       let languages = Memo::new(move |_| l_clone);
-            //       view! {
-            //         <div lang={move || languages.get().get(comment_view.get().comment.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )} class={move || format!("prose select-none{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html} />
-            //       }.into_any()
-            //     } else {
-            //       view! {
-            //       }.into_any()
-            //
-            //     }
-            //     // let languages = Memo::new(move |_| if let GetSiteResponse { all_languages: l, .. } = s { l } else { vec![] });
-            //     // view! {
-            //     //   <div lang={move || languages.get().get(comment_view.get().comment.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )} class={move || format!("prose select-none{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html} />
-            //     // }.into_any()
-            //   }
-            //   _ => {
-            //     view! {
-            //     }.into_any()
-            //   }
-            // }
           }}
         </Transition>
         <Show when={move || vote_show.get()} fallback={|| view! {}}>
@@ -682,7 +615,6 @@ pub fn Comment(
                     {
                       let is_user = s.my_user.is_some();
                       let logged_in = Memo::new(move |_| { is_user });
-                      // let languages = Memo::new(move |_| if let GetSiteResponse { all_languages: l, .. } = s { l } else { vec![] });
                       let current_person = Memo::new(move |_| {
                         if let GetSiteResponse { my_user: Some(MyUserInfo { local_user_view: LocalUserView { ref person, .. }, .. }), .. } = s {
                           Some(person.clone())
@@ -840,8 +772,6 @@ pub fn Comment(
               " by "
               <A
                 href={move || {
-                  // let a = comment_view.get().creator.actor_id;
-                  // if let Some(domain) = a.domain() { format!("{}@{}?person_id={}", a.path(), domain, comment_view.get().creator.id.0) } else { format!("{}?person_id={}", a, comment_view.get().creator.id.0) }
                   format!("/u/{}?person_id={}", creator_name.get(), comment_view.get().creator.id.0)
                 }}
                 attr:class="text-sm hover:text-secondary"
@@ -851,7 +781,6 @@ pub fn Comment(
                 }}
               >
                 <span inner_html={creator_name_encoded.get()} />
-                // <span inner_html={html_escape::encode_safe(&comment_view.get().creator.actor_id.to_string()[8..]).to_string()} />
               </A>
             </span>
           </div>

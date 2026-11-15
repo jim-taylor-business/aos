@@ -208,8 +208,8 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                         view! {
                           <div class="py-2 px-4">
                             <div class="block">
-                              <Icon class={"h-24".into()} icon={Icon::Link} />
-                            // <img class="h-16" src="/lemmy.svg" />
+                              // <Icon class={"h-24".into()} icon={Icon::Link} />
+                              <img class="h-16" src="/lemmy.svg" />
                             </div>
                           </div>
                         }
@@ -231,8 +231,6 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                       " by "
                       <A
                         href={move || {
-                          // let a = post_response.get().post_view.creator.actor_id;
-                          // if let Some(domain) = a.domain() { format!("{}@{}?person_id={}", a.path(), domain, post_response.get().post_view.creator.id.0) } else { format!("{}?person_id={}", a, post_response.get().post_view.creator.id.0) }
                           format!("/u/{}?person_id={}", creator_name, post_response.get().post_view.creator.id.0)
                         }}
                         attr:class="inline wrap-anywhere hover:text-secondary"

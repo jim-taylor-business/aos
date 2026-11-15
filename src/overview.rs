@@ -67,7 +67,6 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
     let UseIntersectionObserverReturn { .. } = use_intersection_observer_with_options(
       intersection_element,
       move |intersections, _| {
-        // log!("overview inter {:#?}", intersections[0].is_intersecting());
         if intersections[0].is_intersecting() {
           let (key, _) = next_page_cursor.get();
           if key > 0 {
@@ -100,8 +99,6 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
       },
       UseIntersectionObserverOptions::default(),
     );
-
-    // let el = NodeRef::<Div>::new();
   }
 
   #[cfg(not(feature = "ssr"))]
@@ -523,13 +520,8 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                       {
                         let (key, page_cursor) = next_page_cursor.get_untracked();
                         if let Some(PaginationCursor(page_id)) = page_cursor {
-                        // let (key, _) = next_page_cursor.get();
-                        // if key > 0 && o.posts.len() > 0 {
                           let mut st: Vec<(usize, String)> = vec![];
                           st.push((key, page_id));
-                          // if let (_, Some(PaginationCursor(next_page))) = next_page_cursor.get() {
-                          //   st.push((key, next_page));
-                          // }
                           let mut query_params = use_query_map().get();
                           query_params.remove("page");
                           query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));

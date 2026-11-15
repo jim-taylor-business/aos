@@ -4,7 +4,6 @@ use ev::MouseEvent;
 use leptos_use_intersection_observer::{UseIntersectionObserverOptions, use_intersection_observer_with_options};
 #[cfg(not(feature = "ssr"))]
 use leptos_use_scroll::{UseScrollOptions, UseScrollReturn, use_scroll_with_options};
-// use leptos_use::*;
 
 #[component]
 pub fn Post() -> impl IntoView {
@@ -131,11 +130,7 @@ pub fn Post() -> impl IntoView {
 
   #[cfg(not(feature = "ssr"))]
   {
-    // use leptos_use_intersection_observer::{UseIntersectionObserverOptions, UseIntersectionObserverReturn, use_intersection_observer_with_options};
-    // use leptos_use_scroll::{UseScrollOptions, UseScrollReturn, use_scroll_with_options};
-
     let UseScrollReturn { .. } = use_scroll_with_options(on_scroll_element, UseScrollOptions::default().on_scroll(on_scroll));
-
     let _ = use_intersection_observer_with_options(
       _visibility_element,
       move |_entries, _io| {
@@ -243,7 +238,6 @@ pub fn Post() -> impl IntoView {
                       post_response.get().post_view.community.actor_id.inner().host().map(|host| host.to_string()),
                     );
                     let community_title_encoded = html_escape::encode_safe(&community_title).to_string();
-                    // let creator_name = &post_response.get().post_view.creator.actor_id.to_string()[8..];
                     let a = post_response.get().post_view.creator.actor_id;
                     let u = post_response.get().post_view.creator.name;
                     let instance = get_instance_cookie.get_untracked();
@@ -289,9 +283,6 @@ pub fn Post() -> impl IntoView {
                           " by "
                           <A
                             href={move || {
-                              // let a = post_response.get().post_view.creator.actor_id;
-                              // let u = post_response.get().post_view.creator.name;
-                              // if let Some(domain) = a.domain() { format!("/u/{}@{}?person_id={}", u, domain, post_response.get().post_view.creator.id.0) } else { format!("{}?person_id={}", a, post_response.get().post_view.creator.id.0) }
                               format!("/u/{}?person_id={}", creator_name, post_response.get().post_view.creator.id.0)
                             }}
                             attr:class="inline wrap-anywhere hover:text-secondary"
@@ -340,12 +331,7 @@ pub fn Post() -> impl IntoView {
                               });
                             }}
                           >
-                            // {
-                            //   let languages = Memo::new(move |_| if let Some(Ok(GetSiteResponse { all_languages: l, .. })) = ssr_site.get() { l } else { vec![] });
-                            //   view! {
                             <span lang={move || languages.get().get(post_response.get().post_view.post.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )} class="overflow-y-auto" inner_html={community_title_encoded} />
-                            //   }
-                            // }
                           </A>
                           <span class="overflow-y-auto">{domain.get()}</span>
                         </span>

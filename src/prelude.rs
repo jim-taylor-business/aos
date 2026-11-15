@@ -132,20 +132,14 @@ pub fn handle_horizontal_scroll_wheel(scroll_element: NodeRef<Div>) -> impl FnMu
         gesture.horizontal = true;
       }
     }
-
     if gesture.horizontal || (dy == 0.0 && gesture.acc_y == 0.0) {
       return;
     }
-
     let Some(element) = scroll_element.get_untracked() else {
       return;
     };
-    let scroll_left = element.scroll_left() as f64;
-    // let max_scroll_left = (element.scroll_width() - element.client_width()).max(0) as f64;
-    // if (dy > 0.0 && scroll_left >= max_scroll_left) || (dy < 0.0 && scroll_left <= 0.0) {
-    //   return;
-    // }
 
+    let scroll_left = element.scroll_left() as f64;
     event.prevent_default();
     element.set_scroll_left((scroll_left + dy) as i32);
   }

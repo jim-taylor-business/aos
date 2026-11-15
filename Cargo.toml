@@ -14,8 +14,6 @@ leptos_meta = { version = "~0.8" }
 leptos_axum = { version = "~0.8", optional = true }
 leptos_router = { version = "~0.8" }
 
-# leptos_router = { version = "=0.8.13" }
-
 # leptos = { path = "../leptos/leptos" }
 # leptos_meta = { path = "../leptos/meta" }
 # leptos_axum = { path = "../leptos/integrations/axum", optional = true }
@@ -33,13 +31,11 @@ leptos_router = { version = "~0.8" }
 
 # leptos_i18n = { version = "0", features = ["track_locale_files"] , optional = true }
 
-# leptos-use = { version = "0", optional = true }
-leptos-use-cookie = { version = "0", optional = true }
-leptos-use-document-visibility = { version = "0", optional = true }
-leptos-use-intersection-observer = { version = "0", optional = true }
-leptos-use-scroll = { version = "0", optional = true }
-leptos-use-element-visibility = { version = "0", optional = true }
-
+leptos-use-cookie = { version = "~0.20", optional = true }
+leptos-use-document-visibility = { version = "~0.20", optional = true }
+leptos-use-intersection-observer = { version = "~0.20", optional = true }
+leptos-use-scroll = { version = "~0.20", optional = true }
+leptos-use-element-visibility = { version = "~0.20", optional = true }
 # leptos-use = { path = "../leptos-use", optional = true }
 # leptos-use = { git = "https://github.com/Synphonyte/leptos-use.git", commit = "355b2af2", optional = true }
 # leptos-use = { git = "https://github.com/jim-taylor-business/leptos-use.git", branch = "deploy_demo", optional = true }
@@ -58,7 +54,6 @@ pulldown-cmark = { branch = "deploy_demo", git = "https://github.com/jim-taylor-
 html-escape = "0"
 pretty-duration = { branch = "main", git = "https://github.com/jim-taylor-business/pretty-duration.git" }
 jiff = { version = "0", features = ["js"] }
-#chrono = { version = "0", features = ["std"] }
 chrono = { version = "0", default-features = false, features = ["std"] }
 
 gloo-net = { version = "0", optional = true, features = ["http"] }
