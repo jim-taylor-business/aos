@@ -1,4 +1,5 @@
-pub use crate::db::csr_indexed_db::{CommentDraft, CommentDraftKey, Draft, IndexedDb, IndexedDbError, ScrollPositionKey, Store};
+pub use crate::db::{CommentDraft, CommentDraftKey, Draft, IndexedDb, IndexedDbError, ScrollPositionKey, Store};
+pub use crate::i18n::*;
 pub use crate::icon::Icon;
 pub use crate::{
   App, BanType, NotificationsRefresh, OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, ReadThemeCookie, ResponseLoad, WriteAuthCookie,
@@ -67,6 +68,7 @@ pub fn markdown_to_html_with_options(content: &str, options: pulldown_cmark::Opt
 }
 
 pub fn relative_time(published_at_millis: i64) -> String {
+  let i18n = use_i18n();
   let now_in_millis = jiff::Zoned::now().timestamp().as_millisecond();
   let difference = now_in_millis.saturating_sub(published_at_millis);
   let is_future = difference < 0;
@@ -80,7 +82,7 @@ pub fn relative_time(published_at_millis: i64) -> String {
     }),
   );
   let abbreviated = if let Some((index, _)) = duration.match_indices(' ').nth(1) { duration[..index].to_owned() } else { duration };
-  if is_future { format!("in {}", abbreviated) } else { format!("{} ago", abbreviated) }
+  if is_future { t_string!(i18n, time_future, duration = abbreviated) } else { t_string!(i18n, time_past, duration = abbreviated) }
 }
 
 pub fn community_title_with_federation(name: &str, local: bool, host: Option<String>) -> String {
@@ -95,8 +97,9 @@ pub fn federated_creator_handle(name: &str, domain: Option<&str>, instance: Opti
 }
 
 pub fn external_host_attribution(host: Option<String>, instance: Option<String>) -> String {
+  let i18n = use_i18n();
   match host {
-    Some(host) if Some(host.as_str()) != instance.as_deref() => format!(" from {}", host),
+    Some(host) if Some(host.as_str()) != instance.as_deref() => t_string!(i18n, host_attribution, host = host),
     _ => String::new(),
   }
 }
@@ -150,11 +153,11 @@ pub fn Warning(
   #[prop(optional, into)] description: Option<String>,
   #[prop(optional, into)] on_retry_click: Option<Callback<MouseEvent>>,
 ) -> impl IntoView {
-  let description_value = description.unwrap_or("Offline".to_owned());
+  let i18n = use_i18n();
   view! {
     <div class="py-4 px-8 break-inside-avoid">
       <div class="flex justify-between items-center alert alert-warning alert-soft">
-        <span>{description_value}</span>
+        <span>{move || description.clone().unwrap_or_else(|| t_string!(i18n, offline).to_string())}</span>
         {if let Some(o) = on_retry_click {
           view! {
             <span
@@ -163,7 +166,7 @@ pub fn Warning(
               }}
               class="btn btn-sm"
             >
-              "Retry"
+              {t!(i18n, retry)}
             </span>
           }
             .into_any()
@@ -183,8 +186,8 @@ pub fn Error(
   error: LemmyAppError,
   #[prop(optional, into)] on_retry_click: Option<Callback<MouseEvent>>,
 ) -> impl IntoView {
+  let i18n = use_i18n();
   error!("{:#?}", error);
-  let description_value = description.unwrap_or("Error".to_owned());
   let location = use_location();
   let search = location.search.get();
   view! {
@@ -192,7 +195,7 @@ pub fn Error(
       <div class="flex alert alert-error alert-soft">
         <details class="w-full min-w-0">
           <summary class="flex justify-between items-center list-none">
-            <span>{description_value}</span>
+            <span>{move || description.clone().unwrap_or_else(|| t_string!(i18n, error).to_string())}</span>
             {if let Some(o) = on_retry_click {
               {
                 if let Some(true) = get_url {
@@ -205,7 +208,7 @@ pub fn Error(
                       }}
                       class="btn btn-sm"
                     >
-                      "Retry"
+                      {t!(i18n, retry)}
                     </a>
                   }
                     .into_any()
@@ -218,7 +221,7 @@ pub fn Error(
                       }}
                       class="btn btn-sm"
                     >
-                      "Retry"
+                      {t!(i18n, retry)}
                     </span>
                   }
                     .into_any()
@@ -232,7 +235,7 @@ pub fn Error(
                       href={format!("{}{}", location.pathname.get(), if search.len() > 0 { format!("?{}", search) } else { "".into() })}
                       class="btn btn-sm"
                     >
-                      "Retry"
+                      {t!(i18n, retry)}
                     </a>
                   }
                     .into_any()
@@ -255,13 +258,13 @@ pub fn Error(
 
 #[component]
 pub fn Info(loading: bool, #[prop(optional, into)] description: Option<String>) -> impl IntoView {
-  let description_value = description.unwrap_or("Loading...".to_owned());
+  let i18n = use_i18n();
   if loading {
     view! {
       <div class="overflow-hidden break-inside-avoid animate-[popdown_1s_step-end_1]">
         <div class="py-4 px-8">
           <div class="alert alert-info alert-soft">
-            <span>{description_value}</span>
+            <span>{move || description.clone().unwrap_or_else(|| t_string!(i18n, loading).to_string())}</span>
           </div>
         </div>
       </div>

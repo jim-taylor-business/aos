@@ -53,6 +53,7 @@ pub fn Comment(
   post_id: Signal<Option<i32>>,
   selected_drag_offset: RwSignal<(usize, f64, i32)>,
 ) -> impl IntoView {
+  let i18n = use_i18n();
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   let online = expect_context::<RwSignal<OnlineSetter>>();
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
@@ -72,7 +73,7 @@ pub fn Comment(
   let edit_show = RwSignal::new(false);
   let loading = RwSignal::new(false);
   let error = RwSignal::new(None::<LemmyAppError>);
-  let description = RwSignal::new("None");
+  let description = RwSignal::new(String::new());
 
   let touch_still_handle: StoredValue<Option<TimeoutHandle>> = StoredValue::new(None);
   let pointer_still_handle: StoredValue<Option<TimeoutHandle>> = StoredValue::new(None);
@@ -137,7 +138,7 @@ pub fn Comment(
     spawn_local_scoped(async move {
       loading.set(true);
       error.set(None);
-      description.set("Loading comments");
+      description.set(t_string!(i18n, loading_comments).to_owned());
       let form = GetComments {
         post_id: None,
         community_id: None,
@@ -215,7 +216,7 @@ pub fn Comment(
     spawn_local_scoped(async move {
       loading.set(true);
       error.set(None);
-      description.set("Voting");
+      description.set(t_string!(i18n, voting).to_owned());
       let form = CreateCommentLike { comment_id: comment_view.get().comment.id, score };
       let result = LemmyClient.like_comment(form).await;
       match result {
@@ -245,7 +246,7 @@ pub fn Comment(
     spawn_local_scoped(async move {
       loading.set(true);
       error.set(None);
-      description.set("Save");
+      description.set(t_string!(i18n, save).to_owned());
       let form = SaveComment { comment_id: comment_view.get().comment.id, save: !comment_view.get().saved };
       let result = LemmyClient.save_comment(form).await;
       match result {
@@ -265,7 +266,7 @@ pub fn Comment(
     spawn_local_scoped(async move {
       loading.set(true);
       error.set(None);
-      description.set("Loading comment");
+      description.set(t_string!(i18n, loading_comment).to_owned());
       let form = GetComment { id: comment_view.get().comment.id };
       let result = LemmyClient.get_comment(form).await;
       match result {
@@ -285,7 +286,7 @@ pub fn Comment(
     spawn_local_scoped(async move {
       loading.set(true);
       error.set(None);
-      description.set("Loading log");
+      description.set(t_string!(i18n, loading_log).to_owned());
       let form = GetModlog {
         comment_id: Some(comment_view.get().comment.id),
         community_id: None,
@@ -304,8 +305,8 @@ pub fn Comment(
               u.comment = c.comment.clone();
             });
           } else {
-            description.set("No comment found");
-            error.set(Some(LemmyAppError { error_type: LemmyAppErrorType::NotFound, content: "No comment found".to_owned() }));
+            description.set(t_string!(i18n, no_comment_found).to_owned());
+            error.set(Some(LemmyAppError { error_type: LemmyAppErrorType::NotFound, content: t_string!(i18n, no_comment_found).to_owned() }));
           }
         }
         Err(e) => {
@@ -321,7 +322,7 @@ pub fn Comment(
     spawn_local_scoped(async move {
       loading.set(true);
       error.set(None);
-      description.set("Replying");
+      description.set(t_string!(i18n, replying).to_owned());
       let form = CreateComment {
         content: reply_content.get(),
         post_id: comment_view.get().comment.post_id,
@@ -376,7 +377,7 @@ pub fn Comment(
     spawn_local_scoped(async move {
       loading.set(true);
       error.set(None);
-      description.set("Editing");
+      description.set(t_string!(i18n, editing).to_owned());
       let form = EditComment { content: Some(edit_content.get()), comment_id: comment_view.get().comment.id, language_id: None };
       let result = LemmyClient.edit_comment(form).await;
       match result {
@@ -635,7 +636,7 @@ pub fn Comment(
                                 { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-secondary/50" } },
                               )
                             }}
-                            title="Up vote"
+                            title={move || t_string!(i18n, up_vote)}
                             disabled={move || !logged_in.get() || !online.get().0}
                             on:click={on_up_vote_submit}
                           >
@@ -655,7 +656,7 @@ pub fn Comment(
                                 { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-primary/50" } },
                               )
                             }}
-                            title="Down vote"
+                            title={move || t_string!(i18n, down_vote)}
                             disabled={move || !logged_in.get() || !online.get().0}
                             on:click={on_down_vote_submit}
                           >
@@ -667,7 +668,7 @@ pub fn Comment(
                           <input type="hidden" name="save" value={move || format!("{}", !comment_view.get().saved)} />
                           <button
                             type="submit"
-                            title="Save"
+                            title={move || t_string!(i18n, save)}
                             class={move || {
                               format!(
                                 "{}{}",
@@ -701,7 +702,7 @@ pub fn Comment(
                               }
                             });
                           }}
-                          title="Reply"
+                          title={move || t_string!(i18n, reply)}
                           class={move || {
                             format!("{}", { if !logged_in.get() || !online.get().0 { " text-base-content/50" } else { " hover:text-accent/50" } })
                           }}
@@ -743,7 +744,7 @@ pub fn Comment(
                             )
                           }}
                           disabled={move || !logged_in.get() || !online.get().0}
-                          title="Edit"
+                          title={move || t_string!(i18n, edit)}
                         >
                           <Icon icon={Icon::Pencil} />
                         </button>
@@ -755,7 +756,7 @@ pub fn Comment(
                               highlight_user_id.set(Some(comment_view.get().creator.id))
                             }
                           }}
-                          title="Highlight"
+                          title={move || t_string!(i18n, highlight)}
                         >
                           <Icon icon={Icon::Highlighter} />
                         </span>
@@ -806,7 +807,7 @@ pub fn Comment(
             <div class="form-control">
               <textarea
                 class="w-full h-24 text-base textarea textarea-bordered"
-                placeholder="Comment text"
+                placeholder={move || t_string!(i18n, comment_text)}
                 prop:value={move || reply_content.get()}
                 node_ref={_visibility_element}
                 on:wheel={move |e: WheelEvent| {
@@ -839,10 +840,10 @@ pub fn Comment(
                 disabled={move || !online.get().0}
                 class={move || format!("btn btn-soft{}", if loading.get() { " btn-disabled" } else { "" })}
               >
-                "Reply"
+                {t!(i18n, reply)}
               </button>
               <button on:click={move |_| reply_show.set(false)} type="button" class="btn btn-soft">
-                "Cancel"
+                {t!(i18n, cancel)}
               </button>
             </div>
           </Show>
@@ -850,7 +851,7 @@ pub fn Comment(
             <div class="form-control">
               <textarea
                 class="w-full h-24 text-base textarea textarea-bordered"
-                placeholder="Comment text"
+                placeholder={move || t_string!(i18n, comment_text)}
                 prop:value={move || edit_content.get()}
                 on:wheel={move |e: WheelEvent| {
                   e.stop_propagation();
@@ -884,10 +885,10 @@ pub fn Comment(
                 disabled={move || !online.get().0}
                 class={move || format!("btn btn-soft{}", if loading.get() { " btn-disabled" } else { "" })}
               >
-                "Edit"
+                {t!(i18n, edit)}
               </button>
               <button on:click={on_cancel_click} type="button" class="btn btn-soft">
-                "Cancel"
+                {t!(i18n, cancel)}
               </button>
             </div>
           </Show>

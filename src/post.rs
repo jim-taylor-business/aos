@@ -7,6 +7,7 @@ use leptos_use_scroll::{UseScrollOptions, UseScrollReturn, use_scroll_with_optio
 
 #[component]
 pub fn Post() -> impl IntoView {
+  let i18n = use_i18n();
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   let params = use_params_map();
   let query = use_query_map();
@@ -165,7 +166,7 @@ pub fn Post() -> impl IntoView {
                   Some(Some(Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }))) => {
                     #[cfg(not(feature = "ssr"))] loading.set(false);
                     view! {
-                      <Title text="Error loading post" />
+                      <Title text={move || t_string!(i18n, error_loading_post)} />
                       <Warning on_retry_click={move |_| {
                         post_resource.refetch();
                         comments_resource.refetch();
@@ -176,9 +177,9 @@ pub fn Post() -> impl IntoView {
                   Some(Some(Err(e))) => {
                     #[cfg(not(feature = "ssr"))] loading.set(false);
                     view! {
-                      <Title text="Error loading post" />
+                      <Title text={move || t_string!(i18n, error_loading_post)} />
                       <Error
-                        description="Error loading post"
+                        description={t_string!(i18n, error_loading_post).to_string()}
                         error={e}
                         on_retry_click={move |_| {
                           post_resource.refetch();
@@ -412,7 +413,7 @@ pub fn Post() -> impl IntoView {
                                       <div class="form-control">
                                         <textarea
                                           class="w-full h-24 text-base textarea textarea-bordered"
-                                          placeholder="Comment text"
+                                          placeholder={move || t_string!(i18n, comment_text)}
                                           prop:value={move || content.get()}
                                           node_ref={_visibility_element}
                                           on:wheel={move |e: WheelEvent| {
@@ -455,10 +456,10 @@ pub fn Post() -> impl IntoView {
                                           }}
                                           disabled={move || !logged_in.get() || !online.get().0}
                                         >
-                                          "Comment"
+                                          {t!(i18n, comment_button)}
                                         </button>
                                         <button on:click={move |_| reply_show.set(false)} type="button" class="btn btn-soft">
-                                          "Cancel"
+                                          {t!(i18n, cancel)}
                                         </button>
                                       </div>
                                     </div>
@@ -480,7 +481,7 @@ pub fn Post() -> impl IntoView {
                         {move || {
                           view! {
                             <Error
-                              description="Reply"
+                              description={t_string!(i18n, reply).to_string()}
                               error={error
                                 .get()
                                 .unwrap_or_else(|| LemmyAppError {

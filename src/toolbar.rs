@@ -89,6 +89,7 @@ pub fn PostToolbar(
   content: RwSignal<String>,
   post_id: Signal<Option<i32>>,
 ) -> impl IntoView {
+  let i18n = use_i18n();
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
   let online = expect_context::<RwSignal<OnlineSetter>>();
@@ -96,14 +97,14 @@ pub fn PostToolbar(
   let vote_action = ServerAction::<VotePostFn>::new();
   let loading = RwSignal::new(false);
   let error = RwSignal::new(None::<LemmyAppError>);
-  let description = RwSignal::new("None");
+  let description = RwSignal::new(String::new());
 
   let on_vote_submit = move |e: MouseEvent, score: i16| {
     e.prevent_default();
     spawn_local_scoped(async move {
       loading.set(true);
       error.set(None);
-      description.set("Voting");
+      description.set(t_string!(i18n, voting).to_owned());
       let form = CreatePostLike { post_id: post_view.get().post.id, score };
       let result = LemmyClient.like_post(form).await;
       match result {
@@ -168,7 +169,7 @@ pub fn PostToolbar(
     spawn_local_scoped(async move {
       loading.set(true);
       error.set(None);
-      description.set("Save");
+      description.set(t_string!(i18n, save).to_owned());
       let form = SavePost { post_id: post_view.get().post.id, save: !post_view.get().saved };
       let result = LemmyClient.save_post(form).await;
       match result {
@@ -190,7 +191,7 @@ pub fn PostToolbar(
     spawn_local_scoped(async move {
       loading.set(true);
       error.set(None);
-      description.set("Block");
+      description.set(t_string!(i18n, block).to_owned());
       let form = BlockPerson { person_id: post_view.get().creator.id, block: true };
       let result = LemmyClient.block_user(form).await;
       match result {
@@ -234,7 +235,7 @@ pub fn PostToolbar(
     spawn_local_scoped(async move {
       loading.set(true);
       error.set(None);
-      description.set("Report");
+      description.set(t_string!(i18n, report).to_owned());
       let form = CreatePostReport { post_id: post_view.get().post.id, reason: reason.get() };
       let result = try_report(form).await;
       match result {
@@ -306,7 +307,7 @@ pub fn PostToolbar(
                           )
                         }}
                         disabled={move || !logged_in.get() || !online.get().0}
-                        title="Up vote"
+                        title={move || t_string!(i18n, up_vote)}
                       >
                         <Icon icon={Icon::Upvote} />
                       </button>
@@ -326,7 +327,7 @@ pub fn PostToolbar(
                           )
                         }}
                         disabled={move || !logged_in.get() || !online.get().0}
-                        title="Down vote"
+                        title={move || t_string!(i18n, down_vote)}
                       >
                         <Icon icon={Icon::Downvote} />
                       </button>
@@ -334,17 +335,17 @@ pub fn PostToolbar(
                     <span
                       class="flex items-center"
                       title={move || {
-                        format!(
-                          "{} comments{}",
-                          post_view.get_untracked().counts.comments,
-                          if post_view.get_untracked().unread_comments != post_view.get_untracked().counts.comments
-                            && post_view.get_untracked().unread_comments > 0
-                          {
-                            format!(" ({} unread)", post_view.get_untracked().unread_comments)
-                          } else {
-                            "".to_owned()
-                          },
-                        )
+                        let post = post_view.get_untracked();
+                        let count = t_string!(i18n, comments_count, count = post.counts.comments);
+                        if post.unread_comments != post.counts.comments && post.unread_comments > 0 {
+                          format!(
+                            "{} ({})",
+                            count,
+                            t_string!(i18n, unread_comments_count, count = post.unread_comments),
+                          )
+                        } else {
+                          count
+                        }
                       }}
                     >
                       <Icon icon={Icon::Comments} class={"inline".into()} />
@@ -352,7 +353,10 @@ pub fn PostToolbar(
                       {if post_view.get_untracked().unread_comments != post_view.get_untracked().counts.comments
                         && post_view.get_untracked().unread_comments > 0
                       {
-                        format!(" ({})", post_view.get_untracked().unread_comments)
+                        format!(
+                          " ({})",
+                          t_string!(i18n, unread_comments_count, count = post_view.get_untracked().unread_comments),
+                        )
                       } else {
                         "".to_owned()
                       }}
@@ -363,7 +367,7 @@ pub fn PostToolbar(
                       <button
                         type="submit"
                         on:click={on_save_submit}
-                        title="Save"
+                        title={move || t_string!(i18n, save)}
                         class={move || {
                           format!(
                             "{}{}",
@@ -406,12 +410,12 @@ pub fn PostToolbar(
                         }
                         reply_show.update(|b| *b = !*b);
                       }}
-                      title="Reply"
+                      title={move || t_string!(i18n, reply)}
                       disabled={move || !enable_reply.get() || !logged_in.get() || !online.get().0}
                     >
                       <Icon icon={Icon::Reply} />
                     </button>
-                    <span class={format!("text-base-content{}", if post_view.get_untracked().post.local { " hidden" } else { "" })} title="Original">
+                    <span class={format!("text-base-content{}", if post_view.get_untracked().post.local { " hidden" } else { "" })} title={move || t_string!(i18n, original)}>
                       <A href={post_view.get_untracked().post.ap_id.inner().to_string()}>
                         <Icon icon={Icon::External} />
                       </A>
@@ -431,7 +435,7 @@ pub fn PostToolbar(
                           }
                         },
                       )}
-                      title="Archive"
+                      title={move || t_string!(i18n, archive)}
                     >
                       <a
                         target="_blank"
@@ -458,11 +462,11 @@ pub fn PostToolbar(
                                 on:click={on_report_submit}
                                 on:input={move |e| reason.update(|r| *r = event_target_value(&e))}
                                 name="reason"
-                                placeholder="Reason for reporting post"
+                                placeholder={move || t_string!(i18n, report_reason)}
                               />
-                              <button class="text-xs whitespace-nowrap" title="Report" type="submit">
+                              <button class="text-xs whitespace-nowrap" title={move || t_string!(i18n, report)} type="submit">
                                 <Icon icon={Icon::Report} class={"inline-block".into()} />
-                                "Report post"
+                                {t!(i18n, report_post)}
                               </button>
                             </ActionForm>
                           </li>
@@ -470,9 +474,9 @@ pub fn PostToolbar(
                             <ActionForm action={block_user_action}>
                               <input type="hidden" name="person_id" value={format!("{}", post_view.get_untracked().creator.id.0)} />
                               <input type="hidden" name="block" value="true" />
-                              <button on:click={on_block_submit} class="text-xs whitespace-nowrap" title="Block" type="submit">
+                              <button on:click={on_block_submit} class="text-xs whitespace-nowrap" title={move || t_string!(i18n, block)} type="submit">
                                 <Icon icon={Icon::Block} class={"inline-block".into()} />
-                                "Block user"
+                                {t!(i18n, block_user)}
                               </button>
                             </ActionForm>
                           </li>

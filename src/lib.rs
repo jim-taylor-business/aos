@@ -7,6 +7,7 @@ pub mod db;
 pub mod errors;
 pub mod hero;
 pub mod icon;
+include!(concat!(env!("OUT_DIR"), "/i18n/mod.rs"));
 pub mod listing;
 pub mod login;
 pub mod nav;
@@ -80,6 +81,7 @@ pub fn Root() -> impl IntoView {
 
 #[component]
 fn NotFound() -> impl IntoView {
+  let i18n = use_i18n();
   #[cfg(feature = "ssr")]
   {
     let resp = expect_context::<leptos_axum::ResponseOptions>();
@@ -100,7 +102,7 @@ fn NotFound() -> impl IntoView {
             node_ref={on_scroll_element}
             class="min-w-full sm:overflow-x-auto sm:overflow-y-hidden sm:absolute sm:px-4 gap-4{} sm:h-[calc(100%-4rem)] sm:columns-[23rem]"
           >
-            <Warning description="Link not found, try searching instead" />
+            <Warning description={t_string!(i18n, link_not_found).to_string()} />
           </div>
         </div>
       </main>
@@ -183,6 +185,7 @@ pub fn App() -> impl IntoView {
   provide_context(RwSignal::new(PassedUrl(Some("face".to_string()))));
 
   view! {
+    <i18n::I18nContextProvider cookie_name="i18n_pref_locale">
     <Transition fallback={|| {}}>
       {move || {
         ssr_site
@@ -194,10 +197,12 @@ pub fn App() -> impl IntoView {
                   view! {
                     <Title
                       formatter={move |text: String| {
+                        // let i18n = use_i18n();
+                        // let site_title = t_string!(i18n, site_title, site = site.site_view.site.name.clone());
                         if text.len() > 0 {
-                          format!("{} - AOS for {} - {}", text, site.site_view.site.name, d.clone())
+                          format!("{} - AOS - {} - {}", text, site.site_view.site.name, d.clone())
                         } else {
-                          format!("AOS for {} - {}", site.site_view.site.name, d.clone())
+                          format!("AOS - {} - {}", site.site_view.site.name, d.clone())
                         }
                       }}
                       text=""
@@ -207,10 +212,12 @@ pub fn App() -> impl IntoView {
                   view! {
                     <Title
                       formatter={move |text: String| {
+                        // let i18n = use_i18n();
+                        // let site_title = t_string!(i18n, site_title, site = site.site_view.site.name.clone());
                         if text.len() > 0 {
-                          format!("{} - AOS for {}", text, site.site_view.site.name)
+                          format!("{} - AOS - {}", text, site.site_view.site.name)
                         } else {
-                          format!("AOS for {}", site.site_view.site.name)
+                          format!("AOS - {}", site.site_view.site.name)
                         }
                       }}
                       text=""
@@ -243,6 +250,7 @@ pub fn App() -> impl IntoView {
         </ParentRoute>
       </Routes>
     </Router>
+    </i18n::I18nContextProvider>
   }
 }
 

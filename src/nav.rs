@@ -40,14 +40,22 @@ pub async fn change_instance(instance: String) -> Result<(), ServerFnError> {
         .to_string(),
     )?,
   );
-
   Ok(())
 }
 
 #[server]
-pub async fn change_lang_fn(lang: String) -> Result<(), ServerFnError> {
-  let (_, set_locale_cookie) = use_cookie_with_options::<String, FromToStringCodec>("i18n_pref_locale", default_cookie_options());
-  set_locale_cookie.set(Some(lang.to_lowercase()));
+pub async fn change_lang(lang: String) -> Result<(), ServerFnError> {
+  let response = use_context::<leptos_axum::ResponseOptions>().ok_or(LemmyAppErrorType::InternalServerError)?;
+  response.insert_header(
+    axum::http::header::SET_COOKIE,
+    http::HeaderValue::from_str(
+      &cookie::Cookie::build(cookie::Cookie::new("i18n_pref_locale", lang.to_lowercase()))
+        .path("/")
+        .same_site(cookie::SameSite::Lax)
+        .max_age(cookie::time::SignedDuration::seconds(691200))
+        .to_string(),
+    )?,
+  );
   Ok(())
 }
 
@@ -64,7 +72,6 @@ pub async fn change_theme(theme: String) -> Result<(), ServerFnError> {
         .to_string(),
     )?,
   );
-
   Ok(())
 }
 
@@ -76,7 +83,7 @@ pub fn TopNav(
   #[prop(optional)] post_view: RwSignal<Option<GetPostResponse>>,
   #[prop(optional, into)] lost_path: Option<RwSignal<String>>,
 ) -> impl IntoView {
-  // let i18n = use_i18n();
+  let i18n = use_i18n();
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
 
   let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
@@ -387,6 +394,7 @@ pub fn TopNav(
   let change_theme = ServerAction::<ChangeTheme>::new();
   let change_instance = ServerAction::<ChangeInstance>::new();
   let search_action = ServerAction::<SearchAction>::new();
+  let change_lang = ServerAction::<ChangeLang>::new();
 
   let on_theme_submit = move |theme_name: &'static str| {
     move |e: MouseEvent| {
@@ -396,15 +404,13 @@ pub fn TopNav(
     }
   };
 
-  // let lang_action = ServerAction::<ChangeLangFn>::new();
-
-  // let _on_lang_submit = move |lang: Locale| {
-  //   move |ev: SubmitEvent| {
-  //     ev.prevent_default();
-  //     // i18n.set_locale(lang);
-  //     reset_menus();
-  //   }
-  // };
+  let on_lang_submit = move |lang: Locale| {
+    move |ev: MouseEvent| {
+      ev.prevent_default();
+      i18n.set_locale(lang);
+      reset_menus();
+    }
+  };
 
   let _on_navigate_login = move |e: MouseEvent| {
     e.prevent_default();
@@ -793,7 +799,7 @@ pub fn TopNav(
                           class={move || highlight_csr_filter(ListingType::All)}
                           on:click={on_csr_filter_click(ListingType::All)}
                         >
-                          "All"
+                          {t!(i18n, all)}
                         </a>
                       </li>
                       <li>
@@ -802,7 +808,7 @@ pub fn TopNav(
                           class={move || highlight_csr_filter(ListingType::Local)}
                           on:click={on_csr_filter_click(ListingType::Local)}
                         >
-                          "Local"
+                          {t!(i18n, local)}
                         </a>
                       </li>
                       <li>
@@ -811,7 +817,7 @@ pub fn TopNav(
                           class={move || highlight_csr_filter(ListingType::Subscribed)}
                           on:click={on_csr_filter_click(ListingType::Subscribed)}
                         >
-                          "Subscribed"
+                          {t!(i18n, subscribed)}
                         </a>
                       </li>
                     </ul>
@@ -829,7 +835,7 @@ pub fn TopNav(
                           href={on_sort_ssr(SortType::Active)}
                           on:click={on_sort_click(SortType::Active)}
                         >
-                          "Active"
+                          {t!(i18n, active)}
                         </a>
                       </li>
                       <li>
@@ -838,7 +844,7 @@ pub fn TopNav(
                           href={on_sort_ssr(SortType::TopAll)}
                           on:click={on_sort_click(SortType::TopAll)}
                         >
-                          "Top"
+                          {t!(i18n, top)}
                         </a>
                       </li>
                       <li>
@@ -847,7 +853,7 @@ pub fn TopNav(
                           href={on_sort_ssr(SortType::Hot)}
                           on:click={on_sort_click(SortType::Hot)}
                         >
-                          "Hot"
+                          {t!(i18n, hot)}
                         </a>
                       </li>
                       <li>
@@ -856,7 +862,7 @@ pub fn TopNav(
                           href={on_sort_ssr(SortType::New)}
                           on:click={on_sort_click(SortType::New)}
                         >
-                          "New"
+                          {t!(i18n, new)}
                         </a>
                       </li>
                       <li>
@@ -865,7 +871,7 @@ pub fn TopNav(
                           href={on_sort_ssr(SortType::Old)}
                           on:click={on_sort_click(SortType::Old)}
                         >
-                          "Old"
+                          {t!(i18n, old)}
                         </a>
                       </li>
                       <li>
@@ -874,7 +880,7 @@ pub fn TopNav(
                           href={on_sort_ssr(SortType::Controversial)}
                           on:click={on_sort_click(SortType::Controversial)}
                         >
-                          "Controversial"
+                          {t!(i18n, controversial)}
                         </a>
                       </li>
                       <li>
@@ -883,7 +889,7 @@ pub fn TopNav(
                           href={on_sort_ssr(SortType::Scaled)}
                           on:click={on_sort_click(SortType::Scaled)}
                         >
-                          "Scaled"
+                          {t!(i18n, scaled)}
                         </a>
                       </li>
                       <li>
@@ -892,7 +898,7 @@ pub fn TopNav(
                           href={on_sort_ssr(SortType::NewComments)}
                           on:click={on_sort_click(SortType::NewComments)}
                         >
-                          "Comment"
+                          {t!(i18n, comment)}
                         </a>
                       </li>
                     </ul>
@@ -910,7 +916,7 @@ pub fn TopNav(
                                     class={move || highlight_csr_kind(SearchType::Posts)}
                           on:click={on_csr_kind_click(SearchType::Posts)}
                         >
-                          "Posts"
+                          {t!(i18n, posts)}
                         </a>
                       </li>
                       <li class={move || disabled_ssr_kind(SearchType::Comments)}>
@@ -919,7 +925,7 @@ pub fn TopNav(
                                     class={move || highlight_csr_kind(SearchType::Comments)}
                           on:click={on_csr_kind_click(SearchType::Comments)}
                         >
-                          "Comments"
+                          {t!(i18n, comments)}
                         </a>
                       </li>
                       <li class={move || disabled_ssr_kind(SearchType::Communities)}>
@@ -928,7 +934,7 @@ pub fn TopNav(
                           class={move || highlight_csr_kind(SearchType::Communities)}
                           on:click={on_csr_kind_click(SearchType::Communities)}
                         >
-                          "Communities"
+                          {t!(i18n, communities)}
                         </a>
                       </li>
                       <li class={move || disabled_ssr_kind(SearchType::Users)}>
@@ -937,7 +943,7 @@ pub fn TopNav(
                           class={move || highlight_csr_kind(SearchType::Users)}
                           on:click={on_csr_kind_click(SearchType::Users)}
                         >
-                          "Users"
+                          {t!(i18n, users)}
                         </a>
                       </li>
                     </ul>
@@ -961,7 +967,7 @@ pub fn TopNav(
                                 class={move || highlight_csr_filter(ListingType::All)}
                                 on:click={on_csr_filter_click(ListingType::All)}
                               >
-                                "All"
+                                {t!(i18n, all)}
                               </a>
                             </li>
                             <li>
@@ -970,7 +976,7 @@ pub fn TopNav(
                                 class={move || highlight_csr_filter(ListingType::Local)}
                                 on:click={on_csr_filter_click(ListingType::Local)}
                               >
-                                "Local"
+                                {t!(i18n, local)}
                               </a>
                             </li>
                             <li>
@@ -979,7 +985,7 @@ pub fn TopNav(
                                 class={move || highlight_csr_filter(ListingType::Subscribed)}
                                 on:click={on_csr_filter_click(ListingType::Subscribed)}
                               >
-                                "Subscribed"
+                                {t!(i18n, subscribed)}
                               </a>
                             </li>
                           </ul>
@@ -997,7 +1003,7 @@ pub fn TopNav(
                                 href={on_sort_ssr(SortType::Active)}
                                 on:click={on_sort_click(SortType::Active)}
                               >
-                                "Active"
+                                {t!(i18n, active)}
                               </a>
                             </li>
                             <li>
@@ -1006,7 +1012,7 @@ pub fn TopNav(
                                 href={on_sort_ssr(SortType::TopAll)}
                                 on:click={on_sort_click(SortType::TopAll)}
                               >
-                                "Top"
+                                {t!(i18n, top)}
                               </a>
                             </li>
                             <li>
@@ -1015,7 +1021,7 @@ pub fn TopNav(
                                 href={on_sort_ssr(SortType::Hot)}
                                 on:click={on_sort_click(SortType::Hot)}
                               >
-                                "Hot"
+                                {t!(i18n, hot)}
                               </a>
                             </li>
                             <li>
@@ -1024,7 +1030,7 @@ pub fn TopNav(
                                 href={on_sort_ssr(SortType::New)}
                                 on:click={on_sort_click(SortType::New)}
                               >
-                                "New"
+                                {t!(i18n, new)}
                               </a>
                             </li>
                             <li>
@@ -1033,7 +1039,7 @@ pub fn TopNav(
                                 href={on_sort_ssr(SortType::Old)}
                                 on:click={on_sort_click(SortType::Old)}
                               >
-                                "Old"
+                                {t!(i18n, old)}
                               </a>
                             </li>
                             <li>
@@ -1042,7 +1048,7 @@ pub fn TopNav(
                                 href={on_sort_ssr(SortType::Controversial)}
                                 on:click={on_sort_click(SortType::Controversial)}
                               >
-                                "Controversial"
+                                {t!(i18n, controversial)}
                               </a>
                             </li>
                             <li>
@@ -1051,7 +1057,7 @@ pub fn TopNav(
                                 href={on_sort_ssr(SortType::Scaled)}
                                 on:click={on_sort_click(SortType::Scaled)}
                               >
-                                "Scaled"
+                                {t!(i18n, scaled)}
                               </a>
                             </li>
                             <li>
@@ -1060,7 +1066,7 @@ pub fn TopNav(
                                 href={on_sort_ssr(SortType::NewComments)}
                                 on:click={on_sort_click(SortType::NewComments)}
                               >
-                                "Comment"
+                                {t!(i18n, comment)}
                               </a>
                             </li>
                           </ul>
@@ -1078,7 +1084,7 @@ pub fn TopNav(
                                           class={move || highlight_csr_kind(SearchType::Posts)}
                                 on:click={on_csr_kind_click(SearchType::Posts)}
                               >
-                                "Posts"
+                                {t!(i18n, posts)}
                               </a>
                             </li>
                             <li class={move || disabled_ssr_kind(SearchType::Comments)}>
@@ -1087,7 +1093,7 @@ pub fn TopNav(
                                           class={move || highlight_csr_kind(SearchType::Comments)}
                                 on:click={on_csr_kind_click(SearchType::Comments)}
                               >
-                                "Comments"
+                                {t!(i18n, comments)}
                               </a>
                             </li>
                             <li class={move || disabled_ssr_kind(SearchType::Communities)}>
@@ -1096,7 +1102,7 @@ pub fn TopNav(
                                 class={move || highlight_csr_kind(SearchType::Communities)}
                                 on:click={on_csr_kind_click(SearchType::Communities)}
                               >
-                                "Communities"
+                                {t!(i18n, communities)}
                               </a>
                             </li>
                             <li class={move || disabled_ssr_kind(SearchType::Users)}>
@@ -1105,7 +1111,7 @@ pub fn TopNav(
                                 class={move || highlight_csr_kind(SearchType::Users)}
                                 on:click={on_csr_kind_click(SearchType::Users)}
                               >
-                                "Users"
+                                {t!(i18n, users)}
                               </a>
                             </li>
                           </ul>
@@ -1123,7 +1129,7 @@ pub fn TopNav(
                                 class={move || highlight_csr_bans(BanType::Nsfw)}
                                 on:click={on_csr_bans_click(BanType::Nsfw)}
                               >
-                                "NSFW"
+                                {t!(i18n, nsfw)}
                               </a>
                             </li>
                             <li>
@@ -1132,7 +1138,7 @@ pub fn TopNav(
                                 class={move || highlight_csr_bans(BanType::Ban)}
                                 on:click={on_csr_bans_click(BanType::Ban)}
                               >
-                                "Banned"
+                                {t!(i18n, banned)}
                               </a>
                             </li>
                           </ul>
@@ -1255,7 +1261,7 @@ pub fn TopNav(
                           class={move || highlight_csr_bans(BanType::Nsfw)}
                           on:click={on_csr_bans_click(BanType::Nsfw)}
                         >
-                          "NSFW"
+                          {t!(i18n, nsfw)}
                         </a>
                       </li>
                       <li>
@@ -1264,7 +1270,7 @@ pub fn TopNav(
                           class={move || highlight_csr_bans(BanType::Ban)}
                           on:click={on_csr_bans_click(BanType::Ban)}
                         >
-                          "Banned"
+                          {t!(i18n, banned)}
                         </a>
                       </li>
                     </ul>
@@ -1277,20 +1283,26 @@ pub fn TopNav(
                     </summary>
                     <ul class="z-[1] [inset-inline-end:0] bg-base-200">
                       <li>
-                        // <ActionForm attr:class="p-0" action={lang_action}>
-                        // <input type="hidden" name="lang" value="FR" />
-                        <button disabled class="py-2 px-4" type="submit">
-                          "FR"
-                        </button>
-                      // </ActionForm>
+                        <ActionForm
+                          attr:class={move || { (if Locale::fr == i18n.get_locale() || (Locale::default() == i18n.get_locale() && Locale::fr == Locale::default()) { "p-0 menu-active" } else { "p-0" }).to_string() }}
+                          action={change_lang}
+                        >
+                          <input type="hidden" name="lang" value="FR" />
+                          <button class="py-2 px-4" on:click={on_lang_submit(Locale::fr)} type="submit">
+                            "FR"
+                          </button>
+                        </ActionForm>
                       </li>
                       <li>
-                        // <ActionForm attr:class="p-0" action={lang_action}>
-                        // <input type="hidden" name="lang" value="EN" />
-                        <button disabled class="py-2 px-4" type="submit">
-                          "EN"
-                        </button>
-                      // </ActionForm>
+                        <ActionForm
+                          attr:class={move || { (if Locale::en == i18n.get_locale() || (Locale::default() == i18n.get_locale() && Locale::en == Locale::default()) { "p-0 menu-active" } else { "p-0" }).to_string() }}
+                          action={change_lang}
+                        >
+                          <input type="hidden" name="lang" value="EN" />
+                          <button class="py-2 px-4" on:click={on_lang_submit(Locale::en)} type="submit">
+                            "EN"
+                          </button>
+                        </ActionForm>
                       </li>
                     </ul>
                   </details>
@@ -1305,7 +1317,7 @@ pub fn TopNav(
                         <ActionForm attr:class="p-0" action={change_theme}>
                           <input type="hidden" name="theme" value="dark" />
                           <button class="py-2 px-4" type="submit" on:click={on_theme_submit("dark")}>
-                            "Dark"
+                            {t!(i18n, dark)}
                           </button>
                         </ActionForm>
                       </li>
@@ -1313,7 +1325,7 @@ pub fn TopNav(
                         <ActionForm attr:class="p-0" action={change_theme}>
                           <input type="hidden" name="theme" value="light" />
                           <button class="py-2 px-4" type="submit" on:click={on_theme_submit("light")}>
-                            "Light"
+                            {t!(i18n, light)}
                           </button>
                         </ActionForm>
                       </li>
@@ -1321,7 +1333,7 @@ pub fn TopNav(
                         <ActionForm attr:class="p-0" action={change_theme}>
                           <input type="hidden" name="theme" value="retro" />
                           <button class="py-2 px-4" type="submit" on:click={on_theme_submit("retro")}>
-                            "Retro"
+                            {t!(i18n, retro)}
                           </button>
                         </ActionForm>
                       </li>
@@ -1372,7 +1384,7 @@ pub fn TopNav(
                                 <ActionForm attr:class="p-0" action={change_theme}>
                                   <input type="hidden" name="theme" value="dark" />
                                   <button data-theme="dark" class="py-2 px-4" type="submit" on:click={on_theme_submit("dark")}>
-                                    "Dark"
+                                    {t!(i18n, dark)}
                                   </button>
                                 </ActionForm>
                               </li>
@@ -1380,7 +1392,7 @@ pub fn TopNav(
                                 <ActionForm attr:class="p-0" action={change_theme}>
                                   <input type="hidden" name="theme" value="light" />
                                   <button data-theme="light" class="py-2 px-4" type="submit" on:click={on_theme_submit("light")}>
-                                    "Light"
+                                    {t!(i18n, light)}
                                   </button>
                                 </ActionForm>
                               </li>
@@ -1388,7 +1400,7 @@ pub fn TopNav(
                                 <ActionForm attr:class="p-0" action={change_theme}>
                                   <input type="hidden" name="theme" value="retro" />
                                   <button data-theme="retro" class="py-2 px-4" type="submit" on:click={on_theme_submit("retro")}>
-                                    "Retro"
+                                    {t!(i18n, retro)}
                                   </button>
                                 </ActionForm>
                               </li>

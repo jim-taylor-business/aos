@@ -60,6 +60,7 @@ pub async fn login_fn(username_or_email: String, password: String, uri: String) 
 
 #[component]
 pub fn LoginForm() -> impl IntoView {
+  let i18n = use_i18n();
   let query = use_query_map();
   let name = RwSignal::new(String::new());
   let password = RwSignal::new(String::new());
@@ -125,7 +126,13 @@ pub fn LoginForm() -> impl IntoView {
     <div>
       <ActionForm attr:class="space-y-3" action={login}>
         <input type="hidden" name="uri" value={move || if let PassedUrl(Some(url)) = passed.get() { url } else { "/".to_string() }} />
-        <TextInput id="username" autocomplete="username" name="username_or_email" input_value={name} label="Username" />
+        <TextInput
+          id="username"
+          autocomplete="username"
+          name="username_or_email"
+          input_value={name}
+          label={move || t_string!(i18n, username)}
+        />
         <TextInput
           id="password"
           name="password"
@@ -133,10 +140,10 @@ pub fn LoginForm() -> impl IntoView {
           validation_class={password_validation.into()}
           input_value={password}
           input_type={InputType::Password}
-          label="Password"
+          label={move || t_string!(i18n, password)}
         />
         <button class="btn btn-soft" on:click={on_login_submit} type="submit">
-          "Login"
+          {t!(i18n, login)}
         </button>
       </ActionForm>
     </div>
@@ -194,6 +201,7 @@ pub fn TextInput(
 
 #[component]
 pub fn Login() -> impl IntoView {
+  let i18n = use_i18n();
   let ReadThemeCookie(get_theme_cookie) = expect_context::<ReadThemeCookie>();
   let on_scroll_element = NodeRef::<leptos::html::Div>::new();
 
@@ -207,7 +215,7 @@ pub fn Login() -> impl IntoView {
             class="min-w-full sm:overflow-x-auto sm:overflow-y-hidden sm:absolute sm:px-4 gap-4{} sm:h-[calc(100%-4rem)] sm:columns-[23rem]"
             style="column-fill: auto"
           >
-            <Title text="Login" />
+            <Title text={move || t_string!(i18n, login)} />
             <div class="p-3 mx-auto max-w-screen-md">
               <LoginForm />
             </div>

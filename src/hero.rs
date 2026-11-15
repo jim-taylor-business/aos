@@ -5,6 +5,7 @@ use leptos_use_intersection_observer::{UseIntersectionObserverOptions, use_inter
 
 #[component]
 pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)>) -> impl IntoView {
+  let i18n = use_i18n();
   let query = use_query_map();
   let ssr_sort = move || serde_json::from_str::<CommentSortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(CommentSortType::Top);
 
@@ -101,16 +102,16 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
           match post_resource.get() {
             Some(Some(Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }))) => {
               view! {
-                <Title text="App offline" />
+                <Title text={move || t_string!(i18n, offline)} />
                 <Warning />
               }
                 .into_any()
             }
             Some(Some(Err(e))) => {
               view! {
-                <Title text="Error loading post" />
+                <Title text={move || t_string!(i18n, error_loading_post)} />
                 <Error
-                  description="Error loading post"
+                  description={t_string!(i18n, error_loading_post).to_string()}
                   error={e}
                   on_retry_click={move |_| {
                     post_resource.refetch();

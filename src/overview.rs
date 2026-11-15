@@ -35,7 +35,7 @@ pub async fn toggle_subscription(community_id: i32, follow: bool) -> Result<Opti
 
 #[component]
 pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl IntoView {
-  // let i18n = use_i18n();
+  let i18n = use_i18n();
 
   let query = use_query_map();
   let ssr_list = move || serde_json::from_str::<ListingType>(&query.get().get("list").unwrap_or("".into())).unwrap_or(ListingType::All);
@@ -201,19 +201,19 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
             if !ban {
               o.posts.retain(|p| !p.banned_from_community);
             }
-            o.posts.retain(|pt| {
-              let post_id = pt.post.id.0;
-              let post_ids_from_previous_pages_response_cache: Vec<i32> = rc
-                .iter()
-                .filter(|(k, _v)| k.0 < p.0 && k.1 == form && k.2 == auth.clone() && k.3 == ban)
-                .flat_map(|(_k, v)| match v {
-                  (t, Ok(r)) => r.posts.iter().map(|p| p.post.id.0).collect::<Vec<i32>>(),
-                  _ => vec![],
-                })
-                .collect();
-              !post_ids_from_previous_pages_response_cache.contains(&post_id)
-            });
-            log!("   POSTS LEN: {}  PAGE: {}  CURSOR: {:?}", o.posts.len(), p.0, o.next_page);
+            // o.posts.retain(|pt| {
+            //   let post_id = pt.post.id.0;
+            //   let post_ids_from_previous_pages_response_cache: Vec<i32> = rc
+            //     .iter()
+            //     .filter(|(k, _v)| k.0 < p.0 && k.1 == form && k.2 == auth.clone() && k.3 == ban)
+            //     .flat_map(|(_k, v)| match v {
+            //       (t, Ok(r)) => r.posts.iter().map(|p| p.post.id.0).collect::<Vec<i32>>(),
+            //       _ => vec![],
+            //     })
+            //     .collect();
+            //   !post_ids_from_previous_pages_response_cache.contains(&post_id)
+            // });
+            // log!("   POSTS LEN: {}  PAGE: {}  CURSOR: {:?}", o.posts.len(), p.0, o.next_page);
             Ok(o)
           }
           Err(e) => Err(e),
@@ -292,7 +292,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
             {move || {
               match ssr_site.get() {
                 Some(Err(e)) => {
-                  view! { <Error description={"Error loading site information".to_owned()} error={e} on_retry_click={on_retry_site_click} /> }
+                  view! { <Error description={t_string!(i18n, error_loading_site).to_string()} error={e} on_retry_click={on_retry_site_click} /> }
                     .into_any()
                 }
                 Some(Ok(_s)) => view! {}.into_any(),
@@ -303,7 +303,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
           <Transition fallback={|| {}}>
             {move || {
               match details_resource.get() {
-                Some(Err(e)) => view! { <Error description="Error loading community details" error={e} /> }.into_any(),
+                Some(Err(e)) => view! { <Error description={t_string!(i18n, error_loading_community).to_string()} error={e} /> }.into_any(),
                 Some(Ok(Some(s))) => {
                   let community_title_encoded = html_escape::encode_safe(&s.community_view.community.title).to_string();
                   let description = if let Some(description) = s.community_view.community.description {
@@ -378,7 +378,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                             <button
                               type="submit"
                               on:click={on_show_rules}
-                              title="Rules"
+                              title={move || t_string!(i18n, rules)}
                               class={move || { format!("{}", { if show_rules.get() { "text-accent" } else { "" } }) }}
                             >
                               <Icon icon={Icon::Rules} />
@@ -389,7 +389,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                             <input type="hidden" name="follow" value={move || follow.get().eq(&SubscribedType::Subscribed)} />
                             <button
                               type="submit"
-                              title="Subscribe"
+                              title={move || t_string!(i18n, subscribe)}
                               on:click={move |e: MouseEvent| {
                                 e.prevent_default();
                                 spawn_local_scoped(async move {
@@ -426,7 +426,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                           {move || {
                             view! {
                               <Error
-                                description="Subscribe"
+                                description={t_string!(i18n, subscribe).to_string()}
                                 error={error
                                   .get()
                                   .unwrap_or_else(|| LemmyAppError {
@@ -512,7 +512,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                   #[cfg(not(feature = "ssr"))] loading.set(false);
                   if p.0 == 0 && o.posts.len() == 0 {
                     view! {
-                      <Info loading={true} description={"No community posts"} />
+                      <Info loading={true} description={t_string!(i18n, no_community_posts).to_string()} />
                     }.into_any()
                   } else {
                     view! {
@@ -572,7 +572,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                             <Show when={move || { show_next.get() }} fallback={|| {}}>
                               <div class="flex py-4 px-8 justify-end{}">
                                 <A href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())} attr:class="btn btn-soft">
-                                  "Next"
+                                  {t!(i18n, next)}
                                 </A>
                               </div>
                             </Show>
@@ -592,7 +592,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                 Err(e) => {
                   #[cfg(not(feature = "ssr"))] loading.set(false);
                   error!("{:#?}", e);
-                  view! { <Error description="Error loading post list" error={e} on_retry_click={on_retry_click} /> }.into_any()
+                  view! { <Error description={t_string!(i18n, error_loading_posts).to_string()} error={e} on_retry_click={on_retry_click} /> }.into_any()
                 }
               }}
             </For>

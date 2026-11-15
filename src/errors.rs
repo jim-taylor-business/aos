@@ -26,17 +26,18 @@ pub enum LemmyAppErrorType {
 }
 
 pub fn message_from_error(error: &LemmyAppError) -> String {
-  // let i18n = use_i18n();
+  let i18n = use_i18n();
 
-  let s = match error.error_type {
-    // LemmyAppErrorType::ApiError(LemmyErrorType::IncorrectLogin) => t!(i18n, invalid_login)().into_any().to_s,
-    // LemmyAppErrorType::EmptyUsername => t!(i18n, empty_username),
-    // LemmyAppErrorType::EmptyPassword => t!(i18n, empty_password),
-    // LemmyAppErrorType::MissingReason => t!(i18n, empty_reason),
-    // LemmyAppErrorType::InternalServerError => t!(i18n, internal),
-    // LemmyAppErrorType::Unknown => t!(i18n, unknown),
-    LemmyAppErrorType::OfflineError => "App is offline".to_owned(),
-    _ => "An error without description".to_owned(),
+  let s = match &error.error_type {
+    LemmyAppErrorType::ApiError(LemmyErrorType::IncorrectLogin) => t_string!(i18n, invalid_login).to_string(),
+    LemmyAppErrorType::EmptyUsername => t_string!(i18n, empty_username).to_string(),
+    LemmyAppErrorType::EmptyPassword => t_string!(i18n, empty_password).to_string(),
+    LemmyAppErrorType::MissingReason => t_string!(i18n, empty_reason).to_string(),
+    LemmyAppErrorType::MissingToken => t_string!(i18n, missing_token).to_string(),
+    LemmyAppErrorType::InternalServerError => t_string!(i18n, internal).to_string(),
+    LemmyAppErrorType::OfflineError => t_string!(i18n, offline).to_string(),
+    LemmyAppErrorType::Unknown => t_string!(i18n, unknown).to_string(),
+    _ => t_string!(i18n, error_without_description).to_string(),
   };
 
   leptos::logging::error!("{}\n{:#?}", s, error);

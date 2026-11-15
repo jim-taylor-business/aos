@@ -1,333 +1,343 @@
-pub mod csr_indexed_db {
-  use crate::prelude::*;
-  use thiserror::Error;
+use crate::prelude::*;
+use thiserror::Error;
 
-  #[derive(Debug, Serialize, Deserialize)]
-  pub struct CommentDraft {
-    pub value: Option<String>,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CommentDraft {
+  pub value: Option<String>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum Draft {
+  Edit,
+  Reply,
+  Post,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CommentDraftKey {
+  pub comment_id: i32,
+  pub draft: Draft,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ScrollPositionKey {
+  pub path: String,
+  pub query: String,
+}
+
+impl Store for ScrollPositionKey {
+  fn store_name(&self) -> &'static str {
+    "scroll_positions"
   }
+}
 
-  #[derive(Clone, Debug, Serialize, Deserialize)]
-  pub enum Draft {
-    Edit,
-    Reply,
-    Post,
+impl Store for i32 {
+  fn store_name(&self) -> &'static str {
+    "post_closed_comments"
   }
+}
 
-  #[derive(Debug, Clone, Serialize, Deserialize)]
-  pub struct CommentDraftKey {
-    pub comment_id: i32,
-    pub draft: Draft,
+impl Store for CommentDraftKey {
+  fn store_name(&self) -> &'static str {
+    "comment_drafts"
   }
+}
 
-  #[derive(Debug, Clone, Serialize, Deserialize)]
-  pub struct ScrollPositionKey {
-    pub path: String,
-    pub query: String,
+pub trait Store {
+  fn store_name(&self) -> &'static str;
+}
+
+impl Store for Login {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for ScrollPositionKey {
-    fn store_name(&self) -> &'static str {
-      "scroll_positions"
-    }
+impl Store for () {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for i32 {
-    fn store_name(&self) -> &'static str {
-      "post_closed_comments"
-    }
+impl Store for ListCommunities {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for CommentDraftKey {
-    fn store_name(&self) -> &'static str {
-      "comment_drafts"
-    }
+impl Store for CreatePostReport {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  pub trait Store {
-    fn store_name(&self) -> &'static str;
+impl Store for FollowCommunity {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for Login {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
+impl Store for CommunityResponse {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for () {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
+impl Store for SavePost {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for ListCommunities {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
+impl Store for BlockPerson {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for CreatePostReport {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
+impl Store for CreatePostLike {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for FollowCommunity {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
+impl Store for CreateCommentLike {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for CommunityResponse {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
+impl Store for SaveComment {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for SavePost {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
+impl Store for GetReplies {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for BlockPerson {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
+impl Store for GetPersonMentions {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for CreatePostLike {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
+impl Store for GetPrivateMessages {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for CreateCommentLike {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
+impl Store for MarkCommentReplyAsRead {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for SaveComment {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
+impl Store for CreateComment {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for GetReplies {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
+impl Store for EditComment {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for GetPersonMentions {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
+impl Store for Search {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for GetPrivateMessages {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
+impl Store for GetComment {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for MarkCommentReplyAsRead {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
+impl Store for GetModlog {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for CreateComment {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
+impl Store for GetPost {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for EditComment {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
+impl Store for GetPosts {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for Search {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
+impl Store for GetComments {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for GetComment {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
+impl Store for GetCommunity {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for GetModlog {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
+impl Store for GetPersonDetails {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
   }
+}
 
-  impl Store for GetPost {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
-  }
+#[cfg(not(feature = "ssr"))]
+use rexie::{ObjectStore, Rexie, TransactionMode};
 
-  impl Store for GetPosts {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
-  }
-
-  impl Store for GetComments {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
-  }
-
-  impl Store for GetCommunity {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
-  }
-
-  impl Store for GetPersonDetails {
-    fn store_name(&self) -> &'static str {
-      "query_gets"
-    }
-  }
-
+#[derive(Debug, Error)]
+pub enum IndexedDbError {
   #[cfg(not(feature = "ssr"))]
-  use rexie::{ObjectStore, Rexie, TransactionMode};
-
-  #[derive(Debug, Error)]
-  pub enum IndexedDbError {
-    #[cfg(not(feature = "ssr"))]
-    #[error("rexie error: {0}")]
-    Rexie(#[from] rexie::Error),
-    #[cfg(not(feature = "ssr"))]
-    #[error("serde wasm bindgen error: {0}")]
-    SerdeWasmBindgen(#[from] serde_wasm_bindgen::Error),
-    #[error("serde json error: {0}")]
-    SerdeJson(#[from] serde_json::Error),
-    #[error("lemmy error: {0}")]
-    Lemmy(#[from] LemmyAppError),
-  }
-
-  #[derive(Clone)]
-  pub struct IndexedDb {
-    #[cfg(not(feature = "ssr"))]
-    pub rexie: Rexie,
-  }
-
+  #[error("rexie error: {0}")]
+  Rexie(#[from] rexie::Error),
   #[cfg(not(feature = "ssr"))]
-  impl IndexedDb {
-    pub async fn new() -> Result<Self, IndexedDbError> {
-      let rexie = Rexie::builder("cache_v5")
-        .version(1)
-        .add_object_store(ObjectStore::new("post_closed_comments"))
-        .add_object_store(ObjectStore::new("comment_drafts"))
-        .add_object_store(ObjectStore::new("query_gets"))
-        .add_object_store(ObjectStore::new("scroll_positions"))
-        .build()
-        .await?;
-      Ok(Self { rexie })
-    }
-  }
+  #[error("serde wasm bindgen error: {0}")]
+  SerdeWasmBindgen(#[from] serde_wasm_bindgen::Error),
+  #[error("serde json error: {0}")]
+  SerdeJson(#[from] serde_json::Error),
+  #[error("lemmy error: {0}")]
+  Lemmy(#[from] LemmyAppError),
+}
 
-  #[cfg(feature = "ssr")]
-  impl IndexedDb {
-    pub async fn new() -> Result<Self, IndexedDbError> {
-      Err(IndexedDbError::Lemmy(LemmyAppError {
-        error_type: crate::errors::LemmyAppErrorType::Unknown,
-        content: "IndexedDb is not available on the server".to_string(),
-      }))
-    }
-  }
-
-  impl IndexedDb {
-    pub async fn save_scroll_position(path: String, query: String, position: i32) -> Result<(), IndexedDbError> {
-      let Ok(db) = Self::new().await else {
-        return Ok(());
-      };
-      db.set(&ScrollPositionKey { path, query }, &position).await
-    }
-
-    pub async fn get_scroll_position(path: String, query: String) -> Result<Option<i32>, IndexedDbError> {
-      let Ok(db) = Self::new().await else {
-        return Ok(None);
-      };
-      db.get(&ScrollPositionKey { path, query }).await
-    }
-  }
-
+#[derive(Clone)]
+pub struct IndexedDb {
   #[cfg(not(feature = "ssr"))]
-  impl IndexedDb {
-    pub async fn get<Form, Response>(&self, key: &Form) -> Result<Option<Response>, IndexedDbError>
-    where
-      Form: Serialize + Store,
-      Response: DeserializeOwned,
-    {
-      let transaction = self.rexie.transaction(&[key.store_name()], TransactionMode::ReadOnly)?;
-      let comments = transaction.store(key.store_name())?;
-      if let Some(comment_meta_value) = comments.get(serde_wasm_bindgen::to_value(&serde_json::to_string(key)?)?).await? {
-        Ok(Some(serde_wasm_bindgen::from_value::<Response>(comment_meta_value)?))
-      } else {
-        Ok(None)
-      }
-    }
+  pub rexie: Rexie,
+}
 
-    pub async fn set<Form, Response>(&self, key: &Form, t: &Response) -> Result<(), IndexedDbError>
-    where
-      Form: Serialize + Store,
-      Response: Serialize,
-    {
-      let transaction = self.rexie.transaction(&[key.store_name()], TransactionMode::ReadWrite)?;
-      let posts = transaction.store(key.store_name())?;
-      let post_meta_value = serde_wasm_bindgen::to_value(t)?;
-      let post_meta_key = serde_wasm_bindgen::to_value(&serde_json::to_string(key)?)?;
-      let _id = posts.put(&post_meta_value, Some(&post_meta_key)).await?;
-      transaction.done().await?;
-      Ok(())
-    }
+#[cfg(not(feature = "ssr"))]
+impl IndexedDb {
+  pub async fn new() -> Result<Self, IndexedDbError> {
+    let rexie = Rexie::builder("cache_v5")
+      .version(1)
+      .add_object_store(ObjectStore::new("post_closed_comments"))
+      .add_object_store(ObjectStore::new("comment_drafts"))
+      .add_object_store(ObjectStore::new("query_gets"))
+      .add_object_store(ObjectStore::new("scroll_positions"))
+      .build()
+      .await?;
+    Ok(Self { rexie })
+  }
+}
 
-    pub async fn del<Form>(&self, key: &Form) -> Result<(), IndexedDbError>
-    where
-      Form: Serialize + Store,
-    {
-      let transaction = self.rexie.transaction(&[key.store_name()], TransactionMode::ReadWrite)?;
-      let posts = transaction.store(key.store_name())?;
-      let post_meta_key = serde_wasm_bindgen::to_value(&serde_json::to_string(key)?)?;
-      let _id = posts.delete(post_meta_key).await?;
-      transaction.done().await?;
-      Ok(())
-    }
+#[cfg(feature = "ssr")]
+impl IndexedDb {
+  pub async fn new() -> Result<Self, IndexedDbError> {
+    Err(IndexedDbError::Lemmy(LemmyAppError {
+      error_type: crate::errors::LemmyAppErrorType::Unknown,
+      content: "IndexedDb is not available on the server".to_string(),
+    }))
+  }
+}
+
+#[cfg(not(feature = "ssr"))]
+impl IndexedDb {
+  pub async fn save_scroll_position(path: String, query: String, position: i32) -> Result<(), IndexedDbError> {
+    let Ok(db) = Self::new().await else {
+      return Ok(());
+    };
+    db.set(&ScrollPositionKey { path, query }, &position).await
   }
 
-  #[cfg(feature = "ssr")]
-  impl IndexedDb {
-    pub async fn get<Form, Response>(&self, key: &Form) -> Result<Option<Response>, IndexedDbError>
-    where
-      Form: Serialize + Store,
-      Response: DeserializeOwned,
-    {
+  pub async fn get_scroll_position(path: String, query: String) -> Result<Option<i32>, IndexedDbError> {
+    let Ok(db) = Self::new().await else {
+      return Ok(None);
+    };
+    db.get(&ScrollPositionKey { path, query }).await
+  }
+}
+
+#[cfg(feature = "ssr")]
+impl IndexedDb {
+  pub async fn save_scroll_position(path: String, query: String, position: i32) -> Result<(), IndexedDbError> {
+    Ok(())
+  }
+
+  pub async fn get_scroll_position(path: String, query: String) -> Result<Option<i32>, IndexedDbError> {
+    Ok(None)
+  }
+}
+
+#[cfg(not(feature = "ssr"))]
+impl IndexedDb {
+  pub async fn get<Form, Response>(&self, key: &Form) -> Result<Option<Response>, IndexedDbError>
+  where
+    Form: Serialize + Store,
+    Response: DeserializeOwned,
+  {
+    let transaction = self.rexie.transaction(&[key.store_name()], TransactionMode::ReadOnly)?;
+    let comments = transaction.store(key.store_name())?;
+    if let Some(comment_meta_value) = comments.get(serde_wasm_bindgen::to_value(&serde_json::to_string(key)?)?).await? {
+      Ok(Some(serde_wasm_bindgen::from_value::<Response>(comment_meta_value)?))
+    } else {
       Ok(None)
     }
+  }
 
-    pub async fn set<Form, Response>(&self, key: &Form, t: &Response) -> Result<(), IndexedDbError>
-    where
-      Form: Serialize + Store,
-      Response: Serialize,
-    {
-      Ok(())
-    }
+  pub async fn set<Form, Response>(&self, key: &Form, t: &Response) -> Result<(), IndexedDbError>
+  where
+    Form: Serialize + Store,
+    Response: Serialize,
+  {
+    let transaction = self.rexie.transaction(&[key.store_name()], TransactionMode::ReadWrite)?;
+    let posts = transaction.store(key.store_name())?;
+    let post_meta_value = serde_wasm_bindgen::to_value(t)?;
+    let post_meta_key = serde_wasm_bindgen::to_value(&serde_json::to_string(key)?)?;
+    let _id = posts.put(&post_meta_value, Some(&post_meta_key)).await?;
+    transaction.done().await?;
+    Ok(())
+  }
 
-    pub async fn del<Form>(&self, key: &Form) -> Result<(), IndexedDbError>
-    where
-      Form: Serialize + Store,
-    {
-      Ok(())
-    }
+  pub async fn del<Form>(&self, key: &Form) -> Result<(), IndexedDbError>
+  where
+    Form: Serialize + Store,
+  {
+    let transaction = self.rexie.transaction(&[key.store_name()], TransactionMode::ReadWrite)?;
+    let posts = transaction.store(key.store_name())?;
+    let post_meta_key = serde_wasm_bindgen::to_value(&serde_json::to_string(key)?)?;
+    let _id = posts.delete(post_meta_key).await?;
+    transaction.done().await?;
+    Ok(())
+  }
+}
+
+#[cfg(feature = "ssr")]
+impl IndexedDb {
+  pub async fn get<Form, Response>(&self, key: &Form) -> Result<Option<Response>, IndexedDbError>
+  where
+    Form: Serialize + Store,
+    Response: DeserializeOwned,
+  {
+    Ok(None)
+  }
+
+  pub async fn set<Form, Response>(&self, key: &Form, t: &Response) -> Result<(), IndexedDbError>
+  where
+    Form: Serialize + Store,
+    Response: Serialize,
+  {
+    Ok(())
+  }
+
+  pub async fn del<Form>(&self, key: &Form) -> Result<(), IndexedDbError>
+  where
+    Form: Serialize + Store,
+  {
+    Ok(())
   }
 }

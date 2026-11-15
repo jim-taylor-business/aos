@@ -1,6 +1,6 @@
 [package]
 name = "aos"
-version = "0.19.20-aos-demo-beta"
+version = "0.19.21-1"
 edition = "2024"
 
 [lib]
@@ -29,7 +29,7 @@ leptos_router = { version = "~0.8" }
 # leptos_axum = { git = "https://github.com/jim-taylor-business/leptos.git", commit = "49b95378", optional = true }
 # leptos_router = { git = "https://github.com/jim-taylor-business/leptos.git", commit = "49b95378" }
 
-# leptos_i18n = { version = "0", features = ["track_locale_files"] , optional = true }
+leptos_i18n = { version = "~0.6", default-features = false, features = ["cookie"], optional = true }
 
 leptos-use-cookie = { version = "~0.20", optional = true }
 leptos-use-document-visibility = { version = "~0.20", optional = true }
@@ -81,6 +81,9 @@ reqwest = { version = "0", features = [
   "zstd",
 ], optional = true }
 
+[build-dependencies]
+leptos_i18n_build = "~0.6"
+
 [features]
 default = ["csr"]
 csr = [
@@ -89,7 +92,7 @@ csr = [
   "dep:leptos-use-intersection-observer",
   "dep:leptos-use-scroll",
   "dep:leptos-use-element-visibility",
-  # "leptos_i18n/csr",
+  "leptos_i18n/csr",
   "dep:leptos-use-cookie",
   "dep:wasm-bindgen",
   "dep:console_error_panic_hook",
@@ -103,7 +106,7 @@ hydrate = [
   "dep:leptos-use-intersection-observer",
   "dep:leptos-use-scroll",
   "dep:leptos-use-element-visibility",
-  # "leptos_i18n/hydrate",
+  "leptos_i18n/hydrate",
   "dep:leptos-use-cookie",
   "dep:wasm-bindgen",
   "dep:console_error_panic_hook",
@@ -124,7 +127,7 @@ ssr = [
   "dep:leptos_axum",
   "dep:tracing",
   "dep:reqwest",
-  # "leptos_i18n/axum",
+  "leptos_i18n/axum",
 ]
 
 [profile.release]

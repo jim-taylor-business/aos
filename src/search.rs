@@ -35,7 +35,7 @@ pub fn Search(
   #[prop(optional, into)] ssr_community_name: Option<String>,
   #[prop(optional, into)] ssr_post_id: Option<String>,
 ) -> impl IntoView {
-  // let i18n = use_i18n();
+  let i18n = use_i18n();
   let ssr_name = move || ssr_community_name.clone();
 
   let query = use_query_map();
@@ -178,7 +178,7 @@ pub fn Search(
           class="min-w-full sm:overflow-x-auto sm:overflow-y-hidden sm:absolute sm:px-4 gap-4{} sm:h-[calc(100%-4rem)] sm:columns-[23rem]"
         >
           <Transition fallback={|| {}}>
-            <Title text="Search" />
+            <Title text={move || t_string!(i18n, search)} />
             <For each={move || search_cache_resource.get().unwrap_or(vec![])} key={|r| (r.1.clone(), r.2, r.4.clone())} let:r>
               {match r.3 {
                 Ok(ref o) => {
@@ -293,7 +293,7 @@ pub fn Search(
                           <Show when={move || { show_next.get() }} fallback={|| {}}>
                             <div class="flex py-4 px-8 justify-end{}">
                               <A href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())} attr:class="btn btn-soft">
-                                "Next"
+                                {t!(i18n, next)}
                               </A>
                             </div>
                           </Show>
@@ -311,7 +311,7 @@ pub fn Search(
                 Err(e) => {
                   #[cfg(not(feature = "ssr"))] loading.set(false);
                   error!("{:#?}", e);
-                  view! { <Error description="Error loading post list" error={e} on_retry_click={on_retry_click} /> }.into_any()
+                  view! { <Error description={t_string!(i18n, error_loading_posts).to_string()} error={e} on_retry_click={on_retry_click} /> }.into_any()
                 }
               }}
             </For>

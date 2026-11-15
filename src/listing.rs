@@ -16,20 +16,18 @@ pub fn UserListings(people: Signal<Vec<PersonView>>, page_number: RwSignal<usize
 
 #[component]
 pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> impl IntoView {
+  let i18n = use_i18n();
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
   let thumbnail = RwSignal::new(String::from(""));
-  let from = if let Some(f) = person_view.person.actor_id.clone().inner().host_str() {
-    external_host_attribution(Some(f.to_string()), get_instance_cookie.get_untracked())
-  } else {
-    String::new()
-  };
+  let host = person_view.person.actor_id.clone().inner().host_str().map(str::to_owned);
+  let from = Memo::new(move |_| external_host_attribution(host.clone(), get_instance_cookie.get()));
   let name = html_escape::encode_safe(&person_view.person.display_name.unwrap_or(person_view.person.name.clone())).to_string();
   let a = person_view.person.actor_id;
   let u = person_view.person.name.clone();
   let creator_name = Memo::new(move |_| federated_creator_handle(&u, a.domain().as_deref(), None));
   let creator_name_encoded = Memo::new(move |_| html_escape::encode_safe(&name).to_string());
-  let abbr_duration = relative_time(person_view.person.published.timestamp_millis());
-  let abbr_duration = Memo::new(move |_| abbr_duration.clone());
+  let published_at = person_view.person.published.timestamp_millis();
+  let abbr_duration = Memo::new(move |_| relative_time(published_at));
 
   view! {
     <div class="px-4 pb-6 flex gap-x-4 break-inside-avoid">
@@ -77,24 +75,14 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
         <div class="flex flex-wrap">
           <span
             class="flex items-center"
-            title={move || {
-              format!(
-                "{} post_count",
-                person_view.counts.post_count,
-              )
-            }}
+            title={move || t_string!(i18n, post_count, count = person_view.counts.post_count)}
           >
             <Icon icon={Icon::Archive} class={"inline".into()} />
             <span class="text-sm">{person_view.counts.post_count}</span>
           </span>
           <span
             class="flex items-center pl-2"
-            title={move || {
-              format!(
-                "{} comment_count",
-                person_view.counts.comment_count,
-              )
-            }}
+            title={move || t_string!(i18n, comment_count, count = person_view.counts.comment_count)}
           >
             <Icon icon={Icon::Comments} class={"inline".into()} />
             <span class="text-sm">{person_view.counts.comment_count}</span>
@@ -127,14 +115,12 @@ pub fn CommunityListings(
 
 #[component]
 pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool) -> impl IntoView {
+  let i18n = use_i18n();
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
   let thumbnail = RwSignal::new(String::from(""));
 
-  let from = if let Some(f) = community.community.actor_id.inner().host_str() {
-    external_host_attribution(Some(f.to_string()), get_instance_cookie.get_untracked())
-  } else {
-    String::new()
-  };
+  let host = community.community.actor_id.inner().host_str().map(str::to_owned);
+  let from = Memo::new(move |_| external_host_attribution(host.clone(), get_instance_cookie.get()));
   let title = if community.community.title.len() > 0 { community.community.title } else { community.community.name.clone() };
   let community_title =
     community_title_with_federation(&title, community.community.local, community.community.actor_id.inner().host().map(|host| host.to_string()));
@@ -151,8 +137,8 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
     }
   });
 
-  let abbr_duration = relative_time(community.community.published.timestamp_millis());
-  let abbr_duration = Memo::new(move |_| abbr_duration.clone());
+  let published_at = community.community.published.timestamp_millis();
+  let abbr_duration = Memo::new(move |_| relative_time(published_at));
 
   view! {
     <div class="px-4 pb-6 flex gap-x-4 break-inside-avoid">
@@ -200,48 +186,28 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
         <div class="flex flex-wrap">
           <span
             class="flex items-center"
-            title={move || {
-              format!(
-                "{} subscribers",
-                community.counts.subscribers,
-              )
-            }}
+            title={move || t_string!(i18n, subscribers_count, count = community.counts.subscribers)}
           >
             <Icon icon={Icon::Subscribe} class={"inline".into()} />
             <span class="text-sm">{community.counts.subscribers}</span>
           </span>
           <span
             class="flex items-center pl-2"
-            title={move || {
-              format!(
-                "{} users_active_month",
-                community.counts.users_active_month,
-              )
-            }}
+            title={move || t_string!(i18n, active_users_count, count = community.counts.users_active_month)}
           >
             <Icon icon={Icon::Community} class={"inline".into()} />
             <span class="text-sm">{community.counts.users_active_month}</span>
           </span>
           <span
             class="flex items-center pl-2"
-            title={move || {
-              format!(
-                "{} posts",
-                community.counts.posts,
-              )
-            }}
+            title={move || t_string!(i18n, posts_count, count = community.counts.posts)}
           >
             <Icon icon={Icon::Archive} class={"inline".into()} />
             <span class="text-sm">{community.counts.posts}</span>
           </span>
           <span
             class="flex items-center pl-2"
-            title={move || {
-              format!(
-                "{} comments",
-                community.counts.comments,
-              )
-            }}
+            title={move || t_string!(i18n, comments_count_short, count = community.counts.comments)}
           >
             <Icon icon={Icon::Comments} class={"inline".into()} />
             <span class="text-sm">{community.counts.comments}</span>
@@ -354,6 +320,7 @@ pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostR
 
 #[component]
 pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<bool>, */ hide: bool) -> impl IntoView {
+  let i18n = use_i18n();
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   let online = expect_context::<RwSignal<OnlineSetter>>();
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
@@ -533,8 +500,7 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
   let instance = get_instance_cookie.get_untracked();
   let creator_name = federated_creator_handle(&u, a.domain().as_deref(), instance.as_deref());
   let creator_name_encoded = Memo::new(move |_| html_escape::encode_safe(&creator_name).to_string());
-  let abbr_duration = relative_time(post_view.get().post.published.timestamp_millis());
-  let abbr_duration = Memo::new(move |_| abbr_duration.clone());
+  let abbr_duration = Memo::new(move |_| relative_time(post_view.get().post.published.timestamp_millis()));
   let thumbnail = RwSignal::new(String::from(""));
 
   view! {
@@ -659,7 +625,7 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                             )
                           }}
                           disabled={move || !logged_in.get() || !online.get().0}
-                          title="Up vote"
+                          title={move || t_string!(i18n, up_vote)}
                         >
                           <Icon icon={Icon::Upvote} />
                         </button>
@@ -702,7 +668,7 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                               }
                             },
                           )}
-                          title="Archive"
+                          title={move || t_string!(i18n, archive)}
                           target="_blank"
                           href={format!(
                             "https://archive.ph/submit/?url={}",
@@ -722,7 +688,7 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                   view! { <Info loading={loading.get()} /> }
                 }}
                 <Show when={move || error.get()} fallback={|| {}}>
-                  <Error description="Error upvoting post" error={latest_error.get()} />
+                  <Error description={t_string!(i18n, error_upvoting_post).to_string()} error={latest_error.get()} />
                 </Show>
               }
             }
