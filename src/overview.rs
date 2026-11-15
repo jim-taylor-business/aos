@@ -75,7 +75,14 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
               if st.len() == 0 {
                 st.push((0usize, "".into()));
               }
-              if st.iter().find(|s| s.0 == key && s.1 == next_page).is_none() {
+              if st
+                .iter()
+                .find(|(page_index, cursor)| {
+                  // let (page_index, cursor) = &**s;
+                  *page_index == key && *cursor == next_page
+                })
+                .is_none()
+              {
                 st.push((key, next_page));
               }
             }
@@ -149,6 +156,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
         pages = vec![(0usize, "".to_owned())];
       }
       for p in pages {
+        let (page_index, cursor) = p;
         let form = GetPosts {
           type_: Some(list),
           sort: Some(sort),
@@ -159,16 +167,16 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
           saved_only: None,
           disliked_only: None,
           liked_only: None,
-          page_cursor: if p.0 == 0usize { None } else { Some(PaginationCursor(p.1.clone())) },
+          page_cursor: if page_index == 0usize { None } else { Some(PaginationCursor(cursor.clone())) },
           show_hidden: Some(true),
           show_nsfw: Some(nsfw),
           show_read: Some(true),
         };
 
         #[cfg(not(feature = "ssr"))]
-        if let Some((t, Ok(r))) = rc.get(&(p.0, form.clone(), auth.clone(), ban)) {
-          new_pages.push((p.0, form.clone(), t.clone(), Ok(r.clone()), auth.clone(), do_not_render_scroll, csr_cache_render, ban));
-          if p.0 == 1 && r.posts.len() == 0 {
+        if let Some((timestamp, Ok(response))) = rc.get(&(page_index, form.clone(), auth.clone(), ban)) {
+          new_pages.push((page_index, form.clone(), *timestamp, Ok(response.clone()), auth.clone(), do_not_render_scroll, csr_cache_render, ban));
+          if page_index == 1 && response.posts.len() == 0 {
             loading.set(false);
           }
           continue;
@@ -176,11 +184,11 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
           if many_pages {
             match load_cache(form.clone()).await {
               Ok(o) => {
-                if p.0 == 1 && o.posts.len() == 0 {
+                if page_index == 1 && o.posts.len() == 0 {
                   loading.set(false);
                 }
                 new_pages.push((
-                  p.0,
+                  page_index,
                   form.clone(),
                   jiff::Zoned::now().timestamp().as_millisecond(),
                   Ok(o),
@@ -219,7 +227,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
           Err(e) => Err(e),
         };
         new_pages.push((
-          p.0,
+          page_index,
           form.clone(),
           jiff::Zoned::now().timestamp().as_millisecond(),
           result,
@@ -450,151 +458,157 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
             }}
           </Transition>
           <Transition fallback={|| {}}>
-            <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|p| (p.1.clone(), p.2, p.4.clone())} let:p>
-              {match p.3 {
-                Ok(ref o) => {
-                  #[cfg(not(feature = "ssr"))]
-                  {
-                    let result_clone = p.3.clone();
-                    let form_clone = p.1.clone();
-                    spawn_local_scoped(async move {
-                      if !p.6 {
-                        if let Ok(d) = IndexedDb::new().await {
-                          if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&form_clone, &result_clone).await {}
-                        }
-                        response_cache
-                          .update(move |rc| {
-                            rc.insert((p.0, form_clone, p.4, p.7), (p.2, result_clone));
-                          });
-                      }
-                    });
-                    let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-                    if !(iw < 768f64 || p.5 || p.6) {
-                      if let Some(c) = cancel_handle.get_untracked() {
-                        c.clear();
-                      }
-                      cancel_handle
-                        .set(
-                          set_timeout_with_handle(
-                              move || {
-                                if let Some(s) = on_scroll_element.get() {
-                                  spawn_local_scoped(async move {
-                                    if let Ok(Some(l)) =
-                                      IndexedDb::get_scroll_position(use_location().pathname.get(), use_query_map().get().to_query_string()).await
-                                    {
-                                      s.set_scroll_left(l);
-                                    }
-                                  });
-                                }
-                              },
-                              std::time::Duration::new(0, 750_000_000),
-                            )
-                            .ok(),
-                        );
-                    }
-                    if p.6 {
-                      if let Some(c) = cancel_refresh_handle.get_untracked() {
-                        c.clear();
-                      }
-                      cancel_refresh_handle
-                        .set(
-                          set_timeout_with_handle(
-                              move || {
-                                post_list_resource.refetch();
-                              },
-                              std::time::Duration::new(0, 750_000_000),
-                            )
-                            .ok(),
-                        );
-                    }
-                  }
-                  next_page_cursor.set((p.0 + o.posts.len(), o.next_page.clone()));
-                  #[cfg(not(feature = "ssr"))] loading.set(false);
-                  if p.0 == 0 && o.posts.len() == 0 {
-                    view! {
-                      <Info loading={true} description={t_string!(i18n, no_community_posts).to_string()} />
-                    }.into_any()
-                  } else {
-                    view! {
-                      <Listings hide={p.6} posts={o.posts.clone().into()} page_number={RwSignal::new(p.0)} heroes=1 />
-                      {
-                        let (key, page_cursor) = next_page_cursor.get_untracked();
-                        if let Some(PaginationCursor(page_id)) = page_cursor {
-                          let mut st: Vec<(usize, String)> = vec![];
-                          st.push((key, page_id));
-                          let mut query_params = use_query_map().get();
-                          query_params.remove("page");
-                          query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-                          #[cfg(not(feature = "ssr"))]
-                          set_timeout_with_handle(
-                            move || {
-                              show_next.set(false);
-                            },
-                            std::time::Duration::new(0, 50_000_000),
-                          );
-                          #[cfg(not(feature = "ssr"))]
-                          set_timeout_with_handle(
-                            move || {
-                              if is_visible.get() {
-                                if let Some(c) = cancel_handle.get_untracked() {
-                                  c.clear();
-                                }
-                                let (key, page_cursor) = next_page_cursor.get_untracked();
-                                if let Some(PaginationCursor(page_id)) = page_cursor {
-                                  let mut st = ssr_page();
-                                  if st.len() == 0 {
-                                    st.push((0usize, "".into()));
-                                  }
-                                  if st.iter().find(|s| s.0 == key && s.1 == page_id).is_none() {
-                                    st.push((key, page_id));
-                                  }
-                                  let mut query_params = query.get_untracked();;
-                                  query_params.remove("page");
-                                  query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-                                  let params = query_params.clone();
-                                  spawn_local_scoped(async move {
-                                    if let Some(se) = on_scroll_element.get_untracked() {
-                                      let _ = IndexedDb::save_scroll_position(use_location().pathname.get_untracked(), params.to_query_string(), se.scroll_left()).await;
-                                    }
-                                    let navigate = use_navigate();
-                                    navigate(
-                                      &format!("{}{}", use_location().pathname.get_untracked(), query_params.to_query_string()),
-                                      NavigateOptions { resolve: true, replace: true, scroll: false, state: State::default() },
-                                    );
-                                  });
-                                }
-
-                              };
-                            },
-                            std::time::Duration::new(0, 500_000_000),
-                          );
-                          view! {
-                            <Show when={move || { show_next.get() }} fallback={|| {}}>
-                              <div class="flex py-4 px-8 justify-end{}">
-                                <A href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())} attr:class="btn btn-soft">
-                                  {t!(i18n, next)}
-                                </A>
-                              </div>
-                            </Show>
+            <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|(_, form, timestamp, _, auth, _, _, _)| (form.clone(), *timestamp, auth.clone())} let:p>
+              {
+                let (page_index, form, timestamp, result, auth, do_not_render_scroll, csr_cache_render, ban) = p;
+                match result {
+                  Ok(ref o) => {
+                    #[cfg(not(feature = "ssr"))]
+                    {
+                      let result_clone = result.clone();
+                      let form_clone = form.clone();
+                      spawn_local_scoped(async move {
+                        if !csr_cache_render {
+                          if let Ok(d) = IndexedDb::new().await {
+                            if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&form_clone, &result_clone).await {}
                           }
-                            .into_any()
-                        } else {
-                          view! {}.into_any()
+                          response_cache
+                            .update(move |rc| {
+                              rc.insert((page_index, form_clone, auth, ban), (timestamp, result_clone));
+                            });
                         }
+                      });
+                      let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
+                      if !(iw < 768f64 || do_not_render_scroll || csr_cache_render) {
+                        if let Some(c) = cancel_handle.get_untracked() {
+                          c.clear();
+                        }
+                        cancel_handle
+                          .set(
+                            set_timeout_with_handle(
+                                move || {
+                                  if let Some(s) = on_scroll_element.get() {
+                                    spawn_local_scoped(async move {
+                                      if let Ok(Some(l)) =
+                                        IndexedDb::get_scroll_position(use_location().pathname.get(), use_query_map().get().to_query_string()).await
+                                      {
+                                        s.set_scroll_left(l);
+                                      }
+                                    });
+                                  }
+                                },
+                                std::time::Duration::new(0, 750_000_000),
+                              )
+                              .ok(),
+                          );
                       }
-                    }.into_any()
+                      if csr_cache_render {
+                        if let Some(c) = cancel_refresh_handle.get_untracked() {
+                          c.clear();
+                        }
+                        cancel_refresh_handle
+                          .set(
+                            set_timeout_with_handle(
+                                move || {
+                                  post_list_resource.refetch();
+                                },
+                                std::time::Duration::new(0, 750_000_000),
+                              )
+                              .ok(),
+                          );
+                      }
+                    }
+                    next_page_cursor.set((page_index + o.posts.len(), o.next_page.clone()));
+                    #[cfg(not(feature = "ssr"))] loading.set(false);
+                    if page_index == 0 && o.posts.len() == 0 {
+                      view! {
+                        <Info loading={true} description={t_string!(i18n, no_community_posts).to_string()} />
+                      }.into_any()
+                    } else {
+                      view! {
+                        <Listings hide={csr_cache_render} posts={o.posts.clone().into()} page_number={RwSignal::new(page_index)} heroes=1 />
+                        {
+                          let (key, page_cursor) = next_page_cursor.get_untracked();
+                          if let Some(PaginationCursor(page_id)) = page_cursor {
+                            let mut st: Vec<(usize, String)> = vec![];
+                            st.push((key, page_id));
+                            let mut query_params = use_query_map().get();
+                            query_params.remove("page");
+                            query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+                            #[cfg(not(feature = "ssr"))]
+                            set_timeout_with_handle(
+                              move || {
+                                show_next.set(false);
+                              },
+                              std::time::Duration::new(0, 50_000_000),
+                            );
+                            #[cfg(not(feature = "ssr"))]
+                            set_timeout_with_handle(
+                              move || {
+                                if is_visible.get() {
+                                  if let Some(c) = cancel_handle.get_untracked() {
+                                    c.clear();
+                                  }
+                                  let (key, page_cursor) = next_page_cursor.get_untracked();
+                                  if let Some(PaginationCursor(page_id)) = page_cursor {
+                                    let mut st = ssr_page();
+                                    if st.len() == 0 {
+                                      st.push((0usize, "".into()));
+                                    }
+                                    if st.iter().find(|s| {
+                                      let (page_index, cursor) = &**s;
+                                      *page_index == key && cursor == &page_id
+                                    }).is_none() {
+                                      st.push((key, page_id));
+                                    }
+                                    let mut query_params = query.get_untracked();;
+                                    query_params.remove("page");
+                                    query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+                                    let params = query_params.clone();
+                                    spawn_local_scoped(async move {
+                                      if let Some(se) = on_scroll_element.get_untracked() {
+                                        let _ = IndexedDb::save_scroll_position(use_location().pathname.get_untracked(), params.to_query_string(), se.scroll_left()).await;
+                                      }
+                                      let navigate = use_navigate();
+                                      navigate(
+                                        &format!("{}{}", use_location().pathname.get_untracked(), query_params.to_query_string()),
+                                        NavigateOptions { resolve: true, replace: true, scroll: false, state: State::default() },
+                                      );
+                                    });
+                                  }
+
+                                };
+                              },
+                              std::time::Duration::new(0, 500_000_000),
+                            );
+                            view! {
+                              <Show when={move || { show_next.get() }} fallback={|| {}}>
+                                <div class="flex py-4 px-8 justify-end{}">
+                                  <A href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())} attr:class="btn btn-soft">
+                                    {t!(i18n, next)}
+                                  </A>
+                                </div>
+                              </Show>
+                            }
+                              .into_any()
+                          } else {
+                            view! {}.into_any()
+                          }
+                        }
+                      }.into_any()
+                    }
+                  }
+                  Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
+                    #[cfg(not(feature = "ssr"))] loading.set(false);
+                    view! { <Warning on_retry_click={on_retry_click} /> }.into_any()
+                  }
+                  Err(e) => {
+                    #[cfg(not(feature = "ssr"))] loading.set(false);
+                    error!("{:#?}", e);
+                    view! { <Error description={t_string!(i18n, error_loading_posts).to_string()} error={e} on_retry_click={on_retry_click} /> }.into_any()
                   }
                 }
-                Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
-                  #[cfg(not(feature = "ssr"))] loading.set(false);
-                  view! { <Warning on_retry_click={on_retry_click} /> }.into_any()
-                }
-                Err(e) => {
-                  #[cfg(not(feature = "ssr"))] loading.set(false);
-                  error!("{:#?}", e);
-                  view! { <Error description={t_string!(i18n, error_loading_posts).to_string()} error={e} on_retry_click={on_retry_click} /> }.into_any()
-                }
-              }}
+              }
             </For>
           </Transition>
           <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />

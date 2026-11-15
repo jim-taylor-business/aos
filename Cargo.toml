@@ -85,7 +85,7 @@ reqwest = { version = "0", features = [
 leptos_i18n_build = "~0.6"
 
 [features]
-default = ["ssr"]
+default = ["csr"]
 csr = [
   "leptos/csr",
   "dep:leptos-use-document-visibility",

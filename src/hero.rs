@@ -13,7 +13,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
   let content = RwSignal::new(String::default());
   let loading = RwSignal::new(true);
 
-  let post_view = RwSignal::new(None::<GetPostResponse>);
+  // let post_view = RwSignal::new(None::<GetPostResponse>);
 
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   let listing_response_cache =
@@ -121,25 +121,26 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
               }
                 .into_any()
             }
-            Some(Some(Ok(res))) => {
+            Some(Some(Ok((form, response)))) => {
+              // let (form, response) = res;
               #[cfg(not(feature = "ssr"))]
               {
-                let rw = res.1.clone();
-                let fm = res.0.clone();
+                let response_clone = response.clone();
+                let form_clone = form.clone();
                 spawn_local_scoped(async move {
                   if let Ok(d) = IndexedDb::new().await {
-                    if let Ok(_c) = d.set(&fm, &rw).await {}
+                    let _ = d.set(&form_clone, &response_clone).await;
                   }
                   post_response_cache
                     .update(move |rc| {
-                      rc.insert((fm, get_auth_cookie.get_untracked()), (0, Ok(rw)));
+                      rc.insert((form_clone, get_auth_cookie.get_untracked()), (0, Ok(response_clone)));
                     });
                 });
               }
-              let res2 = res.1.clone();
-              let res = res.1.clone();
-              post_view.set(Some(res));
-              let post_response = RwSignal::new(res2);
+              // let res2 = response.clone();
+              // let res = response.clone();
+              // post_view.set(Some(res));
+              let post_response = RwSignal::new(response.clone());
               let text = if let Some(b) = post_response.get().post_view.post.body.clone() {
                 if b.len() > 0 { Some(b) } else { post_response.get().post_view.post.embed_description.clone() }
               } else {
@@ -372,24 +373,25 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
           comments_resource
             .get()
             .unwrap_or(None)
-            .map(|res| {
+            .map(|(form, response)| {
+              // let (form, response) = res;
               #[cfg(not(feature = "ssr"))]
               {
-                let rw = res.1.clone();
-                let fm = res.0.clone();
+                let response_clone = response.clone();
+                let form_clone = form.clone();
                 spawn_local_scoped(async move {
                   if let Ok(d) = IndexedDb::new().await {
-                    if let Ok(_c) = d.set(&fm, &rw).await {}
+                    let _ = d.set(&form_clone, &response_clone).await;
                   }
                   comments_response_cache
                     .update(move |rc| {
-                      rc.insert((fm, get_auth_cookie.get_untracked()), (0, Ok(rw)));
+                      rc.insert((form_clone, get_auth_cookie.get_untracked()), (0, Ok(response_clone)));
                     });
                 });
               }
-              let res = res.1.clone();
-              let mut comments_descendants = res.comments.clone();
-              let first_comment = res.comments.first().map(|f| vec![f.clone()]).unwrap_or_default();
+              // let res = response.clone();
+              let mut comments_descendants = response.comments.clone();
+              let first_comment = response.comments.first().map(|f| vec![f.clone()]).unwrap_or_default();
               let highlight_user_id = RwSignal::new(None);
               let now_in_millis = RwSignal::new(u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0));
               let hidden_comments: RwSignal<Vec<i32>> = RwSignal::new(vec![]);
@@ -414,7 +416,6 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                   }
                 });
               if let Some(cv) = first_comment.get(0) {
-
                 view! {
                   <Comment
                     parent_comment_id=0

@@ -179,141 +179,148 @@ pub fn Search(
         >
           <Transition fallback={|| {}}>
             <Title text={move || t_string!(i18n, search)} />
-            <For each={move || search_cache_resource.get().unwrap_or(vec![])} key={|r| (r.1.clone(), r.2, r.4.clone())} let:r>
-              {match r.3 {
-                Ok(ref o) => {
-                  #[cfg(not(feature = "ssr"))]
-                  {
-                    let result_clone = r.3.clone();
-                    spawn_local_scoped(async move {
-                      if let Ok(d) = IndexedDb::new().await {
-                        if let Ok(_c) = d.set::<Search, Result<SearchResponse, LemmyAppError>>(&r.1, &result_clone).await {}
+            <For each={move || search_cache_resource.get().unwrap_or(vec![])} key={|(_, form, timestamp, _, auth)| (form.clone(), *timestamp, auth.clone())} let:r>
+              {
+                let (page_number, form, timestamp, result, auth) = &r;
+                match result {
+                  Ok(o) => {
+                    #[cfg(not(feature = "ssr"))]
+                    {
+                      let result_clone = result.clone();
+                      let form_clone = form.clone();
+                      let page_index = *page_number;
+                      let fetched_at = *timestamp;
+                      let auth_cookie = auth.clone();
+                      spawn_local_scoped(async move {
+                        if let Ok(d) = IndexedDb::new().await {
+                          if let Ok(_c) = d.set::<Search, Result<SearchResponse, LemmyAppError>>(&form_clone, &result_clone).await {}
+                        }
+                        search_cache
+                          .update(move |sc| {
+                            sc.insert((page_index, form_clone, auth_cookie), (fetched_at, result_clone));
+                          });
+                      });
+                      let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
+                      if iw > 768f64 {
+                        if let Some(c) = cancel_handle.get_untracked() {
+                          c.clear();
+                        }
+                        cancel_handle
+                          .set(
+                            set_timeout_with_handle(
+                                move || {
+                                  if let Some(s) = on_scroll_element.get() {
+                                    spawn_local_scoped(async move {
+                                      if let Ok(Some(l)) =
+                                        IndexedDb::get_scroll_position(use_location().pathname.get(), use_query_map().get().to_query_string()).await
+                                      {
+                                        s.set_scroll_left(l);
+                                      }
+                                    });
+                                  }
+                                },
+                                std::time::Duration::new(0, 750_000_000),
+                              )
+                              .ok(),
+                          );
                       }
-                      search_cache
-                        .update(move |sc| {
-                          sc.insert((r.0, r.1, r.4), (r.2, result_clone));
-                        });
-                    });
-                    let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-                    if iw > 768f64 {
-                      if let Some(c) = cancel_handle.get_untracked() {
-                        c.clear();
-                      }
-                      cancel_handle
-                        .set(
+                    }
+                    #[cfg(not(feature = "ssr"))] loading.set(false);
+                    next_page_cursor.set((*page_number + 1, o.users.len() + o.communities.len() + o.posts.len() + o.comments.len()));
+                    let comments_clone = RwSignal::new(o.comments.clone());
+                    view! {
+                      <Listings hide=false posts={o.posts.clone().into()} page_number={RwSignal::new((*page_number - 1) * 50)} />
+                      <For each={move || comments_clone.get()} key={|cv| cv.comment.id} let:cv>
+                        <div class="odd:bg-base-300 pt-2 pr-4 pb-2 pl-4">
+                          <Comment
+                            parent_comment_id=0
+                            hidden_comments={RwSignal::new(vec![])}
+                            comment={cv.clone().into()}
+                            comments={vec![].into()}
+                            level=0
+                            now_in_millis
+                            highlight_user_id={RwSignal::new(None)}
+                            post_id={Signal::derive(move || Some(cv.post.id.0))}
+                            selected_drag_offset={RwSignal::new((0, 0f64, 0))}
+                          />
+                        </div>
+                      </For>
+                      <CommunityListings hide=false communities={o.communities.clone().into()} page_number={RwSignal::new((*page_number - 1) * 50)} />
+                      <UserListings hide=false people={o.users.clone().into()} page_number={RwSignal::new((*page_number - 1) * 50)} />
+                      {
+                        let (key, len) = next_page_cursor.get_untracked();
+                        if key > 1 && len > 0 {
+                          let mut query_params = use_query_map().get();
+                          let mut st = vec![];
+                          st.push(key);
+                          query_params.remove("page");
+                          query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+                          #[cfg(not(feature = "ssr"))]
                           set_timeout_with_handle(
-                              move || {
-                                if let Some(s) = on_scroll_element.get() {
+                            move || {
+                              show_next.set(false);
+                            },
+                            std::time::Duration::new(0, 0),
+                          );
+                          #[cfg(not(feature = "ssr"))]
+                          set_timeout_with_handle(
+                            move || {
+                              if is_visible.get() {
+                                if let Some(c) = cancel_handle.get_untracked() {
+                                  c.clear();
+                                }
+                                let (key, len) = next_page_cursor.get_untracked();
+                                if key > 1 && len > 0 {
+                                  let mut st = ssr_page();
+                                  if st.iter().find(|s| **s == key).is_none() {
+                                    st.push(key);
+                                  }
+                                  let mut query_params = query.get_untracked();
+                                  query_params.remove("page");
+                                  query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+                                  let params = query_params.clone();
                                   spawn_local_scoped(async move {
-                                    if let Ok(Some(l)) =
-                                      IndexedDb::get_scroll_position(use_location().pathname.get(), use_query_map().get().to_query_string()).await
-                                    {
-                                      s.set_scroll_left(l);
+                                    if let Some(se) = on_scroll_element.get_untracked() {
+                                      let _ = IndexedDb::save_scroll_position(use_location().pathname.get_untracked(), params.to_query_string(), se.scroll_left()).await;
                                     }
+                                    let navigate = use_navigate();
+                                    navigate(
+                                      &format!("{}{}", use_location().pathname.get_untracked(), query_params.to_query_string()),
+                                      NavigateOptions { resolve: true, replace: true, scroll: false, state: State::default() },
+                                    );
                                   });
                                 }
-                              },
-                              std::time::Duration::new(0, 750_000_000),
-                            )
-                            .ok(),
-                        );
-                    }
-                  }
-                  #[cfg(not(feature = "ssr"))] loading.set(false);
-                  next_page_cursor.set((r.0 + 1, o.users.len() + o.communities.len() + o.posts.len() + o.comments.len()));
-                  let comments_clone = RwSignal::new(o.comments.clone());
-                  view! {
-                    <Listings hide=false posts={o.posts.clone().into()} page_number={RwSignal::new((r.0 - 1) * 50)} />
-                    <For each={move || comments_clone.get()} key={|cv| cv.comment.id} let:cv>
-                      <div class="odd:bg-base-300 pt-2 pr-4 pb-2 pl-4">
-                        <Comment
-                          parent_comment_id=0
-                          hidden_comments={RwSignal::new(vec![])}
-                          comment={cv.clone().into()}
-                          comments={vec![].into()}
-                          level=0
-                          now_in_millis
-                          highlight_user_id={RwSignal::new(None)}
-                          post_id={Signal::derive(move || Some(cv.post.id.0))}
-                          selected_drag_offset={RwSignal::new((0, 0f64, 0))}
-                        />
-                      </div>
-                    </For>
-                    <CommunityListings hide=false communities={o.communities.clone().into()} page_number={RwSignal::new((r.0 - 1) * 50)} />
-                    <UserListings hide=false people={o.users.clone().into()} page_number={RwSignal::new((r.0 - 1) * 50)} />
-                    {
-                      let (key, len) = next_page_cursor.get_untracked();
-                      if key > 1 && len > 0 {
-                        let mut query_params = use_query_map().get();
-                        let mut st = vec![];
-                        st.push(key);
-                        query_params.remove("page");
-                        query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-                        #[cfg(not(feature = "ssr"))]
-                        set_timeout_with_handle(
-                          move || {
-                            show_next.set(false);
-                          },
-                          std::time::Duration::new(0, 0),
-                        );
-                        #[cfg(not(feature = "ssr"))]
-                        set_timeout_with_handle(
-                          move || {
-                            if is_visible.get() {
-                              if let Some(c) = cancel_handle.get_untracked() {
-                                c.clear();
-                              }
-                              let (key, len) = next_page_cursor.get_untracked();
-                              if key > 1 && len > 0 {
-                                let mut st = ssr_page();
-                                if st.iter().find(|s| **s == key).is_none() {
-                                  st.push(key);
-                                }
-                                let mut query_params = query.get_untracked();
-                                query_params.remove("page");
-                                query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-                                let params = query_params.clone();
-                                spawn_local_scoped(async move {
-                                  if let Some(se) = on_scroll_element.get_untracked() {
-                                    let _ = IndexedDb::save_scroll_position(use_location().pathname.get_untracked(), params.to_query_string(), se.scroll_left()).await;
-                                  }
-                                  let navigate = use_navigate();
-                                  navigate(
-                                    &format!("{}{}", use_location().pathname.get_untracked(), query_params.to_query_string()),
-                                    NavigateOptions { resolve: true, replace: true, scroll: false, state: State::default() },
-                                  );
-                                });
-                              }
 
-                            };
-                          },
-                          std::time::Duration::new(0, 500_000_000),
-                        );
-                        view! {
-                          <Show when={move || { show_next.get() }} fallback={|| {}}>
-                            <div class="flex py-4 px-8 justify-end{}">
-                              <A href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())} attr:class="btn btn-soft">
-                                {t!(i18n, next)}
-                              </A>
-                            </div>
-                          </Show>
-                        }.into_any()
-                      } else {
-                        view! {}.into_any()
+                              };
+                            },
+                            std::time::Duration::new(0, 500_000_000),
+                          );
+                          view! {
+                            <Show when={move || { show_next.get() }} fallback={|| {}}>
+                              <div class="flex py-4 px-8 justify-end{}">
+                                <A href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())} attr:class="btn btn-soft">
+                                  {t!(i18n, next)}
+                                </A>
+                              </div>
+                            </Show>
+                          }.into_any()
+                        } else {
+                          view! {}.into_any()
+                        }
                       }
-                    }
-                  }.into_any()
+                    }.into_any()
+                  }
+                  Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
+                    #[cfg(not(feature = "ssr"))] loading.set(false);
+                    view! { <Warning on_retry_click={on_retry_click} /> }.into_any()
+                  }
+                  Err(e) => {
+                    #[cfg(not(feature = "ssr"))] loading.set(false);
+                    error!("{:#?}", e);
+                    view! { <Error description={t_string!(i18n, error_loading_posts).to_string()} error={e.clone()} on_retry_click={on_retry_click} /> }.into_any()
+                  }
                 }
-                Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
-                  #[cfg(not(feature = "ssr"))] loading.set(false);
-                  view! { <Warning on_retry_click={on_retry_click} /> }.into_any()
-                }
-                Err(e) => {
-                  #[cfg(not(feature = "ssr"))] loading.set(false);
-                  error!("{:#?}", e);
-                  view! { <Error description={t_string!(i18n, error_loading_posts).to_string()} error={e} on_retry_click={on_retry_click} /> }.into_any()
-                }
-              }}
+              }
             </For>
           </Transition>
           <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />

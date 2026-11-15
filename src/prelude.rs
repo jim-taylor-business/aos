@@ -2,12 +2,14 @@ pub use crate::db::{CommentDraft, CommentDraftKey, Draft, IndexedDb, IndexedDbEr
 pub use crate::i18n::*;
 pub use crate::icon::Icon;
 pub use crate::{
-  App, BanType, NotificationsRefresh, OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, ReadThemeCookie, ResponseLoad, WriteAuthCookie,
-  WriteInstanceCookie, WriteThemeCookie, html_template,
+  App,
+  // BanType, NotificationsRefresh, OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, ReadThemeCookie, ResponseLoad, WriteAuthCookie,
+  //   WriteInstanceCookie, WriteThemeCookie,
+  html_template,
 };
 pub use crate::{
-  client, client::*, comment, comment::*, db, errors, errors::*, hero, hero::*, icon, icon::*, listing, listing::*, login, nav, nav::*, overview,
-  overview::*, post, post::*, search, search::*, toolbar, toolbar::*, user, user::*,
+  client, client::*, comment, comment::*, db, errors, errors::*, hero, hero::*, icon, icon::*, listing, listing::*, login, login::*, nav, nav::*,
+  overview, overview::*, post, post::*, search, search::*, toolbar, toolbar::*, user, user::*,
 };
 pub use codee::string::FromToStringCodec;
 pub use lemmy_api_common::{
@@ -32,6 +34,21 @@ pub use std::collections::BTreeMap;
 pub use web_sys::{
   Event, HtmlAnchorElement, HtmlImageElement, KeyboardEvent, MouseEvent, SubmitEvent, TouchEvent, VisibilityState, WheelEvent, wasm_bindgen::JsCast,
 };
+
+#[derive(Clone)]
+pub struct OnlineSetter(pub bool);
+#[derive(Clone, Debug, PartialEq)]
+pub struct NotificationsRefresh(pub bool);
+#[derive(Clone, PartialEq)]
+pub struct ResponseLoad(pub bool);
+#[derive(Clone, Debug, Default)]
+pub struct PassedUrl(pub Option<String>);
+
+#[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
+pub enum BanType {
+  Nsfw,
+  Ban,
+}
 
 pub fn markdown_to_html(content: &str, linkify: bool) -> String {
   let mut options = pulldown_cmark::Options::empty();
@@ -274,6 +291,19 @@ pub fn Info(loading: bool, #[prop(optional, into)] description: Option<String>) 
     view! {}.into_any()
   }
 }
+
+#[derive(Clone)]
+pub struct ReadAuthCookie(pub Signal<Option<String>>);
+#[derive(Clone)]
+pub struct WriteAuthCookie(pub WriteSignal<Option<String>>);
+#[derive(Clone)]
+pub struct ReadInstanceCookie(pub Signal<Option<String>>);
+#[derive(Clone)]
+pub struct WriteInstanceCookie(pub WriteSignal<Option<String>>);
+#[derive(Clone)]
+pub struct ReadThemeCookie(pub Signal<Option<String>>);
+#[derive(Clone)]
+pub struct WriteThemeCookie(pub WriteSignal<Option<String>>);
 
 pub fn default_cookie_options<T, E, D>() -> UseCookieOptions<T, E, D> {
   UseCookieOptions::default().max_age(691200000).path("/").same_site(SameSite::Lax)

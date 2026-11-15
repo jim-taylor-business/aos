@@ -20,39 +20,10 @@ pub mod user;
 
 use crate::prelude::*;
 
-#[derive(Clone)]
-pub struct OnlineSetter(bool);
-#[derive(Clone, Debug, PartialEq)]
-pub struct NotificationsRefresh(bool);
-#[derive(Clone, PartialEq)]
-pub struct ResponseLoad(bool);
-
-#[derive(Clone)]
-pub struct ReadAuthCookie(Signal<Option<String>>);
-#[derive(Clone)]
-pub struct WriteAuthCookie(WriteSignal<Option<String>>);
-#[derive(Clone)]
-pub struct ReadInstanceCookie(Signal<Option<String>>);
-#[derive(Clone)]
-pub struct WriteInstanceCookie(WriteSignal<Option<String>>);
-#[derive(Clone)]
-pub struct ReadThemeCookie(Signal<Option<String>>);
-#[derive(Clone)]
-pub struct WriteThemeCookie(WriteSignal<Option<String>>);
-
-#[derive(Clone, Debug, Default)]
-pub struct PassedUrl(pub Option<String>);
-
-#[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
-pub enum BanType {
-  Nsfw,
-  Ban,
-}
-
 pub fn html_template(options: LeptosOptions) -> impl IntoView {
   view! {
     <!DOCTYPE html>
-    <html lang="en">
+    <html>
       <head>
         <Link rel="preload" href="/AdwaitaSans-Italic.ttf" as_="font" type_="font/ttf" crossorigin="anonymous" />
         <Link rel="preload" href="/AdwaitaSans-Regular.ttf" as_="font" type_="font/ttf" crossorigin="anonymous" />
@@ -88,15 +59,15 @@ fn NotFound() -> impl IntoView {
     resp.set_status(http::StatusCode::NOT_FOUND);
   }
   let ReadThemeCookie(get_theme_cookie) = expect_context::<ReadThemeCookie>();
-  let on_scroll_element = NodeRef::<leptos::html::Div>::new();
-  let location = hooks::use_location();
+  let on_scroll_element = NodeRef::<Div>::new();
+  let location = use_location();
   let search = location.search.get();
   let url = format!("{}{}", location.pathname.get(), if search.len() > 0 { format!("?{}", search) } else { "".into() });
 
   view! {
     <div class="flex flex-col min-h-screen" data-theme={move || get_theme_cookie.get()}>
       <main class="flex flex-col">
-        <nav::TopNav scroll_element={on_scroll_element.into()} lost_path={RwSignal::new(url)} />
+        <TopNav scroll_element={on_scroll_element.into()} lost_path={RwSignal::new(url)} />
         <div class="flex flex-grow">
           <div
             node_ref={on_scroll_element}
@@ -185,72 +156,68 @@ pub fn App() -> impl IntoView {
   provide_context(RwSignal::new(PassedUrl(Some("face".to_string()))));
 
   view! {
-    <i18n::I18nContextProvider cookie_name="i18n_pref_locale">
-    <Transition fallback={|| {}}>
-      {move || {
-        ssr_site
-          .get()
-          .map(|s| {
-            match s {
-              Ok(site) => {
-                if let Some(d) = site.site_view.site.description {
-                  view! {
-                    <Title
-                      formatter={move |text: String| {
-                        // let i18n = use_i18n();
-                        // let site_title = t_string!(i18n, site_title, site = site.site_view.site.name.clone());
-                        if text.len() > 0 {
-                          format!("{} - AOS - {} - {}", text, site.site_view.site.name, d.clone())
-                        } else {
-                          format!("AOS - {} - {}", site.site_view.site.name, d.clone())
-                        }
-                      }}
-                      text=""
-                    />
-                  }
-                } else {
-                  view! {
-                    <Title
-                      formatter={move |text: String| {
-                        // let i18n = use_i18n();
-                        // let site_title = t_string!(i18n, site_title, site = site.site_view.site.name.clone());
-                        if text.len() > 0 {
-                          format!("{} - AOS - {}", text, site.site_view.site.name)
-                        } else {
-                          format!("AOS - {}", site.site_view.site.name)
-                        }
-                      }}
-                      text=""
-                    />
+    <I18nContextProvider cookie_name="i18n_pref_locale">
+      <Transition fallback={|| {}}>
+        {move || {
+          ssr_site
+            .get()
+            .map(|s| {
+              match s {
+                Ok(site) => {
+                  if let Some(d) = site.site_view.site.description {
+                    view! {
+                      <Title
+                        formatter={move |text: String| {
+                          if text.len() > 0 {
+                            format!("{} - AOS - {} - {}", text, site.site_view.site.name, d.clone())
+                          } else {
+                            format!("AOS - {} - {}", site.site_view.site.name, d.clone())
+                          }
+                        }}
+                        text=""
+                      />
+                    }
+                  } else {
+                    view! {
+                      <Title
+                        formatter={move |text: String| {
+                          if text.len() > 0 {
+                            format!("{} - AOS - {}", text, site.site_view.site.name)
+                          } else {
+                            format!("AOS - {}", site.site_view.site.name)
+                          }
+                        }}
+                        text=""
+                      />
+                    }
                   }
                 }
+                _ => {
+                  view! { <Title formatter={|text: String| if text.len() > 0 { format!("{} - AOS", text) } else { "AOS".to_owned() }} text="" /> }
+                }
               }
-              _ => {
-                view! { <Title formatter={|text: String| if text.len() > 0 { format!("{} - AOS", text) } else { "AOS".to_owned() }} text="" /> }
-              }
-            }
-          })
-      }}
-    </Transition>
-    <Stylesheet id="leptos" href="/pkg/aos.css" />
-    <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico" />
-    <Link rel="manifest" href="/manifest.json" />
-    <Router>
-      <Routes fallback={NotFound}>
-        <ParentRoute path={StaticSegment("")} view={Root} ssr={SsrMode::Async}>
-          <Route path={StaticSegment("")} view={overview::Default} />
-          <Route path={(StaticSegment("p"), ParamSegment("id"))} view={post::Post} />
-          <Route path={(StaticSegment("c"), ParamSegment("name"))} view={overview::Community} />
-          <Route path={(StaticSegment("u"), ParamSegment("name"))} view={user::User} />
-          <Route path={StaticSegment("s")} view={search::DefaultSearch} />
-          <Route path={(StaticSegment("p"), ParamSegment("id"), StaticSegment("s"))} view={search::PostSearch} />
-          <Route path={(StaticSegment("c"), ParamSegment("name"), StaticSegment("s"))} view={search::CommunitySearch} />
-          <Route path={(StaticSegment("u"), ParamSegment("name"), StaticSegment("s"))} view={search::UserSearch} />
-          <Route path={StaticSegment("l")} view={login::Login} />
-        </ParentRoute>
-      </Routes>
-    </Router>
-    </i18n::I18nContextProvider>
+            })
+        }}
+      </Transition>
+      <Stylesheet id="leptos" href="/pkg/aos.css" />
+      <Link rel="shortcut icon" type_="image/ico" href="/favicon.ico" />
+      <Link rel="manifest" href="/manifest.json" />
+      <Router>
+        <Routes fallback={NotFound}>
+          <ParentRoute path={StaticSegment("")} view={Root} ssr={SsrMode::Async}>
+            <Route path={StaticSegment("")} view={Default} />
+            <Route path={(StaticSegment("p"), ParamSegment("id"))} view={Post} />
+            <Route path={(StaticSegment("c"), ParamSegment("name"))} view={Community} />
+            <Route path={(StaticSegment("u"), ParamSegment("name"))} view={User} />
+            <Route path={StaticSegment("s")} view={DefaultSearch} />
+            <Route path={(StaticSegment("p"), ParamSegment("id"), StaticSegment("s"))} view={PostSearch} />
+            <Route path={(StaticSegment("c"), ParamSegment("name"), StaticSegment("s"))} view={CommunitySearch} />
+            <Route path={(StaticSegment("u"), ParamSegment("name"), StaticSegment("s"))} view={UserSearch} />
+            <Route path={StaticSegment("l")} view={Login} />
+          </ParentRoute>
+        </Routes>
+      </Router>
+    </I18nContextProvider>
   }
 }
 

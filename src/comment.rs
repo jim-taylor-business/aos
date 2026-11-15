@@ -341,14 +341,16 @@ pub fn Comment(
           let response_cache =
             expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>, bool), (i64, LemmyAppResult<GetPostsResponse>)>>>();
           response_cache.update(|rc| {
-            rc.iter_mut().for_each(move |(f, r)| {
-              if let (_, Ok(w)) = r {
+            rc.iter_mut().for_each(move |((_, form, _, _), (_, cached_result))| {
+              // let (_, form, _, _) = f;
+              // let (_, cached_result) = r;
+              if let Ok(w) = cached_result {
                 let id = comment_view.get().comment.post_id.0;
                 for p in w.posts.iter_mut() {
                   if p.post.id.0 == id {
                     p.counts.comments = p.counts.comments + 1;
-                    let result_clone = r.1.clone();
-                    let form_clone = f.1.clone();
+                    let result_clone = cached_result.clone();
+                    let form_clone = form.clone();
                     spawn_local_scoped(async move {
                       if let Ok(d) = IndexedDb::new().await {
                         if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&form_clone, &result_clone).await {}

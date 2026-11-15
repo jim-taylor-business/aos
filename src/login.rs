@@ -204,7 +204,7 @@ pub fn Login() -> impl IntoView {
   view! {
     <div class="flex flex-col min-h-screen" data-theme={move || get_theme_cookie.get()}>
       <main class="flex flex-col">
-        <nav::TopNav scroll_element={on_scroll_element.into()} />
+        <TopNav scroll_element={on_scroll_element.into()} />
         <div class="flex flex-grow">
           <div
             node_ref={on_scroll_element}

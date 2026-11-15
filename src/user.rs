@@ -139,299 +139,306 @@ pub fn User() -> impl IntoView {
         >
           <Transition fallback={|| {}}>
             <Title text={move || t_string!(i18n, user_details)} />
-            <For each={move || user_resource.get().unwrap_or(vec![])} key={|r| (r.1.clone(), r.2, r.4.clone())} let:r>
-              {match r.3 {
-                Ok(ref o) => {
-                  #[cfg(not(feature = "ssr"))]
-                  {
-                    let result_clone = r.3.clone();
-                    spawn_local_scoped(async move {
-                      if let Ok(d) = IndexedDb::new().await {
-                        if let Ok(_c) = d.set::<GetPersonDetails, Result<GetPersonDetailsResponse, LemmyAppError>>(&r.1, &result_clone).await {}
-                      }
-                      user_post_cache
-                        .update(move |sc| {
-                          sc.insert((r.0, r.1, r.4), (r.2, result_clone));
-                        });
-                    });
-                    let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
-                    if iw > 768f64 {
-                      if let Some(c) = cancel_handle.get_untracked() {
-                        c.clear();
-                      }
-                      cancel_handle
-                        .set(
-                          set_timeout_with_handle(
-                              move || {
-                                if let Some(s) = on_scroll_element.get() {
-                                  spawn_local_scoped(async move {
-                                    if let Ok(Some(l)) =
-                                      IndexedDb::get_scroll_position(use_location().pathname.get(), use_query_map().get().to_query_string()).await
-                                    {
-                                      s.set_scroll_left(l);
-                                    }
-                                  });
-                                }
-                              },
-                              std::time::Duration::new(0, 750_000_000),
-                            )
-                            .ok(),
-                        );
-                    }
-                  }
-                  let t = o.clone();
-                  let name = html_escape::encode_safe(&t.person_view.person.display_name.unwrap_or(t.person_view.person.name)).to_string();
-                  let banner = Memo::new(move |_| t.person_view.person.banner.clone());
-                  let avatar = Memo::new(move |_| t.person_view.person.avatar.clone());
-                  let all_posts = RwSignal::new(
-                    t
-                      .posts
-                      .iter()
-                      .map(|p| PostWithComments {
-                        post: p.clone(),
-                        comments: RwSignal::new(Vec::new()),
-                      })
-                      .collect::<Vec<_>>(),
-                  );
-                  let comments = o.comments.clone();
-                  all_posts
-                    .update(|ap| {
-                      for c in comments {
-                        if let Some(pc) = ap.iter_mut().find(|p| p.post.post.id == c.post.id) {
-                          pc.comments.update(|comments| comments.push(c));
-                        } else {
-                          ap.push(PostWithComments {
-                            post: PostView {
-                              post: c.post.clone(),
-                              creator: c.creator.clone(),
-                              community: c.community.clone(),
-                              creator_banned_from_community: false,
-                              creator_is_moderator: false,
-                              creator_is_admin: false,
-                              counts: PostAggregates {
-                                post_id: PostId(0),
-                                comments: 0,
-                                score: 0,
-                                upvotes: 0,
-                                downvotes: 0,
-                                published: std::time::SystemTime::from(jiff::Timestamp::now()).into(),
-                                newest_comment_time_necro: std::time::SystemTime::from(jiff::Timestamp::now()).into(),
-                                newest_comment_time: std::time::SystemTime::from(jiff::Timestamp::now()).into(),
-                                featured_community: false,
-                                featured_local: false,
-                                hot_rank: 0f64,
-                                hot_rank_active: 0f64,
-                                community_id: c.community.id,
-                                creator_id: c.creator.id,
-                                controversy_rank: 0f64,
-                                instance_id: InstanceId(0),
-                                scaled_rank: 0f64,
-                              },
-                              subscribed: SubscribedType::NotSubscribed,
-                              saved: false,
-                              read: false,
-                              creator_blocked: false,
-                              my_vote: None,
-                              unread_comments: 0,
-                              banned_from_community: false,
-                              hidden: false,
-                              image_details: None,
-                            },
-                            comments: RwSignal::new(vec![c]),
-                          });
+            <For each={move || user_resource.get().unwrap_or(vec![])} key={|(_, form, timestamp, _, auth)| (form.clone(), *timestamp, auth.clone())} let:r>
+              {
+                let (page_number, form, timestamp, result, auth) = &r;
+                match result {
+                  Ok(o) => {
+                    #[cfg(not(feature = "ssr"))]
+                    {
+                      let result_clone = result.clone();
+                      let form_clone = form.clone();
+                      let page_index = *page_number;
+                      let fetched_at = *timestamp;
+                      let auth_cookie = auth.clone();
+                      spawn_local_scoped(async move {
+                        if let Ok(d) = IndexedDb::new().await {
+                          if let Ok(_c) = d.set::<GetPersonDetails, Result<GetPersonDetailsResponse, LemmyAppError>>(&form_clone, &result_clone).await {}
                         }
-                      }
-                      ap.sort_by(|a, b| a.post.post.published.cmp(&b.post.post.published).reverse());
-                    });
-                  let bio = if let Some(bio) = t.person_view.person.bio {
-                    markdown_to_html(&bio, true)
-                  } else {
-                    String::new()
-                  };
-
-                  view! {
-                    {if r.0 == 1 {
-                      view! {
-                        <div class="break-inside-avoid">
-                          <div class="px-4 my-2">
-                            <span class="overflow-y-auto text-2xl font-extrabold wrap-anywhere">{name}</span>
-                          </div>
-                          <div>
-                            {move || {
-                              if let Some(t) = banner.get() {
-                                let thumbnail = RwSignal::new(String::from(""));
-                                let h = t.inner().to_string();
-                                thumbnail.set(h);
-                                view! {
-                                  <div class="py-2 px-4">
-                                    <div class="block">
-                                      <img
-                                        loading="lazy"
-                                        class={move || {
-                                          format!("w-auto{}", if thumbnail.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" })
-                                        }}
-                                        src={move || thumbnail.get()}
-                                        on:error={move |_e| {
-                                          thumbnail.set("/lemmy.svg".into());
-                                        }}
-                                      />
-                                    </div>
-                                  </div>
-                                }
-                                  .into_any()
-                              } else {
-                                view! {}.into_any()
-                              }
-                            }}
-                          </div>
-                          <div>
-                            {move || {
-                              if let Some(t) = avatar.get() {
-                                let thumbnail = RwSignal::new(String::from(""));
-                                let h = t.inner().to_string();
-                                thumbnail.set(h);
-                                view! {
-                                  <div class="py-2 px-4">
-                                    <div class="block">
-                                      <img
-                                        loading="lazy"
-                                        class={move || {
-                                          format!("max-w-24{}", if thumbnail.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" })
-                                        }}
-                                        src={move || thumbnail.get()}
-                                        on:error={move |_e| {
-                                          thumbnail.set("/lemmy.svg".into());
-                                        }}
-                                      />
-                                    </div>
-                                  </div>
-                                }
-                                  .into_any()
-                              } else {
-                                view! {
-                                  <div class="py-2 px-4">
-                                    <div class="block">
-                                      <img class="h-16" src="/lemmy.svg" />
-                                    </div>
-                                  </div>
-                                }
-                                  .into_any()
-                              }
-                            }}
-                          </div>
-                          <div class="px-4 my-2">
-                            <div class="select-none prose" inner_html={bio} />
-                          </div>
-                        </div>
-                      }
-                        .into_any()
-                    } else {
-                      view! {}.into_any()
-                    }}
-                    {
-                      #[cfg(not(feature = "ssr"))] loading.set(false);
-                      next_page_cursor.set((r.0 + 1, o.posts.len() + o.comments.len()));
-                      if r.0 == 1 && o.posts.len() + o.comments.len() == 0 {
-                        view! {
-                          <Info loading={true} description={t_string!(i18n, no_user_activity).to_string()} />
-                        }.into_any()
-                      } else {
-                        view! {
-                          <For each={move || all_posts.get()} key={|pc| pc.post.post.id} let:pc>
-                            <div class="pt-4 odd:bg-base-300">
-                              <Listing hide=false post_view={pc.post} post_number=0 />
-                              <For each={move || pc.comments.get()} key={|cv| cv.comment.id} let:cv>
-                                <div class="pt-2 pr-4 pb-2 pl-4">
-                                  <Comment
-                                    parent_comment_id=0
-                                    hidden_comments={RwSignal::new(vec![])}
-                                    comment={cv.clone().into()}
-                                    comments={vec![].into()}
-                                    level=0
-                                    now_in_millis
-                                    highlight_user_id={RwSignal::new(None)}
-                                    post_id={Signal::derive(move || Some(cv.post.id.0))}
-                                    selected_drag_offset={RwSignal::new((0, 0f64, 0))}
-                                  />
-                                </div>
-                              </For>
-                            </div>
-                          </For>
-                        }.into_any()
+                        user_post_cache
+                          .update(move |sc| {
+                            sc.insert((page_index, form_clone, auth_cookie), (fetched_at, result_clone));
+                          });
+                      });
+                      let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
+                      if iw > 768f64 {
+                        if let Some(c) = cancel_handle.get_untracked() {
+                          c.clear();
+                        }
+                        cancel_handle
+                          .set(
+                            set_timeout_with_handle(
+                                move || {
+                                  if let Some(s) = on_scroll_element.get() {
+                                    spawn_local_scoped(async move {
+                                      if let Ok(Some(l)) =
+                                        IndexedDb::get_scroll_position(use_location().pathname.get(), use_query_map().get().to_query_string()).await
+                                      {
+                                        s.set_scroll_left(l);
+                                      }
+                                    });
+                                  }
+                                },
+                                std::time::Duration::new(0, 750_000_000),
+                              )
+                              .ok(),
+                          );
                       }
                     }
-                    {
-                      let (key, len) = (r.0 + 1, o.posts.len());
-                      if key > 1 && len > 0 {
-                        let mut st: Vec<(usize)> = vec![key];
-                        let mut query_params = use_query_map().get();
-                        query_params.remove("page");
-                        query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-                        #[cfg(not(feature = "ssr"))]
-                        set_timeout_with_handle(
-                          move || {
-                            show_next.set(false);
-                          },
-                          std::time::Duration::new(0, 50_000_000),
-                        );
-                        #[cfg(not(feature = "ssr"))]
-                        set_timeout_with_handle(
-                          move || {
-                            if is_visible.get() {
-                              if let Some(c) = cancel_handle.get_untracked() {
-                                c.clear();
-                              }
-                              let (key, len) = next_page_cursor.get_untracked();
-                              if key > 1 && len > 0 {
-                                let mut st = ssr_page();
-                                if st.iter().find(|s| **s == key).is_none() {
-                                  st.push(key);
-                                }
-                                let mut query_params = query.get_untracked();
-                                query_params.remove("page");
-                                query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-                                let params = query_params.clone();
-                                spawn_local_scoped(async move {
-                                  if let Some(se) = on_scroll_element.get_untracked() {
-                                    let _ = IndexedDb::save_scroll_position(use_location().pathname.get_untracked(), params.to_query_string(), se.scroll_left()).await;
-                                  }
-                                  let navigate = use_navigate();
-                                  navigate(
-                                    &format!("{}{}", use_location().pathname.get_untracked(), query_params.to_query_string()),
-                                    NavigateOptions { resolve: true, replace: true, scroll: false, state: State::default() },
-                                  );
-                                });
-                              }
+                    let t = o.clone();
+                    let name = html_escape::encode_safe(&t.person_view.person.display_name.unwrap_or(t.person_view.person.name)).to_string();
+                    let banner = Memo::new(move |_| t.person_view.person.banner.clone());
+                    let avatar = Memo::new(move |_| t.person_view.person.avatar.clone());
+                    let all_posts = RwSignal::new(
+                      t
+                        .posts
+                        .iter()
+                        .map(|p| PostWithComments {
+                          post: p.clone(),
+                          comments: RwSignal::new(Vec::new()),
+                        })
+                        .collect::<Vec<_>>(),
+                    );
+                    let comments = o.comments.clone();
+                    all_posts
+                      .update(|ap| {
+                        for c in comments {
+                          if let Some(pc) = ap.iter_mut().find(|p| p.post.post.id == c.post.id) {
+                            pc.comments.update(|comments| comments.push(c));
+                          } else {
+                            ap.push(PostWithComments {
+                              post: PostView {
+                                post: c.post.clone(),
+                                creator: c.creator.clone(),
+                                community: c.community.clone(),
+                                creator_banned_from_community: false,
+                                creator_is_moderator: false,
+                                creator_is_admin: false,
+                                counts: PostAggregates {
+                                  post_id: PostId(0),
+                                  comments: 0,
+                                  score: 0,
+                                  upvotes: 0,
+                                  downvotes: 0,
+                                  published: std::time::SystemTime::from(jiff::Timestamp::now()).into(),
+                                  newest_comment_time_necro: std::time::SystemTime::from(jiff::Timestamp::now()).into(),
+                                  newest_comment_time: std::time::SystemTime::from(jiff::Timestamp::now()).into(),
+                                  featured_community: false,
+                                  featured_local: false,
+                                  hot_rank: 0f64,
+                                  hot_rank_active: 0f64,
+                                  community_id: c.community.id,
+                                  creator_id: c.creator.id,
+                                  controversy_rank: 0f64,
+                                  instance_id: InstanceId(0),
+                                  scaled_rank: 0f64,
+                                },
+                                subscribed: SubscribedType::NotSubscribed,
+                                saved: false,
+                                read: false,
+                                creator_blocked: false,
+                                my_vote: None,
+                                unread_comments: 0,
+                                banned_from_community: false,
+                                hidden: false,
+                                image_details: None,
+                              },
+                              comments: RwSignal::new(vec![c]),
+                            });
+                          }
+                        }
+                        ap.sort_by(|a, b| a.post.post.published.cmp(&b.post.post.published).reverse());
+                      });
+                    let bio = if let Some(bio) = t.person_view.person.bio {
+                      markdown_to_html(&bio, true)
+                    } else {
+                      String::new()
+                    };
 
-                            };
-                          },
-                          std::time::Duration::new(0, 500_000_000),
-                        );
+                    view! {
+                      {if *page_number == 1 {
                         view! {
-                          <Show when={move || { show_next.get() }} fallback={|| {}}>
-                            <div class="flex py-4 px-8 justify-end{}">
-                              <A href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())} attr:class="btn btn-soft">
-                                {t!(i18n, next)}
-                              </A>
+                          <div class="break-inside-avoid">
+                            <div class="px-4 my-2">
+                              <span class="overflow-y-auto text-2xl font-extrabold wrap-anywhere">{name}</span>
                             </div>
-                          </Show>
-                        }.into_any()
+                            <div>
+                              {move || {
+                                if let Some(t) = banner.get() {
+                                  let thumbnail = RwSignal::new(String::from(""));
+                                  let h = t.inner().to_string();
+                                  thumbnail.set(h);
+                                  view! {
+                                    <div class="py-2 px-4">
+                                      <div class="block">
+                                        <img
+                                          loading="lazy"
+                                          class={move || {
+                                            format!("w-auto{}", if thumbnail.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" })
+                                          }}
+                                          src={move || thumbnail.get()}
+                                          on:error={move |_e| {
+                                            thumbnail.set("/lemmy.svg".into());
+                                          }}
+                                        />
+                                      </div>
+                                    </div>
+                                  }
+                                    .into_any()
+                                } else {
+                                  view! {}.into_any()
+                                }
+                              }}
+                            </div>
+                            <div>
+                              {move || {
+                                if let Some(t) = avatar.get() {
+                                  let thumbnail = RwSignal::new(String::from(""));
+                                  let h = t.inner().to_string();
+                                  thumbnail.set(h);
+                                  view! {
+                                    <div class="py-2 px-4">
+                                      <div class="block">
+                                        <img
+                                          loading="lazy"
+                                          class={move || {
+                                            format!("max-w-24{}", if thumbnail.get().eq(&"/lemmy.svg".to_owned()) { " h-16" } else { "" })
+                                          }}
+                                          src={move || thumbnail.get()}
+                                          on:error={move |_e| {
+                                            thumbnail.set("/lemmy.svg".into());
+                                          }}
+                                        />
+                                      </div>
+                                    </div>
+                                  }
+                                    .into_any()
+                                } else {
+                                  view! {
+                                    <div class="py-2 px-4">
+                                      <div class="block">
+                                        <img class="h-16" src="/lemmy.svg" />
+                                      </div>
+                                    </div>
+                                  }
+                                    .into_any()
+                                }
+                              }}
+                            </div>
+                            <div class="px-4 my-2">
+                              <div class="select-none prose" inner_html={bio} />
+                            </div>
+                          </div>
+                        }
+                          .into_any()
                       } else {
                         view! {}.into_any()
+                      }}
+                      {
+                        #[cfg(not(feature = "ssr"))] loading.set(false);
+                        next_page_cursor.set((*page_number + 1, o.posts.len() + o.comments.len()));
+                        if *page_number == 1 && o.posts.len() + o.comments.len() == 0 {
+                          view! {
+                            <Info loading={true} description={t_string!(i18n, no_user_activity).to_string()} />
+                          }.into_any()
+                        } else {
+                          view! {
+                            <For each={move || all_posts.get()} key={|pc| pc.post.post.id} let:pc>
+                              <div class="pt-4 odd:bg-base-300">
+                                <Listing hide=false post_view={pc.post} post_number=0 />
+                                <For each={move || pc.comments.get()} key={|cv| cv.comment.id} let:cv>
+                                  <div class="pt-2 pr-4 pb-2 pl-4">
+                                    <Comment
+                                      parent_comment_id=0
+                                      hidden_comments={RwSignal::new(vec![])}
+                                      comment={cv.clone().into()}
+                                      comments={vec![].into()}
+                                      level=0
+                                      now_in_millis
+                                      highlight_user_id={RwSignal::new(None)}
+                                      post_id={Signal::derive(move || Some(cv.post.id.0))}
+                                      selected_drag_offset={RwSignal::new((0, 0f64, 0))}
+                                    />
+                                  </div>
+                                </For>
+                              </div>
+                            </For>
+                          }.into_any()
+                        }
                       }
-                    }
-                  }.into_any()
+                      {
+                        let (key, len) = (*page_number + 1, o.posts.len());
+                        if key > 1 && len > 0 {
+                          let mut st: Vec<(usize)> = vec![key];
+                          let mut query_params = use_query_map().get();
+                          query_params.remove("page");
+                          query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+                          #[cfg(not(feature = "ssr"))]
+                          set_timeout_with_handle(
+                            move || {
+                              show_next.set(false);
+                            },
+                            std::time::Duration::new(0, 50_000_000),
+                          );
+                          #[cfg(not(feature = "ssr"))]
+                          set_timeout_with_handle(
+                            move || {
+                              if is_visible.get() {
+                                if let Some(c) = cancel_handle.get_untracked() {
+                                  c.clear();
+                                }
+                                let (key, len) = next_page_cursor.get_untracked();
+                                if key > 1 && len > 0 {
+                                  let mut st = ssr_page();
+                                  if st.iter().find(|s| **s == key).is_none() {
+                                    st.push(key);
+                                  }
+                                  let mut query_params = query.get_untracked();
+                                  query_params.remove("page");
+                                  query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+                                  let params = query_params.clone();
+                                  spawn_local_scoped(async move {
+                                    if let Some(se) = on_scroll_element.get_untracked() {
+                                      let _ = IndexedDb::save_scroll_position(use_location().pathname.get_untracked(), params.to_query_string(), se.scroll_left()).await;
+                                    }
+                                    let navigate = use_navigate();
+                                    navigate(
+                                      &format!("{}{}", use_location().pathname.get_untracked(), query_params.to_query_string()),
+                                      NavigateOptions { resolve: true, replace: true, scroll: false, state: State::default() },
+                                    );
+                                  });
+                                }
+
+                              };
+                            },
+                            std::time::Duration::new(0, 500_000_000),
+                          );
+                          view! {
+                            <Show when={move || { show_next.get() }} fallback={|| {}}>
+                              <div class="flex py-4 px-8 justify-end{}">
+                                <A href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())} attr:class="btn btn-soft">
+                                  {t!(i18n, next)}
+                                </A>
+                              </div>
+                            </Show>
+                          }.into_any()
+                        } else {
+                          view! {}.into_any()
+                        }
+                      }
+                    }.into_any()
+                  }
+                  Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
+                    #[cfg(not(feature = "ssr"))] loading.set(false);
+                    view! { <Warning on_retry_click={on_retry_click} /> }.into_any()
+                  }
+                  Err(e) => {
+                    #[cfg(not(feature = "ssr"))] loading.set(false);
+                    error!("{:#?}", e);
+                    view! { <Error description={t_string!(i18n, error_loading_posts).to_string()} error={e.clone()} on_retry_click={on_retry_click} /> }.into_any()
+                  }
                 }
-                Err(LemmyAppError { error_type: LemmyAppErrorType::OfflineError, .. }) => {
-                  #[cfg(not(feature = "ssr"))] loading.set(false);
-                  view! { <Warning on_retry_click={on_retry_click} /> }.into_any()
-                }
-                Err(e) => {
-                  #[cfg(not(feature = "ssr"))] loading.set(false);
-                  error!("{:#?}", e);
-                  view! { <Error description={t_string!(i18n, error_loading_posts).to_string()} error={e} on_retry_click={on_retry_click} /> }.into_any()
-                }
-              }}
+              }
             </For>
           </Transition>
           <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />

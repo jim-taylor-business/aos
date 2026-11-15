@@ -40,7 +40,7 @@ fn main() {
 
   runtime.block_on(async {
     use axum::Router;
-    use axum::routing::get;
+    // use axum::routing::get;
     use axum::routing::post;
     use leptos::config::get_configuration;
     use leptos_axum::{LeptosRoutes, generate_route_list};

@@ -189,31 +189,33 @@ pub fn Post() -> impl IntoView {
                     }
                       .into_any()
                   }
-                  Some(Some(Ok(res))) => {
+                  Some(Some(Ok((form, response)))) => {
+                    // let (form, response) = res;
                     #[cfg(not(feature = "ssr"))]
                     {
-                      let rw = res.1.clone();
-                      let fm = res.0.clone();
-                      let post_view = RwSignal::new(rw.post_view.clone());
+                      let response_clone = response.clone();
+                      let form_clone = form.clone();
+                      let post_view = RwSignal::new(response_clone.post_view.clone());
                       spawn_local_scoped(async move {
                         if let Ok(d) = IndexedDb::new().await {
-                          if let Ok(_c) = d.set(&fm, &rw).await {}
+                          let _ = d.set(&form_clone, &response_clone).await;
                         }
                         response_cache
                           .update(|rc| {
                             rc.iter_mut()
-                              .for_each(|(f, r)| {
-                                if let (_, Ok(w)) = r {
+                              .for_each(|((_, form, _, _), (_, cached_result))| {
+                                // let (_, form, _, _) = f;
+                                // let (_, cached_result) = r;
+                                if let Ok(w) = cached_result {
                                   let id = post_view.get().post.id.0;
                                   for p in w.posts.iter_mut() {
                                     if p.post.id.0 == id {
                                       *p = post_view.get();
-                                      let result_clone = r.1.clone();
-                                      let form_clone = f.1.clone();
+                                      let result_clone = cached_result.clone();
+                                      let form_clone = form.clone();
                                       spawn_local_scoped(async move {
                                         if let Ok(d) = IndexedDb::new().await {
-                                          if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&form_clone, &result_clone).await
-                                          {}
+                                          let _ = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&form_clone, &result_clone).await;
                                         }
                                       });
                                       break;
@@ -224,9 +226,9 @@ pub fn Post() -> impl IntoView {
                           });
                       });
                     }
-                    post_view.set(Some(res.1.clone()));
-                    let post_response = Memo::new(move |_| res.1.clone());
-                    // let post_response_view = Memo::new(move |_| res.1.post_view.clone());
+                    post_view.set(Some(response.clone()));
+                    let post_response_value = response.clone();
+                    let post_response = Memo::new(move |_| post_response_value.clone());
                     let text = if let Some(b) = post_response.get().post_view.post.body.clone() {
                       if b.len() > 0 { Some(b) } else { post_response.get().post_view.post.embed_description.clone() }
                     } else {
@@ -492,14 +494,15 @@ pub fn Post() -> impl IntoView {
                 comments_resource
                   .get()
                   .unwrap_or(None)
-                  .map(|res| {
+                  .map(|(form, response)| {
+                    // let (form, response) = res;
                     #[cfg(not(feature = "ssr"))]
                     {
-                      let rw = res.1.clone();
-                      let fm = res.0.clone();
+                      let response_clone = response.clone();
+                      let form_clone = form.clone();
                       spawn_local_scoped(async move {
                         if let Ok(d) = IndexedDb::new().await {
-                          if let Ok(_c) = d.set(&fm, &rw).await {}
+                          if let Ok(_c) = d.set(&form_clone, &response_clone).await {}
                         }
                       });
                       let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
@@ -527,10 +530,10 @@ pub fn Post() -> impl IntoView {
                           );
                       }
                     }
-                    let res = res.1.clone();
+                    // let res =onse.clone();
                     view! {
                       <div class="w-full before:content-[''] before:block before:w-24 before:overflow-hidden">
-                        <Comments comments={res.comments.into()} post_id />
+                        <Comments comments={response.comments.into()} post_id />
                       </div>
                     }
                   })
