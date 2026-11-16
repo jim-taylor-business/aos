@@ -323,10 +323,10 @@ pub fn Search(
               }
             </For>
           </Transition>
-          <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
           {move || {
             view! { <Info loading={loading.get()} /> }
           }}
+          <div node_ref={intersection_element} class="block bg-transparent h-[1px]" />
         </div>
       </div>
     </main>
