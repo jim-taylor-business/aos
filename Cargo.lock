@@ -74,8 +74,10 @@ dependencies = [
  "lemmy_api_common",
  "leptos",
  "leptos-use-cookie",
+ "leptos-use-document",
  "leptos-use-document-visibility",
  "leptos-use-element-visibility",
+ "leptos-use-event-listener",
  "leptos-use-intersection-observer",
  "leptos-use-scroll",
  "leptos_axum",
@@ -2402,6 +2404,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e6377405eeb7755e1b6f3278a6c3fb62cd9824c3825656c542f77462c7fd314c"
 dependencies = [
  "leptos",
+]
+
+[[package]]
+name = "leptos-use-document"
+version = "0.20.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23c82780c382e9c4c7d94c5e09c75e57383c18fc41bbff50bf8275ac1a4ca80b"
+dependencies = [
+ "cfg-if",
+ "js-sys",
+ "leptos",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]

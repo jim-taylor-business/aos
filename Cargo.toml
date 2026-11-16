@@ -36,6 +36,9 @@ leptos-use-document-visibility = { version = "~0.20", optional = true }
 leptos-use-intersection-observer = { version = "~0.20", optional = true }
 leptos-use-scroll = { version = "~0.20", optional = true }
 leptos-use-element-visibility = { version = "~0.20", optional = true }
+leptos-use-event-listener = { version = "~0.20", optional = true }
+leptos-use-document = { version = "~0.20", optional = true }
+
 # leptos-use = { path = "../leptos-use", optional = true }
 # leptos-use = { git = "https://github.com/Synphonyte/leptos-use.git", commit = "355b2af2", optional = true }
 # leptos-use = { git = "https://github.com/jim-taylor-business/leptos-use.git", branch = "deploy_demo", optional = true }
@@ -48,7 +51,7 @@ serde = { version = "1", features = ["derive"] }
 serde_urlencoded = "0"
 serde_json = "1"
 cookie = "0"
-web-sys = { version = "0", features = ["AbortController", "AbortSignal"] }
+web-sys = { version = "0", features = ["Selection", "AbortController", "AbortSignal"] }
 http = "1"
 pulldown-cmark = { branch = "deploy_demo", git = "https://github.com/jim-taylor-business/pulldown-cmark.git" }
 html-escape = "0"
@@ -92,6 +95,8 @@ csr = [
   "dep:leptos-use-intersection-observer",
   "dep:leptos-use-scroll",
   "dep:leptos-use-element-visibility",
+  "dep:leptos-use-event-listener",
+  "dep:leptos-use-document",
   "leptos_i18n/csr",
   "dep:leptos-use-cookie",
   "dep:wasm-bindgen",
@@ -106,6 +111,8 @@ hydrate = [
   "dep:leptos-use-intersection-observer",
   "dep:leptos-use-scroll",
   "dep:leptos-use-element-visibility",
+  "dep:leptos-use-event-listener",
+  "dep:leptos-use-document",
   "leptos_i18n/hydrate",
   "dep:leptos-use-cookie",
   "dep:wasm-bindgen",

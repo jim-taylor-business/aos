@@ -19,6 +19,12 @@ pub mod toolbar;
 pub mod user;
 
 use crate::prelude::*;
+#[cfg(not(feature = "ssr"))]
+use leptos::ev::selectionchange;
+#[cfg(not(feature = "ssr"))]
+use leptos_use_document::use_document;
+#[cfg(not(feature = "ssr"))]
+use leptos_use_event_listener::use_event_listener;
 
 pub fn html_template(options: LeptosOptions) -> impl IntoView {
   view! {
@@ -154,6 +160,24 @@ pub fn App() -> impl IntoView {
 
   provide_context(ssr_site);
   provide_context(RwSignal::new(PassedUrl(Some("face".to_string()))));
+
+  let selected_text = RwSignal::new(SelectedText(None));
+  provide_context(selected_text);
+
+  #[cfg(not(feature = "ssr"))]
+  let _selection_listener = use_event_listener(use_document(), selectionchange, move |e| {
+    // let document_selection_converted_to_rust_string =
+    let selection = document()
+      .get_selection()
+      .ok()
+      .flatten()
+      .map(|s| s.to_string().to_string().into())
+      .map(|s: String| if s.len() > 0 { Some(s) } else { None })
+      .flatten();
+    // log!("Selected text: {:?}", selection);
+    // let convert_option_string_to_none_if_len_is_zero = sel.map(|s: String| if s.len() > 0 { Some(s) } else { None }).flatten();
+    selected_text.set(SelectedText(selection));
+  });
 
   view! {
     <I18nContextProvider cookie_name="i18n_pref_locale">

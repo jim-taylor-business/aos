@@ -261,10 +261,10 @@ pub fn Post() -> impl IntoView {
 
                     view! {
                       <Title text={post_response.get().post_view.post.name} />
-                      <div>
+                      <div class="px-4">
                         <PostToolbar post_view={post_response.get().post_view} reply_show content post_id />
                       </div>
-                      <div class="py-2 px-4">
+                      <div class="my-2 px-4">
                         <span
                           on:click={move |e: MouseEvent| {
                             if let Some(t) = e.target() {
@@ -282,7 +282,7 @@ pub fn Post() -> impl IntoView {
                           class="overflow-y-auto text-2xl font-extrabold wrap-anywhere"
                           inner_html={title_encoded}
                         />
-                        <span class="block mb-1 wrap-anywhere text-md">
+                        <span class="block pt-2 wrap-anywhere text-md">
                           <span>{abbr_duration}</span>
                           {t!(i18n, post_by)}
                           <A
@@ -341,7 +341,7 @@ pub fn Post() -> impl IntoView {
                         </span>
                       </div>
                       <a
-                        class={move || { format!("float-left{}", if thumbnail_url.get().is_none() && url.get().is_none() { " hidden" } else { "" }) }}
+                        class={move || { format!("my-2 mb-3 float-left{}", if thumbnail_url.get().is_none() && url.get().is_none() { " hidden" } else { "" }) }}
                         target="_blank"
                         href={move || {
                           if let Some(d) = url.get() { d.inner().to_string() } else { format!("/p/{}", post_response.get().post_view.post.id) }
@@ -352,7 +352,7 @@ pub fn Post() -> impl IntoView {
                             let h = t.inner().to_string();
                             thumbnail.set(h);
                             view! {
-                              <div class="py-2 px-4">
+                              <div class="px-4">
                                 <div class="block">
                                   <img
                                     loading="lazy"
@@ -368,7 +368,7 @@ pub fn Post() -> impl IntoView {
                               .into_any()
                           } else {
                             view! {
-                              <div class="py-2 px-4">
+                              <div class="px-4">
                                 <div class="block">
                                   <img class="h-16" src="/lemmy.svg" />
                                 </div>
@@ -382,9 +382,9 @@ pub fn Post() -> impl IntoView {
                         let safe_html = markdown_to_html(content, true);
                         Some(
                           view! {
-                            <div class="pr-4 pl-4 before:content-[''] before:block before:w-24 before:overflow-hidden">
+                            <div class="my-2 mb-3 pr-4 pl-4 before:content-[''] before:block before:w-24 before:overflow-hidden">
                               <div
-                                class="py-2"
+                                // class="py-2"
                                 on:click={move |e: MouseEvent| {
                                   if let Some(t) = e.target() {
                                     if let Some(i) = t.dyn_ref::<HtmlImageElement>() {
@@ -524,7 +524,7 @@ pub fn Post() -> impl IntoView {
                                     });
                                   }
                                 },
-                                std::time::Duration::new(0, 750_000_000),
+                                std::time::Duration::new(0, 0),
                               )
                               .ok(),
                           );

@@ -447,7 +447,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                         </Show>
                       </div>
                       <div class="py-2 px-4" style={move || { if show_rules.get() { "display: block;" } else { "display: none;" } }}>
-                        <div class="select-none prose" inner_html={description} />
+                        <div class="prose" inner_html={description} />
                       </div>
                     </div>
                   }
@@ -497,7 +497,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                                     });
                                   }
                                 },
-                                std::time::Duration::new(0, 750_000_000),
+                                std::time::Duration::new(0, 0),
                               )
                               .ok(),
                           );
@@ -512,7 +512,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                                 move || {
                                   post_list_resource.refetch();
                                 },
-                                std::time::Duration::new(0, 750_000_000),
+                                std::time::Duration::new(0, 0),
                               )
                               .ok(),
                           );
@@ -540,47 +540,52 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                               move || {
                                 show_next.set(false);
                               },
-                              std::time::Duration::new(0, 50_000_000),
+                              std::time::Duration::new(0, 0),
                             );
                             #[cfg(not(feature = "ssr"))]
-                            set_timeout_with_handle(
-                              move || {
-                                if is_visible.get() {
-                                  if let Some(c) = cancel_handle.get_untracked() {
-                                    c.clear();
-                                  }
-                                  let (key, page_cursor) = next_page_cursor.get_untracked();
-                                  if let Some(PaginationCursor(page_id)) = page_cursor {
-                                    let mut st = ssr_page();
-                                    if st.len() == 0 {
-                                      st.push((0usize, "".into()));
-                                    }
-                                    if st.iter().find(|s| {
-                                      let (page_index, cursor) = &**s;
-                                      *page_index == key && cursor == &page_id
-                                    }).is_none() {
-                                      st.push((key, page_id));
-                                    }
-                                    let mut query_params = query.get_untracked();;
-                                    query_params.remove("page");
-                                    query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-                                    let params = query_params.clone();
-                                    spawn_local_scoped(async move {
-                                      if let Some(se) = on_scroll_element.get_untracked() {
-                                        let _ = IndexedDb::save_scroll_position(use_location().pathname.get_untracked(), params.to_query_string(), se.scroll_left()).await;
+                            {
+                              let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
+                              if !(iw < 768f64 || do_not_render_scroll || csr_cache_render) {
+                                set_timeout_with_handle(
+                                  move || {
+                                    if is_visible.get() {
+                                      if let Some(c) = cancel_handle.get_untracked() {
+                                        c.clear();
                                       }
-                                      let navigate = use_navigate();
-                                      navigate(
-                                        &format!("{}{}", use_location().pathname.get_untracked(), query_params.to_query_string()),
-                                        NavigateOptions { resolve: true, replace: true, scroll: false, state: State::default() },
-                                      );
-                                    });
-                                  }
+                                      let (key, page_cursor) = next_page_cursor.get_untracked();
+                                      if let Some(PaginationCursor(page_id)) = page_cursor {
+                                        let mut st = ssr_page();
+                                        if st.len() == 0 {
+                                          st.push((0usize, "".into()));
+                                        }
+                                        if st.iter().find(|s| {
+                                          let (page_index, cursor) = &**s;
+                                          *page_index == key && cursor == &page_id
+                                        }).is_none() {
+                                          st.push((key, page_id));
+                                        }
+                                        let mut query_params = query.get_untracked();;
+                                        query_params.remove("page");
+                                        query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+                                        let params = query_params.clone();
+                                        spawn_local_scoped(async move {
+                                          if let Some(se) = on_scroll_element.get_untracked() {
+                                            let _ = IndexedDb::save_scroll_position(use_location().pathname.get_untracked(), params.to_query_string(), se.scroll_left()).await;
+                                          }
+                                          let navigate = use_navigate();
+                                          navigate(
+                                            &format!("{}{}", use_location().pathname.get_untracked(), query_params.to_query_string()),
+                                            NavigateOptions { resolve: true, replace: true, scroll: false, state: State::default() },
+                                          );
+                                        });
+                                      }
 
-                                };
-                              },
-                              std::time::Duration::new(0, 500_000_000),
-                            );
+                                    };
+                                  },
+                                  std::time::Duration::new(0, 0),
+                                );
+                              }
+                            }
                             view! {
                               <Show when={move || { show_next.get() }} fallback={|| {}}>
                                 <div class="flex py-4 px-8 justify-end{}">

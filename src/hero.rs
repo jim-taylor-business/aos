@@ -192,7 +192,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                         let h = t.inner().to_string();
                         thumbnail.set(h);
                         view! {
-                          <div class="py-2 px-4">
+                          <div class="pt-1 pb-2 px-4">
                             <div class="block">
                               <img
                                 loading="lazy"
@@ -208,7 +208,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                           .into_any()
                       } else {
                         view! {
-                          <div class="py-2 px-4">
+                          <div class="pt-1 pb-2 px-4">
                             <div class="block">
                               // <Icon class={"h-24".into()} icon={Icon::Link} />
                               <img class="h-16" src="/lemmy.svg" />
@@ -219,7 +219,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                       }
                     }}
                   </a>
-                  <div class="py-2">
+                  <div class="pt-1 pb-1 px-4">
                     <PostToolbar
                       post_view={post_response.get().post_view}
                       reply_show
@@ -227,7 +227,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                       post_id={Signal::derive(move || Some(post_response.get().post_view.post.id.0))}
                     />
                   </div>
-                  <div class="py-2 px-4">
+                  <div class="pt-1 px-4">
                     <span class="block mb-1 wrap-anywhere text-md">
                       <span>{abbr_duration}</span>
                       {t!(i18n, post_by)}

@@ -1,4 +1,5 @@
 use crate::prelude::*;
+
 #[cfg(not(feature = "ssr"))]
 use leptos_use_intersection_observer::{UseIntersectionObserverOptions, use_intersection_observer_with_options};
 
@@ -57,6 +58,7 @@ pub fn Comment(
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   let online = expect_context::<RwSignal<OnlineSetter>>();
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
+  let selected_text = expect_context::<RwSignal<SelectedText>>();
 
   // let is_there = Memo::new(move |_| {
   //   children.get().iter().find(|ct| ct.comment.id.0 == selected_drag_offset.get().2).is_some()
@@ -506,14 +508,16 @@ pub fn Comment(
                 }
               } else if let Some(s) = t.dyn_ref::<web_sys::Element>() {
                 if s.tag_name().ne("SUMMARY") {
-                  if level == 0 || comment_view.get().counts.child_count as usize == (children.get().len() + descendants.get().len()) {
+                  // log!("selected text: {:?}", selected_text.get().0);
+                  if (level == 0 || comment_view.get().counts.child_count as usize == (children.get().len() + descendants.get().len())) && selected_text.get().0.is_none() {
                     toggle_hidden(comment_view.get().comment.id.0);
                   } else {
                     remove_hidden(comment_view.get().comment.id.0);
                   }
                 }
               } else {
-                if level == 0 || comment_view.get().counts.child_count as usize == (children.get().len() + descendants.get().len()) {
+                // log!("selected text: {:?}", selected_text.get().0);
+                if (level == 0 || comment_view.get().counts.child_count as usize == (children.get().len() + descendants.get().len())) && selected_text.get().0.is_none() {
                   toggle_hidden(comment_view.get().comment.id.0);
                 } else {
                   remove_hidden(comment_view.get().comment.id.0);
@@ -521,7 +525,7 @@ pub fn Comment(
               }
             }
           }
-          if level == 0 || comment_view.get().counts.child_count as usize == (children.get().len() + descendants.get().len()) {
+          if (level == 0 || comment_view.get().counts.child_count as usize == (children.get().len() + descendants.get().len())) && selected_text.get().0.is_none() {
           } else {
             load_comments();
           }
@@ -584,7 +588,14 @@ pub fn Comment(
             h.clear();
           }
         }}
-        on:mousemove={move |e: MouseEvent| {}}
+        on:mousemove={move |e: MouseEvent| {
+          if selected_text.get().0.is_some() {
+            if let Some(h) = pointer_still_handle.get_value() {
+              h.clear();
+            }
+          }
+          // log!("Mouse move: buttons: {}, still_down: {} {:?}", e.buttons(), still_down.get(), selected_text.get().0);
+        }}
       >
         <Show
           when={move || !(comment_view.get().creator_banned_from_community || comment_view.get().creator.banned)}
@@ -604,7 +615,7 @@ pub fn Comment(
             view! {
               <div
                 lang={move || languages.get().get(comment_view.get().comment.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )}
-                class={move || format!("prose select-none{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html}
+                class={move || format!("prose{}", if highlight_show.get() { " brightness-200" } else { "" })} inner_html={safe_html}
               />
             }.into_any()
           }}

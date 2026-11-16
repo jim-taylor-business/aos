@@ -179,7 +179,7 @@ pub fn User() -> impl IntoView {
                                     });
                                   }
                                 },
-                                std::time::Duration::new(0, 750_000_000),
+                                std::time::Duration::new(0, 0),
                               )
                               .ok(),
                           );
@@ -326,7 +326,7 @@ pub fn User() -> impl IntoView {
                               }}
                             </div>
                             <div class="px-4 my-2">
-                              <div class="select-none prose" inner_html={bio} />
+                              <div class="prose" inner_html={bio} />
                             </div>
                           </div>
                         }
@@ -378,7 +378,7 @@ pub fn User() -> impl IntoView {
                             move || {
                               show_next.set(false);
                             },
-                            std::time::Duration::new(0, 50_000_000),
+                            std::time::Duration::new(0, 0),
                           );
                           #[cfg(not(feature = "ssr"))]
                           set_timeout_with_handle(
@@ -411,7 +411,7 @@ pub fn User() -> impl IntoView {
 
                               };
                             },
-                            std::time::Duration::new(0, 500_000_000),
+                            std::time::Duration::new(0, 0),
                           );
                           view! {
                             <Show when={move || { show_next.get() }} fallback={|| {}}>

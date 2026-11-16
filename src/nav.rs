@@ -1161,7 +1161,7 @@ pub fn TopNav(
                           move || {
                             input_focus.set(InputFocusState::Unfocused);
                           },
-                          std::time::Duration::new(0, 750_000_000),
+                          std::time::Duration::new(0, 0),
                         )
                         .ok();
                     }}

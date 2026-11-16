@@ -219,7 +219,7 @@ pub fn Search(
                                     });
                                   }
                                 },
-                                std::time::Duration::new(0, 750_000_000),
+                                std::time::Duration::new(0, 0),
                               )
                               .ok(),
                           );
@@ -293,7 +293,7 @@ pub fn Search(
 
                               };
                             },
-                            std::time::Duration::new(0, 500_000_000),
+                            std::time::Duration::new(0, 0),
                           );
                           view! {
                             <Show when={move || { show_next.get() }} fallback={|| {}}>

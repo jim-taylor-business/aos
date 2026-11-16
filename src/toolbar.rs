@@ -291,8 +291,8 @@ pub fn PostToolbar(post_view: PostView, reply_show: RwSignal<bool>, content: RwS
                 .ok();
 
               view! {
-                <div class="px-4 break-inside-avoid">
-                  <div class="flex flex-wrap gap-x-2 items-center pb-2">
+                <div class="break-inside-avoid">
+                  <div class="flex flex-wrap gap-x-2 items-center">
                     <ActionForm action={vote_action} attr:class="flex items-center">
                       <input type="hidden" name="post_id" value={format!("{}", post_view.get_untracked().post.id)} />
                       <input type="hidden" name="score" value={move || if Some(1) == post_view.get().my_vote { 0 } else { 1 }} />

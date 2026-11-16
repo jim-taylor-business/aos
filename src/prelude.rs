@@ -39,10 +39,12 @@ pub use web_sys::{
 pub struct OnlineSetter(pub bool);
 #[derive(Clone, Debug, PartialEq)]
 pub struct NotificationsRefresh(pub bool);
-#[derive(Clone, PartialEq)]
-pub struct ResponseLoad(pub bool);
+// #[derive(Clone, PartialEq)]
+// pub struct ResponseLoad(pub bool);
 #[derive(Clone, Debug, Default)]
 pub struct PassedUrl(pub Option<String>);
+#[derive(Clone, Debug, Default)]
+pub struct SelectedText(pub Option<String>);
 
 #[derive(PartialEq, Eq, Clone, Debug, Serialize, Deserialize)]
 pub enum BanType {
@@ -146,8 +148,8 @@ pub fn handle_horizontal_scroll_wheel(scroll_element: NodeRef<Div>) -> impl FnMu
     gesture.last_ts = now;
 
     if !gesture.horizontal {
-      gesture.acc_x += dx.abs();
-      gesture.acc_y += dy.abs();
+      gesture.acc_x = gesture.acc_x + dx.abs();
+      gesture.acc_y = gesture.acc_y + if dy.abs() < 20.0 { dy.abs() * 2.0 } else { dy.abs() };
       if gesture.acc_x > 256.0 && gesture.acc_x > gesture.acc_y * 2.0 {
         gesture.horizontal = true;
       }
