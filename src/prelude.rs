@@ -88,7 +88,7 @@ pub fn markdown_to_html_with_options(content: &str, options: pulldown_cmark::Opt
 
 pub fn relative_time(published_at_millis: i64) -> String {
   let i18n = use_i18n();
-  let now_in_millis = jiff::Zoned::now().timestamp().as_millisecond();
+  let now_in_millis = jiff::Timestamp::now().as_millisecond();
   let difference = now_in_millis.saturating_sub(published_at_millis);
   let is_future = difference < 0;
   let elapsed_millis = difference.unsigned_abs();

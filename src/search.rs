@@ -140,7 +140,7 @@ pub fn Search(
           }
           continue;
         }
-        let t = jiff::Zoned::now().timestamp().as_millisecond();
+        let t = jiff::Timestamp::now().as_millisecond();
         let result = LemmyClient.search(form.clone()).await;
         match result {
           Ok(o) => {
@@ -166,7 +166,7 @@ pub fn Search(
   };
 
   let show_next = RwSignal::new(true);
-  let now_in_millis = RwSignal::new(u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0));
+  let now_in_millis = RwSignal::new(u64::try_from(jiff::Timestamp::now().as_millisecond()).unwrap_or(0));
 
   view! {
     <main class="flex flex-col">

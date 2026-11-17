@@ -112,7 +112,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
   let _scroll = use_scroll_with_options(on_scroll_element, UseScrollOptions::default().on_scroll(on_scroll));
 
   #[cfg(not(feature = "ssr"))]
-  fn load_cache(fc: GetPosts) -> impl std::future::Future<Output = Result<GetPostsResponse, LemmyAppError>> {
+  fn load_cache(fc: GetPosts) -> impl Future<Output = Result<GetPostsResponse, LemmyAppError>> {
     SendWrapper::new(async move {
       if let Ok(d) = IndexedDb::new().await {
         if let Ok(c) = d.get::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&fc).await {
@@ -190,7 +190,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                 new_pages.push((
                   page_index,
                   form.clone(),
-                  jiff::Zoned::now().timestamp().as_millisecond(),
+                  jiff::Timestamp::now().as_millisecond(),
                   Ok(o),
                   auth.clone(),
                   do_not_render_scroll,
@@ -229,7 +229,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
         new_pages.push((
           page_index,
           form.clone(),
-          jiff::Zoned::now().timestamp().as_millisecond(),
+          jiff::Timestamp::now().as_millisecond(),
           result,
           auth.clone(),
           do_not_render_scroll,
@@ -564,7 +564,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                                         }).is_none() {
                                           st.push((key, page_id));
                                         }
-                                        let mut query_params = query.get_untracked();;
+                                        let mut query_params = query.get_untracked();
                                         query_params.remove("page");
                                         query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
                                         let params = query_params.clone();

@@ -10,7 +10,7 @@ pub fn Comments(comments: Signal<Vec<CommentView>>, post_id: Signal<Option<i32>>
   let com_sig = RwSignal::new(comments_clone);
   let highlight_user_id = RwSignal::new(None);
 
-  let now_in_millis = RwSignal::new(u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0));
+  let now_in_millis = RwSignal::new(u64::try_from(jiff::Timestamp::now().as_millisecond()).unwrap_or(0));
 
   let hidden_comments: RwSignal<Vec<i32>> = RwSignal::new(vec![]);
 
@@ -335,7 +335,7 @@ pub fn Comment(
       match result {
         Ok(o) => {
           reply_show.set(false);
-          now_in_millis.set(u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0));
+          now_in_millis.set(u64::try_from(jiff::Timestamp::now().as_millisecond()).unwrap_or(0));
           children.update(|cs| cs.push(o.comment_view));
           comment_view.update(|v| {
             v.counts.child_count = v.counts.child_count + 1;

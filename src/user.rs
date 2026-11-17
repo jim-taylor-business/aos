@@ -93,7 +93,7 @@ pub fn User() -> impl IntoView {
           new_pages.push((p, form.clone(), t.clone(), Ok(r.clone()), get_auth_cookie.get_untracked()));
           continue;
         }
-        let t = jiff::Zoned::now().timestamp().as_millisecond();
+        let t = jiff::Timestamp::now().as_millisecond();
         let result = LemmyClient.get_user(form.clone()).await;
         match result {
           Ok(o) => {
@@ -120,7 +120,7 @@ pub fn User() -> impl IntoView {
 
   let show_next = RwSignal::new(true);
 
-  let now_in_millis = RwSignal::new(u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0));
+  let now_in_millis = RwSignal::new(u64::try_from(jiff::Timestamp::now().as_millisecond()).unwrap_or(0));
 
   #[derive(Debug, Clone)]
   struct PostWithComments {
@@ -220,9 +220,9 @@ pub fn User() -> impl IntoView {
                                   score: 0,
                                   upvotes: 0,
                                   downvotes: 0,
-                                  published: std::time::SystemTime::from(jiff::Timestamp::now()).into(),
-                                  newest_comment_time_necro: std::time::SystemTime::from(jiff::Timestamp::now()).into(),
-                                  newest_comment_time: std::time::SystemTime::from(jiff::Timestamp::now()).into(),
+                                  published: std::time::SystemTime::try_from(jiff::Timestamp::now()).expect("time will always convert").into(),
+                                  newest_comment_time_necro: std::time::SystemTime::try_from(jiff::Timestamp::now()).expect("time will always convert").into(),
+                                  newest_comment_time: std::time::SystemTime::try_from(jiff::Timestamp::now()).expect("time will always convert").into(),
                                   featured_community: false,
                                   featured_local: false,
                                   hot_rank: 0f64,

@@ -199,7 +199,7 @@ pub fn TextInput(
 pub fn Login() -> impl IntoView {
   let i18n = use_i18n();
   let ReadThemeCookie(get_theme_cookie) = expect_context::<ReadThemeCookie>();
-  let on_scroll_element = NodeRef::<leptos::html::Div>::new();
+  let on_scroll_element = NodeRef::<Div>::new();
 
   view! {
     <div class="flex flex-col min-h-screen" data-theme={move || get_theme_cookie.get()}>

@@ -69,7 +69,7 @@ pub trait LemmyApi: Fetch {
       }
     }
 
-    let now_in_millis = u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0);
+    let now_in_millis = u64::try_from(jiff::Timestamp::now().as_millisecond()).unwrap_or(0);
 
     self.make_request(HttpType::Get, "site", GetSite { t: now_in_millis }).await
   }

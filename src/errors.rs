@@ -27,7 +27,6 @@ pub enum LemmyAppErrorType {
 
 pub fn message_from_error(error: &LemmyAppError) -> String {
   let i18n = use_i18n();
-
   let s = match &error.error_type {
     LemmyAppErrorType::ApiError(LemmyErrorType::IncorrectLogin) => t_string!(i18n, invalid_login).to_string(),
     LemmyAppErrorType::EmptyUsername => t_string!(i18n, empty_username).to_string(),
@@ -39,9 +38,7 @@ pub fn message_from_error(error: &LemmyAppError) -> String {
     LemmyAppErrorType::Unknown => t_string!(i18n, unknown).to_string(),
     _ => t_string!(i18n, error_without_description).to_string(),
   };
-
-  leptos::logging::error!("{}\n{:#?}", s, error);
-
+  error!("{}\n{:#?}", s, error);
   s
 }
 

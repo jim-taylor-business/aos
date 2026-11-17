@@ -392,7 +392,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
               let mut comments_descendants = response.comments.clone();
               let first_comment = response.comments.first().map(|f| vec![f.clone()]).unwrap_or_default();
               let highlight_user_id = RwSignal::new(None);
-              let now_in_millis = RwSignal::new(u64::try_from(jiff::Zoned::now().timestamp().as_millisecond()).unwrap_or(0));
+              let now_in_millis = RwSignal::new(u64::try_from(jiff::Timestamp::now().as_millisecond()).unwrap_or(0));
               let hidden_comments: RwSignal<Vec<i32>> = RwSignal::new(vec![]);
               #[cfg(not(feature = "ssr"))]
               spawn_local_scoped(async move {
