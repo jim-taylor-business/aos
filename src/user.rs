@@ -411,7 +411,7 @@ pub fn User() -> impl IntoView {
 
                               };
                             },
-                            std::time::Duration::new(0, 0),
+                            std::time::Duration::new(0, 250_000_000),
                           );
                           view! {
                             <Show when={move || { show_next.get() }} fallback={|| {}}>

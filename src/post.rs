@@ -227,8 +227,8 @@ pub fn Post() -> impl IntoView {
                       });
                     }
                     post_view.set(Some(response.clone()));
-                    let post_response_value = response.clone();
-                    let post_response = Memo::new(move |_| post_response_value.clone());
+                    // let post_response_value = response.clone();
+                    let post_response = Memo::new(move |_| response.clone());
                     let text = if let Some(b) = post_response.get().post_view.post.body.clone() {
                       if b.len() > 0 { Some(b) } else { post_response.get().post_view.post.embed_description.clone() }
                     } else {
@@ -242,6 +242,16 @@ pub fn Post() -> impl IntoView {
                       post_response.get().post_view.community.actor_id.inner().host().map(|host| host.to_string()),
                     );
                     let community_title_encoded = html_escape::encode_safe(&community_title).to_string();
+                    let community_path = Memo::new(move |_| if post_response.get().post_view.community.local {
+                      format!("/c/{}", post_response.get().post_view.community.name)
+                    } else {
+                      format!(
+                        "/c/{}@{}",
+                        post_response.get().post_view.community.name,
+                        post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
+                      )
+                    });
+
                     let a = post_response.get().post_view.creator.actor_id;
                     let u = post_response.get().post_view.creator.name;
                     let instance = get_instance_cookie.get_untracked();
@@ -264,7 +274,7 @@ pub fn Post() -> impl IntoView {
                       <div class="px-4">
                         <PostToolbar post_view={post_response.get().post_view} reply_show content post_id />
                       </div>
-                      <div class="my-2 px-4">
+                      <div class="mt-2 px-4">
                         <span
                           on:click={move |e: MouseEvent| {
                             if let Some(t) = e.target() {
@@ -294,54 +304,28 @@ pub fn Post() -> impl IntoView {
                             <span class="overflow-y-auto" inner_html={creator_name_encoded} />
                           </A>
                           {t!(i18n, post_in)}
-                          <A
-                            attr:class="inline wrap-anywhere hover:text-secondary"
-                            href={if post_response.get().post_view.community.local {
-                              format!("/c/{}", post_response.get().post_view.community.name)
-                            } else {
-                              format!(
-                                "/c/{}@{}",
-                                post_response.get().post_view.community.name,
-                                post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
-                              )
-                            }}
+                          <a
+                            class="inline wrap-anywhere hover:text-secondary"
+                            href={community_path.get()}
                             on:click={move |e: MouseEvent| {
+                              // let path = community_path.get();
                               e.prevent_default();
                               spawn_local_scoped(async move {
-                                let path = if post_response.get().post_view.community.local {
-                                  format!("/c/{}", post_response.get().post_view.community.name)
-                                } else {
-                                  format!(
-                                    "/c/{}@{}",
-                                    post_response.get().post_view.community.name,
-                                    post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
-                                  )
-                                };
-                                let _ = IndexedDb::save_scroll_position(path, "".into(), 0).await;
+                                let _ = IndexedDb::save_scroll_position(community_path.get(), "".into(), 0).await;
                                 use_navigate()(
-                                  &{
-                                    if post_response.get().post_view.community.local {
-                                      format!("/c/{}", post_response.get().post_view.community.name)
-                                    } else {
-                                      format!(
-                                        "/c/{}@{}",
-                                        post_response.get().post_view.community.name,
-                                        post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
-                                      )
-                                    }
-                                  },
+                                  &community_path.get(),
                                   Default::default(),
                                 );
                               });
                             }}
                           >
                             <span lang={move || languages.get().get(post_response.get().post_view.post.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )} class="overflow-y-auto" inner_html={community_title_encoded} />
-                          </A>
+                          </a>
                           <span class="overflow-y-auto">{domain.get()}</span>
                         </span>
                       </div>
                       <a
-                        class={move || { format!("my-2 mb-3 float-left{}", if thumbnail_url.get().is_none() && url.get().is_none() { " hidden" } else { "" }) }}
+                        class={move || { format!("float-left{}", if thumbnail_url.get().is_none() && url.get().is_none() { " hidden" } else { "" }) }}
                         target="_blank"
                         href={move || {
                           if let Some(d) = url.get() { d.inner().to_string() } else { format!("/p/{}", post_response.get().post_view.post.id) }
@@ -352,7 +336,7 @@ pub fn Post() -> impl IntoView {
                             let h = t.inner().to_string();
                             thumbnail.set(h);
                             view! {
-                              <div class="px-4">
+                              <div class="my-3 px-4">
                                 <div class="block">
                                   <img
                                     loading="lazy"
@@ -368,7 +352,7 @@ pub fn Post() -> impl IntoView {
                               .into_any()
                           } else {
                             view! {
-                              <div class="px-4">
+                              <div class="my-3 px-4">
                                 <div class="block">
                                   <img class="h-16" src="/lemmy.svg" />
                                 </div>
@@ -382,7 +366,7 @@ pub fn Post() -> impl IntoView {
                         let safe_html = markdown_to_html(content, true);
                         Some(
                           view! {
-                            <div class="my-2 mb-3 pr-4 pl-4 before:content-[''] before:block before:w-24 before:overflow-hidden">
+                            <div class="my-3 pr-4 pl-4 before:content-[''] before:block before:w-24 before:overflow-hidden">
                               <div
                                 // class="py-2"
                                 on:click={move |e: MouseEvent| {
@@ -532,7 +516,7 @@ pub fn Post() -> impl IntoView {
                     }
                     // let res =onse.clone();
                     view! {
-                      <div class="w-full before:content-[''] before:block before:w-24 before:overflow-hidden">
+                      <div class="mt-3 w-full before:content-[''] before:block before:w-24 before:overflow-hidden">
                         <Comments comments={response.comments.into()} post_id />
                       </div>
                     }

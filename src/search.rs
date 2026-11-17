@@ -293,7 +293,7 @@ pub fn Search(
 
                               };
                             },
-                            std::time::Duration::new(0, 0),
+                            std::time::Duration::new(0, 250_000_000),
                           );
                           view! {
                             <Show when={move || { show_next.get() }} fallback={|| {}}>
