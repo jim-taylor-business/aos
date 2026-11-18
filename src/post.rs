@@ -16,7 +16,7 @@ pub fn Post() -> impl IntoView {
   let online = expect_context::<RwSignal<OnlineSetter>>();
   let ssr_sort = move || serde_json::from_str::<CommentSortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(CommentSortType::Top);
 
-  let reply_show = RwSignal::new(false);
+  let reply_show = RwSignal::new(Some(false));
   let content = RwSignal::new(String::default());
   let loading = RwSignal::new(false);
   let error = RwSignal::new(None::<LemmyAppError>);
@@ -103,7 +103,9 @@ pub fn Post() -> impl IntoView {
         match result {
           Ok(_o) => {
             comments_resource.refetch();
-            reply_show.update(|b| *b = !*b);
+            reply_show.update(|b| {
+              b.map(|b| !b);
+            });
             if let Ok(d) = IndexedDb::new().await {
               if let Ok(_c) = d.del(&CommentDraftKey { comment_id: id, draft: Draft::Post }).await {}
             }
@@ -395,7 +397,7 @@ pub fn Post() -> impl IntoView {
                               {
                                 let logged_in = Memo::new(move |_| { s.my_user.is_some() });
                                 view! {
-                                  <Show when={move || reply_show.get()} fallback={|| {}}>
+                                  <Show when={move || reply_show.get().unwrap_or(false)} fallback={|| {}}>
                                     <div class="pr-4 pl-4 mb-3 space-y-3 before:content-[''] before:block before:w-24 before:overflow-hidden">
                                       <div class="form-control">
                                         <textarea
@@ -434,7 +436,7 @@ pub fn Post() -> impl IntoView {
                                         >
                                           {t!(i18n, comment_button)}
                                         </button>
-                                        <button on:click={move |_| reply_show.set(false)} type="button" class="btn btn-soft">
+                                        <button on:click={move |_| reply_show.set(Some(false))} type="button" class="btn btn-soft">
                                           {t!(i18n, cancel)}
                                         </button>
                                       </div>

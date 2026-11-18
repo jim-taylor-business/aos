@@ -83,7 +83,12 @@ pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostR
 }
 
 #[component]
-pub fn PostToolbar(post_view: PostView, reply_show: RwSignal<bool>, content: RwSignal<String>, post_id: Signal<Option<i32>>) -> impl IntoView {
+pub fn PostToolbar(
+  post_view: PostView,
+  reply_show: RwSignal<Option<bool>>,
+  content: RwSignal<String>,
+  post_id: Signal<Option<i32>>,
+) -> impl IntoView {
   let i18n = use_i18n();
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
@@ -264,11 +269,11 @@ pub fn PostToolbar(post_view: PostView, reply_show: RwSignal<bool>, content: RwS
   );
   let creator_name = &post_view.get().creator.actor_id.to_string()[8..];
 
-  let _abbr_duration = relative_time(post_view.get().post.published.timestamp_millis());
+  // let abbr_duration = relative_time(post_view.get().post.published.timestamp_millis());
 
-  #[cfg(not(feature = "ssr"))]
-  let _thumbnail_element = NodeRef::<Img>::new();
-  let _thumbnail = RwSignal::new(String::from(""));
+  // #[cfg(not(feature = "ssr"))]
+  // let _thumbnail_element = NodeRef::<Img>::new();
+  // let _thumbnail = RwSignal::new(String::from(""));
 
   let enable_reply = RwSignal::new(false);
 
@@ -284,7 +289,12 @@ pub fn PostToolbar(post_view: PostView, reply_show: RwSignal<bool>, content: RwS
               #[cfg(not(feature = "ssr"))]
               let _ = set_timeout_with_handle(
                   move || {
-                    enable_reply.set(true);
+                    if reply_show.get_untracked().is_some() {
+                      enable_reply.set(true);
+                    } else {
+                      enable_reply.set(false);
+                    }
+                    // enable_reply.set(true);
                   },
                   std::time::Duration::new(0, 0),
                 )
@@ -398,7 +408,7 @@ pub fn PostToolbar(post_view: PostView, reply_show: RwSignal<bool>, content: RwS
                             }
                           });
                         }
-                        reply_show.update(|b| *b = !*b);
+                        reply_show.update(|b| { *b = b.map(|b| !b); });
                       }}
                       title={move || t_string!(i18n, reply)}
                       disabled={move || !enable_reply.get() || !logged_in.get() || !online.get().0}

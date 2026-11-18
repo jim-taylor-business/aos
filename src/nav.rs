@@ -782,7 +782,7 @@ pub fn TopNav(
                           {t!(i18n, local)}
                         </a>
                       </li>
-                      <li>
+                      <li class={move || if logged_in.get() { "" } else { "menu-disabled" }}>
                         <a
                           href={on_filter_ssr(ListingType::Subscribed)}
                           class={move || highlight_csr_filter(ListingType::Subscribed)}
@@ -950,7 +950,7 @@ pub fn TopNav(
                                 {t!(i18n, local)}
                               </a>
                             </li>
-                            <li>
+                            <li class={move || if logged_in.get() { "" } else { "menu-disabled" }}>
                               <a
                                 href={on_filter_ssr(ListingType::Subscribed)}
                                 class={move || highlight_csr_filter(ListingType::Subscribed)}

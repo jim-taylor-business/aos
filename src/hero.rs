@@ -9,7 +9,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
   let query = use_query_map();
   let ssr_sort = move || serde_json::from_str::<CommentSortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(CommentSortType::Top);
 
-  let reply_show = RwSignal::new(false);
+  let reply_show = RwSignal::new(None);
   let content = RwSignal::new(String::default());
   let loading = RwSignal::new(true);
 
@@ -240,8 +240,8 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                         <span class="overflow-y-auto" inner_html={creator_name_encoded} />
                       </A>
                       {t!(i18n, post_in)}
-                      <A
-                        attr:class="inline wrap-anywhere hover:text-secondary"
+                      <a
+                        class="inline wrap-anywhere hover:text-secondary"
                         href={if post_response.get().post_view.community.local {
                           format!("/c/{}", post_response.get().post_view.community.name)
                         } else {
@@ -329,7 +329,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                         }}
                       >
                         <span class="overflow-y-auto" inner_html={community_title_encoded} />
-                      </A>
+                      </a>
                       <span class="overflow-y-auto" inner_html={move || display_url.get()} />
                     </span>
                   </div>
@@ -416,19 +416,20 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                 });
               if let Some(cv) = first_comment.get(0) {
                 view! {
-                  <Comment
-                    parent_comment_id=0
-                    hidden_comments
-                    comment={cv.clone().into()}
-                    comments={comments_descendants.into()}
-                    level=1
-                    now_in_millis
-                    highlight_user_id
-                    post_id={Signal::derive(move || Some(post_id.get().0))}
-                    selected_drag_offset={RwSignal::new((1, 0f64, 0))}
-                  />
-                }
-                  .into_any()
+                  <div class="pl-4">
+                    <Comment
+                      parent_comment_id=0
+                      hidden_comments
+                      comment={cv.clone().into()}
+                      comments={comments_descendants.into()}
+                      level=1
+                      now_in_millis
+                      highlight_user_id
+                      post_id={Signal::derive(move || Some(post_id.get().0))}
+                      selected_drag_offset={RwSignal::new((1, 0f64, 0))}
+                    />
+                  </div>
+                }.into_any()
               } else {
                 view! {}.into_any()
               }

@@ -344,10 +344,10 @@ pub fn User() -> impl IntoView {
                         } else {
                           view! {
                             <For each={move || all_posts.get()} key={|pc| pc.post.post.id} let:pc>
-                              <div class="pt-4 odd:bg-base-300">
+                              <div class="pt-3 odd:bg-base-300">
                                 <Listing hide=false post_view={pc.post} post_number=0 />
                                 <For each={move || pc.comments.get()} key={|cv| cv.comment.id} let:cv>
-                                  <div class="pt-2 pr-4 pb-2 pl-4">
+                                  <div class="px-4 pb-3">
                                     <Comment
                                       parent_comment_id=0
                                       hidden_comments={RwSignal::new(vec![])}
