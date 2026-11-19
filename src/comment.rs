@@ -58,6 +58,7 @@ pub fn Comment(
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   let online = expect_context::<RwSignal<OnlineSetter>>();
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
+  let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
   let selected_text = expect_context::<RwSignal<SelectedText>>();
 
   // let is_there = Memo::new(move |_| {
@@ -155,7 +156,8 @@ pub fn Comment(
         disliked_only: None,
         liked_only: None,
       };
-      let result = LemmyClient.get_comments(form.clone()).await;
+      let key = GetCacheKey::new(form.clone(), get_auth_cookie.get_untracked(), get_instance_cookie.get_untracked());
+      let result = LemmyClient.get_comments(key).await;
       match result {
         Ok(o) => {
           let mut comments_descendants = o.comments;
@@ -270,7 +272,8 @@ pub fn Comment(
       error.set(None);
       description.set(t_string!(i18n, loading_comment).to_owned());
       let form = GetComment { id: comment_view.get().comment.id };
-      let result = LemmyClient.get_comment(form).await;
+      let key = GetCacheKey::new(form, get_auth_cookie.get_untracked(), get_instance_cookie.get_untracked());
+      let result = LemmyClient.get_comment(key).await;
       match result {
         Ok(o) => {
           comment_view.set(o.comment_view);
@@ -299,7 +302,8 @@ pub fn Comment(
         post_id: None,
         type_: None,
       };
-      let result = LemmyClient.get_mod_log(form).await;
+      let key = GetCacheKey::new(form, get_auth_cookie.get_untracked(), get_instance_cookie.get_untracked());
+      let result = LemmyClient.get_mod_log(key).await;
       match result {
         Ok(o) => {
           if let Some(c) = o.removed_comments.get(0) {
@@ -340,10 +344,9 @@ pub fn Comment(
           comment_view.update(|v| {
             v.counts.child_count = v.counts.child_count + 1;
           });
-          let response_cache =
-            expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>, bool), (i64, LemmyAppResult<GetPostsResponse>)>>>();
+          let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPostsCacheKey), (i64, LemmyAppResult<GetPostsResponse>)>>>();
           response_cache.update(|rc| {
-            rc.iter_mut().for_each(move |((_, form, _, _), (_, cached_result))| {
+            rc.iter_mut().for_each(move |((_, cache_key), (_, cached_result))| {
               // let (_, form, _, _) = f;
               // let (_, cached_result) = r;
               if let Ok(w) = cached_result {
@@ -352,10 +355,10 @@ pub fn Comment(
                   if p.post.id.0 == id {
                     p.counts.comments = p.counts.comments + 1;
                     let result_clone = cached_result.clone();
-                    let form_clone = form.clone();
+                    let cache_key = cache_key.clone();
                     spawn_local_scoped(async move {
                       if let Ok(d) = IndexedDb::new().await {
-                        if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&form_clone, &result_clone).await {}
+                        if let Ok(_c) = d.set::<GetPostsCacheKey, Result<GetPostsResponse, LemmyAppError>>(&cache_key, &result_clone).await {}
                       }
                     });
                     break;

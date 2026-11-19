@@ -58,9 +58,10 @@ pub fn TopNav(
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
 
   let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
+  let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
   let WriteThemeCookie(set_theme_cookie) = expect_context::<WriteThemeCookie>();
   let _online = expect_context::<RwSignal<OnlineSetter>>();
-  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>, bool), (i64, LemmyAppResult<GetPostsResponse>)>>>();
+  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPostsCacheKey), (i64, LemmyAppResult<GetPostsResponse>)>>>();
 
   let query = use_query_map();
   let _ssr_query_error =
@@ -73,9 +74,14 @@ pub fn TopNav(
   let ssr_bans = move || serde_json::from_str::<Vec<BanType>>(&query.get().get("bans").unwrap_or("".into())).unwrap_or(vec![]);
   let ssr_person_id = move || query.get().get("person_id").unwrap_or_default().parse::<i32>().ok();
 
-  let param = use_params_map();
-  let ssr_name = move || param.get().get("name").unwrap_or("".into());
-  let ssr_id = move || param.get().get("id").unwrap_or("".into());
+  // let param = use_params_map();
+  // let ssr_name = move || param.get().get("name").unwrap_or("".into());
+  // let ssr_id = move || param.get().get("id").unwrap_or("".into());
+
+  let ssr_name = move || if lost_path.is_some() { "".to_owned() } else { use_params_map().get().get("name").unwrap_or("".into()) };
+  let ssr_id = move || if lost_path.is_some() { "".to_owned() } else { use_params_map().get().get("id").unwrap_or("".into()) };
+
+  let location = use_location().pathname.get();
 
   let lg_filter_menu = NodeRef::<html::Details>::new();
   let lg_sort_menu = NodeRef::<html::Details>::new();
@@ -173,6 +179,7 @@ pub fn TopNav(
     }
   };
 
+  let sort_location = location.clone();
   let on_sort_ssr = move |s: SortType| {
     let o = serde_json::to_string::<SortType>(&s).unwrap_or("Active".into());
     let mut query_params = query.get();
@@ -182,7 +189,7 @@ pub fn TopNav(
       query_params.insert("sort", o);
     }
     let params = query_params.clone();
-    format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
+    format!("{}{}", sort_location, query_params.to_query_string())
   };
 
   let on_sort_click = move |s: SortType| {
@@ -192,23 +199,26 @@ pub fn TopNav(
       response_cache.update(move |rc| {
         rc.remove(&(
           0usize,
-          GetPosts {
-            type_: Some(ssr_list()),
-            sort: Some(s),
-            page: None,
-            limit: Some(50),
-            community_id: None,
-            community_name: None,
-            saved_only: None,
-            liked_only: None,
-            disliked_only: None,
-            show_hidden: Some(true),
-            show_read: Some(true),
-            show_nsfw: Some(false),
-            page_cursor: None,
+          GetPostsCacheKey {
+            form: GetPosts {
+              type_: Some(ssr_list()),
+              sort: Some(s),
+              page: None,
+              limit: Some(50),
+              community_id: None,
+              community_name: None,
+              saved_only: None,
+              liked_only: None,
+              disliked_only: None,
+              show_hidden: Some(true),
+              show_read: Some(true),
+              show_nsfw: Some(false),
+              page_cursor: None,
+            },
+            auth: get_auth_cookie.get(),
+            instance: get_instance_cookie.get(),
+            ban: false,
           },
-          get_auth_cookie.get(),
-          false,
         ));
       });
       let mut query_params = query.get();
@@ -237,23 +247,26 @@ pub fn TopNav(
       response_cache.update(move |rc| {
         rc.remove(&(
           0usize,
-          GetPosts {
-            type_: Some(l),
-            sort: Some(ssr_sort()),
-            page: None,
-            limit: Some(50),
-            community_id: None,
-            community_name: None,
-            saved_only: None,
-            liked_only: None,
-            disliked_only: None,
-            show_hidden: Some(true),
-            show_read: Some(true),
-            show_nsfw: Some(false),
-            page_cursor: None,
+          GetPostsCacheKey {
+            form: GetPosts {
+              type_: Some(l),
+              sort: Some(ssr_sort()),
+              page: None,
+              limit: Some(50),
+              community_id: None,
+              community_name: None,
+              saved_only: None,
+              liked_only: None,
+              disliked_only: None,
+              show_hidden: Some(true),
+              show_read: Some(true),
+              show_nsfw: Some(false),
+              page_cursor: None,
+            },
+            auth: get_auth_cookie.get(),
+            instance: get_instance_cookie.get(),
+            ban: false,
           },
-          get_auth_cookie.get(),
-          false,
         ));
       });
       let mut query_params = query.get();
@@ -315,7 +328,6 @@ pub fn TopNav(
     });
   };
 
-  let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
   let WriteInstanceCookie(set_instance_cookie) = expect_context::<WriteInstanceCookie>();
 
   let instance_term = RwSignal::new(get_instance_cookie.get());
@@ -334,23 +346,26 @@ pub fn TopNav(
     response_cache.update(move |rc| {
       rc.remove(&(
         0usize,
-        GetPosts {
-          type_: Some(ListingType::All),
-          sort: Some(SortType::Active),
-          page: None,
-          limit: Some(50),
-          community_id: None,
-          community_name: None,
-          saved_only: None,
-          liked_only: None,
-          disliked_only: None,
-          show_hidden: Some(true),
-          show_read: Some(true),
-          show_nsfw: Some(false),
-          page_cursor: None,
+        GetPostsCacheKey {
+          form: GetPosts {
+            type_: Some(ListingType::All),
+            sort: Some(SortType::Active),
+            page: None,
+            limit: Some(50),
+            community_id: None,
+            community_name: None,
+            saved_only: None,
+            liked_only: None,
+            disliked_only: None,
+            show_hidden: Some(true),
+            show_read: Some(true),
+            show_nsfw: Some(false),
+            page_cursor: None,
+          },
+          auth: get_auth_cookie.get(),
+          instance: get_instance_cookie.get(),
+          ban: false,
         },
-        get_auth_cookie.get(),
-        false,
       ));
     });
     #[cfg(not(feature = "ssr"))]
@@ -456,7 +471,7 @@ pub fn TopNav(
 
   let query = use_query_map();
   let on_filter_ssr = move |l: ListingType| {
-    let mut query_params = query.get();
+    let mut query_params = use_query_map().get();
     query_params.remove("page");
     query_params.remove("list");
     if l != ListingType::All {
@@ -467,7 +482,7 @@ pub fn TopNav(
   };
 
   let on_kind_ssr = move |l: SearchType| {
-    let mut query_params = query.get();
+    let mut query_params = use_query_map().get();
     query_params.remove("page");
     query_params.remove("kind");
     if l != SearchType::Posts {
@@ -489,17 +504,18 @@ pub fn TopNav(
     if l == ssr_kind() && use_location().pathname.get().ends_with("/s") { " menu-active" } else { "" }
   };
 
+  let location_is_root_or_search = location.len() == 1 || location.eq("/s");
+  let location_allows_post_search = location.len() == 1 || location.eq("/s");
   let disabled_ssr_kind = move |l: SearchType| match l {
     SearchType::Users | SearchType::Communities => {
-      if use_location().pathname.get().len() == 1 || use_location().pathname.get().eq("/s") {
+      if location_is_root_or_search {
         ""
       } else {
         "menu-disabled"
       }
     }
     SearchType::Posts | SearchType::Comments => {
-      if use_location().pathname.get().len() == 1 || use_location().pathname.get().eq("/s") || param.get().get("name").unwrap_or("".into()).len() > 0
-      {
+      if location_allows_post_search || ssr_name().len() > 0 {
         ""
       } else {
         "menu-disabled"
@@ -511,18 +527,16 @@ pub fn TopNav(
   let on_csr_kind_click = move |l: SearchType| {
     move |e: MouseEvent| {
       e.prevent_default();
-      let mut query_params = query.get();
+      let mut query_params = use_query_map().get();
       query_params.remove("page");
       query_params.remove("kind");
       if l != SearchType::Posts {
         query_params.insert("kind", serde_json::to_string(&l).ok().unwrap_or("Posts".into()));
       }
-
       let params = query_params.clone();
       #[cfg(not(feature = "ssr"))]
       spawn_local_scoped(async move {
         let _ = IndexedDb::save_scroll_position(use_location().pathname.get(), params.to_query_string(), 0).await;
-
         if ssr_person_id().is_some() {
           use_navigate()(&format!("/u/{}/s{}", ssr_name(), query_params.to_query_string()), Default::default());
         } else if ssr_name().len() > 0 {
@@ -576,23 +590,26 @@ pub fn TopNav(
       response_cache.update(move |rc| {
         rc.remove(&(
           0usize,
-          GetPosts {
-            type_: Some(ssr_list()),
-            sort: Some(ssr_sort()),
-            page: None,
-            limit: Some(50),
-            community_id: None,
-            community_name: None,
-            saved_only: None,
-            liked_only: None,
-            disliked_only: None,
-            show_hidden: Some(true),
-            show_read: Some(true),
-            show_nsfw: Some(nsfw),
-            page_cursor: None,
+          GetPostsCacheKey {
+            form: GetPosts {
+              type_: Some(ssr_list()),
+              sort: Some(ssr_sort()),
+              page: None,
+              limit: Some(50),
+              community_id: None,
+              community_name: None,
+              saved_only: None,
+              liked_only: None,
+              disliked_only: None,
+              show_hidden: Some(true),
+              show_read: Some(true),
+              show_nsfw: Some(nsfw),
+              page_cursor: None,
+            },
+            auth: get_auth_cookie.get(),
+            instance: get_instance_cookie.get(),
+            ban,
           },
-          get_auth_cookie.get(),
-          ban,
         ));
       });
       let mut query_params = query.get();
@@ -700,44 +717,49 @@ pub fn TopNav(
                     on:touchstart={on_touch_start}
                     on:touchend={on_touch_end}
                     on:click={move |e: MouseEvent| {
-                      e.prevent_default();
-                      if input_focus.get() == InputFocusState::Instance {
-                        input_focus.set(InputFocusState::Unfocused);
-                      } else {
-                        next_page_cursor.set((0, None));
-                        #[cfg(not(feature = "ssr"))]
-                        spawn_local_scoped(async move {
-                          let _ = IndexedDb::save_scroll_position("/".into(), "".into(), 0).await;
-                          response_cache
-                            .update(move |rc| {
-                              rc.remove(
-                                &(
-                                  0usize,
-                                  GetPosts {
-                                    type_: Some(ListingType::All),
-                                    sort: Some(SortType::Active),
-                                    page: None,
-                                    limit: Some(50),
-                                    community_id: None,
-                                    community_name: None,
-                                    saved_only: None,
-                                    liked_only: None,
-                                    disliked_only: None,
-                                    show_hidden: Some(true),
-                                    show_read: Some(true),
-                                    show_nsfw: Some(false),
-                                    page_cursor: None,
-                                  },
-                                  get_auth_cookie.get(),
-                                  false,
-                                ),
-                              );
-                            });
-                          use_navigate()("/", Default::default());
-                        });
-                        if let Some(on_scroll_element) = scroll_element.get() {
-                          if let Some(se) = on_scroll_element.get() {
-                            se.set_scroll_left(0i32);
+                      if lost_path.is_none() {
+                        e.prevent_default();
+                        if input_focus.get() == InputFocusState::Instance {
+                          input_focus.set(InputFocusState::Unfocused);
+                        } else {
+                          next_page_cursor.set((0, None));
+                          #[cfg(not(feature = "ssr"))]
+                          spawn_local_scoped(async move {
+                            let _ = IndexedDb::save_scroll_position("/".into(), "".into(), 0).await;
+                            response_cache
+                              .update(move |rc| {
+                                rc.remove(
+                                  &(
+                                    0usize,
+                                    GetPostsCacheKey {
+                                      form: GetPosts {
+                                      type_: Some(ListingType::All),
+                                      sort: Some(SortType::Active),
+                                      page: None,
+                                      limit: Some(50),
+                                      community_id: None,
+                                      community_name: None,
+                                      saved_only: None,
+                                      liked_only: None,
+                                      disliked_only: None,
+                                      show_hidden: Some(true),
+                                      show_read: Some(true),
+                                      show_nsfw: Some(false),
+                                      page_cursor: None,
+                                      },
+                                      auth: get_auth_cookie.get(),
+                                      instance: get_instance_cookie.get(),
+                                      ban: false,
+                                    },
+                                  ),
+                                );
+                              });
+                            use_navigate()("/", Default::default());
+                          });
+                          if let Some(on_scroll_element) = scroll_element.get() {
+                            if let Some(se) = on_scroll_element.get() {
+                              se.set_scroll_left(0i32);
+                            }
                           }
                         }
                       }
@@ -881,7 +903,7 @@ pub fn TopNav(
                       <Icon icon={Icon::Cube} />
                     </summary>
                     <ul class="z-[1] bg-base-200">
-                      <li class={move || disabled_ssr_kind(SearchType::Posts)}>
+                      <li class={move || disabled_ssr_kind.clone()(SearchType::Posts)}>
                         <a
                           href={on_kind_ssr(SearchType::Posts)}
                                     class={move || highlight_csr_kind(SearchType::Posts)}
@@ -890,7 +912,7 @@ pub fn TopNav(
                           {t!(i18n, posts)}
                         </a>
                       </li>
-                      <li class={move || disabled_ssr_kind(SearchType::Comments)}>
+                      <li class={move || disabled_ssr_kind.clone()(SearchType::Comments)}>
                         <a
                           href={on_kind_ssr(SearchType::Comments)}
                                     class={move || highlight_csr_kind(SearchType::Comments)}
@@ -899,7 +921,7 @@ pub fn TopNav(
                           {t!(i18n, comments)}
                         </a>
                       </li>
-                      <li class={move || disabled_ssr_kind(SearchType::Communities)}>
+                      <li class={move || disabled_ssr_kind.clone()(SearchType::Communities)}>
                         <a
                           href={on_kind_ssr(SearchType::Communities)}
                           class={move || highlight_csr_kind(SearchType::Communities)}
@@ -908,7 +930,7 @@ pub fn TopNav(
                           {t!(i18n, communities)}
                         </a>
                       </li>
-                      <li class={move || disabled_ssr_kind(SearchType::Users)}>
+                      <li class={move || disabled_ssr_kind.clone()(SearchType::Users)}>
                         <a
                           href={on_kind_ssr(SearchType::Users)}
                           class={move || highlight_csr_kind(SearchType::Users)}
@@ -1049,7 +1071,7 @@ pub fn TopNav(
                             <Icon icon={Icon::Cube} />
                           </summary>
                           <ul class="z-[1] bg-base-200">
-                            <li class={move || disabled_ssr_kind(SearchType::Posts)}>
+                            <li class={move || disabled_ssr_kind.clone()(SearchType::Posts)}>
                               <a
                                 href={on_kind_ssr(SearchType::Posts)}
                                           class={move || highlight_csr_kind(SearchType::Posts)}
@@ -1058,7 +1080,7 @@ pub fn TopNav(
                                 {t!(i18n, posts)}
                               </a>
                             </li>
-                            <li class={move || disabled_ssr_kind(SearchType::Comments)}>
+                            <li class={move || disabled_ssr_kind.clone()(SearchType::Comments)}>
                               <a
                                 href={on_kind_ssr(SearchType::Comments)}
                                           class={move || highlight_csr_kind(SearchType::Comments)}
@@ -1067,7 +1089,7 @@ pub fn TopNav(
                                 {t!(i18n, comments)}
                               </a>
                             </li>
-                            <li class={move || disabled_ssr_kind(SearchType::Communities)}>
+                            <li class={move || disabled_ssr_kind.clone()(SearchType::Communities)}>
                               <a
                                 href={on_kind_ssr(SearchType::Communities)}
                                 class={move || highlight_csr_kind(SearchType::Communities)}
@@ -1076,7 +1098,7 @@ pub fn TopNav(
                                 {t!(i18n, communities)}
                               </a>
                             </li>
-                            <li class={move || disabled_ssr_kind(SearchType::Users)}>
+                            <li class={move || disabled_ssr_kind.clone()(SearchType::Users)}>
                               <a
                                 href={on_kind_ssr(SearchType::Users)}
                                 class={move || highlight_csr_kind(SearchType::Users)}

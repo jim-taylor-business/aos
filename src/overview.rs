@@ -43,7 +43,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
   let ssr_page = move || serde_json::from_str::<Vec<(usize, String)>>(&query.get().get("page").unwrap_or("".into())).unwrap_or(vec![]);
   let ssr_bans = move || serde_json::from_str::<Vec<BanType>>(&query.get().get("bans").unwrap_or("".into())).unwrap_or(vec![]);
 
-  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>, bool), (i64, LemmyAppResult<GetPostsResponse>)>>>();
+  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPostsCacheKey), (i64, LemmyAppResult<GetPostsResponse>)>>>();
   let next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
 
   let loading = RwSignal::new(false);
@@ -112,10 +112,10 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
   let _scroll = use_scroll_with_options(on_scroll_element, UseScrollOptions::default().on_scroll(on_scroll));
 
   #[cfg(not(feature = "ssr"))]
-  fn load_cache(fc: GetPosts) -> impl Future<Output = Result<GetPostsResponse, LemmyAppError>> {
+  fn load_cache(key: GetPostsCacheKey) -> impl Future<Output = Result<GetPostsResponse, LemmyAppError>> {
     SendWrapper::new(async move {
       if let Ok(d) = IndexedDb::new().await {
-        if let Ok(c) = d.get::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&fc).await {
+        if let Ok(c) = d.get::<GetPostsCacheKey, Result<GetPostsResponse, LemmyAppError>>(&key).await {
           if let Some(r) = c { r } else { Err(LemmyAppError { error_type: LemmyAppErrorType::Unknown, content: "".to_owned() }) }
         } else {
           Err(LemmyAppError { error_type: LemmyAppErrorType::Unknown, content: "".to_owned() })
@@ -135,8 +135,6 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
       let nsfw = bans.contains(&BanType::Nsfw);
       let ban = bans.contains(&BanType::Ban);
       let many_pages = pages.len() > 0;
-      let auth = Some(format!("{}{}", auth.unwrap_or("".to_owned()), instance.unwrap_or("".to_owned())));
-
       #[cfg(feature = "ssr")]
       let do_not_render_scroll = true && pages.len() == 0;
       #[cfg(not(feature = "ssr"))]
@@ -151,7 +149,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
       loading.set(true);
 
       let rc = response_cache.get_untracked();
-      let mut new_pages: Vec<(usize, GetPosts, i64, LemmyAppResult<GetPostsResponse>, Option<String>, bool, bool, bool)> = vec![];
+      let mut new_pages: Vec<(usize, GetPostsCacheKey, i64, LemmyAppResult<GetPostsResponse>, bool, bool)> = vec![];
       if pages.len() == 0 {
         pages = vec![(0usize, "".to_owned())];
       }
@@ -172,30 +170,29 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
           show_nsfw: Some(nsfw),
           show_read: Some(true),
         };
+        let cache_key = GetPostsCacheKey { form: form.clone(), auth: auth.clone(), instance: instance.clone(), ban };
 
         #[cfg(not(feature = "ssr"))]
-        if let Some((timestamp, Ok(response))) = rc.get(&(page_index, form.clone(), auth.clone(), ban)) {
-          new_pages.push((page_index, form.clone(), *timestamp, Ok(response.clone()), auth.clone(), do_not_render_scroll, csr_cache_render, ban));
+        if let Some((timestamp, Ok(response))) = rc.get(&(page_index, cache_key.clone())) {
+          new_pages.push((page_index, cache_key.clone(), *timestamp, Ok(response.clone()), do_not_render_scroll, csr_cache_render));
           if page_index == 1 && response.posts.len() == 0 {
             loading.set(false);
           }
           continue;
         } else {
           if many_pages {
-            match load_cache(form.clone()).await {
+            match load_cache(cache_key.clone()).await {
               Ok(o) => {
                 if page_index == 1 && o.posts.len() == 0 {
                   loading.set(false);
                 }
                 new_pages.push((
                   page_index,
-                  form.clone(),
+                  cache_key.clone(),
                   jiff::Timestamp::now().as_millisecond(),
                   Ok(o),
-                  auth.clone(),
                   do_not_render_scroll,
                   csr_cache_render,
-                  ban,
                 ));
                 continue;
               }
@@ -204,7 +201,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
           }
         }
 
-        let result = match LemmyClient.list_posts(form.clone()).await {
+        let result = match LemmyClient.list_posts(cache_key.clone()).await {
           Ok(mut o) => {
             if !ban {
               o.posts.retain(|p| !p.banned_from_community);
@@ -226,16 +223,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
           }
           Err(e) => Err(e),
         };
-        new_pages.push((
-          page_index,
-          form.clone(),
-          jiff::Timestamp::now().as_millisecond(),
-          result,
-          auth.clone(),
-          do_not_render_scroll,
-          csr_cache_render,
-          ban,
-        ));
+        new_pages.push((page_index, cache_key, jiff::Timestamp::now().as_millisecond(), result, do_not_render_scroll, csr_cache_render));
       }
 
       new_pages
@@ -244,10 +232,11 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
 
   let details_resource = Resource::new(
     move || (ssr_name.get(), get_auth_cookie.get(), get_instance_cookie.get()),
-    move |(name, _auth, _instance)| async move {
+    move |(name, auth, instance)| async move {
       if let Some(name) = name {
         let form = GetCommunity { id: None, name: Some(name) };
-        let result = match LemmyClient.get_community(form.clone()).await {
+        let key = GetCacheKey::new(form, auth, instance);
+        let result = match LemmyClient.get_community(key).await {
           Ok(o) => Ok(Some(o)),
           Err(e) => Err(e),
         };
@@ -268,7 +257,12 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
   let on_retry_site_click = move |e: MouseEvent| {
     e.prevent_default();
     spawn_local_scoped(async move {
-      let _ = LemmyClient.get_site().await;
+      let key = GetCacheKey::new(
+        GetSite { t: u64::try_from(jiff::Timestamp::now().as_millisecond()).unwrap_or(0) },
+        get_auth_cookie.get_untracked(),
+        get_instance_cookie.get_untracked(),
+      );
+      let _ = LemmyClient.get_site(key).await;
     });
   };
 
@@ -458,23 +452,25 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
             }}
           </Transition>
           <Transition fallback={|| {}}>
-            <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|(_, form, timestamp, _, auth, _, _, _)| (form.clone(), *timestamp, auth.clone())} let:p>
+            <For each={move || post_list_resource.get().unwrap_or(vec![])} key={|(_, cache_key, timestamp, _, _, _)| {
+              (cache_key.form.clone(), *timestamp, cache_key.auth.clone(), cache_key.instance.clone(), cache_key.ban)
+            }} let:p>
               {
-                let (page_index, form, timestamp, result, auth, do_not_render_scroll, csr_cache_render, ban) = p;
+                let (page_index, cache_key, timestamp, result, do_not_render_scroll, csr_cache_render) = p;
                 match result {
                   Ok(ref o) => {
                     #[cfg(not(feature = "ssr"))]
                     {
                       let result_clone = result.clone();
-                      let form_clone = form.clone();
+                      let cache_key = cache_key.clone();
                       spawn_local_scoped(async move {
                         if !csr_cache_render {
                           if let Ok(d) = IndexedDb::new().await {
-                            if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&form_clone, &result_clone).await {}
+                            if let Ok(_c) = d.set::<GetPostsCacheKey, Result<GetPostsResponse, LemmyAppError>>(&cache_key, &result_clone).await {}
                           }
                           response_cache
                             .update(move |rc| {
-                              rc.insert((page_index, form_clone, auth, ban), (timestamp, result_clone));
+                              rc.insert((page_index, cache_key), (timestamp, result_clone));
                             });
                         }
                       });

@@ -25,6 +25,28 @@ pub struct ScrollPositionKey {
   pub query: String,
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub struct GetCacheKey<Form> {
+  pub form: Form,
+  pub auth: Option<String>,
+  pub instance: Option<String>,
+  pub ban: bool,
+}
+
+pub type GetPostsCacheKey = GetCacheKey<GetPosts>;
+
+impl<Form> GetCacheKey<Form> {
+  pub fn new(form: Form, auth: Option<String>, instance: Option<String>) -> Self {
+    Self { form, auth, instance, ban: false }
+  }
+}
+
+impl<Form: Serialize> Store for GetCacheKey<Form> {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
+  }
+}
+
 impl Store for ScrollPositionKey {
   fn store_name(&self) -> &'static str {
     "scroll_positions"
@@ -192,6 +214,12 @@ impl Store for GetCommunity {
 }
 
 impl Store for GetPersonDetails {
+  fn store_name(&self) -> &'static str {
+    "query_gets"
+  }
+}
+
+impl Store for crate::client::GetSite {
   fn store_name(&self) -> &'static str {
     "query_gets"
   }

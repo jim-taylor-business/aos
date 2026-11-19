@@ -105,18 +105,16 @@ pub fn Search(
   #[cfg(not(feature = "ssr"))]
   let cancel_handle: RwSignal<Option<TimeoutHandle>> = RwSignal::new(None);
 
-  let search_cache = expect_context::<RwSignal<BTreeMap<(usize, Search, Option<String>), (i64, LemmyAppResult<SearchResponse>)>>>();
+  let search_cache = expect_context::<RwSignal<BTreeMap<(usize, GetCacheKey<Search>), (i64, LemmyAppResult<SearchResponse>)>>>();
 
   let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
 
   let search_cache_resource = Resource::new(
     move || (ssr_list(), ssr_sort(), ssr_name(), ssr_page(), ssr_term(), get_auth_cookie.get(), get_instance_cookie.get(), ssr_kind(), person_id()),
-    move |(list, sort, name, pages, term, _auth, _instance, kind, person_id)| async move {
-      let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
+    move |(list, sort, name, pages, term, auth, instance, kind, person_id)| async move {
       let sc = search_cache.get_untracked();
-      let mut new_pages: Vec<(usize, Search, i64, LemmyAppResult<SearchResponse>, Option<String>)> = Vec::new();
-      let len = pages.len();
+      let mut new_pages: Vec<(usize, GetCacheKey<Search>, i64, LemmyAppResult<SearchResponse>)> = Vec::new();
       for p in pages {
         let form = Search {
           q: term.clone(),
@@ -130,30 +128,31 @@ pub fn Search(
           listing_type: list,
           post_title_only: None,
         };
+        let cache_key = GetCacheKey { form, auth: auth.clone(), instance: instance.clone(), ban: false };
         #[cfg(not(feature = "ssr"))]
         loading.set(true);
         #[cfg(not(feature = "ssr"))]
-        if let Some((t, Ok(r))) = sc.get(&(p, form.clone(), get_auth_cookie.get_untracked())) {
-          new_pages.push((p, form.clone(), t.clone(), Ok(r.clone()), get_auth_cookie.get_untracked()));
+        if let Some((t, Ok(r))) = sc.get(&(p, cache_key.clone())) {
+          new_pages.push((p, cache_key.clone(), t.clone(), Ok(r.clone())));
           if p == 1 && r.posts.len() == 0 {
             loading.set(false);
           }
           continue;
         }
         let t = jiff::Timestamp::now().as_millisecond();
-        let result = LemmyClient.search(form.clone()).await;
+        let result = LemmyClient.search(cache_key.clone()).await;
         match result {
           Ok(o) => {
             if p == 1 && o.posts.len() == 0 {
               loading.set(false);
             }
-            new_pages.push((p, form.clone(), t, Ok(o), get_auth_cookie.get_untracked()));
+            new_pages.push((p, cache_key.clone(), t, Ok(o)));
           }
           Err(e) => {
             #[cfg(not(feature = "ssr"))]
             loading.set(false);
             error!("err {:#?}", e);
-            new_pages.push((p, form.clone(), t, Err(e), get_auth_cookie.get_untracked()));
+            new_pages.push((p, cache_key, t, Err(e)));
           }
         }
       }
@@ -179,25 +178,21 @@ pub fn Search(
         >
           <Transition fallback={|| {}}>
             <Title text={move || t_string!(i18n, search)} />
-            <For each={move || search_cache_resource.get().unwrap_or(vec![])} key={|(_, form, timestamp, _, auth)| (form.clone(), *timestamp, auth.clone())} let:r>
+            <For each={move || search_cache_resource.get().unwrap_or(vec![])} key={|(page, _, timestamp, _)| (*page, *timestamp)} let:r>
               {
-                let (page_number, form, timestamp, result, auth) = &r;
+                let (page_number, cache_key, timestamp, result) = &r;
                 match result {
                   Ok(o) => {
                     #[cfg(not(feature = "ssr"))]
                     {
                       let result_clone = result.clone();
-                      let form_clone = form.clone();
                       let page_index = *page_number;
                       let fetched_at = *timestamp;
-                      let auth_cookie = auth.clone();
+                      let cache_key = cache_key.clone();
                       spawn_local_scoped(async move {
-                        if let Ok(d) = IndexedDb::new().await {
-                          if let Ok(_c) = d.set::<Search, Result<SearchResponse, LemmyAppError>>(&form_clone, &result_clone).await {}
-                        }
                         search_cache
                           .update(move |sc| {
-                            sc.insert((page_index, form_clone, auth_cookie), (fetched_at, result_clone));
+                            sc.insert((page_index, cache_key), (fetched_at, result_clone));
                           });
                       });
                       let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);

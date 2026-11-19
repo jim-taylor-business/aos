@@ -1,4 +1,4 @@
-pub use crate::db::{CommentDraft, CommentDraftKey, Draft, IndexedDb, IndexedDbError, ScrollPositionKey, Store};
+pub use crate::db::{CommentDraft, CommentDraftKey, Draft, GetCacheKey, GetPostsCacheKey, IndexedDb, IndexedDbError, ScrollPositionKey, Store};
 pub use crate::i18n::*;
 pub use crate::icon::Icon;
 pub use crate::{

@@ -25,16 +25,17 @@ pub fn Post() -> impl IntoView {
 
   let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
-  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>, bool), (i64, LemmyAppResult<GetPostsResponse>)>>>();
+  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPostsCacheKey), (i64, LemmyAppResult<GetPostsResponse>)>>>();
 
   let post_resource = Resource::new(
     move || (post_id.get(), get_auth_cookie.get(), get_instance_cookie.get()),
     move |(id_string, auth, instance)| async move {
       if let Some(id) = id_string {
         let form = GetPost { id: Some(PostId(id)), comment_id: None };
+        let key = GetCacheKey::new(form.clone(), auth, instance);
         #[cfg(not(feature = "ssr"))]
         loading.set(true);
-        let result = LemmyClient.get_post(form.clone()).await;
+        let result = LemmyClient.get_post(key).await;
         match result {
           Ok(o) => Some(Ok((form, o))),
           Err(e) => Some(Err(e)),
@@ -63,7 +64,8 @@ pub fn Post() -> impl IntoView {
           disliked_only: None,
           liked_only: None,
         };
-        let result = LemmyClient.get_comments(form.clone()).await;
+        let key = GetCacheKey::new(form.clone(), auth, instance);
+        let result = LemmyClient.get_comments(key).await;
         match result {
           Ok(o) => Some((form, o)),
           Err(_e) => None,
@@ -196,16 +198,12 @@ pub fn Post() -> impl IntoView {
                     #[cfg(not(feature = "ssr"))]
                     {
                       let response_clone = response.clone();
-                      let form_clone = form.clone();
                       let post_view = RwSignal::new(response_clone.post_view.clone());
                       spawn_local_scoped(async move {
-                        if let Ok(d) = IndexedDb::new().await {
-                          let _ = d.set(&form_clone, &response_clone).await;
-                        }
                         response_cache
                           .update(|rc| {
                             rc.iter_mut()
-                              .for_each(|((_, form, _, _), (_, cached_result))| {
+                              .for_each(|((_, cache_key), (_, cached_result))| {
                                 // let (_, form, _, _) = f;
                                 // let (_, cached_result) = r;
                                 if let Ok(w) = cached_result {
@@ -214,10 +212,10 @@ pub fn Post() -> impl IntoView {
                                     if p.post.id.0 == id {
                                       *p = post_view.get();
                                       let result_clone = cached_result.clone();
-                                      let form_clone = form.clone();
+                                      let cache_key = cache_key.clone();
                                       spawn_local_scoped(async move {
                                         if let Ok(d) = IndexedDb::new().await {
-                                          let _ = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&form_clone, &result_clone).await;
+                                          let _ = d.set::<GetPostsCacheKey, Result<GetPostsResponse, LemmyAppError>>(&cache_key, &result_clone).await;
                                         }
                                       });
                                       break;
@@ -484,13 +482,6 @@ pub fn Post() -> impl IntoView {
                     // let (form, response) = res;
                     #[cfg(not(feature = "ssr"))]
                     {
-                      let response_clone = response.clone();
-                      let form_clone = form.clone();
-                      spawn_local_scoped(async move {
-                        if let Ok(d) = IndexedDb::new().await {
-                          if let Ok(_c) = d.set(&form_clone, &response_clone).await {}
-                        }
-                      });
                       let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
                       if iw > 768f64 {
                         if let Some(c) = cancel_handle.get_untracked() {

@@ -111,7 +111,7 @@ pub fn PostToolbar(
       match result {
         Ok(o) => {
           post_view.set(o.post_view);
-          let post_response_cache = expect_context::<RwSignal<BTreeMap<(GetPost, Option<String>), (i64, LemmyAppResult<GetPostResponse>)>>>();
+          let post_response_cache = expect_context::<RwSignal<BTreeMap<GetCacheKey<GetPost>, (i64, LemmyAppResult<GetPostResponse>)>>>();
           post_response_cache.update(|prc| {
             prc.iter_mut().for_each(|(f, r)| {
               if let (_, Ok(w)) = r {
@@ -122,10 +122,9 @@ pub fn PostToolbar(
               }
             });
           });
-          let response_cache =
-            expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>, bool), (i64, LemmyAppResult<GetPostsResponse>)>>>();
+          let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPostsCacheKey), (i64, LemmyAppResult<GetPostsResponse>)>>>();
           response_cache.update(|rc| {
-            rc.iter_mut().for_each(|((_, form, _, _), (_, cached_result))| {
+            rc.iter_mut().for_each(|((_, cache_key), (_, cached_result))| {
               // let (_, form, _, _) = f;
               // let (_, cached_result) = r;
               if let Ok(w) = cached_result {
@@ -134,10 +133,10 @@ pub fn PostToolbar(
                   if p.post.id.0 == id {
                     *p = post_view.get();
                     let result_clone = cached_result.clone();
-                    let form_clone = form.clone();
+                    let cache_key = cache_key.clone();
                     spawn_local_scoped(async move {
                       if let Ok(d) = IndexedDb::new().await {
-                        if let Ok(_c) = d.set::<GetPosts, Result<GetPostsResponse, LemmyAppError>>(&form_clone, &result_clone).await {}
+                        if let Ok(_c) = d.set::<GetPostsCacheKey, Result<GetPostsResponse, LemmyAppError>>(&cache_key, &result_clone).await {}
                       }
                     });
                     break;

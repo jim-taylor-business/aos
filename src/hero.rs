@@ -4,10 +4,11 @@ use ev::MouseEvent;
 use leptos_use_intersection_observer::{UseIntersectionObserverOptions, use_intersection_observer_with_options};
 
 #[component]
-pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)>) -> impl IntoView {
+pub fn Hero(post_id: PostId, hide: bool, #[prop(optional)] next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)>) -> impl IntoView {
   let i18n = use_i18n();
   let query = use_query_map();
-  let ssr_sort = move || serde_json::from_str::<CommentSortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(CommentSortType::Top);
+  let ssr_sort =
+    move || serde_json::from_str::<CommentSortType>(&use_query_map().get().get("sort").unwrap_or("".into())).unwrap_or(CommentSortType::Top);
 
   let reply_show = RwSignal::new(None);
   let content = RwSignal::new(String::default());
@@ -16,24 +17,25 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
   // let post_view = RwSignal::new(None::<GetPostResponse>);
 
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
-  let listing_response_cache =
-    expect_context::<RwSignal<BTreeMap<(usize, GetPosts, Option<String>, bool), (i64, LemmyAppResult<GetPostsResponse>)>>>();
-  let post_response_cache = expect_context::<RwSignal<BTreeMap<(GetPost, Option<String>), (i64, LemmyAppResult<GetPostResponse>)>>>();
-  let comments_response_cache = expect_context::<RwSignal<BTreeMap<(GetComments, Option<String>), (i64, LemmyAppResult<GetCommentsResponse>)>>>();
+  let listing_response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPostsCacheKey), (i64, LemmyAppResult<GetPostsResponse>)>>>();
+  let post_response_cache = expect_context::<RwSignal<BTreeMap<GetCacheKey<GetPost>, (i64, LemmyAppResult<GetPostResponse>)>>>();
+  let comments_response_cache = expect_context::<RwSignal<BTreeMap<GetCacheKey<GetComments>, (i64, LemmyAppResult<GetCommentsResponse>)>>>();
   let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
+  let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
 
   let post_resource = Resource::new(
-    move || post_id.get(),
-    move |id| async move {
+    move || (post_id, get_auth_cookie.get(), get_instance_cookie.get()),
+    move |(id, auth, instance)| async move {
       let form = GetPost { id: Some(id), comment_id: None };
       let rc = post_response_cache.get_untracked();
-      let result = if let Some((_t, r)) = rc.get(&(form.clone(), get_auth_cookie.get_untracked())) {
+      let key = GetCacheKey { form: form.clone(), auth, instance, ban: false };
+      let result = if let Some((_t, r)) = rc.get(&key) {
         match r {
           Ok(o) => Ok(o.clone()),
-          _ => LemmyClient.get_post(form.clone()).await,
+          _ => LemmyClient.get_post(key.clone()).await,
         }
       } else {
-        LemmyClient.get_post(form.clone()).await
+        LemmyClient.get_post(key.clone()).await
       };
       loading.set(false);
       match result {
@@ -44,8 +46,8 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
   );
 
   let comments_resource = Resource::new(
-    move || (post_id.get(), ssr_sort()),
-    move |(post_id, sort_type)| async move {
+    move || (post_id, ssr_sort(), get_auth_cookie.get(), get_instance_cookie.get()),
+    move |(post_id, sort_type, auth, instance)| async move {
       let form = GetComments {
         post_id: Some(post_id),
         community_id: None,
@@ -61,13 +63,14 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
         liked_only: None,
       };
       let rc = comments_response_cache.get_untracked();
-      let result = if let Some((_t, r)) = rc.get(&(form.clone(), get_auth_cookie.get_untracked())) {
+      let key = GetCacheKey { form: form.clone(), auth, instance, ban: false };
+      let result = if let Some((_t, r)) = rc.get(&key) {
         match r {
           Ok(o) => Ok(o.clone()),
-          _ => LemmyClient.get_comments(form.clone()).await,
+          _ => LemmyClient.get_comments(key.clone()).await,
         }
       } else {
-        LemmyClient.get_comments(form.clone()).await
+        LemmyClient.get_comments(key.clone()).await
       };
       match result {
         Ok(o) => Some((form, o)),
@@ -93,8 +96,6 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
 
   let _on_scroll_element = NodeRef::<Div>::new();
   let thumbnail = RwSignal::new(String::from(""));
-  let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
-
   view! {
     <div class={format!("bg-base-300 pb-1 mb-6{}", if hide { " invisible" } else { "" })}>
       <Transition fallback={|| {}}>
@@ -127,13 +128,16 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
               {
                 let response_clone = response.clone();
                 let form_clone = form.clone();
+                let cache_key = GetCacheKey {
+                  form: form_clone.clone(),
+                  auth: get_auth_cookie.get_untracked(),
+                  instance: get_instance_cookie.get_untracked(),
+                  ban: false,
+                };
                 spawn_local_scoped(async move {
-                  if let Ok(d) = IndexedDb::new().await {
-                    let _ = d.set(&form_clone, &response_clone).await;
-                  }
                   post_response_cache
                     .update(move |rc| {
-                      rc.insert((form_clone, get_auth_cookie.get_untracked()), (0, Ok(response_clone)));
+                      rc.insert(cache_key, (0, Ok(response_clone)));
                     });
                 });
               }
@@ -280,7 +284,8 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                                 rc.remove(
                                   &(
                                     0usize,
-                                    GetPosts {
+                                    GetPostsCacheKey {
+                                      form: GetPosts {
                                       type_: Some(ListingType::All),
                                       sort: Some(SortType::Active),
                                       page: None,
@@ -303,10 +308,12 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                                       show_hidden: Some(true),
                                       show_read: Some(true),
                                       show_nsfw: Some(false),
-                                      page_cursor: None,
+                                        page_cursor: None,
+                                      },
+                                      auth: get_auth_cookie.get_untracked(),
+                                      instance: get_instance_cookie.get_untracked(),
+                                      ban: false,
                                     },
-                                    get_auth_cookie.get_untracked(),
-                                    false,
                                   ),
                                 );
                               });
@@ -378,13 +385,16 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
               {
                 let response_clone = response.clone();
                 let form_clone = form.clone();
+                let cache_key = GetCacheKey {
+                  form: form_clone.clone(),
+                  auth: get_auth_cookie.get_untracked(),
+                  instance: get_instance_cookie.get_untracked(),
+                  ban: false,
+                };
                 spawn_local_scoped(async move {
-                  if let Ok(d) = IndexedDb::new().await {
-                    let _ = d.set(&form_clone, &response_clone).await;
-                  }
                   comments_response_cache
                     .update(move |rc| {
-                      rc.insert((form_clone, get_auth_cookie.get_untracked()), (0, Ok(response_clone)));
+                      rc.insert(cache_key, (0, Ok(response_clone)));
                     });
                 });
               }
@@ -396,7 +406,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
               let hidden_comments: RwSignal<Vec<i32>> = RwSignal::new(vec![]);
               #[cfg(not(feature = "ssr"))]
               spawn_local_scoped(async move {
-                let p = post_id.get();
+                let p = post_id;
                 if let Ok(d) = IndexedDb::new().await {
                   if let Ok(Some(mut comment_ids)) = d.get::<i32, Vec<i32>>(&p.0).await {
                     hidden_comments
@@ -425,7 +435,7 @@ pub fn Hero(post_id: Signal<PostId>, hide: bool, #[prop(optional)] next_page_cur
                       level=1
                       now_in_millis
                       highlight_user_id
-                      post_id={Signal::derive(move || Some(post_id.get().0))}
+                      post_id={Signal::derive(move || Some(post_id.0))}
                       selected_drag_offset={RwSignal::new((1, 0f64, 0))}
                     />
                   </div>

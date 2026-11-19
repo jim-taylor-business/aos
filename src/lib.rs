@@ -69,7 +69,6 @@ fn NotFound() -> impl IntoView {
   let location = use_location();
   let search = location.search.get();
   let url = format!("{}{}", location.pathname.get(), if search.len() > 0 { format!("?{}", search) } else { "".into() });
-
   view! {
     <div class="flex flex-col min-h-screen" data-theme={move || get_theme_cookie.get()}>
       <main class="flex flex-col">
@@ -112,18 +111,16 @@ pub fn App() -> impl IntoView {
   let _offline_handle = window_event_listener_untyped("offline", on_online(false));
   let _online_handle = window_event_listener_untyped("online", on_online(true));
 
-  let listing_browser_cache: RwSignal<BTreeMap<(usize, GetPosts, Option<String>, bool), (i64, LemmyAppResult<GetPostsResponse>)>> =
-    RwSignal::new(BTreeMap::new());
+  let listing_browser_cache: RwSignal<BTreeMap<(usize, GetPostsCacheKey), (i64, LemmyAppResult<GetPostsResponse>)>> = RwSignal::new(BTreeMap::new());
   provide_context(listing_browser_cache);
-  let post_browser_cache: RwSignal<BTreeMap<(GetPost, Option<String>), (i64, LemmyAppResult<GetPostResponse>)>> = RwSignal::new(BTreeMap::new());
+  let post_browser_cache: RwSignal<BTreeMap<GetCacheKey<GetPost>, (i64, LemmyAppResult<GetPostResponse>)>> = RwSignal::new(BTreeMap::new());
   provide_context(post_browser_cache);
-  let comments_browser_cache: RwSignal<BTreeMap<(GetComments, Option<String>), (i64, LemmyAppResult<GetCommentsResponse>)>> =
+  let comments_browser_cache: RwSignal<BTreeMap<GetCacheKey<GetComments>, (i64, LemmyAppResult<GetCommentsResponse>)>> =
     RwSignal::new(BTreeMap::new());
   provide_context(comments_browser_cache);
-  let search_browser_cache: RwSignal<BTreeMap<(usize, Search, Option<String>), (i64, LemmyAppResult<SearchResponse>)>> =
-    RwSignal::new(BTreeMap::new());
+  let search_browser_cache: RwSignal<BTreeMap<(usize, GetCacheKey<Search>), (i64, LemmyAppResult<SearchResponse>)>> = RwSignal::new(BTreeMap::new());
   provide_context(search_browser_cache);
-  let user_browser_cache: RwSignal<BTreeMap<(usize, GetPersonDetails, Option<String>), (i64, LemmyAppResult<GetPersonDetailsResponse>)>> =
+  let user_browser_cache: RwSignal<BTreeMap<(usize, GetCacheKey<GetPersonDetails>), (i64, LemmyAppResult<GetPersonDetailsResponse>)>> =
     RwSignal::new(BTreeMap::new());
   provide_context(user_browser_cache);
 
@@ -148,9 +145,10 @@ pub fn App() -> impl IntoView {
   }
 
   let ssr_site = Resource::new(
-    move || (),
-    move |()| async move {
-      let result: Result<GetSiteResponse, LemmyAppError> = { LemmyClient.get_site().await };
+    move || (get_auth_cookie.get(), get_instance_cookie.get()),
+    move |(auth, instance)| async move {
+      let key = GetCacheKey::new(GetSite { t: u64::try_from(jiff::Timestamp::now().as_millisecond()).unwrap_or(0) }, auth, instance);
+      let result: Result<GetSiteResponse, LemmyAppError> = { LemmyClient.get_site(key).await };
       match result {
         Ok(o) => Ok(o),
         Err(e) => Err(e),

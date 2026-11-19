@@ -64,15 +64,15 @@ pub fn User() -> impl IntoView {
   let cancel_handle: RwSignal<Option<TimeoutHandle>> = RwSignal::new(None);
 
   let user_post_cache =
-    expect_context::<RwSignal<BTreeMap<(usize, GetPersonDetails, Option<String>), (i64, LemmyAppResult<GetPersonDetailsResponse>)>>>();
+    expect_context::<RwSignal<BTreeMap<(usize, GetCacheKey<GetPersonDetails>), (i64, LemmyAppResult<GetPersonDetailsResponse>)>>>();
+  let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
+  let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
 
   let user_resource = Resource::new(
-    move || (ssr_name(), ssr_page()),
-    move |(name, pages)| async move {
-      let ReadAuthCookie(get_auth_cookie) = expect_context::<ReadAuthCookie>();
+    move || (ssr_name(), ssr_page(), get_auth_cookie.get(), get_instance_cookie.get()),
+    move |(name, pages, auth, instance)| async move {
       let sc = user_post_cache.get_untracked();
-      let mut new_pages: Vec<(usize, GetPersonDetails, i64, LemmyAppResult<GetPersonDetailsResponse>, Option<String>)> = Vec::new();
-      let len = pages.len();
+      let mut new_pages: Vec<(usize, GetCacheKey<GetPersonDetails>, i64, LemmyAppResult<GetPersonDetailsResponse>)> = Vec::new();
       for p in pages {
         let form = GetPersonDetails {
           username: Some(name.clone()),
@@ -83,30 +83,31 @@ pub fn User() -> impl IntoView {
           person_id: None,
           sort: Some(SortType::New),
         };
+        let cache_key = GetCacheKey { form, auth: auth.clone(), instance: instance.clone(), ban: false };
         #[cfg(not(feature = "ssr"))]
         loading.set(true);
         #[cfg(not(feature = "ssr"))]
-        if let Some((t, Ok(r))) = sc.get(&(p, form.clone(), get_auth_cookie.get_untracked())) {
+        if let Some((t, Ok(r))) = sc.get(&(p, cache_key.clone())) {
           if p == 1 && r.posts.len() == 0 {
             loading.set(false);
           }
-          new_pages.push((p, form.clone(), t.clone(), Ok(r.clone()), get_auth_cookie.get_untracked()));
+          new_pages.push((p, cache_key.clone(), t.clone(), Ok(r.clone())));
           continue;
         }
         let t = jiff::Timestamp::now().as_millisecond();
-        let result = LemmyClient.get_user(form.clone()).await;
+        let result = LemmyClient.get_user(cache_key.clone()).await;
         match result {
           Ok(o) => {
             if p == 1 && o.posts.len() == 0 {
               loading.set(false);
             }
-            new_pages.push((p, form.clone(), t, Ok(o), get_auth_cookie.get_untracked()));
+            new_pages.push((p, cache_key.clone(), t, Ok(o)));
           }
           Err(e) => {
             #[cfg(not(feature = "ssr"))]
             loading.set(false);
             error!("err {:#?}", e);
-            new_pages.push((p, form.clone(), t, Err(e), get_auth_cookie.get_untracked()));
+            new_pages.push((p, cache_key, t, Err(e)));
           }
         }
       }
@@ -139,25 +140,21 @@ pub fn User() -> impl IntoView {
         >
           <Transition fallback={|| {}}>
             <Title text={move || t_string!(i18n, user_details)} />
-            <For each={move || user_resource.get().unwrap_or(vec![])} key={|(_, form, timestamp, _, auth)| (form.clone(), *timestamp, auth.clone())} let:r>
+            <For each={move || user_resource.get().unwrap_or(vec![])} key={|(page, _, timestamp, _)| (*page, *timestamp)} let:r>
               {
-                let (page_number, form, timestamp, result, auth) = &r;
+                let (page_number, cache_key, timestamp, result) = &r;
                 match result {
                   Ok(o) => {
                     #[cfg(not(feature = "ssr"))]
                     {
                       let result_clone = result.clone();
-                      let form_clone = form.clone();
                       let page_index = *page_number;
                       let fetched_at = *timestamp;
-                      let auth_cookie = auth.clone();
+                      let cache_key = cache_key.clone();
                       spawn_local_scoped(async move {
-                        if let Ok(d) = IndexedDb::new().await {
-                          if let Ok(_c) = d.set::<GetPersonDetails, Result<GetPersonDetailsResponse, LemmyAppError>>(&form_clone, &result_clone).await {}
-                        }
                         user_post_cache
                           .update(move |sc| {
-                            sc.insert((page_index, form_clone, auth_cookie), (fetched_at, result_clone));
+                            sc.insert((page_index, cache_key), (fetched_at, result_clone));
                           });
                       });
                       let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
