@@ -106,7 +106,7 @@ pub fn Post() -> impl IntoView {
           Ok(_o) => {
             comments_resource.refetch();
             reply_show.update(|b| {
-              b.map(|b| !b);
+              *b = b.map(|b| !b);
             });
             if let Ok(d) = IndexedDb::new().await {
               if let Ok(_c) = d.del(&CommentDraftKey { comment_id: id, draft: Draft::Post }).await {}
@@ -434,7 +434,7 @@ pub fn Post() -> impl IntoView {
                                         >
                                           {t!(i18n, comment_button)}
                                         </button>
-                                        <button on:click={move |_| reply_show.set(Some(false))} type="button" class="btn btn-soft">
+                                        <button on:click={move |_| { reply_show.set(Some(false)); }} type="button" class="btn btn-soft">
                                           {t!(i18n, cancel)}
                                         </button>
                                       </div>

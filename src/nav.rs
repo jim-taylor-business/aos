@@ -286,7 +286,7 @@ pub fn TopNav(
           se.set_scroll_left(0i32);
         }
       }
-      reset_menus()
+      reset_menus();
     }
   };
 
@@ -629,7 +629,7 @@ pub fn TopNav(
           se.set_scroll_left(0i32);
         }
       }
-      reset_menus()
+      reset_menus();
     }
   };
 

@@ -68,7 +68,6 @@ pub fn markdown_to_html(content: &str, linkify: bool) -> String {
 
 pub fn markdown_to_html_with_options(content: &str, options: pulldown_cmark::Options) -> String {
   let parser = pulldown_cmark::Parser::new_ext(content, options);
-
   let custom = parser.map(|event| match event {
     pulldown_cmark::Event::Html(text) => {
       let er = format!("<p>{}</p>", html_escape::encode_safe(&text).to_string());
@@ -82,7 +81,6 @@ pub fn markdown_to_html_with_options(content: &str, options: pulldown_cmark::Opt
   });
   let mut safe_html = String::new();
   pulldown_cmark::html::push_html(&mut safe_html, custom);
-
   safe_html
 }
 
@@ -149,7 +147,7 @@ pub fn handle_horizontal_scroll_wheel(scroll_element: NodeRef<Div>) -> impl FnMu
 
     if !gesture.horizontal {
       gesture.acc_x = gesture.acc_x + dx.abs();
-      gesture.acc_y = gesture.acc_y + if dy.abs() < 20.0 { dy.abs() * 2.0 } else { dy.abs() };
+      gesture.acc_y = gesture.acc_y + if dy.abs() < 20.0 { dy.abs() * 3.0 } else { dy.abs() };
       if gesture.acc_x > 256.0 && gesture.acc_x > gesture.acc_y * 2.0 {
         gesture.horizontal = true;
       }
