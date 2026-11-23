@@ -2,7 +2,8 @@
 
 **A Lemmy client written in Rust, built to be read like a newspaper.**
 
-A.O.S renders on the server for a fast first paint, hydrates as WebAssembly for instant interaction, and talks to
+A.O.S renders on the server for the fastest time to rendered page possible, hydrates as WebAssembly for instant
+interaction, and talks to
 whichever Lemmy instance you point it at. Posts and comments flow into columns, your place is remembered, and reading,
 navigating and voting all work before a single byte of WebAssembly has loaded.
 
@@ -19,13 +20,9 @@ navigating and voting all work before a single byte of WebAssembly has loaded.
 [How A.O.S compares](#how-aos-compares) &middot;
 [Contributing](#contributing)
 
----
+<img src="docs/media/hero.webp" width="100%">
 
-<p align="center">
-  <img src="docs/media/hero.webp" alt="A.O.S reading the Rust community. Three themes are stacked on the left, a desktop view scrolls sideways in the background, and a phone view scrolls down on the right." width="100%">
-</p>
-
-## App features
+## Features
 
 - <big>**_Lemmy support across your instance_**</big> - Browse feeds, communities and users. Read threaded comments.
   Vote, save, reply, edit, report and block. Search posts, comments, communities and users in context. Sign in to your
@@ -40,8 +37,6 @@ navigating and voting all work before a single byte of WebAssembly has loaded.
 
 - <big>**_And more_**</big> - English and French UI translations, offline reading from cache, saved drafts, saved scroll
   position, and a blazingly fast feel (of course).
-
----
 
 ## Lemmy support
 
@@ -85,8 +80,6 @@ Lemmy is a federated network, and A.O.S shows it honestly instead of hiding it.
 - Removed, deleted, banned and blocked comments render as clear placeholders, with a way to look up the mod log or
   reveal blocked content.
 - Reports require a reason, and blocking a user is available from the post menu.
-
----
 
 ## Technical design
 
@@ -200,8 +193,6 @@ The deployment command must start the uploaded binary with the Leptos environmen
 
 </details>
 
----
-
 ## Visual and interactive design
 
 A.O.S treats reading as the primary focus. There is very little chrome: one slim top bar, icon-only toolbars, and menus
@@ -270,8 +261,6 @@ Posts show unread comment counts, and times are compact and localised.
 | Icon sprite and `em` sizing        | Crisp icons that scale with text size.                                                                              |
 | Archive shortcut on external links | One tap to archive a link that may disappear or sit behind a paywall.                                               |
 
----
-
 ## How A.O.S compares
 
 Lemmy has a healthy ecosystem of clients, and many of them are excellent. This is a map of where A.O.S sits, not a
@@ -280,12 +269,12 @@ status.
 
 | Client                                                | Runs as                             | Built with                                                 | Known for                                                                                                                                                  |
 |-------------------------------------------------------|-------------------------------------|------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| A.O.S                                                 | Web: server-rendered, then hydrated | Rust, Leptos 0.8, Axum, WebAssembly, Tailwind 4, daisyUI 5 | Sideways column reading, one Rust codebase for server and browser, an IndexedDB cache with offline reading                                                 |
-| [lemmy-ui](https://github.com/LemmyNet/lemmy-ui)      | Web: server-rendered                | Inferno                                                    | The official web app that ships with Lemmy                                                                                                                 |
+| A.O.S                                                 | Web, server-rendered, then hydrated | Rust, Leptos 0.8, Axum, WebAssembly, Tailwind 4, daisyUI 5 | Sideways column reading, one Rust codebase for server and browser, an IndexedDB cache with offline reading                                                 |
+| [lemmy-ui](https://github.com/LemmyNet/lemmy-ui)      | Web, server-rendered                | Inferno                                                    | The official web app that ships with Lemmy                                                                                                                 |
 | [Photon](https://github.com/Xyphyn/photon)            | Web, self-hostable                  | Svelte 5, SvelteKit                                        | Broad Lemmy feature coverage including mod and admin tools, optional server-side rendering, Lemmy and PieFed                                               |
 | [Voyager](https://github.com/aeharding/voyager)       | Web (PWA), iOS, Android             | React, Ionic, Capacitor, TypeScript                        | A mobile-first, Apollo-style interface with native apps and push notifications, for Lemmy and PieFed                                                       |
 | [Alexandrite](https://github.com/sheodox/alexandrite) | Web, client-rendered                | Svelte, SvelteKit                                          | A desktop-first UI that can show a post in a second column beside the feed, with infinite scroll and multi-account switching                               |
-| [mlmym](https://github.com/rystaf/mlmym)              | Web: server-rendered                | Go templates                                               | An old-Reddit-style desktop interface that works without JavaScript. The original is no longer maintained, and a fork keeps it running for old.lemmy.world |
+| [mlmym](https://github.com/rystaf/mlmym)              | Web, server-rendered                | Go templates                                               | An old-Reddit-style desktop interface that works without JavaScript. The original is no longer maintained, and a fork keeps it running for old.lemmy.world |
 
 ### What sets A.O.S apart
 
@@ -301,11 +290,12 @@ status.
   connection costs you little.
 - **A compact codebase.** Seventeen source files and no database dependency.
 
----
-
 ## Roadmap
 
-These are ideas rather than promises, and every one of them is a good place to contribute.
+There are a few fundamentals still to be done, and every one of them is a good place to contribute, but I would like to
+continue and extend the unique user experience in their implementation. There are benefits and compromises to the
+current
+design that can be improved with careful thought and experimentation. The following are some of the next steps:
 
 - Creating posts and communities.
 - Multiple accounts and account switching.
@@ -313,8 +303,6 @@ These are ideas rather than promises, and every one of them is a good place to c
 - Two-factor (TOTP) login.
 - An inbox for replies, mentions and private messages. The client layer and an icon are already in place.
 - Desktop and mobile packaging. A web manifest is already included.
-
----
 
 ## Contributing
 
@@ -324,13 +312,16 @@ Fork the repository and create a feature branch. Make the smallest focused chang
 
 Open an issue with reproduction steps or the proposed behaviour before large or disruptive work.
 
----
-
 ## License
 
 Released under the [MIT License](LICENSE).
 
----
+## AI usage in this app
+
+This project is not "vibe-coded" by AI. However, I have no problem using AI autocomplete tools to speed up development
+as long as all AI suggestions are completely reviewed and tested by a human before being committed. This promotional
+page did use
+significant suggested text from an LLM based on the project's human written source and browser rendering.
 
 ## Acknowledgements
 
