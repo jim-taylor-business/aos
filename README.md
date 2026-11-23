@@ -31,11 +31,12 @@ navigating and voting all work before a single byte of WebAssembly has loaded.
 - <big>**_Cutting egde Rust architecture_**</big> - One Rust crate compiled for the server (Axum SSR) and the browser
   (WebAssembly). Direct-to-instance API calls, a layered memory and IndexedDB cache, forms that work without JavaScript.
 
-- <big>**_Radically reactive reader first design_**</big> - A newspaper-column reading surface with sideways scrolling,
+- <big>**_Radically reactive reader-first design_**</big> - A newspaper-column reading surface with sideways scrolling,
   a hero post with its top comment, press-and-hold action bars, collapsible comment threads, three themes, pagination
   state preserved in the URL.
 
-- <big>**_And more_**</big> - English and French UI translations, offline reading from cache, saved drafts, saved scroll
+- <big>**_So much more_**</big> - English and French UI translations, offline reading from cache, saved drafts, saved
+  scroll
   position, and a blazingly fast feel (of course).
 
 ## Lemmy support
