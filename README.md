@@ -2,6 +2,11 @@
 
 **A Lemmy client written in Rust, built to be read like a newspaper.**
 
+I started A.O.S to explore what a Lemmy client could be if it was designed for reading; minimal UI, content-first, with
+featured articles and columns that flowed to infinity so your eyes could browse it like a newspaper instead of the usual
+tired old website visual metaphors and mess of clunky controls and screen furniture. Functionality would still be there
+and use context to make it powerful and provide feedback, but it would be hidden until you needed it.
+
 A.O.S renders on the server for the fastest time to rendered page possible, hydrates as WebAssembly for instant
 interaction, and talks to
 whichever Lemmy instance you point it at. Posts and comments flow into columns, your place is remembered, and reading,
@@ -130,10 +135,10 @@ plain Next link takes its place.
 
 ### Progressive enhancement
 
-Menus are `<details>` elements, navigation is real `<a href>` links, and actions such as voting, saving, reporting,
+Menus are `<details>` elements, navigation is real `<a>` links, and actions such as voting, saving, reporting,
 blocking and login are server functions behind ordinary forms. They work before WebAssembly loads, and Leptos upgrades
-them in place afterwards. A dedicated `POST /l` route carries the page you were on through the login form, so signing in
-returns you where you started.
+them in place afterwards. Signing in
+returns you exactly where you started.
 
 ### Markdown, errors and i18n
 
