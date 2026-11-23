@@ -42,21 +42,21 @@ navigating and voting all work before a single byte of WebAssembly has loaded.
 
 ### Supported today
 
-| Feature                    | Supported                                                                                                                        |
-|----------------------------|----------------------------------------------------------------------------------------------------------------------------------|
-| **Feeds**                  | All, Local and Subscribed feeds, sorted by Active, Hot, New, Old, Top, Controversial, Scaled or New Comments. 50 posts per page. |
-| **Communities**            | Header with icon, banner, description and rules. Subscribe and unsubscribe.                                                      |
-| **Posts**                  | Full post with body, image, embed description, link host and language.                                                           |
-| **Threaded comments**      | Full tree up to 128 levels deep, built from Lemmy's comment paths. Missing children load on demand.                              |
-| **Voting**                 | Upvote and downvote posts and comments, with optimistic updates.                                                                 |
-| **Saving**                 | Save and unsave posts and comments.                                                                                              |
-| **Writing**                | Comment on a post, reply to a comment, edit your own comments. Drafts are kept as you type.                                      |
-| **Reporting and blocking** | Report a post with a required reason. Block a user.                                                                              |
-| **Search**                 | Posts, Comments, Communities and Users, scoped to the whole instance, a community, a user or a single post.                      |
-| **Users**                  | Profile with avatar, banner and bio. Posts and comments merged into one newest-first activity view, grouped by post.             |
-| **Mod log lookups**        | Look up why a comment was removed or its author banned.                                                                          |
-| **Accounts**               | Username and password login and logout.                                                                                          |
-| **Instance branding**      | Instance name, icon, description and language list shape the UI. Page titles read like `AOS - Lemmy.World - <description>`.      |
+| Feature         | Supported                                                                                                                        |
+|-----------------|----------------------------------------------------------------------------------------------------------------------------------|
+| **Feeds**       | All, Local and Subscribed feeds, sorted by Active, Hot, New, Old, Top, Controversial, Scaled or New Comments. 50 posts per page. |
+| **Communities** | Header with icon, banner, description and rules. Subscribe and unsubscribe.                                                      |
+| **Posts**       | Full post with body, image, embed description, link host and language.                                                           |
+| **Comments**    | 100% Lemmy compatible Markdown. Full threaded tree up to 128 levels deep. Missing children load on demand.                       |
+| **Voting**      | Upvote and downvote posts and comments, with optimistic updates.                                                                 |
+| **Saving**      | Save and unsave posts and comments.                                                                                              |
+| **Writing**     | Comment on a post, reply to a comment, edit your own comments. Drafts are kept as you type.                                      |
+| **Moderation**  | Report a post with a required reason. Block a user.                                                                              |
+| **Search**      | Posts, Comments, Communities and Users, scoped to the whole instance, a community, a user or a single post.                      |
+| **Users**       | Profile with avatar, banner and bio. Posts and comments merged into one newest-first activity view, grouped by post.             |
+| **Mod log**     | Look up why a comment was removed or its author banned.                                                                          |
+| **Accounts**    | Username and password login and logout.                                                                                          |
+| **Branding**    | Instance name, icon, description and language list shape the UI. Page titles read like `AOS - <instance> - <description>`.       |
 
 ### Federation-aware by default
 
