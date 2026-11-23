@@ -103,12 +103,12 @@ both places, so the server-rendered HTML and the hydrated app are built from the
 
 ### Where state lives
 
-| Where                      | Why                                                                                           | What                                                                                                                                                   |
-|----------------------------|-----------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Cookies**                | The server can read them, so the first render already uses your instance, theme and language. | Authentication, instance, theme, and language information.                                                                                             |
-| **URL**                    | Every view is linkable, and the back button does the right thing.                             | Route, plus the query parameters `list` (All, Local, Subscribed), `sort`, `bans` (NSFW and banned toggles), `kind` (search type) and `page` (cursors). |
-| **Memory**                 | Instant revisits within a session.                                                            | Five in-memory caches for listings, posts, comments, search and users.                                                                                 |
-| **IndexedDB** (`cache_v5`) | Survives reloads. Powers offline reading.                                                     | API responses, scroll positions, collapsed comments, drafts.                                                                                           |
+| Where         | Why                                                                                           | What                                                                                                                                                   |
+|---------------|-----------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Cookies**   | The server can read them, so the first render already uses your instance, theme and language. | Authentication, instance, theme, and language information.                                                                                             |
+| **URL**       | Every view is linkable, and the back button does the right thing.                             | Route, plus the query parameters `list` (All, Local, Subscribed), `sort`, `bans` (NSFW and banned toggles), `kind` (search type) and `page` (cursors). |
+| **Memory**    | Instant revisits within a session.                                                            | Five in-memory caches for listings, posts, comments, search and users.                                                                                 |
+| **IndexedDB** | Survives reloads. Powers offline reading.                                                     | API responses, scroll positions, collapsed comments, drafts.                                                                                           |
 
 ### Pagination you can bookmark
 
