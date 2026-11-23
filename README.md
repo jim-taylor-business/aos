@@ -39,11 +39,11 @@ navigating and voting all work before a single byte of WebAssembly has loaded.
   scroll
   position, and a blazingly fast feel (of course).
 
-## Lemmy support
+## Lemmy services
 
-### Supported today
+### Supported currently
 
-| Feature         | Supported                                                                                                                        |
+| Object          | Actions                                                                                                                          |
 |-----------------|----------------------------------------------------------------------------------------------------------------------------------|
 | **Feeds**       | All, Local and Subscribed feeds, sorted by Active, Hot, New, Old, Top, Controversial, Scaled or New Comments. 50 posts per page. |
 | **Communities** | Header with icon, banner, description and rules. Subscribe and unsubscribe.                                                      |
@@ -57,11 +57,11 @@ navigating and voting all work before a single byte of WebAssembly has loaded.
 | **Users**       | Profile with avatar, banner and bio. Posts and comments merged into one newest-first activity view, grouped by post.             |
 | **Mod log**     | Look up why a comment was removed or its author banned.                                                                          |
 | **Accounts**    | Username and password login and logout.                                                                                          |
-| **Branding**    | Instance name, icon, description and language list shape the UI. Page titles read like `AOS - <instance> - <description>`.       |
+| **Branding**    | Instance name, icon, description and language list shape the UI. Page titles read `AOS - <instance> - <description>`.            |
 
 ### Federation-aware by default
 
-Lemmy is a federated network, and A.O.S shows it honestly instead of hiding it.
+Lemmy is a federated network, and A.O.S shows it openly for ease of identification.
 
 - A.O.S is not tied to one Lemmy server. It starts on `lemmy.world`, and you can switch to any other instance by
   pressing and holding the site name in the top bar, typing a domain, and pressing Enter.
@@ -70,7 +70,7 @@ Lemmy is a federated network, and A.O.S shows it honestly instead of hiding it.
 - Author handles show a domain only when it differs from your selected instance.
 - Posts that link to another site show the host they came from.
 - Federated posts include a link to the original on their home instance.
-- Posts that carry a link or an image get a one-tap shortcut to archive it on archive.ph.
+- Posts that carry a link or an image get a one-tap shortcut to access it archived on archive.ph.
 - Each post and comment sets a `lang` attribute from its Lemmy language, which helps screen readers, hyphenation and
   font selection.
 
@@ -291,8 +291,9 @@ Released under the [MIT License](LICENSE).
 ## AI usage in this app
 
 This project is not "vibe-coded" by AI. However, I have no problem using AI autocomplete tools to speed up development
-as long as all AI suggestions are completely reviewed and tested by a human before being committed. This promotional
-page did use
+as long as all AI suggestions are completely reviewed and tested by a human before being committed, and are focussed on
+the
+specific task being implemented. This README page did use
 significant suggested text from an LLM based on the project's human written source and browser rendering.
 
 ## Acknowledgements
