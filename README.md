@@ -199,7 +199,7 @@ The deployment command must start the uploaded binary with the Leptos environmen
 A.O.S treats reading as the primary focus. There is very little chrome: one slim top bar, icon-only toolbars, and menus
 that stay folded until you need them. The rest of the screen is content.
 
-### A reading surface built from columns
+### A reading experience built from columns
 
 - **Columns, not an endless scroll.** Content flows into newspaper-like columns that fill top to bottom and then
   continue to the right.
@@ -222,7 +222,7 @@ the site name to change instance.
 Search is contextual. Open it from a community, a user or a post, and it searches within that context, with the scope
 shown in the field.
 
-### Comments you can fold, probe and refill
+### Comments you can fold
 
 - **Tap or click** a comment to fold its thread. Open and closed state is saved per post, and selecting text never
   triggers it.
@@ -261,35 +261,6 @@ Posts show unread comment counts, and times are compact and localised.
 | Cookie-driven themes               | Three looks with no flash of the wrong theme.                                                                       |
 | Icon sprite and `em` sizing        | Crisp icons that scale with text size.                                                                              |
 | Archive shortcut on external links | One tap to archive a link that may disappear or sit behind a paywall.                                               |
-
-## How A.O.S compares
-
-Lemmy has a healthy ecosystem of clients, and many of them are excellent. This is a map of where A.O.S sits, not a
-ranking. It is a snapshot from each project's public pages (November 2026), so check their repositories for current
-status.
-
-| Client                                                | Runs as                             | Built with                                                 | Known for                                                                                                                                                  |
-|-------------------------------------------------------|-------------------------------------|------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| A.O.S                                                 | Web, server-rendered, then hydrated | Rust, Leptos 0.8, Axum, WebAssembly, Tailwind 4, daisyUI 5 | Sideways column reading, one Rust codebase for server and browser, an IndexedDB cache with offline reading                                                 |
-| [lemmy-ui](https://github.com/LemmyNet/lemmy-ui)      | Web, server-rendered                | Inferno                                                    | The official web app that ships with Lemmy                                                                                                                 |
-| [Photon](https://github.com/Xyphyn/photon)            | Web, self-hostable                  | Svelte 5, SvelteKit                                        | Broad Lemmy feature coverage including mod and admin tools, optional server-side rendering, Lemmy and PieFed                                               |
-| [Voyager](https://github.com/aeharding/voyager)       | Web (PWA), iOS, Android             | React, Ionic, Capacitor, TypeScript                        | A mobile-first, Apollo-style interface with native apps and push notifications, for Lemmy and PieFed                                                       |
-| [Alexandrite](https://github.com/sheodox/alexandrite) | Web, client-rendered                | Svelte, SvelteKit                                          | A desktop-first UI that can show a post in a second column beside the feed, with infinite scroll and multi-account switching                               |
-| [mlmym](https://github.com/rystaf/mlmym)              | Web, server-rendered                | Go templates                                               | An old-Reddit-style desktop interface that works without JavaScript. The original is no longer maintained, and a fork keeps it running for old.lemmy.world |
-
-### What sets A.O.S apart
-
-- **It reads sideways.** Columns, the wheel-to-sideways gesture and the hero post are the central idea of A.O.S, not a
-  skin over a familiar feed. Alexandrite also puts a post beside the feed in a second column, while A.O.S makes columns
-  the whole reading surface, for feeds and comments alike.
-- **One language, end to end.** The server and the browser compile against Lemmy's own request and response types, so an
-  API change shows up as a compile error instead of a runtime surprise.
-- **Readable before anything loads.** Pages arrive as real HTML with real links and forms, then WebAssembly takes over.
-  Client-side apps such as Voyager and Alexandrite render in the browser once their JavaScript has loaded, while A.O.S
-  shares its server-rendered approach with lemmy-ui and mlmym.
-- **A local-first cache.** Responses, scroll position, collapsed threads and drafts live in IndexedDB, so a flaky
-  connection costs you little.
-- **A compact codebase.** Seventeen source files and no database dependency.
 
 ## Roadmap
 
