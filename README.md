@@ -1,6 +1,18 @@
 # A.O.S
 
-**A Lemmy client written in Rust, built to be read like a newspaper.**
+[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
+[![Rust edition 2024](https://img.shields.io/badge/rust-edition%202024-orange.svg)](https://www.rust-lang.org/)
+[![Leptos 0.8](https://img.shields.io/badge/leptos-0.8-blue.svg)](https://leptos.dev/)
+[![Axum](https://img.shields.io/badge/server-axum-5c6bc0.svg)](https://github.com/tokio-rs/axum)
+[![Tailwind 4 + daisyUI 5](https://img.shields.io/badge/style-tailwind%204%20%2B%20daisyUI%205-38bdf8.svg)](https://daisyui.com/)
+[![Lemmy API v3](https://img.shields.io/badge/lemmy-api%20v3-00a86b.svg)](https://join-lemmy.org/)
+
+[Lemmy services](#lemmy-support) &middot;
+[Technical design](#technical-design) &middot;
+[Visual and interactive design](#visual-and-interactive-design) &middot;
+[Contributing](#contributing)
+
+## A Lemmy client written in Rust, built to be read like a newspaper.
 
 I started A.O.S to explore what a Lemmy client could be if it was designed for reading; minimal UI, content-first, with
 featured articles and columns that flowed to infinity so your eyes could browse it like a newspaper instead of the usual
@@ -11,19 +23,6 @@ A.O.S renders on the server for the fastest time to rendered page possible, hydr
 interaction, and talks to
 whichever Lemmy instance you point it at. Posts and comments flow into columns, your place is remembered, and reading,
 navigating and voting all work before a single byte of WebAssembly has loaded.
-
-[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
-[![Rust edition 2024](https://img.shields.io/badge/rust-edition%202024-orange.svg)](https://www.rust-lang.org/)
-[![Leptos 0.8](https://img.shields.io/badge/leptos-0.8-blue.svg)](https://leptos.dev/)
-[![Axum](https://img.shields.io/badge/server-axum-5c6bc0.svg)](https://github.com/tokio-rs/axum)
-[![Tailwind 4 + daisyUI 5](https://img.shields.io/badge/style-tailwind%204%20%2B%20daisyUI%205-38bdf8.svg)](https://daisyui.com/)
-[![Lemmy API v3](https://img.shields.io/badge/lemmy-api%20v3-00a86b.svg)](https://join-lemmy.org/)
-
-[Lemmy support](#lemmy-support) &middot;
-[Technical design](#technical-design) &middot;
-[Visual and interactive design](#visual-and-interactive-design) &middot;
-[How A.O.S compares](#how-aos-compares) &middot;
-[Contributing](#contributing)
 
 <img src="docs/media/hero.webp" width="100%">
 
@@ -277,6 +276,7 @@ design that can be improved with careful thought and experimentation. The follow
 - Creating posts and communities.
 - Multiple accounts and account switching.
 - More locales and themes.
+- Lemmy API v4.
 - Two-factor (TOTP) login.
 - An inbox for replies, mentions and private messages. The client layer and an icon are already in place.
 - Desktop and mobile packaging. A web manifest is already included.
