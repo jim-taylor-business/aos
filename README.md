@@ -14,8 +14,8 @@
 
 ## A Lemmy client written in Rust, built to be read like a newspaper.
 
-I started A.O.S to explore what a Lemmy client could be if it was designed for reading; minimal UI, content-first, with
-featured articles and columns that flowed to infinity so your eyes could browse it like a newspaper instead of the usual
+I started A.O.S to explore what a Lemmy client could be if it was designed for reading. Minimal UI, content-first, with
+featured articles and columns that flowed to infinity so your eyes could browse it like a newspaper. No longer the usual
 tired old website visual metaphors and mess of clunky controls and screen furniture. Functionality would still be there
 and use context to make it powerful and provide feedback, but it would be hidden until you needed it.
 
