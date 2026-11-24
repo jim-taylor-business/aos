@@ -74,10 +74,6 @@ pub fn TopNav(
   let ssr_bans = move || serde_json::from_str::<Vec<BanType>>(&query.get().get("bans").unwrap_or("".into())).unwrap_or(vec![]);
   let ssr_person_id = move || query.get().get("person_id").unwrap_or_default().parse::<i32>().ok();
 
-  // let param = use_params_map();
-  // let ssr_name = move || param.get().get("name").unwrap_or("".into());
-  // let ssr_id = move || param.get().get("id").unwrap_or("".into());
-
   let ssr_name = move || if lost_path.is_some() { "".to_owned() } else { use_params_map().get().get("name").unwrap_or("".into()) };
   let ssr_id = move || if lost_path.is_some() { "".to_owned() } else { use_params_map().get().get("id").unwrap_or("".into()) };
 

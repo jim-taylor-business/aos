@@ -75,14 +75,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
               if st.len() == 0 {
                 st.push((0usize, "".into()));
               }
-              if st
-                .iter()
-                .find(|(page_index, cursor)| {
-                  // let (page_index, cursor) = &**s;
-                  *page_index == key && *cursor == next_page
-                })
-                .is_none()
-              {
+              if st.iter().find(|(page_index, cursor)| *page_index == key && *cursor == next_page).is_none() {
                 st.push((key, next_page));
               }
             }
@@ -568,7 +561,6 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                                           if let Some(se) = on_scroll_element.get_untracked() {
                                             let _ = IndexedDb::save_scroll_position(use_location().pathname.get_untracked(), params.to_query_string(), se.scroll_left()).await;
                                           }
-                                          // log!("   PAGE: {}", key);
                                           let navigate = use_navigate();
                                           navigate(
                                             &format!("{}{}", use_location().pathname.get_untracked(), query_params.to_query_string()),

@@ -164,7 +164,6 @@ pub fn App() -> impl IntoView {
 
   #[cfg(not(feature = "ssr"))]
   let _selection_listener = use_event_listener(use_document(), selectionchange, move |e| {
-    // let document_selection_converted_to_rust_string =
     let selection = document()
       .get_selection()
       .ok()
@@ -172,8 +171,6 @@ pub fn App() -> impl IntoView {
       .map(|s| s.to_string().to_string().into())
       .map(|s: String| if s.len() > 0 { Some(s) } else { None })
       .flatten();
-    // log!("Selected text: {:?}", selection);
-    // let convert_option_string_to_none_if_len_is_zero = sel.map(|s: String| if s.len() > 0 { Some(s) } else { None }).flatten();
     selected_text.set(SelectedText(selection));
   });
 

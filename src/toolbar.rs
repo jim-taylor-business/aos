@@ -93,7 +93,6 @@ pub fn PostToolbar(
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
   let online = expect_context::<RwSignal<OnlineSetter>>();
-  // let pv_clone = RwSignal::new(post_view.clone());
   let post_view = RwSignal::new(post_view);
   let vote_action = ServerAction::<VotePostFn>::new();
   let loading = RwSignal::new(false);
@@ -125,8 +124,6 @@ pub fn PostToolbar(
           let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPostsCacheKey), (i64, LemmyAppResult<GetPostsResponse>)>>>();
           response_cache.update(|rc| {
             rc.iter_mut().for_each(|((_, cache_key), (_, cached_result))| {
-              // let (_, form, _, _) = f;
-              // let (_, cached_result) = r;
               if let Ok(w) = cached_result {
                 let id = post_view.get().post.id.0;
                 for p in w.posts.iter_mut() {
@@ -267,13 +264,6 @@ pub fn PostToolbar(
     post_view.get().community.actor_id.inner().host().map(|host| host.to_string()),
   );
   let creator_name = &post_view.get().creator.actor_id.to_string()[8..];
-
-  // let abbr_duration = relative_time(post_view.get().post.published.timestamp_millis());
-
-  // #[cfg(not(feature = "ssr"))]
-  // let _thumbnail_element = NodeRef::<Img>::new();
-  // let _thumbnail = RwSignal::new(String::from(""));
-
   let enable_reply = RwSignal::new(false);
 
   view! {
@@ -283,7 +273,6 @@ pub fn PostToolbar(
           Some(Ok(s)) => {
             {
               let logged_in = Memo::new(move |_| { s.my_user.is_some() });
-              // let post_view = Memo::new(move |_| pv_clone.get());
 
               #[cfg(not(feature = "ssr"))]
               let _ = set_timeout_with_handle(
@@ -293,7 +282,6 @@ pub fn PostToolbar(
                     } else {
                       enable_reply.set(false);
                     }
-                    // enable_reply.set(true);
                   },
                   std::time::Duration::new(0, 0),
                 )

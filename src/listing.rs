@@ -228,7 +228,6 @@ pub fn Listings(posts: Signal<Vec<PostView>>, page_number: RwSignal<usize>, hide
         post_number.update(|n| *n = *n + 1usize);
         if post_number.get() <= heroes {
           view! { <Hero hide post_id={pv.post.id} /> }.into_any()
-          // view! {  }.into_any()
         } else {
           view! { <Listing hide post_view={pv} post_number={post_number.get()} /> }.into_any()
         }
@@ -357,8 +356,6 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
             let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPostsCacheKey), (i64, LemmyAppResult<GetPostsResponse>)>>>();
             response_cache.update(|rc| {
               rc.iter_mut().for_each(|((_, cache_key), (_, cached_result))| {
-                // let (_, form, _, _) = f;
-                // let (_, cached_result) = r;
                 if let Ok(w) = cached_result {
                   let id = post_view.get().post.id.0;
                   for p in w.posts.iter_mut() {

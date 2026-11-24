@@ -14,8 +14,6 @@ pub fn Hero(post_id: PostId, hide: bool, #[prop(optional)] next_page_cursor: RwS
   let content = RwSignal::new(String::default());
   let loading = RwSignal::new(true);
 
-  // let post_view = RwSignal::new(None::<GetPostResponse>);
-
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
   let listing_response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPostsCacheKey), (i64, LemmyAppResult<GetPostsResponse>)>>>();
   let post_response_cache = expect_context::<RwSignal<BTreeMap<GetCacheKey<GetPost>, (i64, LemmyAppResult<GetPostResponse>)>>>();
@@ -123,7 +121,6 @@ pub fn Hero(post_id: PostId, hide: bool, #[prop(optional)] next_page_cursor: RwS
                 .into_any()
             }
             Some(Some(Ok((form, response)))) => {
-              // let (form, response) = res;
               #[cfg(not(feature = "ssr"))]
               {
                 let response_clone = response.clone();
@@ -141,9 +138,6 @@ pub fn Hero(post_id: PostId, hide: bool, #[prop(optional)] next_page_cursor: RwS
                     });
                 });
               }
-              // let res2 = response.clone();
-              // let res = response.clone();
-              // post_view.set(Some(res));
               let post_response = RwSignal::new(response.clone());
               let text = if let Some(b) = post_response.get().post_view.post.body.clone() {
                 if b.len() > 0 { Some(b) } else { post_response.get().post_view.post.embed_description.clone() }
@@ -162,7 +156,6 @@ pub fn Hero(post_id: PostId, hide: bool, #[prop(optional)] next_page_cursor: RwS
               let u = post_response.get().post_view.creator.name;
               let instance = get_instance_cookie.get_untracked();
               let creator_name = federated_creator_handle(&u, a.domain().as_deref(), instance.as_deref());
-              // let creator_name = &post_response.get().post_view.creator.actor_id.to_string()[8..];
               let creator_name_encoded = html_escape::encode_safe(&creator_name).to_string();
               let abbr_duration = relative_time(post_response.get().post_view.post.published.timestamp_millis());
               let url = Memo::new(move |_| post_response.get().post_view.post.url);
@@ -214,7 +207,6 @@ pub fn Hero(post_id: PostId, hide: bool, #[prop(optional)] next_page_cursor: RwS
                         view! {
                           <div class="my-3 px-4">
                             <div class="block">
-                              // <Icon class={"h-24".into()} icon={Icon::Link} />
                               <img class="h-16" src="/lemmy.svg" />
                             </div>
                           </div>
@@ -347,7 +339,6 @@ pub fn Hero(post_id: PostId, hide: bool, #[prop(optional)] next_page_cursor: RwS
                     view! {
                       <div class="mt-3 mb-1 px-4">
                         <div
-                          // class="py-2"
                           on:click={move |e: MouseEvent| {
                             if let Some(t) = e.target() {
                               if let Some(i) = t.dyn_ref::<HtmlImageElement>() {
@@ -380,7 +371,6 @@ pub fn Hero(post_id: PostId, hide: bool, #[prop(optional)] next_page_cursor: RwS
             .get()
             .unwrap_or(None)
             .map(|(form, response)| {
-              // let (form, response) = res;
               #[cfg(not(feature = "ssr"))]
               {
                 let response_clone = response.clone();
@@ -398,7 +388,6 @@ pub fn Hero(post_id: PostId, hide: bool, #[prop(optional)] next_page_cursor: RwS
                     });
                 });
               }
-              // let res = response.clone();
               let mut comments_descendants = response.comments.clone();
               let first_comment = response.comments.first().map(|f| vec![f.clone()]).unwrap_or_default();
               let highlight_user_id = RwSignal::new(None);

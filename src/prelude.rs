@@ -1,12 +1,7 @@
 pub use crate::db::{CommentDraft, CommentDraftKey, Draft, GetCacheKey, GetPostsCacheKey, IndexedDb, IndexedDbError, ScrollPositionKey, Store};
 pub use crate::i18n::*;
 pub use crate::icon::Icon;
-pub use crate::{
-  App,
-  // BanType, NotificationsRefresh, OnlineSetter, PassedUrl, ReadAuthCookie, ReadInstanceCookie, ReadThemeCookie, ResponseLoad, WriteAuthCookie,
-  //   WriteInstanceCookie, WriteThemeCookie,
-  html_template,
-};
+pub use crate::{App, html_template};
 pub use crate::{
   client, client::*, comment, comment::*, db, errors, errors::*, hero, hero::*, icon, icon::*, listing, listing::*, login, login::*, nav, nav::*,
   overview, overview::*, post, post::*, search, search::*, toolbar, toolbar::*, user, user::*,
@@ -39,8 +34,6 @@ pub use web_sys::{
 pub struct OnlineSetter(pub bool);
 #[derive(Clone, Debug, PartialEq)]
 pub struct NotificationsRefresh(pub bool);
-// #[derive(Clone, PartialEq)]
-// pub struct ResponseLoad(pub bool);
 #[derive(Clone, Debug, Default)]
 pub struct PassedUrl(pub Option<String>);
 #[derive(Clone, Debug, Default)]
@@ -323,15 +316,6 @@ pub fn provide_instance_cookie() -> (Signal<Option<String>>, WriteSignal<Option<
   (get_instance_cookie, set_instance_cookie)
 }
 
-// #[cfg(not(feature = "ssr"))]
-// pub fn provide_theme_cookie() -> (Signal<Option<String>>, WriteSignal<Option<String>>) {
-//   let (get_theme_cookie, set_theme_cookie) = use_cookie_with_options::<String, FromToStringCodec>("theme", default_cookie_options());
-//   provide_context(ReadThemeCookie(get_theme_cookie));
-//   provide_context(WriteThemeCookie(set_theme_cookie));
-//   (get_theme_cookie, set_theme_cookie)
-// }
-//
-// #[cfg(feature = "ssr")]
 pub fn provide_theme_cookie() -> (Signal<Option<String>>, WriteSignal<Option<String>>) {
   let (get_theme_cookie, set_theme_cookie) = use_cookie_with_options::<String, FromToStringCodec>("theme", default_cookie_options());
   provide_context(ReadThemeCookie(get_theme_cookie));

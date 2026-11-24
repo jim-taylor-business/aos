@@ -347,8 +347,6 @@ pub fn Comment(
           let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPostsCacheKey), (i64, LemmyAppResult<GetPostsResponse>)>>>();
           response_cache.update(|rc| {
             rc.iter_mut().for_each(move |((_, cache_key), (_, cached_result))| {
-              // let (_, form, _, _) = f;
-              // let (_, cached_result) = r;
               if let Ok(w) = cached_result {
                 let id = comment_view.get().comment.post_id.0;
                 for p in w.posts.iter_mut() {
@@ -428,11 +426,6 @@ pub fn Comment(
       h.clear();
     }
   };
-
-  // #[cfg(not(feature = "ssr"))]
-  // {
-  //   let UseScrollReturn { .. } = use_scroll_with_options(on_scroll_element, UseScrollOptions::default().on_scroll(on_scroll));
-  // }
 
   // const MOVE_CANCEL_THRESHOLD: f64 = 2.0;
   // const MAX_DRAG_PX: f64 = 256.0;

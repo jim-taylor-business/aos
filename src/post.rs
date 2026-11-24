@@ -194,7 +194,6 @@ pub fn Post() -> impl IntoView {
                       .into_any()
                   }
                   Some(Some(Ok((form, response)))) => {
-                    // let (form, response) = res;
                     #[cfg(not(feature = "ssr"))]
                     {
                       let response_clone = response.clone();
@@ -204,8 +203,6 @@ pub fn Post() -> impl IntoView {
                           .update(|rc| {
                             rc.iter_mut()
                               .for_each(|((_, cache_key), (_, cached_result))| {
-                                // let (_, form, _, _) = f;
-                                // let (_, cached_result) = r;
                                 if let Ok(w) = cached_result {
                                   let id = post_view.get().post.id.0;
                                   for p in w.posts.iter_mut() {
@@ -227,7 +224,6 @@ pub fn Post() -> impl IntoView {
                       });
                     }
                     post_view.set(Some(response.clone()));
-                    // let post_response_value = response.clone();
                     let post_response = Memo::new(move |_| response.clone());
                     let text = if let Some(b) = post_response.get().post_view.post.body.clone() {
                       if b.len() > 0 { Some(b) } else { post_response.get().post_view.post.embed_description.clone() }
@@ -308,7 +304,6 @@ pub fn Post() -> impl IntoView {
                             class="inline wrap-anywhere hover:text-secondary"
                             href={community_path.get()}
                             on:click={move |e: MouseEvent| {
-                              // let path = community_path.get();
                               e.prevent_default();
                               spawn_local_scoped(async move {
                                 let _ = IndexedDb::save_scroll_position(community_path.get(), "".into(), 0).await;
@@ -368,7 +363,6 @@ pub fn Post() -> impl IntoView {
                           view! {
                             <div class="my-3 pr-4 pl-4 before:content-[''] before:block before:w-24 before:overflow-hidden">
                               <div
-                                // class="py-2"
                                 on:click={move |e: MouseEvent| {
                                   if let Some(t) = e.target() {
                                     if let Some(i) = t.dyn_ref::<HtmlImageElement>() {
@@ -479,7 +473,6 @@ pub fn Post() -> impl IntoView {
                   .get()
                   .unwrap_or(None)
                   .map(|(form, response)| {
-                    // let (form, response) = res;
                     #[cfg(not(feature = "ssr"))]
                     {
                       let iw = window().inner_width().ok().map(|b| b.as_f64().unwrap_or(0.0)).unwrap_or(0.0);
@@ -507,7 +500,6 @@ pub fn Post() -> impl IntoView {
                           );
                       }
                     }
-                    // let res =onse.clone();
                     view! {
                       <div class="mt-3 w-full before:content-[''] before:block before:w-24 before:overflow-hidden">
                         <Comments comments={response.comments.into()} post_id />
