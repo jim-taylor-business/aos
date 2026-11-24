@@ -1,4 +1,4 @@
-# A.O.S
+# A.O.S <img src="docs/media/logo.svg" width="30" height="30">
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
 [![Rust edition 2024](https://img.shields.io/badge/rust-edition%202024-orange.svg)](https://www.rust-lang.org/)
