@@ -288,9 +288,9 @@ design that can be improved with careful thought and experimentation. The follow
 
 Contributions are welcome, whether that is code, testing or funding.
 
-Fork the repository and create a feature branch. Make the smallest focused change that addresses the issue.
-
-Open an issue with reproduction steps or the proposed behaviour before large or disruptive work.
+Open an issue with reproduction steps (pictures and video really help) or the proposed behaviour before large or
+disruptive work. Fork the repository and create a feature branch. Make the smallest focused change that addresses the
+task.
 
 ## License
 
@@ -298,11 +298,10 @@ Released under the [MIT License](LICENSE).
 
 ## AI usage in this app
 
-This project is not "vibe-coded" by AI. However, I have no problem using AI autocomplete tools to speed up development
-as long as all AI suggestions are completely reviewed and tested by a human before being committed, and are focussed on
-the
-specific task being implemented. This README page did use
-significant suggested text from an LLM based on the project's human written source and browser rendering.
+This project is not "vibe-coded" by AI. However, I have no problem using AI tools to speed up development
+as long as all AI suggestions are completely reviewed and tested by a human, and are focussed on
+the specific task being implemented. This README page did use LLM output based on the project's human written source and
+browser rendering to automate identification of all features. It was, howver, heavily edited after generation.
 
 ## Acknowledgements
 
