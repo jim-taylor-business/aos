@@ -155,11 +155,11 @@ plain Next link takes its place.
 
 ```text
  src/
- ├── main.rs       Axum SSR server (and the client-only entry point), POST /l
+ ├── main.rs       Axum SSR service and the client-only entry point
  ├── lib.rs        App shell, routes and HTML template
  ├── prelude.rs    Shared imports, cookies, Markdown, wheel gestures, alerts
  ├── client.rs     LemmyApi helper functions, reqwest on the server, gloo-net in the browser
- ├── db.rs         IndexedDB storage (cache_v5, via Rexie)
+ ├── db.rs         IndexedDB storage caches
  ├── errors.rs     Typed errors, including the offline case
  ├── nav.rs        Top bar: instance switch, filter, sort, search, theme, language
  ├── overview.rs   Feeds: community header, cursor pagination, infinite scroll
