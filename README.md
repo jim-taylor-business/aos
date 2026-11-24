@@ -52,7 +52,7 @@ navigating and voting all work before a single byte of WebAssembly has loaded.
 | **Feeds**       | All, Local and Subscribed feeds, sorted by Active, Hot, New, Old, Top, Controversial, Scaled or New Comments. 50 posts per page. |
 | **Communities** | Header with icon, banner, description and rules. Subscribe and unsubscribe.                                                      |
 | **Posts**       | Full post with body, image, embed description, link host and language.                                                           |
-| **Comments**    | 100% Lemmy compatible Markdown. Full threaded tree up to 128 levels deep. Missing children load on demand.                       |
+| **Comments**    | 100% Lemmy compatible Markdown. Full threaded tree up to 128 levels deep. Server trimmed children load on demand.                |
 | **Voting**      | Upvote and downvote posts and comments, with optimistic updates.                                                                 |
 | **Saving**      | Save and unsave posts and comments.                                                                                              |
 | **Writing**     | Comment on a post, reply to a comment, edit your own comments. Drafts are kept as you type.                                      |
@@ -116,7 +116,8 @@ both places, so the server-rendered HTML and the hydrated app are built from the
 
 ### Pagination you can bookmark
 
-Lemmy paginates with cursors. A.O.S keeps them in the URL as a JSON list of offset and cursor pairs. Filter and sort sit
+Lemmy paginates with cursors. A.O.S keeps them in the URL as a JSON list of offset and cursor pairs. A set of pages
+viewed before will be recreated from the offline cache when you navigate back there. Filter and sort sit
 beside it as JSON-quoted values, for example `/?list="Local"&sort="Hot"&page=[[50,"P3408409"]]`. The
 server renders from that chain, so a deep scroll can be reloaded or shared. Infinite scroll uses an intersection
 observer at the end of the columns and navigates with `replace`, so it never floods your history. Without JavaScript, a
@@ -126,6 +127,8 @@ plain Next link takes its place.
 
 - **Typed request forms are the cache keys**, combined with the login and instance, so one user's data never answers
   another's request.
+- **Multipe paged post listing views restored from offline cache**, ensuring that when you navigate back to a page state
+  it will be restored as you remember it.
 - **When the browser goes offline**, GET requests are answered from IndexedDB. If there is no cached copy, you get a
   warning with a Retry button instead of a blank page.
 - **Writes pause** while offline, and resume when the connection returns.
