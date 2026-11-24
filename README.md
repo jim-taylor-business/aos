@@ -116,12 +116,10 @@ both places, so the server-rendered HTML and the hydrated app are built from the
 
 ### Pagination you can bookmark
 
-Lemmy paginates with cursors. A.O.S keeps them in the URL as a JSON list of offset and cursor pairs. A set of pages
-viewed before will be recreated from the offline cache when you navigate back there. Filter and sort sit
+Lemmy paginates with cursors. A.O.S keeps them in the URL as a JSON list of offset and cursor pairs. Filter and sort sit
 beside it as JSON-quoted values, for example `/?list="Local"&sort="Hot"&page=[[50,"P3408409"]]`. The
-server renders from that chain, so a deep scroll can be reloaded or shared. Infinite scroll uses an intersection
-observer at the end of the columns and navigates with `replace`, so it never floods your history. Without JavaScript, a
-plain Next link takes its place.
+server renders from that chain, so a deep scroll can be reloaded or shared. A set of pages
+viewed before will be recreated from the offline cache when you navigate back there.
 
 ### Caching and offline
 
@@ -139,8 +137,10 @@ plain Next link takes its place.
 
 Menus are `<details>` elements, navigation is real `<a>` links, and actions such as voting, saving, reporting,
 blocking and login are server functions behind ordinary forms. They work before WebAssembly loads, and Leptos upgrades
-them in place afterwards. Signing in
-returns you exactly where you started.
+them in place afterwards.
+Infinite scroll uses an intersection
+observer at the end of the columns and navigates with `replace`, so it never floods your history. Without JavaScript, a
+plain Next link takes its place.
 
 ### Markdown, errors and i18n
 
