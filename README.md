@@ -154,30 +154,29 @@ plain Next link takes its place.
 ### Project structure
 
 ```text
-.
-├── src/
-│   ├── main.rs       Axum SSR server (and the client-only entry point), POST /l
-│   ├── lib.rs        App shell, routes and HTML template
-│   ├── prelude.rs    Shared imports, cookies, Markdown, wheel gestures, alerts
-│   ├── client.rs     LemmyApi trait and LemmyClient: reqwest on the server, gloo-net in the browser
-│   ├── db.rs         IndexedDB storage (cache_v5, via Rexie)
-│   ├── errors.rs     Typed errors, including the offline case
-│   ├── nav.rs        Top bar: instance switch, filter, sort, search, theme, language
-│   ├── overview.rs   Feeds: community header, cursor pagination, infinite scroll
-│   ├── listing.rs    Post cards
-│   ├── hero.rs       The expanded first post with its top comment
-│   ├── toolbar.rs    Vote, save, comment, report, block and archive actions
-│   ├── post.rs       Post page and comment columns
-│   ├── comment.rs    Comment tree: folding, press-and-hold actions, drafts
-│   ├── search.rs     Posts, comments, communities and users, scoped by context
-│   ├── user.rs       Profiles and activity
-│   ├── login.rs      Lemmy login
-│   └── icon.rs       SVG sprite icons
-├── locales/          English and French translations
-├── public/           Fonts, icon sprite, favicon and web manifest
-├── input.css         Tailwind entry point
-├── build.rs          Compile-time i18n generation
-└── Cargo.toml        Dependencies, features and Leptos metadata
+ src/
+ ├── main.rs       Axum SSR server (and the client-only entry point), POST /l
+ ├── lib.rs        App shell, routes and HTML template
+ ├── prelude.rs    Shared imports, cookies, Markdown, wheel gestures, alerts
+ ├── client.rs     LemmyApi helper functions, reqwest on the server, gloo-net in the browser
+ ├── db.rs         IndexedDB storage (cache_v5, via Rexie)
+ ├── errors.rs     Typed errors, including the offline case
+ ├── nav.rs        Top bar: instance switch, filter, sort, search, theme, language
+ ├── overview.rs   Feeds: community header, cursor pagination, infinite scroll
+ ├── listing.rs    Post cards
+ ├── hero.rs       The expanded first post with its top comment
+ ├── toolbar.rs    Vote, save, comment, report, block and archive actions
+ ├── post.rs       Post page and comment columns
+ ├── comment.rs    Comment tree: folding, press-and-hold actions, drafts
+ ├── search.rs     Posts, comments, communities and users, scoped by context
+ ├── user.rs       Profiles and activity
+ ├── login.rs      Lemmy login
+ └── icon.rs       SVG sprite icons
+ locales/          English and French translations
+ public/           Fonts, icon sprite, favicon and web manifest
+ input.css         Tailwind entry point
+ build.rs          Compile-time i18n generation
+ Cargo.toml        Dependencies, features and Leptos metadata
 ```
 
 ### Deployment
