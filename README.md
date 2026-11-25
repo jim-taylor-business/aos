@@ -20,7 +20,7 @@ languages
 and frameworks.
 
 I started prototyping this project when Leptos was version `0.2` and have worked through all the growing pains both of
-rust itself,
+Rust itself,
 the web toolchain and the Leptos ecosystem. It has certainly not been stable and still isn't to a degree but the base
 toolchains are now solid and the Leptos ecosystem is at an ergonomic level that makes it possible to build a full stack
 web application in a single crate with a single language and a single set of components. The result is a client that is
