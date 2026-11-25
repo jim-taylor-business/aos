@@ -1,4 +1,5 @@
 @import "tailwindcss";
+
 @plugin "daisyui" {
   themes: light, dark --prefersdark, retro --default;
 }
@@ -35,53 +36,92 @@
     font-weight: normal;
     font-style: italic;
   }
+  @font-face {
+    font-family: 'AdwaitaSans';
+    src: url('/AdwaitaSans-Bold.ttf') format('truetype');
+    font-weight: bold;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'AdwaitaSans';
+    src: url('/AdwaitaSans-BoldItalic.ttf') format('truetype');
+    font-weight: bold;
+    font-style: italic;
+  }
+  @font-face {
+    font-family: 'AdwaitaSans';
+    src: url('/AdwaitaSans-ExtraBold.ttf') format('truetype');
+    font-weight: 800;
+    font-style: normal;
+  }
+  @font-face {
+    font-family: 'AdwaitaSans';
+    src: url('/AdwaitaSans-ExtraBoldItalic.ttf') format('truetype');
+    font-weight: 800;
+    font-style: italic;
+  }
 }
 
 .prose p {
-    @apply wrap-anywhere leading-6 mt-0 mb-1;
+  @apply wrap-anywhere leading-6 mt-0 mb-1;
 }
+
 .prose h1 {
-    @apply mt-4 mb-4;
+  @apply mt-4 mb-4;
 }
+
 .prose h2 {
-    @apply mt-3 mb-3;
+  @apply mt-3 mb-3;
 }
+
 .prose h3 {
-    @apply mt-2 mb-2;
+  @apply mt-2 mb-2;
 }
+
 .prose h4 {
-    @apply mt-0 mb-1;
-  }
+  @apply mt-0 mb-1;
+}
+
 .prose h5 {
-    @apply my-0 mb-1;
+  @apply my-0 mb-1;
 }
+
 .prose ol {
-    @apply list-inside pl-0 mt-0 mb-1;
+  @apply list-inside pl-0 mt-0 mb-1;
 }
+
 .prose ul {
-    @apply my-0;
+  @apply my-0;
 }
+
 .prose li {
-    @apply my-0 wrap-anywhere;
+  @apply my-0 wrap-anywhere;
 }
+
 .prose pre {
-    @apply relative h-40 overflow-auto;
+  @apply relative h-40 overflow-auto;
 }
+
 .prose hr {
-    @apply my-2;
+  @apply my-2;
 }
+
 .prose img {
-    @apply my-2 max-w-24 inline-block;
+  @apply my-2 max-w-24 inline-block;
 }
+
 .prose blockquote {
-    @apply my-0 mb-1 pl-2 not-italic font-normal;
+  @apply my-0 mb-1 pl-2 not-italic font-normal;
 }
+
 .prose pre > code {
-    @apply absolute;
+  @apply absolute;
 }
+
 .prose ol > li > p {
-    @apply inline pl-3;
+  @apply inline pl-3;
 }
+
 .prose blockquote > p:before, .prose blockquote > p:after {
-    @apply content-none;
+  @apply content-none;
 }

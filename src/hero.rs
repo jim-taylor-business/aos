@@ -174,7 +174,7 @@ pub fn Hero(post_id: PostId, hide: bool, #[prop(optional)] next_page_cursor: RwS
                 <div class="break-inside-avoid">
                   <div class="pt-2 px-4">
                     <A href={move || format!("/p/{}", post_response.get().post_view.post.id)} attr:class="block hover:text-accent">
-                      <span lang={move || languages.get().get(post_response.get().post_view.post.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )} class="overflow-y-auto text-2xl font-extrabold wrap-anywhere" inner_html={title_encoded} />
+                      <span lang={move || languages.get().get(post_response.get().post_view.post.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )} class="overflow-y-auto text-4xl font-extrabold wrap-anywhere" inner_html={title_encoded} />
                     </A>
                   </div>
                   <a
