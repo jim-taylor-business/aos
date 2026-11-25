@@ -306,11 +306,7 @@ Open an issue with reproduction steps (pictures and video really help) or the pr
 disruptive work. Fork the repository and create a feature branch. Make the smallest focused change that addresses the
 task.
 
-## License
-
-Released under the [MIT License](LICENSE).
-
-## AI usage in this app
+### AI usage in this app
 
 This project is not "vibe-coded" by AI. However, I have no problem using AI tools to speed up development
 as long as all AI suggestions are completely reviewed and tested by a human, and are focussed on
@@ -324,3 +320,8 @@ A.O.S makes extensive use of [Lemmy](https://join-lemmy.org/), [Leptos](https://
 [Axum](https://github.com/tokio-rs/axum), [Tokio](https://tokio.rs/), [Tailwind CSS](https://tailwindcss.com/),
 [daisyUI](https://daisyui.com/), [pulldown-cmark](https://github.com/pulldown-cmark/pulldown-cmark),
 [Rexie](https://github.com/SaifAqqad/rexie) and the Adwaita Sans typeface.
+
+## License
+
+Released under the [MIT License](LICENSE).
+
