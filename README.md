@@ -14,10 +14,23 @@
 
 ## A Lemmy client written in Rust, built to be read like a newspaper.
 
-I started A.O.S to explore what a Lemmy client could be if it was designed for reading. Minimal UI, content-first, with
+I started A.O.S to explore what a Lemmy client could be if it was designed for reading, but also to discover how far the
+web development ecosystem had advanced, as I come from a full stack development background over 20 years in many
+languages
+and frameworks.
+
+I started prototyping this project when Leptos was version `0.2` and have worked through all the growing pains both of
+rust itself,
+the web toolchain and the Leptos ecosystem. It has certainly not been stable and still isn't to a degree but the base
+toolchains are now solid and the Leptos ecosystem is at an ergonomic level that makes it possible to build a full stack
+web application in a single crate with a single language and a single set of components. The result is a client that is
+fast, responsive, and has a unique reading experience.
+
+My approach was to create a Minimal UI, content-first, with
 featured articles and columns that flowed to infinity so your eyes could browse it like a newspaper. No longer the usual
 tired old website visual metaphors and mess of clunky controls and screen furniture. Functionality would still be there
-and use context to make it powerful and provide feedback, but it would be hidden until you needed it.
+and use context to make it powerful and provide feedback, but it would be hidden until you needed it. Also the
+minimalism may have helped with the fact that I am clearly not a graphic designer!
 
 A.O.S renders on the server for the fastest time to rendered page possible, hydrates as WebAssembly for instant
 interaction, and talks to
@@ -28,7 +41,8 @@ navigating and voting all work before a single byte of WebAssembly has loaded.
 
 ## Features
 
-- <big>**_Lemmy support across your instance_**</big> - Browse feeds, communities and users. Read threaded comments.
+- <big>**_Lemmy support across your instance's capabilities_**</big> - Browse feeds, communities and users. Read
+  threaded comments.
   Vote, save, reply, edit, report and block. Search posts, comments, communities and users in context. Sign in to your
   own account.
 
@@ -93,7 +107,7 @@ Lemmy is a federated network, and A.O.S shows it openly for ease of identificati
 A.O.S is a single [Leptos](https://leptos.dev/) crate. The same components, request types and Lemmy API trait run in
 both places, so the server-rendered HTML and the hydrated app are built from the same code and stay in step.
 
-### Using Rust, Leptos and standard HTTP to provide a unique experience
+#### The A.O.S execution loop provides a unique web experience
 
 1. You open a URL. The server reads your cookies (`instance`, `jwt`, `theme` and the language
    preference).
@@ -105,7 +119,7 @@ both places, so the server-rendered HTML and the hydrated app are built from the
    straight to your instance.
 5. Every successful GET is written to memory and IndexedDB, so revisits are instant and survive reloads.
 
-### Where state lives
+#### Making full use of browser state to support the whole app
 
 | Where         | Why                                                                                           | What                                                                                                                                                   |
 |---------------|-----------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -125,7 +139,8 @@ viewed before will be recreated from the offline cache when you navigate back th
 
 - **Typed request forms are the cache keys**, combined with the login and instance, so one user's data never answers
   another's request.
-- **Multipe paged post listing views restored from offline cache**, ensuring that when you navigate back to a page state
+- **Multiple paged post listing views restored from offline cache**, ensuring that when you navigate back to a page
+  state
   it will be restored as you remember it.
 - **When the browser goes offline**, GET requests are answered from IndexedDB. If there is no cached copy, you get a
   warning with a Retry button instead of a blank page.
@@ -300,7 +315,7 @@ Released under the [MIT License](LICENSE).
 This project is not "vibe-coded" by AI. However, I have no problem using AI tools to speed up development
 as long as all AI suggestions are completely reviewed and tested by a human, and are focussed on
 the specific task being implemented. This README page did use LLM output based on the project's human written source and
-browser rendering to automate identification of all features. It was, howver, heavily edited after generation.
+browser rendering to automate identification of all features. It was, however, heavily edited after generation.
 
 ## Acknowledgements
 
