@@ -291,6 +291,7 @@ current
 design that can be improved with careful thought and experimentation. The following are some of the next steps:
 
 - Creating posts and communities.
+- Typed navigation/caching/scrolling component that is context aware and maybe isomorphic
 - Multiple accounts and account switching.
 - More locales and themes.
 - Lemmy API v4.
