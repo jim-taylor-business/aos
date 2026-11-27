@@ -12,19 +12,12 @@
 [Visual and interactive design](#visual-and-interactive-design) &middot;
 [Contributing](#contributing)
 
-[//]: # (# contributions to other crates)
-
-[//]: # ()
-[//]: # (# customised other crates)
 
 [//]: # ()
 [//]: # (# running instance)
 
 [//]: # ()
 [//]: # (# live instance)
-
-[//]: # ()
-[//]: # (#   )
 
 ## A Lemmy client written in Rust, built to be read like a newspaper.
 
@@ -33,12 +26,16 @@ web development ecosystem had advanced, as I come from a full stack development 
 languages
 and frameworks.
 
-I started prototyping this project when Leptos was version `0.2` and have worked through all the growing pains both of
+I started prototyping this project when Leptos was version `0.2` and have encountered all the growing pains both of
 Rust itself,
 the web toolchain and the Leptos ecosystem. It has certainly not been stable and still isn't to a degree but the base
 toolchains are now solid and the Leptos ecosystem is at an ergonomic level that makes it possible to build a full stack
 web application in a single crate with a single language and a single set of components. The result is a client that is
 fast, responsive, and has a unique reading experience.
+
+Naturally as I am implementing the core Lemmy features I have used, customised and contributed to other crates in the
+open source ecosystem. These changes are briefly detailed in
+the [Contributions to other crates](#contributions-to-other-crates) section.
 
 My approach was to create a Minimal UI, content-first, with
 featured articles and columns that flowed to infinity so your eyes could browse it like a newspaper. No longer the usual
@@ -120,6 +117,20 @@ Lemmy is a federated network, and A.O.S shows it openly for ease of identificati
 
 A.O.S is a single [Leptos](https://leptos.dev/) crate. The same components, request types and Lemmy API trait run in
 both places, so the server-rendered HTML and the hydrated app are built from the same code and stay in step.
+
+#### Contributions to other crates
+
+- [pulldown-cmark](/jim-taylor-business/pulldown-cmark) fork with strikethrough, superscript, subscript and containers
+  (spoilers), plus Lemmy-style and
+  plain-URL link detection.
+- [leptos-use](https://github.com/jim-taylor-business/leptos-use) fork with bug fixes for cookie handling and type
+  export to prevent type collisions.
+- [lemmy-api](https://github.com/jim-taylor-business/lemmy) fork with many small utility attribute additions to make the
+  types more useful in the context of an app.
+- [pretty-duration](https://github.com/jim-taylor-business/pretty-duration) fork with bug fixes for formatting dates
+  specifically for the app.
+- [rexie](https://github.com/jim-taylor-business/rexie) and [idb](https://github.com/jim-taylor-business/idb) fork to
+  fix bugs to allow the IndexedDB cache to work in a more robust way within the app.
 
 #### The A.O.S execution loop provides a unique web experience
 
