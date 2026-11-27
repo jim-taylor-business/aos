@@ -12,6 +12,20 @@
 [Visual and interactive design](#visual-and-interactive-design) &middot;
 [Contributing](#contributing)
 
+[//]: # (# contributions to other crates)
+
+[//]: # ()
+[//]: # (# customised other crates)
+
+[//]: # ()
+[//]: # (# running instance)
+
+[//]: # ()
+[//]: # (# live instance)
+
+[//]: # ()
+[//]: # (#   )
+
 ## A Lemmy client written in Rust, built to be read like a newspaper.
 
 I started A.O.S to explore what a Lemmy client could be if it was designed for reading, but also to discover how far the

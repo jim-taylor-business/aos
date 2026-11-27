@@ -31,7 +31,6 @@ pub fn html_template(options: LeptosOptions) -> impl IntoView {
     <!DOCTYPE html>
     <html>
       <head>
-        <Link rel="preload" href="/AdwaitaSans-Italic.ttf" as_="font" type_="font/ttf" crossorigin="anonymous" />
         <Link rel="preload" href="/AdwaitaSans-Regular.ttf" as_="font" type_="font/ttf" crossorigin="anonymous" />
         <Link rel="prefetch" href="/icons.svg" as_="image" type_="image/svg+xml" />
         <MetaTags />
