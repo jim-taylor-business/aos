@@ -759,7 +759,7 @@ pub fn Comment(
             </Transition>
             <span class="overflow-hidden wrap-anywhere">
               <span>{abbr_duration.clone()}</span>
-              " by "
+              {t!(i18n, post_by)}
               <A
                 href={move || {
                   format!("/u/{}?person_id={}", creator_name.get(), comment_view.get().creator.id.0)
@@ -779,7 +779,9 @@ pub fn Comment(
           when={move || (hidden_comments.get().contains(&comment_view.get().comment.id.0)) && (children.get().len() + descendants.get().len()) > 0}
           fallback={|| {}}
         >
-          <span class="inline-block mb-1 whitespace-nowrap badge badge-neutral">{children.get().len() + descendants.get().len()} " replies"</span>
+          <span class="inline-block mb-1 whitespace-nowrap badge badge-neutral">
+            {t_string!(i18n, replies_count, count = children.get().len() + descendants.get().len())}
+          </span>
         </Show>
         <Show
           when={move || {
@@ -787,7 +789,9 @@ pub fn Comment(
           }}
           fallback={|| {}}
         >
-          <span class="inline-block mb-1 whitespace-nowrap badge badge-neutral">{comment_view.get().counts.child_count} " replies"</span>
+          <span class="inline-block mb-1 whitespace-nowrap badge badge-neutral">
+            {t_string!(i18n, replies_count, count = comment_view.get().counts.child_count)}
+          </span>
         </Show>
       </div>
       <Show when={move || reply_show.get() || edit_show.get()} fallback={|| {}}>
@@ -878,7 +882,7 @@ pub fn Comment(
                 .get()
                 .unwrap_or_else(|| LemmyAppError {
                   error_type: LemmyAppErrorType::Unknown,
-                  content: "Unknown".to_owned(),
+                  content: t_string!(i18n, error_without_description).to_string(),
                 })}
             />
           }

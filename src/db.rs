@@ -266,9 +266,10 @@ impl IndexedDb {
 #[cfg(feature = "ssr")]
 impl IndexedDb {
   pub async fn new() -> Result<Self, IndexedDbError> {
+    let i18n = use_i18n();
     Err(IndexedDbError::Lemmy(LemmyAppError {
       error_type: crate::errors::LemmyAppErrorType::Unknown,
-      content: "IndexedDb is not available on the server".to_string(),
+      content: t_string!(i18n, error_without_description).to_string(),
     }))
   }
 }

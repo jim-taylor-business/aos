@@ -654,7 +654,14 @@ pub fn TopNav(
             if let Some(h) = pv.post_view.community.actor_id.inner().host() { h.to_string() } else { "".to_owned() }
           )
         };
-        format!("{} by {} in {}", pv.post_view.post.name, pv.post_view.creator.actor_id.to_string()[8..].to_string(), community_title)
+        format!(
+          "{}{}{}{}{}",
+          pv.post_view.post.name,
+          t_string!(i18n, post_by),
+          pv.post_view.creator.actor_id.to_string()[8..].to_string(),
+          t_string!(i18n, post_in),
+          community_title,
+        )
       } else {
         "".to_owned()
       }

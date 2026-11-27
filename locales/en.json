@@ -76,6 +76,7 @@
   "subscribers_count": "{{ count }} subscribers",
   "posts_count": "{{ count }} posts",
   "comments_count_short": "{{ count }} comments",
+  "replies_count": "{{ count }} replies",
   "active_users_count": "{{ count }} active users this month",
   "original": "Original",
   "archive": "Archive",

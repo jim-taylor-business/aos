@@ -426,7 +426,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                                   .get()
                                   .unwrap_or_else(|| LemmyAppError {
                                     error_type: LemmyAppErrorType::Unknown,
-                                    content: "Unknown".to_owned(),
+                                    content: t_string!(i18n, error_without_description).to_string(),
                                   })}
                               />
                             }

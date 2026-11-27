@@ -614,10 +614,10 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                       <span>{abbr_duration}</span>
                       " "
                       <Show when={move || { post_number != 0 }} fallback={|| {}}>
-                        "by "
+                        {t!(i18n, post_by)}
                         <span class="overflow-y-auto" inner_html={creator_name_encoded} />
                       </Show>
-                      " in "
+                      {t!(i18n, post_in)}
                       <span class="overflow-y-auto" inner_html={community_title_encoded} />
                       <span class="overflow-y-auto">
                         {external_host_attribution(
@@ -661,17 +661,17 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                       <span
                         class="flex items-center pl-1"
                         title={move || {
-                          format!(
-                            "{} comments{}",
-                            post_view.get_untracked().counts.comments,
-                            if post_view.get_untracked().unread_comments != post_view.get_untracked().counts.comments
-                              && post_view.get_untracked().unread_comments > 0
-                            {
-                              format!(" ({} unread)", post_view.get_untracked().unread_comments)
-                            } else {
-                              "".to_owned()
-                            },
-                          )
+                          if post_view.get_untracked().unread_comments != post_view.get_untracked().counts.comments
+                            && post_view.get_untracked().unread_comments > 0
+                          {
+                            format!(
+                              "{} ({})",
+                              t_string!(i18n, comments_count, count = post_view.get_untracked().counts.comments),
+                              t_string!(i18n, unread_comments_count, count = post_view.get_untracked().unread_comments),
+                            )
+                          } else {
+                            t_string!(i18n, comments_count, count = post_view.get_untracked().counts.comments)
+                          }
                         }}
                       >
                         <A href={move || format!("/p/{}", post_view.get_untracked().post.id)} attr:class="inline hover:text-accent">
