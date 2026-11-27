@@ -120,7 +120,7 @@ both places, so the server-rendered HTML and the hydrated app are built from the
 
 #### Contributions to other crates
 
-- [pulldown-cmark](/jim-taylor-business/pulldown-cmark) fork with strikethrough, superscript, subscript and containers
+- [pulldown-cmark](//jim-taylor-business/pulldown-cmark) fork with strikethrough, superscript, subscript and containers
   (spoilers), plus Lemmy-style and
   plain-URL link detection.
 - [leptos-use](https://github.com/jim-taylor-business/leptos-use) fork with bug fixes for cookie handling and type
