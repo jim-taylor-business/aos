@@ -120,16 +120,17 @@ both places, so the server-rendered HTML and the hydrated app are built from the
 
 #### Contributions to other crates
 
-- [pulldown-cmark](../pulldown-cmark) fork with strikethrough, superscript, subscript and containers (spoilers), plus
+- [pulldown-cmark](//github.com/pulldown-cmark) fork with Markdown strikethrough, superscript, subscript and containers
+  (spoilers), plus
   Lemmy-style and
   plain-URL link detection.
-- [leptos-use](https://github.com/jim-taylor-business/leptos-use) fork with bug fixes for cookie handling and type
+- [leptos-use](//github.com/jim-taylor-business/leptos-use) fork with bug fixes for cookie handling and type
   export to prevent type collisions.
-- [lemmy-api](https://github.com/jim-taylor-business/lemmy) fork with many small utility attribute additions to make the
+- [lemmy-api](//github.com/jim-taylor-business/lemmy) fork with many small utility attribute additions to make the
   types more useful in the context of an app.
-- [pretty-duration](https://github.com/jim-taylor-business/pretty-duration) fork with bug fixes for formatting dates
+- [pretty-duration](//github.com/jim-taylor-business/pretty-duration) fork with bug fixes for formatting dates
   specifically for the app.
-- [rexie](https://github.com/jim-taylor-business/rexie) and [idb](https://github.com/jim-taylor-business/idb) fork to
+- [rexie](//github.com/jim-taylor-business/rexie) and [idb](//github.com/jim-taylor-business/idb) fork to
   fix bugs to allow the IndexedDB cache to work in a more robust way within the app.
 
 #### The A.O.S execution loop provides a unique web experience
