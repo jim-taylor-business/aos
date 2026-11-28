@@ -8,44 +8,39 @@ use leptos_use_scroll::{UseScrollOptions, UseScrollReturn, use_scroll_with_optio
 
 #[component]
 pub fn PostSearch() -> impl IntoView {
-  let param = use_params_map();
-  view! { <Search ssr_post_id=param.get().get("id").unwrap_or("".into()) /> }
-}
-
-#[component]
-pub fn CommunitySearch() -> impl IntoView {
-  let param = use_params_map();
-  view! { <Search ssr_community_name=param.get().get("name").unwrap_or("".into()) /> }
-}
-
-#[component]
-pub fn UserSearch() -> impl IntoView {
-  let param = use_params_map();
-  view! { <Search ssr_user_name=param.get().get("name").unwrap_or("".into()) /> }
-}
-
-#[component]
-pub fn DefaultSearch() -> impl IntoView {
+  let _endpoint = InternalEndpoint::new(PostSearch, InternalEndpointRoute::PostSearch);
   view! { <Search /> }
 }
 
 #[component]
-pub fn Search(
-  #[prop(optional, into)] ssr_user_name: Option<String>,
-  #[prop(optional, into)] ssr_community_name: Option<String>,
-  #[prop(optional, into)] ssr_post_id: Option<String>,
-) -> impl IntoView {
+pub fn CommunitySearch() -> impl IntoView {
+  let _endpoint = InternalEndpoint::new(CommunitySearch, InternalEndpointRoute::CommunitySearch);
+  view! { <Search /> }
+}
+
+#[component]
+pub fn UserSearch() -> impl IntoView {
+  let _endpoint = InternalEndpoint::new(UserSearch, InternalEndpointRoute::UserSearch);
+  view! { <Search /> }
+}
+
+#[component]
+pub fn DefaultSearch() -> impl IntoView {
+  let _endpoint = InternalEndpoint::new(DefaultSearch, InternalEndpointRoute::Search);
+  view! { <Search /> }
+}
+
+#[component]
+pub fn Search() -> impl IntoView {
   let i18n = use_i18n();
-  let ssr_name = move || ssr_community_name.clone();
-
-  let query = use_query_map();
-  let ssr_kind = move || serde_json::from_str::<SearchType>(&query.get().get("kind").unwrap_or("".into())).unwrap_or(SearchType::Posts);
-  let ssr_list = move || serde_json::from_str::<ListingType>(&query.get().get("list").unwrap_or("".into())).ok();
-  let ssr_sort = move || serde_json::from_str::<SortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(SortType::Active);
-  let ssr_page = move || serde_json::from_str::<Vec<usize>>(&query.get().get("page").unwrap_or("".into())).unwrap_or(vec![1usize]);
-  let ssr_term = move || query.get().get("term").unwrap_or("".into());
-  let person_id = move || query.get().get("person_id").unwrap_or_default().parse::<i32>().ok();
-
+  let endpoint = use_internal_endpoint();
+  let ssr_name = move || endpoint.get().community_name().map(str::to_owned);
+  let ssr_kind = move || endpoint.get().search_query().and_then(|query| query.kind).unwrap_or(SearchType::Posts);
+  let ssr_list = move || endpoint.get().search_query().and_then(|query| query.list);
+  let ssr_sort = move || endpoint.get().search_query().and_then(|query| query.sort).unwrap_or(SortType::Active);
+  let ssr_page = move || endpoint.get().search_query().and_then(|query| query.page.clone()).unwrap_or(vec![1usize]);
+  let ssr_term = move || endpoint.get().search_query().and_then(|query| query.term.clone()).unwrap_or_default();
+  let person_id = move || endpoint.get().search_query().and_then(|query| query.person_id);
   let next_page_cursor: RwSignal<(usize, usize)> = RwSignal::new((0, 1));
 
   let loading = RwSignal::new(false);
@@ -60,8 +55,8 @@ pub fn Search(
         if let Some(se) = on_scroll_element.get() {
           #[cfg(not(feature = "ssr"))]
           spawn_local_scoped(async move {
-            let query_params = query.get();
-            let _ = IndexedDb::save_scroll_position(use_location().pathname.get(), query_params.to_query_string(), se.scroll_left()).await;
+            let current_endpoint = endpoint.get();
+            let _ = IndexedDb::save_scroll_position(current_endpoint.path(), current_endpoint.query_string(), se.scroll_left()).await;
           });
         }
       }
@@ -78,19 +73,13 @@ pub fn Search(
             if st.iter().find(|s| **s == key).is_none() {
               st.push(key);
             }
-            let mut query_params = query.get();
-            query_params.remove("page");
-            query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-            let params = query_params.clone();
+            let destination = endpoint.get().with_page(st);
+            let params = destination.query_string();
             spawn_local_scoped(async move {
               if let Some(se) = on_scroll_element.get() {
-                let _ = IndexedDb::save_scroll_position(use_location().pathname.get(), params.to_query_string(), se.scroll_left()).await;
+                let _ = IndexedDb::save_scroll_position(destination.path(), params, se.scroll_left()).await;
               }
-              let navigate = use_navigate();
-              navigate(
-                &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-                NavigateOptions { resolve: true, replace: true, scroll: false, state: State::default() },
-              );
+              navigate_internal_pagination(InternalNavigation::new(destination));
             });
           }
         }
@@ -206,9 +195,8 @@ pub fn Search(
                                 move || {
                                   if let Some(s) = on_scroll_element.get() {
                                     spawn_local_scoped(async move {
-                                      if let Ok(Some(l)) =
-                                        IndexedDb::get_scroll_position(use_location().pathname.get(), use_query_map().get().to_query_string()).await
-                                      {
+                                      let current_endpoint = endpoint.get();
+                                      if let Ok(Some(l)) = IndexedDb::get_scroll_position(current_endpoint.path(), current_endpoint.query_string()).await {
                                         s.set_scroll_left(l);
                                       }
                                     });
@@ -245,11 +233,9 @@ pub fn Search(
                       {
                         let (key, len) = next_page_cursor.get_untracked();
                         if key > 1 && len > 0 {
-                          let mut query_params = use_query_map().get();
                           let mut st = vec![];
                           st.push(key);
-                          query_params.remove("page");
-                          query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+                          let link_destination = endpoint.get().with_page(st.clone());
                           #[cfg(not(feature = "ssr"))]
                           set_timeout_with_handle(
                             move || {
@@ -270,19 +256,13 @@ pub fn Search(
                                   if st.iter().find(|s| **s == key).is_none() {
                                     st.push(key);
                                   }
-                                  let mut query_params = query.get_untracked();
-                                  query_params.remove("page");
-                                  query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-                                  let params = query_params.clone();
+                                  let destination = endpoint.get().with_page(st);
+                                  let params = destination.query_string();
                                   spawn_local_scoped(async move {
                                     if let Some(se) = on_scroll_element.get_untracked() {
-                                      let _ = IndexedDb::save_scroll_position(use_location().pathname.get_untracked(), params.to_query_string(), se.scroll_left()).await;
+                                      let _ = IndexedDb::save_scroll_position(destination.path(), params, se.scroll_left()).await;
                                     }
-                                    let navigate = use_navigate();
-                                    navigate(
-                                      &format!("{}{}", use_location().pathname.get_untracked(), query_params.to_query_string()),
-                                      NavigateOptions { resolve: true, replace: true, scroll: false, state: State::default() },
-                                    );
+                                    navigate_internal_pagination(InternalNavigation::new(destination));
                                   });
                                 }
 
@@ -293,7 +273,10 @@ pub fn Search(
                           view! {
                             <Show when={move || { show_next.get() }} fallback={|| {}}>
                               <div class="flex py-4 px-8 justify-end{}">
-                                <A href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())} attr:class="btn btn-soft">
+                                <A
+                                  href={internal_navigation_url(&InternalNavigation::new(link_destination.clone()))}
+                                  attr:class="btn btn-soft"
+                                >
                                   {t!(i18n, next)}
                                 </A>
                               </div>

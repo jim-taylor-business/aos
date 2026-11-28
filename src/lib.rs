@@ -57,6 +57,7 @@ pub fn Root() -> impl IntoView {
 
 #[component]
 fn NotFound() -> impl IntoView {
+  let _endpoint = InternalEndpoint::new(NotFound, InternalEndpointRoute::Other);
   let i18n = use_i18n();
   #[cfg(feature = "ssr")]
   {
@@ -156,7 +157,7 @@ pub fn App() -> impl IntoView {
   );
 
   provide_context(ssr_site);
-  provide_context(RwSignal::new(PassedUrl(Some("face".to_string()))));
+  provide_context(RwSignal::new(PassedUrl(Some(InternalEndpointData::Home { query: ListingQuery::default() }))));
 
   let selected_text = RwSignal::new(SelectedText(None));
   provide_context(selected_text);
@@ -222,16 +223,16 @@ pub fn App() -> impl IntoView {
       <Link rel="manifest" href="/manifest.json" />
       <Router>
         <Routes fallback={NotFound}>
-          <ParentRoute path={StaticSegment("")} view={Root} ssr={SsrMode::Async}>
-            <Route path={StaticSegment("")} view={Default} />
-            <Route path={(StaticSegment("p"), ParamSegment("id"))} view={Post} />
-            <Route path={(StaticSegment("c"), ParamSegment("name"))} view={Community} />
-            <Route path={(StaticSegment("u"), ParamSegment("name"))} view={User} />
-            <Route path={StaticSegment("s")} view={DefaultSearch} />
-            <Route path={(StaticSegment("p"), ParamSegment("id"), StaticSegment("s"))} view={PostSearch} />
-            <Route path={(StaticSegment("c"), ParamSegment("name"), StaticSegment("s"))} view={CommunitySearch} />
-            <Route path={(StaticSegment("u"), ParamSegment("name"), StaticSegment("s"))} view={UserSearch} />
-            <Route path={StaticSegment("l")} view={Login} />
+          <ParentRoute path={InternalEndpointData::root_route()} view={Root} ssr={SsrMode::Async}>
+            <Route path={InternalEndpointData::home_route()} view={Default} />
+            <Route path={InternalEndpointData::post_route()} view={Post} />
+            <Route path={InternalEndpointData::community_route()} view={Community} />
+            <Route path={InternalEndpointData::user_route()} view={User} />
+            <Route path={InternalEndpointData::search_route()} view={DefaultSearch} />
+            <Route path={InternalEndpointData::post_search_route()} view={PostSearch} />
+            <Route path={InternalEndpointData::community_search_route()} view={CommunitySearch} />
+            <Route path={InternalEndpointData::user_search_route()} view={UserSearch} />
+            <Route path={InternalEndpointData::login_route()} view={Login} />
           </ParentRoute>
         </Routes>
       </Router>

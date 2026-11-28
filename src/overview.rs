@@ -8,14 +8,14 @@ use leptos_use_scroll::{UseScrollOptions, use_scroll_with_options};
 
 #[component]
 pub fn Default() -> impl IntoView {
+  let _endpoint = InternalEndpoint::new(Default, InternalEndpointRoute::Home);
   view! { <Overview /> }
 }
 
 #[component]
 pub fn Community() -> impl IntoView {
-  let param = use_params_map();
-  let ssr_name = Signal::derive(move || param.get().get("name"));
-  view! { <Overview ssr_name /> }
+  let _endpoint = InternalEndpoint::new(Community, InternalEndpointRoute::Community);
+  view! { <Overview /> }
 }
 
 #[server]
@@ -27,21 +27,22 @@ pub async fn toggle_subscription(community_id: i32, follow: bool) -> Result<Opti
   match result {
     Ok(o) => Ok(Some(o)),
     Err(e) => {
-      redirect(&format!("/?error={}", serde_json::to_string(&e)?)[..]);
+      redirect(&InternalEndpointData::Home { query: ListingQuery { error: Some(serde_json::to_string(&e)?), ..ListingQuery::default() } }.url());
       Ok(None)
     }
   }
 }
 
 #[component]
-pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl IntoView {
+pub fn Overview() -> impl IntoView {
   let i18n = use_i18n();
 
-  let query = use_query_map();
-  let ssr_list = move || serde_json::from_str::<ListingType>(&query.get().get("list").unwrap_or("".into())).unwrap_or(ListingType::All);
-  let ssr_sort = move || serde_json::from_str::<SortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(SortType::Active);
-  let ssr_page = move || serde_json::from_str::<Vec<(usize, String)>>(&query.get().get("page").unwrap_or("".into())).unwrap_or(vec![]);
-  let ssr_bans = move || serde_json::from_str::<Vec<BanType>>(&query.get().get("bans").unwrap_or("".into())).unwrap_or(vec![]);
+  let endpoint = use_internal_endpoint();
+  let ssr_name = Signal::derive(move || endpoint.get().community_name().map(str::to_owned));
+  let ssr_list = move || endpoint.get().listing_query().and_then(|query| query.list.clone()).unwrap_or(ListingType::All);
+  let ssr_sort = move || endpoint.get().listing_query().and_then(|query| query.sort.clone()).unwrap_or(SortType::Active);
+  let ssr_page = move || endpoint.get().listing_query().and_then(|query| query.page.clone()).unwrap_or_default();
+  let ssr_bans = move || endpoint.get().listing_query().and_then(|query| query.bans.clone()).unwrap_or_default();
 
   let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPostsCacheKey), (i64, LemmyAppResult<GetPostsResponse>)>>>();
   let next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)> = RwSignal::new((0, None));
@@ -57,7 +58,8 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
     #[cfg(not(feature = "ssr"))]
     if let Some(se) = on_scroll_element.get() {
       spawn_local_scoped(async move {
-        let _ = IndexedDb::save_scroll_position(use_location().pathname.get(), use_query_map().get().to_query_string(), se.scroll_left()).await;
+        let current_endpoint = endpoint.get();
+        let _ = IndexedDb::save_scroll_position(current_endpoint.path(), current_endpoint.query_string(), se.scroll_left()).await;
       });
     }
   };
@@ -79,19 +81,14 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                 st.push((key, next_page));
               }
             }
-            let mut query_params = use_query_map().get();
-            query_params.remove("page");
-            query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+            let destination = endpoint.get().with_listing_page(st.clone());
 
             #[cfg(not(feature = "ssr"))]
             if let Some(se) = on_scroll_element.get() {
-              let params = query_params.clone();
+              let params = destination.query_string();
               spawn_local_scoped(async move {
-                let _ = IndexedDb::save_scroll_position(use_location().pathname.get(), params.to_query_string(), se.scroll_left()).await;
-                use_navigate()(
-                  &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-                  NavigateOptions { resolve: false, replace: true, scroll: false, state: State::default() },
-                );
+                let _ = IndexedDb::save_scroll_position(destination.path(), params, se.scroll_left()).await;
+                navigate_internal_pagination(InternalNavigation::new(destination));
               });
             }
           }
@@ -479,7 +476,10 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                                   if let Some(s) = on_scroll_element.get() {
                                     spawn_local_scoped(async move {
                                       if let Ok(Some(l)) =
-                                        IndexedDb::get_scroll_position(use_location().pathname.get(), use_query_map().get().to_query_string()).await
+                                        {
+                                          let current_endpoint = endpoint.get();
+                                          IndexedDb::get_scroll_position(current_endpoint.path(), current_endpoint.query_string()).await
+                                        }
                                       {
                                         s.set_scroll_left(l);
                                       }
@@ -521,9 +521,7 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                           if let Some(PaginationCursor(page_id)) = page_cursor {
                             let mut st: Vec<(usize, String)> = vec![];
                             st.push((key, page_id));
-                            let mut query_params = use_query_map().get();
-                            query_params.remove("page");
-                            query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
+                            let destination = endpoint.get().with_listing_page(st.clone());
                             #[cfg(not(feature = "ssr"))]
                             set_timeout_with_handle(
                               move || {
@@ -553,19 +551,13 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                                         }).is_none() {
                                           st.push((key, page_id));
                                         }
-                                        let mut query_params = query.get_untracked();
-                                        query_params.remove("page");
-                                        query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-                                        let params = query_params.clone();
+                                        let destination = endpoint.get().with_listing_page(st);
+                                        let params = destination.query_string();
                                         spawn_local_scoped(async move {
                                           if let Some(se) = on_scroll_element.get_untracked() {
-                                            let _ = IndexedDb::save_scroll_position(use_location().pathname.get_untracked(), params.to_query_string(), se.scroll_left()).await;
+                                            let _ = IndexedDb::save_scroll_position(destination.path(), params, se.scroll_left()).await;
                                           }
-                                          let navigate = use_navigate();
-                                          navigate(
-                                            &format!("{}{}", use_location().pathname.get_untracked(), query_params.to_query_string()),
-                                            NavigateOptions { resolve: true, replace: true, scroll: false, state: State::default() },
-                                          );
+                                          navigate_internal_pagination(InternalNavigation::new(destination));
                                         });
                                       }
 
@@ -578,7 +570,10 @@ pub fn Overview(#[prop(optional)] ssr_name: Signal<Option<String>>) -> impl Into
                             view! {
                               <Show when={move || { show_next.get() }} fallback={|| {}}>
                                 <div class="flex py-4 px-8 justify-end{}">
-                                  <A href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())} attr:class="btn btn-soft">
+                                  <A
+                                    href={internal_navigation_url(&InternalNavigation::new(destination.clone()))}
+                                    attr:class="btn btn-soft"
+                                  >
                                     {t!(i18n, next)}
                                   </A>
                                 </div>

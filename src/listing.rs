@@ -34,7 +34,14 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
       <div class="flex items-start pt-2">
         <A
           attr:class="flex flex-col h-full"
-          href={move || format!("/u/{}?person_id={}", creator_name.get(), person_view.person.id.0)}
+          href={move || {
+            internal_navigation_url(&InternalNavigation::new(
+              InternalEndpointData::User {
+                name: creator_name.get(),
+                query: UserQuery { page: None, person_id: Some(person_view.person.id.0), ..UserQuery::default() },
+              },
+            ))
+          }}
         >
           {move || {
             if let Some(ref t) = person_view.person.avatar {
@@ -64,7 +71,17 @@ pub fn UserListing(person_view: PersonView, post_number: usize, hide: bool) -> i
         </A>
       </div>
       <div>
-        <A href={move || format!("/u/{}?person_id={}", creator_name.get(), person_view.person.id.0)} attr:class="block hover:text-accent">
+        <A
+          href={move || {
+            internal_navigation_url(&InternalNavigation::new(
+              InternalEndpointData::User {
+                name: creator_name.get(),
+                query: UserQuery { page: None, person_id: Some(person_view.person.id.0), ..UserQuery::default() },
+              },
+            ))
+          }}
+          attr:class="block hover:text-accent"
+        >
           <span class="overflow-y-auto text-xl wrap-anywhere" inner_html={creator_name_encoded.get()} />
         </A>
         <span class="block mt-1 mb-1 text-sm wrap-anywhere">
@@ -145,7 +162,7 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
       <div class="flex items-start pt-2">
         <A
           attr:class="flex flex-col h-full"
-          href={move || format!("/c/{}", community_name.get())}
+          href={move || internal_navigation_url(&InternalNavigation::new(InternalEndpointData::Community { name: community_name.get(), query: ListingQuery::default() }))}
         >
           {move || {
             if let Some(ref t) = community.community.icon {
@@ -175,7 +192,10 @@ pub fn CommunityListing(community: CommunityView, post_number: usize, hide: bool
         </A>
       </div>
       <div>
-        <A href={move || format!("/c/{}", community_name.get())} attr:class="block hover:text-accent">
+        <A
+          href={move || internal_navigation_url(&InternalNavigation::new(InternalEndpointData::Community { name: community_name.get(), query: ListingQuery::default() }))}
+          attr:class="block hover:text-accent"
+        >
           <span class="overflow-y-auto text-xl wrap-anywhere" inner_html={community_title_encoded.get()} />
         </A>
         <span class="block mt-1 mb-1 text-sm wrap-anywhere">
@@ -246,7 +266,7 @@ pub async fn vote_post(post_id: i32, score: i16) -> Result<Option<PostResponse>,
   match result {
     Ok(o) => Ok(Some(o)),
     Err(e) => {
-      redirect(&format!("/?error={}", serde_json::to_string(&e)?)[..]);
+      redirect(&InternalEndpointData::Home { query: ListingQuery { error: Some(serde_json::to_string(&e)?), ..ListingQuery::default() } }.url());
       Ok(None)
     }
   }
@@ -261,7 +281,7 @@ pub async fn post_save(post_id: i32, save: bool) -> Result<Option<PostResponse>,
   match result {
     Ok(o) => Ok(Some(o)),
     Err(e) => {
-      redirect(&format!("/?error={}", serde_json::to_string(&e)?)[..]);
+      redirect(&InternalEndpointData::Home { query: ListingQuery { error: Some(serde_json::to_string(&e)?), ..ListingQuery::default() } }.url());
       Ok(None)
     }
   }
@@ -276,7 +296,7 @@ pub async fn block_user(person_id: i32, block: bool) -> Result<Option<BlockPerso
   match result {
     Ok(o) => Ok(Some(o)),
     Err(e) => {
-      redirect(&format!("/?error={}", serde_json::to_string(&e)?)[..]);
+      redirect(&InternalEndpointData::Home { query: ListingQuery { error: Some(serde_json::to_string(&e)?), ..ListingQuery::default() } }.url());
       Ok(None)
     }
   }
@@ -312,7 +332,7 @@ pub async fn report_post(post_id: i32, reason: String) -> Result<Option<PostRepo
   match result {
     Ok(o) => Ok(Some(o)),
     Err(e) => {
-      redirect(&format!("/?error={}", serde_json::to_string(&e)?)[..]);
+      redirect(&InternalEndpointData::Home { query: ListingQuery { error: Some(serde_json::to_string(&e)?), ..ListingQuery::default() } }.url());
       Ok(None)
     }
   }
@@ -435,8 +455,8 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
   let _report_post_action = ServerAction::<ReportPost>::new();
   let report_validation = RwSignal::new(String::from(""));
 
-  let query = use_query_map();
-  let ssr_error = move || query.with(|params| params.get("error"));
+  let endpoint = use_internal_endpoint();
+  let ssr_error = move || endpoint.get().error_query().map(str::to_owned);
 
   if let Some(e) = ssr_error() {
     let le = serde_json::from_str::<LemmyAppError>(&e[..]);
@@ -536,7 +556,9 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                         if let Some(d) = post_view.get_untracked().post.url {
                           d.inner().to_string()
                         } else {
-                          format!("/p/{}", post_view.get_untracked().post.id)
+                          internal_navigation_url(&InternalNavigation::new(
+                            InternalEndpointData::Post { id: post_view.get_untracked().post.id.0.to_string(), query: PostQuery::default() },
+                          ))
                         }
                       }}
                     >
@@ -607,7 +629,14 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                       },
                     )
                   }}>
-                    <A href={move || format!("/p/{}", post_view.get_untracked().post.id)} attr:class="block hover:text-accent">
+                    <A
+                      href={move || {
+                        internal_navigation_url(&InternalNavigation::new(
+                          InternalEndpointData::Post { id: post_view.get_untracked().post.id.0.to_string(), query: PostQuery::default() },
+                        ))
+                      }}
+                      attr:class="block hover:text-accent"
+                    >
                       <span lang={move || languages.get().get(post_view.get_untracked().post.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )} class="overflow-y-auto text-xl wrap-anywhere" inner_html={title_encoded.get_untracked()} />
                     </A>
                     <span class="block mt-1 mb-1 text-sm wrap-anywhere">
@@ -674,7 +703,14 @@ pub fn Listing(post_view: PostView, post_number: usize, /*reply_show: RwSignal<b
                           }
                         }}
                       >
-                        <A href={move || format!("/p/{}", post_view.get_untracked().post.id)} attr:class="inline hover:text-accent">
+                        <A
+                          href={move || {
+                            internal_navigation_url(&InternalNavigation::new(
+                              InternalEndpointData::Post { id: post_view.get_untracked().post.id.0.to_string(), query: PostQuery::default() },
+                            ))
+                          }}
+                          attr:class="inline hover:text-accent"
+                        >
                           <Icon icon={Icon::Comments} class="inline" />
                         </A>
                         {post_view.get_untracked().counts.comments}

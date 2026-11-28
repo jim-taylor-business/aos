@@ -12,7 +12,7 @@ pub async fn logout_fn() -> Result<(), ServerFnError> {
       Ok(())
     }
     Err(e) => {
-      redirect(&format!("/login?error={}", serde_json::to_string(&e)?)[..]);
+      redirect(&InternalEndpointData::Login { query: LoginQuery { error: Some(serde_json::to_string(&e)?) } }.url());
       Ok(())
     }
   }
@@ -21,7 +21,7 @@ pub async fn logout_fn() -> Result<(), ServerFnError> {
 #[server]
 pub async fn search_action(term: String) -> Result<(), ServerFnError> {
   use leptos_axum::redirect;
-  redirect(&format!("/s?term={}", &term));
+  redirect(&InternalEndpointData::Search { query: SearchQuery { term: Some(term), ..SearchQuery::default() } }.url());
   Ok(())
 }
 
@@ -61,23 +61,29 @@ pub fn TopNav(
   let ReadInstanceCookie(get_instance_cookie) = expect_context::<ReadInstanceCookie>();
   let WriteThemeCookie(set_theme_cookie) = expect_context::<WriteThemeCookie>();
   let _online = expect_context::<RwSignal<OnlineSetter>>();
-  let response_cache = expect_context::<RwSignal<BTreeMap<(usize, GetPostsCacheKey), (i64, LemmyAppResult<GetPostsResponse>)>>>();
 
-  let query = use_query_map();
-  let _ssr_query_error =
-    move || serde_json::from_str::<LemmyAppError>(&query.get().get("error").unwrap_or("".into())).ok().map(|e| (e, None::<Option<RwSignal<bool>>>));
-  let ssr_list = move || serde_json::from_str::<ListingType>(&query.get().get("list").unwrap_or("".into())).unwrap_or(ListingType::All);
-  let ssr_sort =
-    move || serde_json::from_str::<SortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(default_sort.get().unwrap_or(SortType::Active));
-  let ssr_term = move || query.get().get("term").unwrap_or("".into());
-  let ssr_kind = move || serde_json::from_str::<SearchType>(&query.get().get("kind").unwrap_or("".into())).unwrap_or(SearchType::Posts);
-  let ssr_bans = move || serde_json::from_str::<Vec<BanType>>(&query.get().get("bans").unwrap_or("".into())).unwrap_or(vec![]);
-  let ssr_person_id = move || query.get().get("person_id").unwrap_or_default().parse::<i32>().ok();
+  let endpoint = use_internal_endpoint();
+  let ssr_list = move || endpoint.get().list_type().unwrap_or(ListingType::All);
+  let ssr_search_list = move || endpoint.get().list_type();
+  let ssr_sort = move || endpoint.get().sort_type().unwrap_or(default_sort.get().unwrap_or(SortType::Active));
+  let ssr_term = move || endpoint.get().search_term().unwrap_or_default();
+  let ssr_kind = move || endpoint.get().search_kind().unwrap_or(SearchType::Posts);
+  let ssr_bans = move || endpoint.get().bans().unwrap_or_default();
+  let _ssr_query_error = move || {
+    endpoint.get().error_query().and_then(|error| serde_json::from_str::<LemmyAppError>(error).ok()).map(|e| (e, None::<Option<RwSignal<bool>>>))
+  };
 
-  let ssr_name = move || if lost_path.is_some() { "".to_owned() } else { use_params_map().get().get("name").unwrap_or("".into()) };
-  let ssr_id = move || if lost_path.is_some() { "".to_owned() } else { use_params_map().get().get("id").unwrap_or("".into()) };
+  let ssr_name = move || {
+    if lost_path.is_some() {
+      "".to_owned()
+    } else {
+      let current_endpoint = endpoint.get();
+      current_endpoint.community_name().or_else(|| current_endpoint.user_name()).unwrap_or_default().to_owned()
+    }
+  };
+  let ssr_id = move || if lost_path.is_some() { "".to_owned() } else { endpoint.get().post_id().unwrap_or_default().to_owned() };
 
-  let location = use_location().pathname.get();
+  let location = endpoint.get().path();
 
   let lg_filter_menu = NodeRef::<html::Details>::new();
   let lg_sort_menu = NodeRef::<html::Details>::new();
@@ -175,113 +181,58 @@ pub fn TopNav(
     }
   };
 
-  let sort_location = location.clone();
+  let with_posts_cache = move |navigation: InternalNavigation, list: ListingType, sort: SortType, bans: Vec<BanType>| {
+    internal_posts_cache_entry(&navigation.endpoint, list, sort, &bans, get_auth_cookie.get(), get_instance_cookie.get())
+      .map_or(navigation.clone(), |cache_entry| navigation.with_cache_entry(cache_entry))
+  };
+  let with_search_cache =
+    move |navigation: InternalNavigation, term: String, kind: SearchType, sort: SortType, list: Option<ListingType>, person_id: Option<i32>| {
+      internal_search_cache_entry(&navigation.endpoint, term, kind, sort, list, person_id, get_auth_cookie.get(), get_instance_cookie.get())
+        .map_or(navigation.clone(), |cache_entry| navigation.with_cache_entry(cache_entry))
+    };
   let on_sort_ssr = move |s: SortType| {
-    let o = serde_json::to_string::<SortType>(&s).unwrap_or("Active".into());
-    let mut query_params = query.get();
-    query_params.remove("sort");
-    query_params.remove("page");
-    if default_sort.get().unwrap_or(SortType::Active) != s {
-      query_params.insert("sort", o);
-    }
-    let params = query_params.clone();
-    format!("{}{}", sort_location, query_params.to_query_string())
+    let mut endpoint = endpoint.get();
+    endpoint.set_sort((default_sort.get().unwrap_or(SortType::Active) != s).then_some(s));
+    endpoint.clear_page();
+    internal_navigation_url(&InternalNavigation::new(endpoint))
   };
 
   let on_sort_click = move |s: SortType| {
     move |e: MouseEvent| {
       e.prevent_default();
-      let o = serde_json::to_string::<SortType>(&s).unwrap_or("Active".into());
-      response_cache.update(move |rc| {
-        rc.remove(&(
-          0usize,
-          GetPostsCacheKey {
-            form: GetPosts {
-              type_: Some(ssr_list()),
-              sort: Some(s),
-              page: None,
-              limit: Some(50),
-              community_id: None,
-              community_name: None,
-              saved_only: None,
-              liked_only: None,
-              disliked_only: None,
-              show_hidden: Some(true),
-              show_read: Some(true),
-              show_nsfw: Some(false),
-              page_cursor: None,
-            },
-            auth: get_auth_cookie.get(),
-            instance: get_instance_cookie.get(),
-            ban: false,
-          },
-        ));
-      });
-      let mut query_params = query.get();
-      query_params.remove("sort");
-      query_params.remove("page");
-      if default_sort.get().unwrap_or(SortType::Active) != s {
-        query_params.insert("sort", o);
-      }
-      let params = query_params.clone();
-      #[cfg(not(feature = "ssr"))]
-      spawn_local_scoped(async move {
-        let _ = IndexedDb::save_scroll_position(use_location().pathname.get(), params.to_query_string(), 0).await;
-        use_navigate()(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), Default::default());
-      });
-      if let Some(on_scroll_element) = scroll_element.get() {
-        if let Some(se) = on_scroll_element.get() {
-          se.set_scroll_left(0i32);
-        }
-      }
+      let person_id = endpoint.get().person_id();
+      let mut destination_endpoint = endpoint.get();
+      destination_endpoint.set_sort((default_sort.get().unwrap_or(SortType::Active) != s).then_some(s));
+      destination_endpoint.clear_page();
+      let navigation = with_search_cache(
+        with_posts_cache(InternalNavigation::new(destination_endpoint), ssr_list(), s, ssr_bans()),
+        ssr_term(),
+        ssr_kind(),
+        s,
+        ssr_search_list(),
+        person_id,
+      );
+      navigate_internal(navigation, scroll_element.get());
       reset_menus();
     }
   };
 
   let on_csr_filter_click = move |l: ListingType| {
     move |e: MouseEvent| {
-      response_cache.update(move |rc| {
-        rc.remove(&(
-          0usize,
-          GetPostsCacheKey {
-            form: GetPosts {
-              type_: Some(l),
-              sort: Some(ssr_sort()),
-              page: None,
-              limit: Some(50),
-              community_id: None,
-              community_name: None,
-              saved_only: None,
-              liked_only: None,
-              disliked_only: None,
-              show_hidden: Some(true),
-              show_read: Some(true),
-              show_nsfw: Some(false),
-              page_cursor: None,
-            },
-            auth: get_auth_cookie.get(),
-            instance: get_instance_cookie.get(),
-            ban: false,
-          },
-        ));
-      });
-      let mut query_params = query.get();
-      query_params.remove("page");
-      query_params.remove("list");
-      if l != ListingType::All {
-        query_params.insert("list", serde_json::to_string(&l).ok().unwrap_or("All".into()));
-      }
-      let params = query_params.clone();
-      #[cfg(not(feature = "ssr"))]
-      spawn_local_scoped(async move {
-        let _ = IndexedDb::save_scroll_position(use_location().pathname.get(), params.to_query_string(), 0).await;
-        use_navigate()(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), Default::default());
-      });
-      if let Some(on_scroll_element) = scroll_element.get() {
-        if let Some(se) = on_scroll_element.get() {
-          se.set_scroll_left(0i32);
-        }
-      }
+      e.prevent_default();
+      let person_id = endpoint.get().person_id();
+      let mut destination_endpoint = endpoint.get();
+      destination_endpoint.set_list((l != ListingType::All).then_some(l));
+      destination_endpoint.clear_page();
+      let navigation = with_search_cache(
+        with_posts_cache(InternalNavigation::new(destination_endpoint), l, ssr_sort(), ssr_bans()),
+        ssr_term(),
+        ssr_kind(),
+        ssr_sort(),
+        if l == ListingType::All { None } else { Some(l) },
+        person_id,
+      );
+      navigate_internal(navigation, scroll_element.get());
       reset_menus();
     }
   };
@@ -339,36 +290,15 @@ pub fn TopNav(
         se.set_scroll_left(0i32);
       }
     }
-    response_cache.update(move |rc| {
-      rc.remove(&(
-        0usize,
-        GetPostsCacheKey {
-          form: GetPosts {
-            type_: Some(ListingType::All),
-            sort: Some(SortType::Active),
-            page: None,
-            limit: Some(50),
-            community_id: None,
-            community_name: None,
-            saved_only: None,
-            liked_only: None,
-            disliked_only: None,
-            show_hidden: Some(true),
-            show_read: Some(true),
-            show_nsfw: Some(false),
-            page_cursor: None,
-          },
-          auth: get_auth_cookie.get(),
-          instance: get_instance_cookie.get(),
-          ban: false,
-        },
-      ));
-    });
-    #[cfg(not(feature = "ssr"))]
-    spawn_local_scoped(async move {
-      let _ = IndexedDb::save_scroll_position("/".into(), "".into(), 0).await;
-      use_navigate()("/", Default::default());
-    });
+    navigate_internal(
+      with_posts_cache(
+        InternalNavigation::new(InternalEndpointData::Home { query: ListingQuery::default() }),
+        ListingType::All,
+        SortType::Active,
+        vec![],
+      ),
+      scroll_element.get(),
+    );
     ssr_site.refetch();
   };
 
@@ -396,7 +326,7 @@ pub fn TopNav(
 
   let _on_navigate_login = move |e: MouseEvent| {
     e.prevent_default();
-    use_navigate()("/l", NavigateOptions::default());
+    navigate_internal(InternalNavigation::new(InternalEndpointData::Login { query: LoginQuery::default() }), scroll_element.get());
   };
 
   let instance_timer_handle = RwSignal::new(None);
@@ -465,35 +395,18 @@ pub fn TopNav(
 
   let search_term = RwSignal::new("".to_owned());
 
-  let query = use_query_map();
   let on_filter_ssr = move |l: ListingType| {
-    let mut query_params = use_query_map().get();
-    query_params.remove("page");
-    query_params.remove("list");
-    if l != ListingType::All {
-      query_params.insert("list", serde_json::to_string(&l).ok().unwrap_or("All".into()));
-    }
-    let params = query_params.clone();
-    format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
+    let mut endpoint = endpoint.get();
+    endpoint.set_list((l != ListingType::All).then_some(l));
+    endpoint.clear_page();
+    internal_navigation_url(&InternalNavigation::new(endpoint))
   };
 
   let on_kind_ssr = move |l: SearchType| {
-    let mut query_params = use_query_map().get();
-    query_params.remove("page");
-    query_params.remove("kind");
-    if l != SearchType::Posts {
-      query_params.insert("kind", serde_json::to_string(&l).ok().unwrap_or("Posts".into()));
-    }
-    if ssr_person_id().is_some() {
-      return format!("/u/{}/s{}", ssr_name(), query_params.to_query_string());
-    }
-    if ssr_name().len() > 0 {
-      return format!("/c/{}/s{}", ssr_name(), query_params.to_query_string());
-    }
-    if ssr_id().len() > 0 {
-      return format!("/p/{}/s{}", ssr_id(), query_params.to_query_string());
-    }
-    format!("/s{}", query_params.to_query_string())
+    let mut endpoint = endpoint.get().search_endpoint();
+    endpoint.set_search_kind((l != SearchType::Posts).then_some(l));
+    endpoint.clear_page();
+    internal_navigation_url(&InternalNavigation::new(endpoint))
   };
 
   let highlight_csr_kind = move |l: SearchType| {
@@ -523,50 +436,27 @@ pub fn TopNav(
   let on_csr_kind_click = move |l: SearchType| {
     move |e: MouseEvent| {
       e.prevent_default();
-      let mut query_params = use_query_map().get();
-      query_params.remove("page");
-      query_params.remove("kind");
-      if l != SearchType::Posts {
-        query_params.insert("kind", serde_json::to_string(&l).ok().unwrap_or("Posts".into()));
-      }
-      let params = query_params.clone();
-      #[cfg(not(feature = "ssr"))]
-      spawn_local_scoped(async move {
-        let _ = IndexedDb::save_scroll_position(use_location().pathname.get(), params.to_query_string(), 0).await;
-        if ssr_person_id().is_some() {
-          use_navigate()(&format!("/u/{}/s{}", ssr_name(), query_params.to_query_string()), Default::default());
-        } else if ssr_name().len() > 0 {
-          use_navigate()(&format!("/c/{}/s{}", ssr_name(), query_params.to_query_string()), Default::default());
-        } else if ssr_id().len() > 0 {
-          use_navigate()(&format!("/p/{}/s{}", ssr_id(), query_params.to_query_string()), Default::default());
-        } else {
-          use_navigate()(&format!("/s{}", query_params.to_query_string()), Default::default());
-        }
-      });
-      if let Some(on_scroll_element) = scroll_element.get() {
-        if let Some(se) = on_scroll_element.get() {
-          se.set_scroll_left(0i32);
-        }
-      }
+      let person_id = endpoint.get().person_id();
+      let mut destination_endpoint = endpoint.get().search_endpoint();
+      destination_endpoint.set_search_kind((l != SearchType::Posts).then_some(l));
+      destination_endpoint.clear_page();
+      let navigation = with_search_cache(InternalNavigation::new(destination_endpoint), ssr_term(), l, ssr_sort(), ssr_search_list(), person_id);
+      navigate_internal(navigation, scroll_element.get());
       reset_menus();
     }
   };
 
   let on_bans_ssr = move |l: BanType| {
-    let mut query_params = query.get();
-    query_params.remove("page");
-    query_params.remove("bans");
     let mut bans = ssr_bans();
     if bans.contains(&l) {
       bans.retain(|b| *b != l)
     } else {
       bans.push(l.clone());
     }
-    if bans.len() > 0 {
-      query_params.insert("bans", serde_json::to_string(&bans).ok().unwrap_or("".into()));
-    }
-    let params = query_params.clone();
-    format!("{}{}", use_location().pathname.get(), query_params.to_query_string())
+    let mut endpoint = endpoint.get();
+    endpoint.set_bans((!bans.is_empty()).then_some(bans));
+    endpoint.clear_page();
+    internal_navigation_url(&InternalNavigation::new(endpoint))
   };
 
   let highlight_csr_bans = move |l: BanType| {
@@ -581,50 +471,11 @@ pub fn TopNav(
       } else {
         bans.push(l.clone());
       }
-      let nsfw = bans.contains(&BanType::Nsfw);
-      let ban = bans.contains(&BanType::Ban);
-      response_cache.update(move |rc| {
-        rc.remove(&(
-          0usize,
-          GetPostsCacheKey {
-            form: GetPosts {
-              type_: Some(ssr_list()),
-              sort: Some(ssr_sort()),
-              page: None,
-              limit: Some(50),
-              community_id: None,
-              community_name: None,
-              saved_only: None,
-              liked_only: None,
-              disliked_only: None,
-              show_hidden: Some(true),
-              show_read: Some(true),
-              show_nsfw: Some(nsfw),
-              page_cursor: None,
-            },
-            auth: get_auth_cookie.get(),
-            instance: get_instance_cookie.get(),
-            ban,
-          },
-        ));
-      });
-      let mut query_params = query.get();
-      query_params.remove("page");
-      query_params.remove("bans");
-      if bans.len() > 0 {
-        query_params.insert("bans", serde_json::to_string(&bans).ok().unwrap_or("".into()));
-      }
-      let params = query_params.clone();
-      #[cfg(not(feature = "ssr"))]
-      spawn_local_scoped(async move {
-        let _ = IndexedDb::save_scroll_position(use_location().pathname.get(), params.to_query_string(), 0).await;
-        use_navigate()(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), Default::default());
-      });
-      if let Some(on_scroll_element) = scroll_element.get() {
-        if let Some(se) = on_scroll_element.get() {
-          se.set_scroll_left(0i32);
-        }
-      }
+      let mut endpoint = endpoint.get();
+      endpoint.set_bans((!bans.is_empty()).then_some(bans.clone()));
+      endpoint.clear_page();
+      let navigation = with_posts_cache(InternalNavigation::new(endpoint), ssr_list(), ssr_sort(), bans);
+      navigate_internal(navigation, scroll_element.get());
       reset_menus();
     }
   };
@@ -711,7 +562,7 @@ pub fn TopNav(
               <ul class="flex-nowrap items-center menu menu-horizontal">
                 <li>
                   <a
-                    href="/"
+                    href={internal_navigation_url(&InternalNavigation::new(InternalEndpointData::Home { query: ListingQuery::default() }))}
                     class={move || {
                       if input_focus.get() == InputFocusState::Instance { "hidden" } else { "select-none text-xl font-bold whitespace-nowrap py-1/2" }
                     }}
@@ -726,44 +577,15 @@ pub fn TopNav(
                           input_focus.set(InputFocusState::Unfocused);
                         } else {
                           next_page_cursor.set((0, None));
-                          #[cfg(not(feature = "ssr"))]
-                          spawn_local_scoped(async move {
-                            let _ = IndexedDb::save_scroll_position("/".into(), "".into(), 0).await;
-                            response_cache
-                              .update(move |rc| {
-                                rc.remove(
-                                  &(
-                                    0usize,
-                                    GetPostsCacheKey {
-                                      form: GetPosts {
-                                      type_: Some(ListingType::All),
-                                      sort: Some(SortType::Active),
-                                      page: None,
-                                      limit: Some(50),
-                                      community_id: None,
-                                      community_name: None,
-                                      saved_only: None,
-                                      liked_only: None,
-                                      disliked_only: None,
-                                      show_hidden: Some(true),
-                                      show_read: Some(true),
-                                      show_nsfw: Some(false),
-                                      page_cursor: None,
-                                      },
-                                      auth: get_auth_cookie.get(),
-                                      instance: get_instance_cookie.get(),
-                                      ban: false,
-                                    },
-                                  ),
-                                );
-                              });
-                            use_navigate()("/", Default::default());
-                          });
-                          if let Some(on_scroll_element) = scroll_element.get() {
-                            if let Some(se) = on_scroll_element.get() {
-                              se.set_scroll_left(0i32);
-                            }
-                          }
+                          navigate_internal(
+                            with_posts_cache(
+                              InternalNavigation::new(InternalEndpointData::Home { query: ListingQuery::default() }),
+                              ListingType::All,
+                              SortType::Active,
+                              vec![],
+                            ),
+                            scroll_element.get(),
+                          );
                         }
                       }
                     }}
@@ -1161,21 +983,21 @@ pub fn TopNav(
                     on:keypress={move |e: KeyboardEvent| {
                       if e.key_code() == 13 {
                         e.prevent_default();
-                        let mut query_params = query.get();
-                        query_params.remove("page");
-                        query_params.remove("term");
-                        query_params.insert("term", search_term.get());
-                        if use_location().pathname.get().ends_with("/s") {
-                          use_navigate()(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), Default::default());
-                        } else {
-                          if ssr_person_id().is_some() {
-                            use_navigate()(&format!("/u/{}/s{}", ssr_name(), query_params.to_query_string()), Default::default());
-                          } else if ssr_name().len() > 0 {
-                            use_navigate()(&format!("/c/{}/s{}", ssr_name(), query_params.to_query_string()), Default::default());
-                          } else {
-                            use_navigate()(&format!("/s{}", query_params.to_query_string()), Default::default());
-                          }
-                        }
+                        let person_id = endpoint.get().person_id();
+                        let mut destination_endpoint = endpoint.get().search_endpoint();
+                        destination_endpoint.clear_page();
+                        destination_endpoint.set_search_term(Some(search_term.get()));
+                        navigate_internal(
+                          with_search_cache(
+                            InternalNavigation::new(destination_endpoint),
+                            search_term.get(),
+                            ssr_kind(),
+                            ssr_sort(),
+                            ssr_search_list(),
+                            person_id,
+                          ),
+                          scroll_element.get(),
+                        );
                       }
                     }}
                     on:input={move |ev| {
@@ -1218,24 +1040,23 @@ pub fn TopNav(
                     class={move || {
                       (if input_focus.get() == InputFocusState::Search { "py-2 px-4 pr-2" } else { "hidden sm:inline-block sm:py-2 sm:px-4" }).to_string()
                     }}
-                    on:click={move |_| {
-                      let mut query_params = query.get();
-                      query_params.remove("page");
-                      query_params.remove("term");
-                      query_params.insert("term", search_term.get());
-                      if use_location().pathname.get().ends_with("/s") {
-                        use_navigate()(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), Default::default());
-                      } else {
-                        if ssr_person_id().is_some() {
-                          use_navigate()(&format!("/u/{}/s{}", ssr_name(), query_params.to_query_string()), Default::default());
-                        } else if ssr_name().len() > 0 {
-                          use_navigate()(&format!("/c/{}/s{}", ssr_name(), query_params.to_query_string()), Default::default());
-                        } else if ssr_id().len() > 0 {
-                          use_navigate()(&format!("/p/{}/s{}", ssr_id(), query_params.to_query_string()), Default::default());
-                        } else {
-                          use_navigate()(&format!("/s{}", query_params.to_query_string()), Default::default());
-                        }
-                      }
+                    on:click={move |e: MouseEvent| {
+                      e.prevent_default();
+                      let person_id = endpoint.get().person_id();
+                      let mut destination_endpoint = endpoint.get().search_endpoint();
+                      destination_endpoint.clear_page();
+                      destination_endpoint.set_search_term(Some(search_term.get()));
+                      navigate_internal(
+                        with_search_cache(
+                          InternalNavigation::new(destination_endpoint),
+                          search_term.get(),
+                          ssr_kind(),
+                          ssr_sort(),
+                          ssr_search_list(),
+                          person_id,
+                        ),
+                        scroll_element.get(),
+                      );
                     }}
                   >
                     <Icon icon={Icon::Search} />
@@ -1341,11 +1162,15 @@ pub fn TopNav(
                   fallback={move || {
                     view! {
                       <li>
-                        <form method="post" action="/l" class="p-0">
+                        <form
+                          method="post"
+                          action={internal_navigation_url(&InternalNavigation::new(InternalEndpointData::Login { query: LoginQuery::default() }))}
+                          class="p-0"
+                        >
                           <input
                             type="hidden"
                             name="source_url"
-                            value={move || format!("{}{}", use_location().pathname.get(), query.get().to_query_string())}
+                            value={move || serde_json::to_string(&endpoint.get()).unwrap_or_default()}
                           />
                           <button
                             type="submit"
@@ -1353,8 +1178,11 @@ pub fn TopNav(
                             on:click={move |e: MouseEvent| {
                               e.prevent_default();
                               let passed = expect_context::<RwSignal<PassedUrl>>();
-                              passed.set(PassedUrl(Some(format!("{}{}", use_location().pathname.get(), query.get().to_query_string()))));
-                              use_navigate()("/l", NavigateOptions::default());
+                              passed.set(PassedUrl(Some(endpoint.get())));
+                              navigate_internal(
+                                InternalNavigation::new(InternalEndpointData::Login { query: LoginQuery::default() }),
+                                scroll_element.get(),
+                              );
                             }}
                           >
                             <Icon icon={Icon::SignIn} />

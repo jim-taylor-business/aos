@@ -8,12 +8,12 @@ use leptos_use_scroll::{UseScrollOptions, UseScrollReturn, use_scroll_with_optio
 
 #[component]
 pub fn User() -> impl IntoView {
+  let _route_endpoint = InternalEndpoint::new(User, InternalEndpointRoute::User);
   let i18n = use_i18n();
-  let query = use_query_map();
-  let param = use_params_map();
+  let endpoint = use_internal_endpoint();
 
-  let ssr_name = move || param.get().get("name").unwrap_or("".into());
-  let ssr_page = move || serde_json::from_str::<Vec<usize>>(&query.get().get("page").unwrap_or("".into())).unwrap_or(vec![1usize]);
+  let ssr_name = move || endpoint.get().user_name().unwrap_or_default().to_owned();
+  let ssr_page = move || endpoint.get().user_query().and_then(|query| query.page.clone()).unwrap_or(vec![1usize]);
   let next_page_cursor: RwSignal<(usize, usize)> = RwSignal::new((0, 0));
   let intersection_element = NodeRef::<Div>::new();
   let on_scroll_element = NodeRef::<Div>::new();
@@ -25,8 +25,8 @@ pub fn User() -> impl IntoView {
       if let Some(se) = on_scroll_element.get() {
         #[cfg(not(feature = "ssr"))]
         spawn_local_scoped(async move {
-          let query_params = query.get();
-          let _ = IndexedDb::save_scroll_position(use_location().pathname.get(), query_params.to_query_string(), se.scroll_left()).await;
+          let current_endpoint = endpoint.get();
+          let _ = IndexedDb::save_scroll_position(current_endpoint.path(), current_endpoint.query_string(), se.scroll_left()).await;
         });
       }
     };
@@ -42,14 +42,7 @@ pub fn User() -> impl IntoView {
             if st.iter().find(|s| **s == key).is_none() {
               st.push(key);
             }
-            let mut query_params = query.get();
-            query_params.remove("page");
-            query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-            let navigate = use_navigate();
-            navigate(
-              &format!("{}{}", use_location().pathname.get(), query_params.to_query_string()),
-              NavigateOptions { resolve: true, replace: true, scroll: false, state: State::default() },
-            );
+            navigate_internal_pagination(InternalNavigation::new(endpoint.get().with_page(st.clone())));
           }
         }
       },
@@ -169,7 +162,10 @@ pub fn User() -> impl IntoView {
                                   if let Some(s) = on_scroll_element.get() {
                                     spawn_local_scoped(async move {
                                       if let Ok(Some(l)) =
-                                        IndexedDb::get_scroll_position(use_location().pathname.get(), use_query_map().get().to_query_string()).await
+                                        {
+                                          let current_endpoint = endpoint.get();
+                                          IndexedDb::get_scroll_position(current_endpoint.path(), current_endpoint.query_string()).await
+                                        }
                                       {
                                         s.set_scroll_left(l);
                                       }
@@ -367,9 +363,6 @@ pub fn User() -> impl IntoView {
                         let (key, len) = (*page_number + 1, o.posts.len());
                         if key > 1 && len > 0 {
                           let mut st: Vec<(usize)> = vec![key];
-                          let mut query_params = use_query_map().get();
-                          query_params.remove("page");
-                          query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
                           #[cfg(not(feature = "ssr"))]
                           set_timeout_with_handle(
                             move || {
@@ -390,19 +383,13 @@ pub fn User() -> impl IntoView {
                                   if st.iter().find(|s| **s == key).is_none() {
                                     st.push(key);
                                   }
-                                  let mut query_params = query.get_untracked();
-                                  query_params.remove("page");
-                                  query_params.insert("page", serde_json::to_string(&st).unwrap_or("[]".into()));
-                                  let params = query_params.clone();
+                                  let destination = endpoint.get().with_page(st);
+                                  let params = destination.query_string();
                                   spawn_local_scoped(async move {
                                     if let Some(se) = on_scroll_element.get_untracked() {
-                                      let _ = IndexedDb::save_scroll_position(use_location().pathname.get_untracked(), params.to_query_string(), se.scroll_left()).await;
+                                      let _ = IndexedDb::save_scroll_position(destination.path(), params, se.scroll_left()).await;
                                     }
-                                    let navigate = use_navigate();
-                                    navigate(
-                                      &format!("{}{}", use_location().pathname.get_untracked(), query_params.to_query_string()),
-                                      NavigateOptions { resolve: true, replace: true, scroll: false, state: State::default() },
-                                    );
+                                    navigate_internal_pagination(InternalNavigation::new(destination));
                                   });
                                 }
 
@@ -413,7 +400,10 @@ pub fn User() -> impl IntoView {
                           view! {
                             <Show when={move || { show_next.get() }} fallback={|| {}}>
                               <div class="flex py-4 px-8 justify-end{}">
-                                <A href={format!("{}{}", use_location().pathname.get(), query_params.to_query_string())} attr:class="btn btn-soft">
+                                <A
+                                  href={internal_navigation_url(&InternalNavigation::new(endpoint.get().with_page(st.clone())))}
+                                  attr:class="btn btn-soft"
+                                >
                                   {t!(i18n, next)}
                                 </A>
                               </div>

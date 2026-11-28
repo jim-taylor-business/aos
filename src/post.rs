@@ -7,14 +7,14 @@ use leptos_use_scroll::{UseScrollOptions, UseScrollReturn, use_scroll_with_optio
 
 #[component]
 pub fn Post() -> impl IntoView {
+  let _route_endpoint = InternalEndpoint::new(Post, InternalEndpointRoute::Post);
   let i18n = use_i18n();
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
-  let params = use_params_map();
-  let query = use_query_map();
+  let endpoint = use_internal_endpoint();
 
-  let post_id = Signal::derive(move || params.get().get("id").unwrap_or_default().parse::<i32>().ok());
+  let post_id = Signal::derive(move || endpoint.get().post_id().and_then(|id| id.parse::<i32>().ok()));
   let online = expect_context::<RwSignal<OnlineSetter>>();
-  let ssr_sort = move || serde_json::from_str::<CommentSortType>(&query.get().get("sort").unwrap_or("".into())).unwrap_or(CommentSortType::Top);
+  let ssr_sort = move || endpoint.get().post_query().and_then(|query| query.sort).unwrap_or(CommentSortType::Top);
 
   let reply_show = RwSignal::new(Some(false));
   let content = RwSignal::new(String::default());
@@ -76,21 +76,15 @@ pub fn Post() -> impl IntoView {
     },
   );
 
+  let on_scroll_element = NodeRef::<Div>::new();
+
   let _on_sort_click = move |s: CommentSortType| {
     move |_e: MouseEvent| {
-      let r = serde_json::to_string::<CommentSortType>(&s);
-      let mut query_params = query.get();
-      match r {
-        Ok(o) => {
-          query_params.insert("sort", o);
-        }
-        Err(_e) => {}
+      let mut destination = endpoint.get();
+      if let InternalEndpointData::Post { query, .. } = &mut destination {
+        query.sort = (s != CommentSortType::Top).then_some(s);
       }
-      if CommentSortType::Top == s {
-        query_params.remove("sort");
-      }
-      let navigate = use_navigate();
-      navigate(&format!("{}{}", use_location().pathname.get(), query_params.to_query_string()), Default::default());
+      navigate_internal(InternalNavigation::new(destination), Some(on_scroll_element));
     }
   };
 
@@ -123,12 +117,12 @@ pub fn Post() -> impl IntoView {
 
   let _visibility_element = NodeRef::<Textarea>::new();
 
-  let on_scroll_element = NodeRef::<Div>::new();
   let on_scroll = move |_e: Event| {
     #[cfg(not(feature = "ssr"))]
     if let Some(se) = on_scroll_element.get() {
       spawn_local_scoped(async move {
-        let _ = IndexedDb::save_scroll_position(use_location().pathname.get(), use_query_map().get().to_query_string(), se.scroll_left()).await;
+        let current_endpoint = endpoint.get();
+        let _ = IndexedDb::save_scroll_position(current_endpoint.path(), current_endpoint.query_string(), se.scroll_left()).await;
       });
     }
   };
@@ -238,14 +232,17 @@ pub fn Post() -> impl IntoView {
                       post_response.get().post_view.community.actor_id.inner().host().map(|host| host.to_string()),
                     );
                     let community_title_encoded = html_escape::encode_safe(&community_title).to_string();
-                    let community_path = Memo::new(move |_| if post_response.get().post_view.community.local {
-                      format!("/c/{}", post_response.get().post_view.community.name)
-                    } else {
-                      format!(
-                        "/c/{}@{}",
-                        post_response.get().post_view.community.name,
-                        post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
-                      )
+                    let community_path = Memo::new(move |_| {
+                      let name = if post_response.get().post_view.community.local {
+                        post_response.get().post_view.community.name.clone()
+                      } else {
+                        format!(
+                          "{}@{}",
+                          post_response.get().post_view.community.name,
+                          post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
+                        )
+                      };
+                      internal_navigation_url(&InternalNavigation::new(InternalEndpointData::Community { name, query: ListingQuery::default() }))
                     });
 
                     let a = post_response.get().post_view.creator.actor_id;
@@ -275,10 +272,8 @@ pub fn Post() -> impl IntoView {
                           on:click={move |e: MouseEvent| {
                             if let Some(t) = e.target() {
                               if let Some(l) = t.dyn_ref::<HtmlAnchorElement>() {
-                                e.prevent_default();
-                                if l.host().eq(&window().location().host().unwrap_or("".to_owned())) {
-                                  use_navigate()(&l.href(), Default::default());
-                                } else {
+                                if !l.host().eq(&window().location().host().unwrap_or("".to_owned())) {
+                                  e.prevent_default();
                                   let _ = window().open_with_url_and_target(&l.href(), "_blank");
                                 }
                               }
@@ -293,7 +288,16 @@ pub fn Post() -> impl IntoView {
                           {t!(i18n, post_by)}
                           <A
                             href={move || {
-                              format!("/u/{}?person_id={}", creator_name, post_response.get().post_view.creator.id.0)
+                              internal_navigation_url(&InternalNavigation::new(
+                                InternalEndpointData::User {
+                                  name: creator_name.clone(),
+                                  query: UserQuery {
+                                    page: None,
+                                    person_id: Some(post_response.get().post_view.creator.id.0),
+                                    ..UserQuery::default()
+                                  },
+                                },
+                              ))
                             }}
                             attr:class="inline wrap-anywhere hover:text-secondary"
                           >
@@ -305,13 +309,16 @@ pub fn Post() -> impl IntoView {
                             href={community_path.get()}
                             on:click={move |e: MouseEvent| {
                               e.prevent_default();
-                              spawn_local_scoped(async move {
-                                let _ = IndexedDb::save_scroll_position(community_path.get(), "".into(), 0).await;
-                                use_navigate()(
-                                  &community_path.get(),
-                                  Default::default(),
-                                );
-                              });
+                              let name = if post_response.get().post_view.community.local {
+                                post_response.get().post_view.community.name.clone()
+                              } else {
+                                format!(
+                                  "{}@{}",
+                                  post_response.get().post_view.community.name,
+                                  post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
+                                )
+                              };
+                              navigate_internal(InternalNavigation::new(InternalEndpointData::Community { name, query: ListingQuery::default() }), None);
                             }}
                           >
                             <span lang={move || languages.get().get(post_response.get().post_view.post.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )} class="overflow-y-auto" inner_html={community_title_encoded} />
@@ -323,7 +330,16 @@ pub fn Post() -> impl IntoView {
                         class={move || { format!("float-left{}", if thumbnail_url.get().is_none() && url.get().is_none() { " hidden" } else { "" }) }}
                         target="_blank"
                         href={move || {
-                          if let Some(d) = url.get() { d.inner().to_string() } else { format!("/p/{}", post_response.get().post_view.post.id) }
+                          if let Some(d) = url.get() {
+                            d.inner().to_string()
+                          } else {
+                            internal_navigation_url(&InternalNavigation::new(
+                              InternalEndpointData::Post {
+                                id: post_response.get().post_view.post.id.0.to_string(),
+                                query: PostQuery::default(),
+                              },
+                            ))
+                          }
                         }}
                       >
                         {move || {
@@ -487,7 +503,10 @@ pub fn Post() -> impl IntoView {
                                   if let Some(s) = on_scroll_element.get() {
                                     spawn_local_scoped(async move {
                                       if let Ok(Some(l)) =
-                                        IndexedDb::get_scroll_position(use_location().pathname.get(), use_query_map().get().to_query_string()).await
+                                        {
+                                          let current_endpoint = endpoint.get();
+                                          IndexedDb::get_scroll_position(current_endpoint.path(), current_endpoint.query_string()).await
+                                        }
                                       {
                                         s.set_scroll_left(l);
                                       }

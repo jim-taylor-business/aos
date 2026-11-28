@@ -6,9 +6,8 @@ use leptos_use_intersection_observer::{UseIntersectionObserverOptions, use_inter
 #[component]
 pub fn Hero(post_id: PostId, hide: bool, #[prop(optional)] next_page_cursor: RwSignal<(usize, Option<PaginationCursor>)>) -> impl IntoView {
   let i18n = use_i18n();
-  let query = use_query_map();
-  let ssr_sort =
-    move || serde_json::from_str::<CommentSortType>(&use_query_map().get().get("sort").unwrap_or("".into())).unwrap_or(CommentSortType::Top);
+  let endpoint = use_internal_endpoint();
+  let ssr_sort = move || endpoint.get().post_query().and_then(|query| query.sort).unwrap_or(CommentSortType::Top);
 
   let reply_show = RwSignal::new(None);
   let content = RwSignal::new(String::default());
@@ -173,7 +172,17 @@ pub fn Hero(post_id: PostId, hide: bool, #[prop(optional)] next_page_cursor: RwS
               view! {
                 <div class="break-inside-avoid">
                   <div class="pt-2 px-4">
-                    <A href={move || format!("/p/{}", post_response.get().post_view.post.id)} attr:class="block hover:text-accent">
+                    <A
+                      href={move || {
+                        internal_navigation_url(&InternalNavigation::new(
+                          InternalEndpointData::Post {
+                            id: post_response.get().post_view.post.id.0.to_string(),
+                            query: PostQuery::default(),
+                          },
+                        ))
+                      }}
+                      attr:class="block hover:text-accent"
+                    >
                       <span lang={move || languages.get().get(post_response.get().post_view.post.language_id.0.abs() as usize).map(|l| if l.id.0 == 0 { "".into() } else { l.code.clone() } )} class="overflow-y-auto text-4xl font-extrabold wrap-anywhere" inner_html={title_encoded} />
                     </A>
                   </div>
@@ -181,7 +190,16 @@ pub fn Hero(post_id: PostId, hide: bool, #[prop(optional)] next_page_cursor: RwS
                     class={move || { format!("{}", if thumbnail_url.get().is_none() && url.get().is_none() { " hidden" } else { "" }) }}
                     target="_blank"
                     href={move || {
-                      if let Some(d) = url.get() { d.inner().to_string() } else { format!("/p/{}", post_response.get().post_view.post.id) }
+                      if let Some(d) = url.get() {
+                        d.inner().to_string()
+                      } else {
+                        internal_navigation_url(&InternalNavigation::new(
+                          InternalEndpointData::Post {
+                            id: post_response.get().post_view.post.id.0.to_string(),
+                            query: PostQuery::default(),
+                          },
+                        ))
+                      }
                     }}
                   >
                     {move || {
@@ -229,7 +247,12 @@ pub fn Hero(post_id: PostId, hide: bool, #[prop(optional)] next_page_cursor: RwS
                       {t!(i18n, post_by)}
                       <A
                         href={move || {
-                          format!("/u/{}?person_id={}", creator_name, post_response.get().post_view.creator.id.0)
+                          internal_navigation_url(&InternalNavigation::new(
+                            InternalEndpointData::User {
+                              name: creator_name.clone(),
+                              query: UserQuery { page: None, person_id: Some(post_response.get().post_view.creator.id.0), ..UserQuery::default() },
+                            },
+                          ))
                         }}
                         attr:class="inline wrap-anywhere hover:text-secondary"
                       >
@@ -238,93 +261,45 @@ pub fn Hero(post_id: PostId, hide: bool, #[prop(optional)] next_page_cursor: RwS
                       {t!(i18n, post_in)}
                       <a
                         class="inline wrap-anywhere hover:text-secondary"
-                        href={if post_response.get().post_view.community.local {
-                          format!("/c/{}", post_response.get().post_view.community.name)
-                        } else {
-                          format!(
-                            "/c/{}@{}",
-                            post_response.get().post_view.community.name,
-                            post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
-                          )
-                        }}
+                        href={internal_navigation_url(&InternalNavigation::new(
+                          InternalEndpointData::Community {
+                            name: if post_response.get().post_view.community.local {
+                              post_response.get().post_view.community.name.clone()
+                            } else {
+                              format!(
+                                "{}@{}",
+                                post_response.get().post_view.community.name,
+                                post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
+                              )
+                            },
+                            query: ListingQuery::default(),
+                          },
+                        ))}
                         on:click={move |e: MouseEvent| {
                           e.prevent_default();
-                          spawn_local_scoped(async move {
-                            if let Ok(d) = IndexedDb::new().await {
-                              let _ = d
-                                .set(
-                                  &ScrollPositionKey {
-                                    path: {
-                                      if post_response.get().post_view.community.local {
-                                        format!("/c/{}", post_response.get().post_view.community.name)
-                                      } else {
-                                        format!(
-                                          "/c/{}@{}",
-                                          post_response.get().post_view.community.name,
-                                          post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
-                                        )
-                                      }
-                                    },
-                                    query: "".into(),
-                                  },
-                                  &0i32,
-                                )
-                                .await;
-                            }
-                            listing_response_cache
-                              .update(move |rc| {
-                                rc.remove(
-                                  &(
-                                    0usize,
-                                    GetPostsCacheKey {
-                                      form: GetPosts {
-                                      type_: Some(ListingType::All),
-                                      sort: Some(SortType::Active),
-                                      page: None,
-                                      limit: Some(50),
-                                      community_id: None,
-                                      community_name: Some(
-                                        if post_response.get().post_view.community.local {
-                                          format!("{}", post_response.get().post_view.community.name)
-                                        } else {
-                                          format!(
-                                            "{}@{}",
-                                            post_response.get().post_view.community.name,
-                                            post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
-                                          )
-                                        },
-                                      ),
-                                      saved_only: None,
-                                      liked_only: None,
-                                      disliked_only: None,
-                                      show_hidden: Some(true),
-                                      show_read: Some(true),
-                                      show_nsfw: Some(false),
-                                        page_cursor: None,
-                                      },
-                                      auth: get_auth_cookie.get_untracked(),
-                                      instance: get_instance_cookie.get_untracked(),
-                                      ban: false,
-                                    },
-                                  ),
-                                );
-                              });
-                            next_page_cursor.set((0, None));
-                            use_navigate()(
-                              &{
-                                if post_response.get().post_view.community.local {
-                                  format!("/c/{}", post_response.get().post_view.community.name)
-                                } else {
-                                  format!(
-                                    "/c/{}@{}",
-                                    post_response.get().post_view.community.name,
-                                    post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
-                                  )
-                                }
-                              },
-                              Default::default(),
-                            );
-                          });
+                          let community_name = if post_response.get().post_view.community.local {
+                            post_response.get().post_view.community.name.clone()
+                          } else {
+                            format!(
+                              "{}@{}",
+                              post_response.get().post_view.community.name,
+                              post_response.get().post_view.community.actor_id.inner().host().unwrap().to_string(),
+                            )
+                          };
+                          let endpoint = InternalEndpointData::Community { name: community_name, query: ListingQuery::default() };
+                          let navigation = InternalNavigation::new(endpoint.clone()).with_cache_entry(
+                            internal_posts_cache_entry(
+                              &endpoint,
+                              ListingType::All,
+                              SortType::Active,
+                              &[],
+                              get_auth_cookie.get_untracked(),
+                              get_instance_cookie.get_untracked(),
+                            )
+                            .expect("community navigation has a posts cache key"),
+                          );
+                          next_page_cursor.set((0, None));
+                          navigate_internal(navigation, None);
                         }}
                       >
                         <span class="overflow-y-auto" inner_html={community_title_encoded} />

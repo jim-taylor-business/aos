@@ -32,9 +32,9 @@ fn main() {
     let bytes = to_bytes(body, usize::MAX).await.unwrap_or_default();
     let form: SourceUrlForm = serde_urlencoded::from_bytes(&bytes).unwrap_or_default();
     let req = Request::from_parts(parts, Body::empty());
-    let passed_url = form.source_url;
+    let passed_url = serde_json::from_str::<InternalEndpointData>(&form.source_url).ok();
     let handler =
-      render_app_to_stream_with_context(move || provide_context(PassedUrl(Some(passed_url.clone()))), move || html_template(leptos_options.clone()));
+      render_app_to_stream_with_context(move || provide_context(PassedUrl(passed_url.clone())), move || html_template(leptos_options.clone()));
     handler(req).await.into_response()
   }
 

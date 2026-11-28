@@ -40,15 +40,17 @@ pub async fn login_fn(username_or_email: String, password: String, uri: String) 
     Ok(LoginResponse { jwt, .. }) => {
       let response = expect_context::<leptos_axum::ResponseOptions>();
       let _ = set_response_cookie(&response, "jwt", jwt.unwrap_or_default().into_inner());
-      if uri.len() > 0 {
-        redirect(&uri);
+      if let Ok(endpoint) = serde_json::from_str::<InternalEndpointData>(&uri)
+        && !matches!(&endpoint, InternalEndpointData::Other { .. })
+      {
+        redirect(&endpoint.url());
       } else {
-        redirect("/");
+        redirect(&InternalEndpointData::Home { query: ListingQuery::default() }.url());
       }
       Ok(())
     }
     Err(e) => {
-      redirect(&format!("/l?error={}", serde_json::to_string(&e)?)[..]);
+      redirect(&InternalEndpointData::Login { query: LoginQuery { error: Some(serde_json::to_string(&e)?) } }.url());
       Ok(())
     }
   }
@@ -57,13 +59,13 @@ pub async fn login_fn(username_or_email: String, password: String, uri: String) 
 #[component]
 pub fn LoginForm() -> impl IntoView {
   let i18n = use_i18n();
-  let query = use_query_map();
+  let endpoint = use_internal_endpoint();
   let name = RwSignal::new(String::new());
   let password = RwSignal::new(String::new());
   let login = ServerAction::<LoginFn>::new();
   let username_validation = RwSignal::new("".to_owned());
   let password_validation = RwSignal::new("".to_owned());
-  let ssr_error = move || query.with(|params| params.get("error"));
+  let ssr_error = move || endpoint.get().error_query().map(str::to_owned);
   let ssr_site = expect_context::<Resource<Result<GetSiteResponse, LemmyAppError>>>();
 
   #[cfg(feature = "ssr")]
@@ -94,10 +96,10 @@ pub fn LoginForm() -> impl IntoView {
           let WriteAuthCookie(set_auth_cookie) = expect_context::<WriteAuthCookie>();
           set_auth_cookie.set(Some(jwt.clone().into_inner()));
           ssr_site.refetch();
-          if let PassedUrl(Some(url)) = passed.get() {
-            use_navigate()(&url, Default::default());
+          if let PassedUrl(Some(endpoint)) = passed.get() {
+            navigate_internal(InternalNavigation::new(endpoint), None);
           } else {
-            use_navigate()("/", Default::default());
+            navigate_internal(InternalNavigation::new(InternalEndpointData::Home { query: ListingQuery::default() }), None);
           }
         }
         Ok(LoginResponse { jwt: None, .. }) => {}
@@ -121,7 +123,18 @@ pub fn LoginForm() -> impl IntoView {
   view! {
     <div>
       <ActionForm attr:class="space-y-3" action={login}>
-        <input type="hidden" name="uri" value={move || if let PassedUrl(Some(url)) = passed.get() { url } else { "/".to_string() }} />
+        <input
+          type="hidden"
+          name="uri"
+          value={move || {
+            serde_json::to_string(&if let PassedUrl(Some(endpoint)) = passed.get() {
+              endpoint
+            } else {
+              InternalEndpointData::Home { query: ListingQuery::default() }
+            })
+            .expect("internal endpoints are serializable")
+          }}
+        />
         <TextInput
           id="username"
           autocomplete="username"
@@ -197,6 +210,7 @@ pub fn TextInput(
 
 #[component]
 pub fn Login() -> impl IntoView {
+  let _endpoint = InternalEndpoint::new(Login, InternalEndpointRoute::Login);
   let i18n = use_i18n();
   let ReadThemeCookie(get_theme_cookie) = expect_context::<ReadThemeCookie>();
   let on_scroll_element = NodeRef::<Div>::new();

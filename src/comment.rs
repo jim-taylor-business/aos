@@ -496,10 +496,8 @@ pub fn Comment(
               if let Some(i) = t.dyn_ref::<HtmlImageElement>() {
                 let _ = window().open_with_url_and_target(&i.src(), "_blank");
               } else if let Some(l) = t.dyn_ref::<HtmlAnchorElement>() {
-                e.prevent_default();
-                if l.host().eq(&window().location().host().unwrap_or("".to_owned())) {
-                  use_navigate()(&l.href(), Default::default());
-                } else {
+                if !l.host().eq(&window().location().host().unwrap_or("".to_owned())) {
+                  e.prevent_default();
                   let _ = window().open_with_url_and_target(&l.href(), "_blank");
                 }
               } else if let Some(s) = t.dyn_ref::<web_sys::Element>() {
@@ -762,12 +760,25 @@ pub fn Comment(
               {t!(i18n, post_by)}
               <A
                 href={move || {
-                  format!("/u/{}?person_id={}", creator_name.get(), comment_view.get().creator.id.0)
+                  internal_navigation_url(&InternalNavigation::new(
+                    InternalEndpointData::User {
+                      name: creator_name.get(),
+                      query: UserQuery { page: None, person_id: Some(comment_view.get().creator.id.0), ..UserQuery::default() },
+                    },
+                  ))
                 }}
                 attr:class="text-sm hover:text-secondary"
                 on:click={move |e| {
                   e.prevent_default();
-                  use_navigate()(&format!("/u/{}?person_id={}", creator_name.get(), comment_view.get().creator.id.0), Default::default());
+                  navigate_internal(
+                    InternalNavigation::new(
+                      InternalEndpointData::User {
+                        name: creator_name.get(),
+                        query: UserQuery { page: None, person_id: Some(comment_view.get().creator.id.0), ..UserQuery::default() },
+                      },
+                    ),
+                    None,
+                  );
                 }}
               >
                 <span inner_html={creator_name_encoded.get()} />

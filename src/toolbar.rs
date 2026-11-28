@@ -9,7 +9,7 @@ pub async fn vote_post_fn(post_id: i32, score: i16) -> Result<Option<PostRespons
   match result {
     Ok(o) => Ok(Some(o)),
     Err(e) => {
-      redirect(&format!("/?error={}", serde_json::to_string(&e)?)[..]);
+      redirect(&InternalEndpointData::Home { query: ListingQuery { error: Some(serde_json::to_string(&e)?), ..ListingQuery::default() } }.url());
       Ok(None)
     }
   }
@@ -24,7 +24,7 @@ pub async fn save_post_fn(post_id: i32, save: bool) -> Result<Option<PostRespons
   match result {
     Ok(o) => Ok(Some(o)),
     Err(e) => {
-      redirect(&format!("/?error={}", serde_json::to_string(&e)?)[..]);
+      redirect(&InternalEndpointData::Home { query: ListingQuery { error: Some(serde_json::to_string(&e)?), ..ListingQuery::default() } }.url());
       Ok(None)
     }
   }
@@ -39,7 +39,7 @@ pub async fn block_user_fn(person_id: i32, block: bool) -> Result<Option<BlockPe
   match result {
     Ok(o) => Ok(Some(o)),
     Err(e) => {
-      redirect(&format!("/?error={}", serde_json::to_string(&e)?)[..]);
+      redirect(&InternalEndpointData::Home { query: ListingQuery { error: Some(serde_json::to_string(&e)?), ..ListingQuery::default() } }.url());
       Ok(None)
     }
   }
@@ -76,7 +76,7 @@ pub async fn report_post_fn(post_id: i32, reason: String) -> Result<Option<PostR
   match result {
     Ok(o) => Ok(Some(o)),
     Err(e) => {
-      redirect(&format!("/?error={}", serde_json::to_string(&e)?)[..]);
+      redirect(&InternalEndpointData::Home { query: ListingQuery { error: Some(serde_json::to_string(&e)?), ..ListingQuery::default() } }.url());
       Ok(None)
     }
   }
@@ -206,8 +206,8 @@ pub fn PostToolbar(
   let report_post_action = ServerAction::<ReportPostFn>::new();
   let report_validation = RwSignal::new(String::from(""));
 
-  let query = use_query_map();
-  let ssr_error = move || query.with(|params| params.get("error"));
+  let endpoint = use_internal_endpoint();
+  let ssr_error = move || endpoint.get().error_query().map(str::to_owned);
 
   if let Some(e) = ssr_error() {
     let le = serde_json::from_str::<LemmyAppError>(&e[..]);
